@@ -37,7 +37,7 @@ interface CompProps {
 
 function OtpInputFormModule({ user }: CompProps) {
 
-    const { mutate, isPending, error } = useVerifyOtp()
+    const { mutate, isPending, error }: { mutate: any; isPending: boolean; error: any } = useVerifyOtp()
     // error, isSuccess
 
     const form = useForm<z.infer<typeof FormSchema>>({
@@ -56,13 +56,11 @@ function OtpInputFormModule({ user }: CompProps) {
             email: user?.email,
             otp: data?.pin,
             need_tokens: true,
-            need_otp_token: false
+            need_otp_token: true
         }
         mutate(payload)
-
-
     }
-    console.log('error', error);
+    
     useEffect(() => {
         if(error?.errors?.email){
             toast.error("Email is missing", {

@@ -8,24 +8,40 @@ export const axiosIsntanceAuth = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-//   withCredentials: true,
+  //   withCredentials: true,
 });
 
 const axiosIstanceAuthenticated = axios.create({
   baseURL: apiUrl,
   headers: {
     'Content-Type': 'application/json',
-  }
-})
+  },
+});
+
+// axiosIstanceAuthenticated.interceptors.request.use((config) => {
+//     const user = useAuthStore.getState().user
+//       console.log('user state', user);
+
+//   if (user?.data) {
+//     config.headers.Authorization = `Bearer ${user?.data?.access_token}`;
+//   }
+//   return config;
+// });
+
+// export default axiosIstanceAuthenticated
 
 axiosIstanceAuthenticated.interceptors.request.use((config) => {
-    const user = useAuthStore.getState().user
-      console.log('user state', user);
+  const { user } = useAuthStore.getState();
 
-  if (user?.data) {
-    config.headers.Authorization = `Bearer ${user?.data?.access_token}`;
+  console.log('user state', user);
+
+  const token = user?.data?.access_token;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
-export default axiosIstanceAuthenticated
+export default axiosIstanceAuthenticated;

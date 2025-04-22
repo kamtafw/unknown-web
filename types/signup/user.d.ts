@@ -56,3 +56,7 @@ export interface UserProfilePayload {
 export interface InterestsPayload {
   interests: string[]
 }
+
+export type FollowAUser = {
+  followed_user: string | number
+}
