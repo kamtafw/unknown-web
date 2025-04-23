@@ -120,3 +120,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+.step-item {
+  @apply relative flex items-center justify-start gap-2 pl-4;
+}
+
+.step-item .icon {
+  @apply w-7 h-7 flex items-center justify-center rounded-full bg-white border-2 border-[#94A3B8] relative z-10;
+}
+
+/* vertical dashed line */
+.step-item::after {
+  content: "";
+  position: absolute;
+  top: 1.97rem; 
+  left: 1.85rem;
+  height: 100%;
+  width: 2px;
+  /* background-image: repeating-linear-gradient(
+    to bottom,
+    #94A3B8,
+    #94A3B8 4px,
+    transparent 4px,
+    transparent 8px
+  ); */
+  border: 1px dashed #D1D5DB;
+  z-index: 0;
+}
+
+/* remove line for the last one */
+.last-step::after {
+  content: none;
+}
+

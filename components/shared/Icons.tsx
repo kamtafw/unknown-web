@@ -86,6 +86,17 @@ const DatePickerCheckMarkIcon = () => {
     )
 }
 
+const WaitListCheckIcon = () => {
+    return (
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0.5" y="0.5" width="29" height="29" rx="14.5" fill="white" />
+            <rect x="0.5" y="0.5" width="29" height="29" rx="14.5" stroke="#6A88D1" />
+            <path d="M9.75 15.75L13.25 19.25L20.25 11.75" stroke="#6A88D1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+
+    )
+}
+
 
 export {
     PlayStoreIcon,
@@ -96,5 +107,6 @@ export {
     BackAuthIcon,
     ProfileIcon,
     CalenderIcon,
-    DatePickerCheckMarkIcon
+    DatePickerCheckMarkIcon,
+    WaitListCheckIcon
 }
