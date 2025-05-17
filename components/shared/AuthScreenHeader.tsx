@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import React from 'react';
-import AppComboLogo from '@/assets/appsCoboLogo.png'
+import AppComboLogo from '@/assets/appsCoboLogo.png';
 
 const AuthScreenHeader = () => {
     return (
