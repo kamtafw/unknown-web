@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Work_Sans } from "next/font/google";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import ReactQueryProvider from "@/lib/react-query-provider";
+
+const workSans = Work_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-work-sans",
+});
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
@@ -24,13 +31,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={``}
-      >
-        <ReactQueryProvider>
-          {children}
-        </ReactQueryProvider>
+    <html lang="en" className={workSans.variable}>
+      <body className={workSans.className}>
+        <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
   );
