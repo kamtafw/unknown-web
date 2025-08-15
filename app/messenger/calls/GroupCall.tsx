@@ -26,14 +26,15 @@ interface GroupCallPageProps {
   onEndCall: () => void;
   participants: Participant[];
   onAddParticipant?: () => void;
+  groupName?: string; 
 }
 
 export function GroupCallPage({
   isOpen,
   onEndCall,
   participants,
-}: //   onAddParticipant,
-GroupCallPageProps) {
+  groupName = "Group call",
+}: GroupCallPageProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(false);
@@ -195,11 +196,11 @@ GroupCallPageProps) {
       <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
         <div
           className={` rounded-xl shadow-2xl transition-all duration-300 p-3 border-none bg-[#1F2937] ${
-            isExpanded ? "w-full h-full rounded-none" : "w-[600px] h-[550px]"
+            isExpanded ? "w-full h-full rounded-none" : "w-[700px] h-[550px]"
           } relative flex flex-col`}
         >
           <div className="p-1 border-none rounded-xl  bg-[#111827]">
-            {/* Header */}{" "}
+            {/* Header */}
             <div className="flex items-center justify-between p-6">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -213,9 +214,12 @@ GroupCallPageProps) {
                 )}
               </button>
 
-              <h2 className="text-xl font-semibold text-gray-400">
-                Group call
-              </h2>
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-white">
+                  {groupName}
+                </h2>
+                <p className="text-sm text-gray-400">Group call</p>
+              </div>
 
               <button
                 onClick={handleAddParticipant}
@@ -427,7 +431,7 @@ GroupCallPageProps) {
               {/* End call */}
               <button
                 onClick={handleEndCall}
-                className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                className="w-12 h-12 bg-green-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
                 title="End call"
               >
                 <MdCallEnd className="h-5 w-5 text-white" />

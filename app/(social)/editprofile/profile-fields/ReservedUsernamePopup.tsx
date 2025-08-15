@@ -12,7 +12,7 @@ export default function ReservedUsernamePopup({ onClose }: ReservedUsernamePopup
   const [showNameVerificationPopup, setShowNameVerificationPopup] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-[90%] max-w-[400px] shadow-lg">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Reserved Username</h3>

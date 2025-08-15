@@ -3,17 +3,24 @@
 import {
   Search,
   Flame,
-  // MessageSquare,
-  // PartyPopper,
   Home,
   Bell,
   ChevronRight,
   Menu,
+  LogOut,
+  User,
+  Plus,
 } from "lucide-react";
+import { FaLink } from "react-icons/fa";
 import { BsFillChatDotsFill } from "react-icons/bs";
 import { GiPartyPopper } from "react-icons/gi";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import Logo from "@/assets/appcombohallogo.svg";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
@@ -26,55 +33,66 @@ export default function Topbar({
   const router = useRouter();
   const pathname = usePathname();
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-
-  const handleEditPageNavigation = () => {
-    router.push("/editprofile");
-  };
+  const [selectedAccount, setSelectedAccount] = useState("cameron");
+  const [isProfilePopoverOpen, setIsProfilePopoverOpen] = useState(false);
 
   const toggleMobileSearch = () => {
     setShowMobileSearch(!showMobileSearch);
   };
 
-
   const getCurrentSection = () => {
-    if (pathname.startsWith('/social')) return 'social';
-    if (pathname.startsWith('/messenger')) return 'messenger';
-    if (pathname.startsWith('/events')) return 'events';
-    if (pathname.startsWith('/marketplace') || pathname.startsWith('/market-vendor')) return 'marketplace';
-    return 'social';
+    if (pathname.startsWith("/social")) return "social";
+    if (pathname.startsWith("/messenger")) return "messenger";
+    if (pathname.startsWith("/events")) return "events";
+    if (
+      pathname.startsWith("/marketplace") ||
+      pathname.startsWith("/market-vendor")
+    )
+      return "marketplace";
+    return "social";
   };
 
   const currentSection = getCurrentSection();
 
   const navigationItems = [
     {
-      key: 'social',
+      key: "social",
       icon: Flame,
-      href: '/home',
-      label: 'Social Media'
+      href: "/home",
+      label: "Social Media",
     },
     {
-      key: 'messenger',
+      key: "messenger",
       icon: BsFillChatDotsFill,
-      href: '/messenger/chats',
-      label: 'Messages'
+      href: "/messenger/chats",
+      label: "Messages",
     },
     {
-      key: 'events',
+      key: "events",
       icon: GiPartyPopper,
-      href: '/events/event',
-      label: 'Events'
+      href: "/events/event",
+      label: "Events",
     },
     {
-      key: 'marketplace',
+      key: "marketplace",
       icon: Home,
-      href: '/marketplace/homes',
-      label: 'Marketplace'
-    }
+      href: "/marketplace/homes",
+      label: "Marketplace",
+    },
   ];
 
   const handleNavigation = (href: string) => {
     router.push(href);
+  };
+
+  const handleCreateNewAccount = () => {
+    console.log("Create new account clicked");
+    setIsProfilePopoverOpen(false);
+  };
+
+  const handleAddExistingAccount = () => {
+    console.log("Add existing account clicked");
+    setIsProfilePopoverOpen(false);
   };
 
   return (
@@ -91,19 +109,19 @@ export default function Topbar({
             <Menu className="h-6 w-6" />
           </Button>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="shrink-0"
-            onClick={() => router.push('/social/home')}
+            onClick={() => router.push("/social/home")}
           >
-             <Image
+            <Image
               src={Logo}
               alt="AppComboHal Logo"
               width={48}
               height={48}
               className="w-12 h-12"
-              style={{ objectFit: 'contain' }}
+              style={{ objectFit: "contain" }}
               priority
             />
           </Button>
@@ -141,9 +159,9 @@ export default function Topbar({
                 variant="ghost"
                 size="icon"
                 className={`rounded-full p-3 transition-colors ${
-                  isActive 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
-                    : 'hover:bg-gray-100 text-gray-600'
+                  isActive
+                    ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                    : "hover:bg-gray-100 text-gray-600"
                 }`}
                 onClick={() => handleNavigation(item.href)}
                 title={item.label}
@@ -164,31 +182,137 @@ export default function Topbar({
             <Bell className="h-5 w-5 text-gray-600" />
           </Button>
 
-          <div
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={handleEditPageNavigation}
+          <Popover
+            open={isProfilePopoverOpen}
+            onOpenChange={setIsProfilePopoverOpen}
           >
-            <div>
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 shrink-0">
-                <Image
-                  src="/profilepic.jpg"
-                  alt="Profile"
-                  width={32}
-                  height={32}
-                  className="w-full h-full object-cover"
-                />
+            <PopoverTrigger asChild>
+              <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 rounded-lg p-1">
+                <div>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 shrink-0">
+                    <Image
+                      src="/profilepic.jpg"
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                <div className="hidden sm:block min-w-0">
+                  <p className="text-sm font-medium truncate max-w-[120px] md:max-w-[150px]">
+                    Cameron Willi...
+                  </p>
+                  <p className="text-xs text-gray-500 truncate max-w-[120px] md:max-w-[150px]">
+                    @Ariene_mcCoy
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400 hidden sm:block shrink-0" />
               </div>
-            </div>
-            <div className="hidden sm:block min-w-0">
-              <p className="text-sm font-medium truncate max-w-[120px] md:max-w-[150px]">
-                Cameron Willi...
-              </p>
-              <p className="text-xs text-gray-500 truncate max-w-[120px] md:max-w-[150px]">
-                @Ariene_mcCoy
-              </p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400 hidden sm:block shrink-0" />
-          </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0 mr-4" align="end">
+              <div className="p-4">
+                {/* Current Account */}
+                <div
+                  className="flex items-center space-x-3 mb-4 cursor-pointer"
+                  onClick={() => setSelectedAccount("cameron")}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-300">
+                    <Image
+                      src="/profilepic.jpg"
+                      alt="Profile"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
+                      Cameron Williamson
+                    </p>
+                    <p className="text-sm text-gray-500">@Arlene_McCoy</p>
+                  </div>
+                  <FaLink className="h-5 w-5 text-black cursor-pointer hover:text-gray-600 mr-2" />
+                  <div
+                    className={`rounded-full w-5 h-5 flex items-center justify-center ${
+                      selectedAccount === "cameron"
+                        ? "bg-green-500"
+                        : "border-2 border-gray-300"
+                    }`}
+                  >
+                    {selectedAccount === "cameron" && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className="flex items-center space-x-3 mb-6 cursor-pointer"
+                  onClick={() => setSelectedAccount("lucas")}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-300">
+                    <Image
+                      src="/Rectangle 2.png"
+                      alt="Lucas Profile"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">Lucas Jigsu</p>
+                    <p className="text-sm text-gray-500">@Lucas_Jigsu</p>
+                  </div>
+                  <FaLink className="h-5 w-5 text-black cursor-pointer hover:text-gray-600 mr-2" />
+                  <div
+                    className={`rounded-full w-5 h-5 flex items-center justify-center ${
+                      selectedAccount === "lucas"
+                        ? "bg-green-500"
+                        : "border-2 border-gray-300"
+                    }`}
+                  >
+                    {selectedAccount === "lucas" && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleCreateNewAccount}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3"
+                  >
+                    Create a new account
+                  </Button>
+                  <Button
+                    onClick={handleAddExistingAccount}
+                    variant="outline"
+                    className="w-full border-blue-300 text-blue-600 hover:bg-blue-50 rounded-full py-3"
+                  >
+                    Add an existing account
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

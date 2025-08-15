@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ContactPopup } from "./ContactPopup";
 import { GroupCallPage } from "./GroupCall";
+import { VideoCall } from "./VideoCall";
 import { Phone, Video } from "lucide-react";
 import { CallList } from "./CallList";
 
@@ -25,6 +26,7 @@ interface Participant {
 export default function Home() {
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [showGroupCall, setShowGroupCall] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const [callParticipants, setCallParticipants] = useState<Participant[]>([]);
 
   const handleStartCall = (selectedContacts: Contact[]) => {
@@ -52,8 +54,18 @@ export default function Home() {
     setShowContactPopup(false);
   };
 
+  const handleStartVideoCall = () => {
+    setCallParticipants([]);
+    setShowVideoCall(true);
+  };
+
   const handleEndCall = () => {
     setShowGroupCall(false);
+    setCallParticipants([]);
+  };
+
+  const handleEndVideoCall = () => {
+    setShowVideoCall(false);
     setCallParticipants([]);
   };
 
@@ -76,6 +88,7 @@ export default function Home() {
         </button>
 
         <button
+          onClick={handleStartVideoCall}
           className="h-19 w-19 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
          aria-label="Start video call"
         >
@@ -95,6 +108,15 @@ export default function Home() {
         isOpen={showGroupCall}
         onClose={() => setShowGroupCall(false)}
         onEndCall={handleEndCall}
+        participants={callParticipants}
+        onAddParticipant={handleAddParticipant}
+      />
+
+      {/* Video Call Popup */}
+      <VideoCall
+        isOpen={showVideoCall}
+        onClose={() => setShowVideoCall(false)}
+        onEndCall={handleEndVideoCall}
         participants={callParticipants}
         onAddParticipant={handleAddParticipant}
       />

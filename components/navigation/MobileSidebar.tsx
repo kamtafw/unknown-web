@@ -10,8 +10,6 @@ import {
   Plus,
   LogOut,
   Flame,
-  // MessageSquare,
-  // PartyPopper,
   ChevronDown,
   ChevronRight,
   X,
@@ -24,8 +22,6 @@ import {
   Bell,
   User,
   Package,
-//   History,
-//   ShoppingBag,
   Calendar,
   Camera,
 } from "lucide-react";

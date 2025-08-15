@@ -1,4 +1,5 @@
 "use client";
+
 import { GrScheduleNew } from "react-icons/gr";
 import { MdGroups } from "react-icons/md";
 import { FaUserGroup } from "react-icons/fa6";
@@ -39,13 +40,14 @@ export function CopyPopup({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/80 bg-opacity-50 z-40"
+        className="fixed inset-0 bg-black/50 z-40"
         onClick={onClose}
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-white backdrop-blur-md rounded-lg shadow-xl w-[300px] h-[400px] p-8 relative">
           <div className="absolute bottom-4 right-4 flex flex-col gap-4 items-end">
             <button
+              type="button"
               onClick={handleScheduleClick}
               className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors group rounded-lg min-w-[200px]"
             >
@@ -57,6 +59,7 @@ export function CopyPopup({
               </div>
             </button>
             <button
+              type="button"
               onClick={handleCreateCommunityClick}
               className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors group rounded-lg min-w-[200px]"
             >
@@ -68,6 +71,7 @@ export function CopyPopup({
               </div>
             </button>
             <button
+              type="button"
               onClick={handleCreateGroupClick}
               className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors group rounded-lg min-w-[200px]"
             >

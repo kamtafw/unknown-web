@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import ProfilePage from "./profile";
 import FollowersPage from "./followers";
 import FollowingPage from "./following";
@@ -13,12 +14,18 @@ import EditBioPage from "./profile-fields/edit-bio";
 import AddLinkPage from "./profile-fields/add-link";
 import SetLocationPage from "./profile-fields/SetLocation";
 import EditLinkPage from "./profile-fields/EditPortfolio";
+import ChangeNumberPage from "../settings/account/change-number/ChangeNumberPage";
 
 export default function EditPage() {
   const [activeView, setActiveView] = useState("followers");
+  const router = useRouter();
 
   const handleViewChange = (view: string) => {
-    setActiveView(view);
+    if (view === "changeNumber") {
+      router.push("/settings?view=changeNumber");
+    } else {
+      setActiveView(view);
+    }
   };
 
   return (
@@ -34,13 +41,21 @@ export default function EditPage() {
       {activeView === "following" && <FollowingPage />}
       {activeView === "connections" && <ConnectionsPage />}
       {activeView === "verified" && <GetVerifiedPage />}
-      {activeView === "editProfile" && <EditProfilePage onFieldEdit={handleViewChange} />}
-      {activeView === "editName" && <EditNamePage onBack={() => handleViewChange("editProfile")} />}
+      {activeView === "editProfile" && (
+        <EditProfilePage onFieldEdit={handleViewChange} />
+      )}
+      {activeView === "editName" && (
+        <EditNamePage onBack={() => handleViewChange("editProfile")} />
+      )}
       {activeView === "editUsername" && (
         <EditUsernamePage onBack={() => handleViewChange("editProfile")} />
       )}
-      {activeView === "editBio" && <EditBioPage onBack={() => handleViewChange("editProfile")} />}
-      {activeView === "addLink" && <AddLinkPage onBack={() => handleViewChange("editProfile")} />}
+      {activeView === "editBio" && (
+        <EditBioPage onBack={() => handleViewChange("editProfile")} />
+      )}
+      {activeView === "addLink" && (
+        <AddLinkPage onBack={() => handleViewChange("editProfile")} />
+      )}
       {activeView === "setLocation" && (
         <SetLocationPage
           onBack={() => handleViewChange("editProfile")}
@@ -48,10 +63,23 @@ export default function EditPage() {
         />
       )}
       {activeView === "editPortfolio" && (
-        <EditLinkPage linkType="portfolio" onClose={() => handleViewChange("editProfile")} />
+        <EditLinkPage
+          linkType="portfolio"
+          onClose={() => handleViewChange("editProfile")}
+        />
       )}
       {activeView === "editShoppingList" && (
-        <EditLinkPage linkType="shoppingList" onClose={() => handleViewChange("editProfile")} />
+        <EditLinkPage
+          linkType="shoppingList"
+          onClose={() => handleViewChange("editProfile")}
+        />
+      )}
+      {activeView === "changeNumber" && (
+        <ChangeNumberPage
+          onBack={() => handleViewChange("editProfile")}
+          onNext={() => {
+          }}
+        />
       )}
     </div>
   );

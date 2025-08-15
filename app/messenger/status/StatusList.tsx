@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   EllipsisVertical,
   Camera,
@@ -17,128 +18,76 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { StatusIndicator } from "@/components/StatusIndicator";
+import { MuteStatusPopup } from "./MuteStatusPopup";
+import EditTextStatus from "./EditTextStatus"; // Import the new component
+import { Status, recentStatuses, viewedStatuses, mutedStatuses } from "./statusData";
 
-interface Status {
-  id: string;
-  name: string;
-  avatar: string;
-  time: string;
-  count?: number;
-  viewed?: boolean;
+interface StatusListProps {
+  onMyStatusClick: () => void;
+  onContactStatusClick: (contact: Status) => void;
+  onEditStoryClick: (imageFile?: File) => void;
 }
 
-const recentStatuses: Status[] = [
-  {
-    id: "1",
-    name: "Cameron Williamson",
-    avatar: "/Rectangle 3.png",
-    time: "2 minutes ago",
-    count: 2,
-  },
-  {
-    id: "2",
-    name: "Robert Fox",
-    avatar: "/Rectangle 3.png",
-    time: "5 minutes ago",
-    count: 1,
-  },
-  {
-    id: "3",
-    name: "Marvin McKinney",
-    avatar: "/Rectangle 3.png",
-    time: "1 hour ago",
-    count: 3,
-  },
-  {
-    id: "4",
-    name: "Darlene Robertson",
-    avatar: "/Rectangle 3.png",
-    time: "2 hours ago",
-    count: 1,
-  },
-  {
-    id: "5",
-    name: "Kristin Watson",
-    avatar: "/Rectangle 3.png",
-    time: "3 hours ago",
-    count: 2,
-  },
-];
-
-const viewedStatuses: Status[] = [
-  {
-    id: "6",
-    name: "Arlene McCoy",
-    avatar: "/Rectangle 3.png",
-    time: "Yesterday",
-    viewed: true,
-  },
-  {
-    id: "7",
-    name: "Jane Cooper",
-    avatar: "/Rectangle 3.png",
-    time: "Yesterday",
-    viewed: true,
-  },
-  {
-    id: "8",
-    name: "Robert Kim",
-    avatar: "/Rectangle 3.png",
-    time: "2 days ago",
-    viewed: true,
-  },
-  {
-    id: "9",
-    name: "Arlene Cane",
-    avatar: "/Rectangle 3.png",
-    time: "2 days ago",
-    viewed: true,
-  },
-  {
-    id: "10",
-    name: "Wade Warren",
-    avatar: "/Rectangle 3.png",
-    time: "3 days ago",
-    viewed: true,
-  },
-];
-
-const mutedStatuses: Status[] = [
-  {
-    id: "11",
-    name: "Floyd Miles",
-    avatar: "/Rectangle 3.png",
-    time: "1 hour ago",
-  },
-  {
-    id: "12",
-    name: "Jenny Wilson",
-    avatar: "/Rectangle 3.png",
-    time: "4 hours ago",
-  },
-  {
-    id: "13",
-    name: "Devon Lane",
-    avatar: "/Rectangle 3.png",
-    time: "Yesterday",
-  },
-  {
-    id: "14",
-    name: "Courtney Henry",
-    avatar: "/Rectangle 3.png",
-    time: "2 days ago",
-  },
-  {
-    id: "15",
-    name: "Theresa Webb",
-    avatar: "/Rectangle 3.png",
-    time: "3 days ago",
-  },
-];
-
-export function StatusList() {
+export function StatusList({
+  onMyStatusClick,
+  onContactStatusClick,
+  onEditStoryClick,
+}: StatusListProps) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewedExpanded, setViewedExpanded] = useState(false);
   const [mutedExpanded, setMutedExpanded] = useState(false);
+  const [mutePopupOpen, setMutePopupOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Status | null>(null);
+  const [textStatusOpen, setTextStatusOpen] = useState(false); // New state for text status
+
+  const handleStatusClick = (status: Status) => {
+    setSelectedContact(status);
+    setMutePopupOpen(true);
+  };
+
+  const handleMuteConfirm = () => {
+    if (selectedContact) {
+      console.log(`Muting ${selectedContact.name}`);
+    }
+    setMutePopupOpen(false);
+    setSelectedContact(null);
+  };
+
+  const handleMuteClose = () => {
+    setMutePopupOpen(false);
+    setSelectedContact(null);
+  };
+
+  const handleSettingsClick = () => {
+    router.push("/settings?view=account");
+  };
+
+  const handleStatusPrivacyClick = () => {
+    router.push("/settings?view=status");
+  };
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onEditStoryClick(file);
+    }
+    // Reset the input value so the same file can be selected again
+    event.target.value = '';
+  };
+
+  // New handler for text status
+  const handleTextStatusClick = () => {
+    setTextStatusOpen(true);
+  };
+
+  const handleTextStatusClose = () => {
+    setTextStatusOpen(false);
+  };
 
   const StatusItem = ({
     status,
@@ -149,7 +98,14 @@ export function StatusList() {
     showBorder?: boolean;
     isViewedOrMuted?: boolean;
   }) => (
-    <div className="flex items-center gap-3 py-3">
+    <div
+      className="flex items-center gap-3 py-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+      onClick={() => onContactStatusClick(status)} 
+      onContextMenu={(e) => {
+        e.preventDefault();
+        handleStatusClick(status); 
+      }}
+    >
       <div className="relative">
         {isViewedOrMuted ? (
           <StatusIndicator variant="viewed">
@@ -205,6 +161,17 @@ export function StatusList() {
 
   return (
     <div className="p-4 h-full flex flex-col relative">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        title="Select an image to upload as your status"
+        placeholder="Choose an image file"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Status</h2>
@@ -217,10 +184,18 @@ export function StatusList() {
             </PopoverTrigger>
             <PopoverContent className="w-48">
               <div className="flex flex-col gap-2">
-                <Button variant="ghost" className="justify-start">
+                <Button 
+                  variant="ghost" 
+                  className="justify-start"
+                  onClick={handleStatusPrivacyClick}
+                >
                   Status Privacy
                 </Button>
-                <Button variant="ghost" className="justify-start">
+                <Button 
+                  variant="ghost" 
+                  className="justify-start"
+                  onClick={handleSettingsClick}
+                >
                   Settings
                 </Button>
               </div>
@@ -231,7 +206,10 @@ export function StatusList() {
 
       {/* My Status */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 py-2">
+        <div
+          className="flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+          onClick={onMyStatusClick}
+        >
           <StatusIndicator variant="active">
             <Image
               src="/Rectangle 2.png"
@@ -259,6 +237,7 @@ export function StatusList() {
         ))}
       </div>
       <hr className="border-gray-200 mb-4" />
+
       {/* Viewed Updates */}
       <div className="mb-6">
         <div
@@ -276,10 +255,15 @@ export function StatusList() {
         </div>
         {viewedExpanded &&
           viewedStatuses.map((status) => (
-            <StatusItem key={status.id} status={status} isViewedOrMuted={true} />
+            <StatusItem
+              key={status.id}
+              status={status}
+              isViewedOrMuted={true}
+            />
           ))}
       </div>
       <hr className="border-gray-200 mb-4" />
+
       {/* Muted Updates */}
       <div className="mb-6">
         <div
@@ -295,18 +279,43 @@ export function StatusList() {
         </div>
         {mutedExpanded &&
           mutedStatuses.map((status) => (
-            <StatusItem key={status.id} status={status} isViewedOrMuted={true} />
+            <StatusItem
+              key={status.id}
+              status={status}
+              isViewedOrMuted={true}
+            />
           ))}
       </div>
+
       {/* Floating Action Buttons */}
       <div className="absolute bottom-50 right-6 flex flex-col gap-3">
-        <div className="bg-white rounded-full p-3 shadow-lg border cursor-pointer hover:shadow-xl transition-shadow">
+        <div 
+          className="bg-white rounded-full p-3 shadow-lg border cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={handleTextStatusClick}
+        >
           <Edit3 className="h-5 w-5 text-blue-500" />
         </div>
-        <div className="bg-blue-500 rounded-full p-3 shadow-lg cursor-pointer hover:shadow-xl transition-shadow">
+        <div 
+          className="bg-blue-500 rounded-full p-3 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={handleCameraClick}
+        >
           <Camera className="h-5 w-5 text-white" />
         </div>
       </div>
+
+      {/* Mute Status Popup */}
+      <MuteStatusPopup
+        isOpen={mutePopupOpen}
+        onClose={handleMuteClose}
+        onMute={handleMuteConfirm}
+        contactName={selectedContact?.name || ""}
+      />
+
+      {/* Text Status Editor */}
+      <EditTextStatus
+        isOpen={textStatusOpen}
+        onClose={handleTextStatusClose}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import SettingsMainPage from "./SettingsMainPage";
 import AccountPage from "./account/AccountPage";
 import SecurityNotificationPage from "./account/SecurityNotificationPage";
@@ -50,8 +51,11 @@ import ChatLockPage from "./privacy/ChatLock";
 import BlockedContactsPage from "./privacy/BlockedContact";
 import UnblockContactPopup from "./privacy/UnblockContactPopup";
 
-export default function SettingsPage() {
-  const [activeView, setActiveView] = useState("settingsMain");
+
+export default function SettingsPage({ initialView }: { initialView?: string } = {}) {
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get('view');
+  const [activeView, setActiveView] = useState(viewParam || initialView || "settingsMain");
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [lastSeenText, setLastSeenText] = useState("Nobody, Same as last seen");
   const [statusText, setStatusText] = useState("My contacts");
@@ -59,7 +63,6 @@ export default function SettingsPage() {
   const [blockedCount, setBlockedCount] = useState(9);
   const [selectedCount, setSelectedCount] = useState(0);
   const [lastSeenPersonalInfo, setLastSeenPersonalInfo] = useState("");
-  // const [lastSeenOnlineStatus, setLastSeenOnlineStatus] = useState("");
   const [lastSeenOnlineStatus] = useState("");
   const [lastSeenExcludedCount, setLastSeenExcludedCount] = useState<number>(47);
   const [statusOption, setStatusOption] = useState("");

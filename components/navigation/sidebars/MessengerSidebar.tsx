@@ -11,12 +11,11 @@ import { PiChatCircleTextBold } from "react-icons/pi";
 import { FaUserGroup } from "react-icons/fa6";
 import { IoMdMicrophone } from "react-icons/io";
 import { SiCircle } from "react-icons/si";
-import { CiLogout } from "react-icons/ci";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function MessengerSidebar({
-  isCollapsed = false,
+  isCollapsed = true,
   onToggleCollapse,
 }: {
   isCollapsed?: boolean;
@@ -84,22 +83,6 @@ export default function MessengerSidebar({
                 </Link>
               </div>
             ))}
-            <Link
-              href="/logout"
-              className={cn(
-                "flex items-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors group",
-                isCollapsed ? "justify-center" : ""
-              )}
-              title={isCollapsed ? "Logout" : undefined}
-            >
-              <CiLogout
-                className={cn(
-                  "w-5 h-5 text-red-600 shrink-0",
-                  isCollapsed ? "mr-0" : "mr-3"
-                )}
-              />
-              {!isCollapsed && <span>Logout</span>}
-            </Link>
           </div>
         </div>
       </nav>

@@ -3,14 +3,12 @@
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function ShareToFollowersPopup({
   onClose,
 }: {
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const users = [
     { id: 1, name: "Cameron Williamson", phone: "+234 123456789" },
@@ -32,7 +30,6 @@ export default function ShareToFollowersPopup({
   };
 
   const handleShare = () => {
-    router.push("/home");
     onClose();
   };
 

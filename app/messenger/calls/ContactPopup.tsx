@@ -130,20 +130,17 @@ export function ContactPopup({
 
   const handleStartCall = () => {
     if (selectedContacts.length === 0) return;
-    
 
-    const participants = selectedContacts.map(contact => ({
+    const participants = selectedContacts.map((contact) => ({
       ...contact,
-      isMuted: Math.random() > 0.5, 
+      isMuted: Math.random() > 0.5,
       isSpeaking: false,
     }));
-    
 
-const allParticipants = participants;
-    
+    const allParticipants = participants;
+
     onStartCall?.(allParticipants);
-    
- 
+
     setSelectedContacts([]);
     setSearchTerm("");
     onClose();

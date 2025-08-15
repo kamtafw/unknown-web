@@ -1,14 +1,22 @@
 "use client";
 
-import { Archive } from "lucide-react";
+import { useState } from "react";
+import { EllipsisVertical, Camera, Archive } from "lucide-react";
 import { MdPhoneCallback } from "react-icons/md";
 import { FaSignalMessenger } from "react-icons/fa6";
 import { TbCopyPlusFilled } from "react-icons/tb";
 import { FaVideo } from "react-icons/fa6";
 import { BsPinAngleFill } from "react-icons/bs";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { StatusIndicator } from "@/components/StatusIndicator";
+import { ArchivePage } from "./Archive";
 
 interface Chat {
   id: string;
@@ -24,6 +32,7 @@ interface Chat {
   hasStatusIndicator?: boolean;
   statusIndicatorType?: "active" | "viewed";
 }
+
 const unreadChats: Chat[] = [
   {
     id: "1",
@@ -74,10 +83,23 @@ const unreadChats: Chat[] = [
   },
 ];
 
-export function UnreadList() {
+// Props interface for UnreadContent
+interface UnreadContentProps {
+  onArchiveClick: () => void;
+}
+
+// UnreadContent component - just the content part, no header
+export function UnreadContent({ onArchiveClick }: UnreadContentProps) {
+  const handleArchiveClick = () => {
+    onArchiveClick(); // Use the callback from parent
+  };
+
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div 
+        className="flex items-center justify-between mb-4 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+        onClick={handleArchiveClick}
+      >
         <div className="flex items-center gap-2">
           <div className="border rounded-full h-15 w-15 flex items-center justify-center">
             <Archive className="h-9 w-9" />
@@ -171,5 +193,151 @@ export function UnreadList() {
         ))}
       </div>
     </>
+  );
+}
+
+// Full UnreadList component with header - handles its own archive state
+export function UnreadList() {
+  const [showArchive, setShowArchive] = useState(false);
+
+  const handleArchiveClick = () => {
+    setShowArchive(true);
+  };
+
+  const handleBackFromArchive = () => {
+    setShowArchive(false);
+  };
+
+  return (
+    <div className="p-4 h-full flex flex-col overflow-hidden">
+      {showArchive ? (
+        <ArchivePage onBack={handleBackFromArchive} fromPage="unread" />
+      ) : (
+        <>
+          {/* Header - NO click handler here */}
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 className="text-xl font-bold">Unread</h2>
+            <div className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              <Popover>
+                <PopoverTrigger>
+                  <EllipsisVertical className="h-5 w-5" />
+                </PopoverTrigger>
+                <PopoverContent className="w-48">
+                  <div className="flex flex-col gap-2">
+                    <Button variant="ghost">New Group</Button>
+                    <Button variant="ghost">New Community</Button>
+                    <Button variant="ghost">Schedule Message</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Archive section with click handler */}
+            <div 
+              className="flex items-center justify-between mb-4 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              onClick={handleArchiveClick}
+            >
+              <div className="flex items-center gap-2">
+                <div className="border rounded-full h-15 w-15 flex items-center justify-center">
+                  <Archive className="h-9 w-9" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium">Archive</span>
+                  <span className="text-sm text-gray-500">
+                    Wade Warners, Darlena Robertson...
+                  </span>
+                </div>
+              </div>
+              <div className="bg-gray-300 text-blue-700 rounded-full h-6 w-6 flex items-center justify-center text-xs">
+                4
+              </div>
+            </div>
+            
+            {/* Chat list */}
+            <div className="flex-1">
+              {unreadChats.map((chat) => (
+                <div key={chat.id} className="flex items-center gap-3 py-2">
+                  <div className="relative">
+                    {chat.hasStatusIndicator ? (
+                      <StatusIndicator variant={chat.statusIndicatorType}>
+                        <Image
+                          src={chat.avatar || "/default-avatar.jpg"}
+                          alt={chat.name}
+                          width={60}
+                          height={60}
+                          className="h-15 w-15 rounded-full object-cover"
+                        />
+                      </StatusIndicator>
+                    ) : (
+                      <>
+                        <Image
+                          src={chat.avatar || "/default-avatar.jpg"}
+                          alt={chat.name}
+                          width={60}
+                          height={60}
+                          className="h-15 w-15 rounded-full object-cover"
+                        />
+                        {chat.online && (
+                          <div className="absolute top-0 right-0 h-5 w-5 bg-green-500 rounded-full border-2 border-white" />
+                        )}
+                        {chat.statusIcon === "story" && (
+                          <div className="absolute inset-0 rounded-full border-2 border-blue-500 border-dashed" />
+                        )}
+                        {chat.statusIcon === "border" && (
+                          <div className="absolute inset-0 rounded-full border-2 border-gray-300" />
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{chat.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {chat.icon}
+                      <p
+                        className={cn(
+                          "text-sm text-gray-500",
+                          (chat.message.includes("Recording") ||
+                            chat.message.includes("Typing")) &&
+                            "text-blue-500"
+                        )}
+                      >
+                        {chat.message}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {chat.statusIcon === "copyPlus" ? (
+                      <div className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
+                        <TbCopyPlusFilled className="h-8 w-8 text-white" />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">{chat.time}</p>
+                    )}
+                    {(chat.badge || chat.pinned) && (
+                      <div className="flex items-center gap-1">
+                        {chat.pinned && (
+                          <BsPinAngleFill className="h-4 w-4 text-red-600" />
+                        )}
+                        {chat.badge && (
+                          <div className="bg-blue-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                            {chat.badge}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

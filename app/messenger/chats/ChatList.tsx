@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { EllipsisVertical, Camera, Search, Archive, Check } from "lucide-react";
 import { IoCheckmarkDone } from "react-icons/io5";
 import { MdPhoneCallback } from "react-icons/md";
 import { FaSignalMessenger } from "react-icons/fa6";
-import { TbCopyPlusFilled } from "react-icons/tb";
 import { FaMicrophone } from "react-icons/fa6";
 import { FaVideo } from "react-icons/fa6";
 import { MdImage } from "react-icons/md";
+import { TbCopyPlusFilled } from "react-icons/tb";
 import { BsPinAngleFill } from "react-icons/bs";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -21,170 +21,144 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { StatusIndicator } from "@/components/StatusIndicator";
-import { UnreadList } from "./UnreadList";
+import { UnreadContent } from "./UnreadList";
 import { FavoritesList } from "./FavoriteList";
-import { CopyPopup } from "@/app/messenger/CopyPopup";
+import { ArchivePage } from "./Archive";
+import { CopyPopup } from "@/app/messenger/schedule/CopyPopup";
+import { ChatContextMenu } from "./ChatContextMenu";
+import { CreateListPopup } from "./CreateListPopup";
+import { chatsData, tabsData } from "./chatData";
 
-interface Chat {
-  id: string;
-  name: string;
-  status?: string;
-  icon?: React.ReactNode;
-  time: string;
-  message: string;
-  badge?: number;
-  online?: boolean;
-  pinned?: boolean;
-  statusIcon?: string;
-  avatar?: string;
-  hasStatusIndicator?: boolean;
-  statusIndicatorType?: "active" | "viewed";
-}
-
-const chats: Chat[] = [
-  {
-    id: "1",
-    name: "Louigi Dash",
-    avatar: "/Rectangle 3.png",
-    icon: <MdPhoneCallback className="h-4 w-4 text-red-500" />,
-    message: "Missed voice call",
-    time: "00:57",
-    badge: 4,
-    pinned: true,
-  },
-  {
-    id: "2",
-    name: "Cameron Williamson",
-    avatar: "/Rectangle 3.png",
-    icon: <FaSignalMessenger className="h-4 w-4 text-gray-600" />,
-    message: "Lorem ipsum dolor sit amet, co...",
-    time: "00:57",
-    badge: 4,
-    online: true,
-  },
-  {
-    id: "3",
-    name: "Robert Fox",
-    avatar: "/Rectangle 3.png",
-    icon: <IoCheckmarkDone className="h-4 w-4 text-blue-500" />,
-    message: "Lorem ipsum dolor sit amet, co...",
-    time: "00:57",
-    hasStatusIndicator: true,
-    statusIndicatorType: "active",
-  },
-  {
-    id: "4",
-    name: "Marvin McKinney",
-    avatar: "/Rectangle 3.png",
-    icon: <Check className="h-4 w-4 text-gray-600" />,
-    message: "Lorem ipsum dolor sit amet, co...",
-    time: "00:57",
-    statusIcon: "copyPlus",
-    hasStatusIndicator: true,
-    statusIndicatorType: "viewed",
-  },
-  {
-    id: "5",
-    name: "Darlene Robertson",
-    avatar: "/Rectangle 3.png",
-    icon: <FaMicrophone className="h-4 w-4 text-blue-500" />,
-    message: "0:25",
-    time: "00:57",
-  },
-  {
-    id: "6",
-    name: "Kristin Watson",
-    avatar: "/Rectangle 3.png",
-    message: "Typing a message",
-    time: "05:57",
-  },
-  {
-    id: "7",
-    name: "Arlene McCoy",
-    avatar: "/Rectangle 3.png",
-    icon: <MdPhoneCallback className="h-4 w-4 text-red-500" />,
-    message: "Missed voice call",
-    time: "06:57",
-    badge: 4,
-  },
-  {
-    id: "8",
-    name: "Jane Cooper",
-    avatar: "/Rectangle 3.png",
-    icon: <MdPhoneCallback className="h-4 w-4 text-gray-600" />,
-    message: "Voice call",
-    time: "07:52",
-    badge: 4,
-  },
-  {
-    id: "9",
-    name: "Robert Kim",
-    avatar: "/Rectangle 3.png",
-    icon: <IoCheckmarkDone className="h-4 w-4 text-gray-600" />,
-    message: "Lorem ipsum dolor sit amet, co...",
-    time: "07:58",
-    hasStatusIndicator: true,
-    statusIndicatorType: "viewed",
-  },
-  {
-    id: "10",
-    name: "Arlene Cane",
-    avatar: "/Rectangle 3.png",
-    icon: <FaVideo className="h-4 w-4 text-blue-500" />,
-    message: "Video",
-    time: "08:51",
-    badge: 4,
-  },
-  {
-    id: "11",
-    name: "Wade Warren",
-    avatar: "/Rectangle 3.png",
-    icon: <MdImage className="h-4 w-4 text-gray-600" />,
-    message: "Image",
-    time: "08:55",
-  },
-  {
-    id: "12",
-    name: "Kristin Watson",
-    avatar: "/Rectangle 3.png",
-    message: "Recording a voice message",
-    time: "09:00",
-  },
-];
-
-export function ChatList() {
+export function ChatList({
+  onChatSelect,
+}: {
+  onChatSelect?: (chatId: string, chatName: string, chatAvatar: string) => void;
+}) {
   const [activeTab, setActiveTab] = useState("all");
+  const [showArchive, setShowArchive] = useState(false);
   const [showCopyPopup, setShowCopyPopup] = useState(false);
+  const [showCreateListPopup, setShowCreateListPopup] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    chatId: string;
+    chatName: string;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    chatId: "",
+    chatName: "",
+    position: { x: 0, y: 0 },
+  });
 
   const router = useRouter();
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const renderIcon = (iconType?: string, iconColor?: string) => {
+    if (!iconType) return null;
+
+    const className = `h-4 w-4 ${iconColor || "text-gray-600"}`;
+
+    switch (iconType) {
+      case "phone-callback":
+        return <MdPhoneCallback className={className} />;
+      case "messenger":
+        return <FaSignalMessenger className={className} />;
+      case "checkmark-done":
+        return <IoCheckmarkDone className={className} />;
+      case "check":
+        return <Check className={className} />;
+      case "microphone":
+        return <FaMicrophone className={className} />;
+      case "video":
+        return <FaVideo className={className} />;
+      case "image":
+        return <MdImage className={className} />;
+      default:
+        return null;
+    }
+  };
+
   const handleSchedule = () => {
-    router.push("/schedule");
+    if (isClient) {
+      router.push("/messenger/schedule");
+    }
   };
 
   const handleCreateCommunity = () => {
-    router.push("/create-community");
+    if (isClient) {
+      router.push("/create-community");
+    }
   };
 
   const handleCreateGroup = () => {
-    router.push("/create-group");
+    if (isClient) {
+      router.push("/create-group");
+    }
   };
 
-  const tabs = [
-    { id: "all", label: "All" },
-    { id: "unread", label: "Unread" },
-    { id: "favorites", label: "Favorites" },
-    { id: "groups", label: "Groups" },
-  ];
+  const handleCreateListDone = () => {
+    setShowCreateListPopup(false);
+    setActiveTab("favorites");
+  };
 
   const handleGroupsClick = () => {
     window.location.href = "/messenger/groups";
   };
 
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    chatId: string,
+    chatName: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setShowCopyPopup(false);
+
+    setContextMenu({
+      isOpen: true,
+      chatId,
+      chatName,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleArchiveClick = () => {
+    setShowArchive(true);
+  };
+
+  const handleUnreadArchiveClick = () => {
+    setShowArchive(true);
+  };
+
+  const handleArchiveFromContext = () => {
+    setShowArchive(true);
+  };
+
+  const handleAddToFavoritesFromContext = () => {
+    setActiveTab("favorites");
+  };
+
+  const handleBackFromArchive = () => {
+    setShowArchive(false);
+  };
+
+  const handleCopyPopupClose = () => {
+    setShowCopyPopup(false);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "unread":
-        return <UnreadList />;
+        return <UnreadContent onArchiveClick={handleUnreadArchiveClick} />;
       case "favorites":
         return <FavoritesList />;
       case "groups":
@@ -192,9 +166,12 @@ export function ChatList() {
         return null;
       default:
         return (
-          <div onClick={() => setShowCopyPopup(false)}>
+          <div onClick={handleCopyPopupClose}>
             {/* Archive Section */}
-            <div className="flex items-center justify-between mb-4">
+            <div
+              className="flex items-center justify-between mb-4 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              onClick={handleArchiveClick}
+            >
               <div className="flex items-center gap-2">
                 <div className="border rounded-full h-15 w-15 flex items-center justify-center">
                   <Archive className="h-9 w-9" />
@@ -213,8 +190,31 @@ export function ChatList() {
 
             {/* Chat List */}
             <div className="flex-1">
-              {chats.map((chat) => (
-                <div key={chat.id} className="flex items-center gap-3 py-2">
+              {chatsData.map((chat) => (
+                <div
+                  key={chat.id}
+                  className="flex items-center gap-3 py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
+                  onClick={(e) => {
+                    if (contextMenu.isOpen) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return;
+                    }
+
+                    if (onChatSelect) {
+                      onChatSelect(
+                        chat.id,
+                        chat.name,
+                        chat.avatar || "/default-avatar.jpg"
+                      );
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    if (!showCopyPopup) {
+                      handleContextMenu(e, chat.id, chat.name);
+                    }
+                  }}
+                >
                   <div className="relative">
                     {chat.hasStatusIndicator ? (
                       <StatusIndicator variant={chat.statusIndicatorType}>
@@ -252,7 +252,7 @@ export function ChatList() {
                       <p className="font-medium">{chat.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {chat.icon}
+                      {renderIcon(chat.iconType, chat.iconColor)}
                       <p
                         className={cn(
                           "text-sm text-gray-500",
@@ -266,22 +266,10 @@ export function ChatList() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    {chat.statusIcon === "copyPlus" ? (
-                      <button
-                        title="Copy Plus"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowCopyPopup(true);
-                        }}
-                        className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
-                      >
-                        <TbCopyPlusFilled className="h-8 w-8 text-white" />
-                      </button>
-                    ) : (
-                      <p className="text-sm text-gray-500">{chat.time}</p>
-                    )}
+                    {/* Always show time for all chats */}
+                    <p className="text-sm text-gray-500">{chat.time}</p>
 
-                    {/* Always check for badge/pinned, regardless of statusIcon */}
+                    {/* Show badge/pinned indicators */}
                     {(chat.badge || chat.pinned) && (
                       <div className="flex items-center gap-1">
                         {chat.pinned && (
@@ -300,10 +288,24 @@ export function ChatList() {
             </div>
             <CopyPopup
               isOpen={showCopyPopup}
-              onClose={() => setShowCopyPopup(false)}
+              onClose={handleCopyPopupClose}
               onSchedule={handleSchedule}
               onCreateCommunity={handleCreateCommunity}
               onCreateGroup={handleCreateGroup}
+            />
+            <CreateListPopup
+              isOpen={showCreateListPopup}
+              onClose={() => setShowCreateListPopup(false)}
+              onDone={handleCreateListDone}
+            />
+            <ChatContextMenu
+              isOpen={contextMenu.isOpen}
+              position={contextMenu.position}
+              onClose={handleCloseContextMenu}
+              chatId={contextMenu.chatId}
+              chatName={contextMenu.chatName}
+              onArchiveChat={handleArchiveFromContext}
+              onAddToFavorites={handleAddToFavoritesFromContext}
             />
           </div>
         );
@@ -311,67 +313,86 @@ export function ChatList() {
   };
 
   return (
-    <div className="p-4 h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">
-          {activeTab === "unread"
-            ? "Unread"
-            : activeTab === "favorites"
-            ? "Favorites"
-            : "Chat"}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Camera className="h-5 w-5" />
-          <Popover>
-            <PopoverTrigger>
-              <EllipsisVertical className="h-5 w-5" />
-            </PopoverTrigger>
-            <PopoverContent className="w-48">
-              <div className="flex flex-col gap-2">
-                <Button variant="ghost">New Group</Button>
-                <Button variant="ghost">New Community</Button>
-                <Button variant="ghost">Schedule Message</Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+    <div className="h-full flex flex-col overflow-hidden relative">
+      {showArchive ? (
+        <ArchivePage onBack={handleBackFromArchive} />
+      ) : (
+        <div className="p-4 h-full flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 className="text-xl font-bold">
+              {activeTab === "unread"
+                ? "Unread"
+                : activeTab === "favorites"
+                ? "Favorites"
+                : "Chat"}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              <Popover>
+                <PopoverTrigger>
+                  <EllipsisVertical className="h-5 w-5" />
+                </PopoverTrigger>
+                <PopoverContent className="w-48">
+                  <div className="flex flex-col gap-2">
+                    <Button variant="ghost">New Group</Button>
+                    <Button variant="ghost">New Community</Button>
+                    <Button variant="ghost">Schedule Message</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mb-4 flex-shrink-0">
+            <Input
+              placeholder="What are you looking for"
+              className="pr-10 rounded-full"
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 text-white bg-blue-500 rounded-full p-1" />
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4 flex-shrink-0">
+            {tabsData.map((tab) => (
+              <Button
+                key={tab.id}
+                variant="outline"
+                className={cn(
+                  "rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200",
+                  activeTab === tab.id && "text-blue-500 border-blue-500"
+                )}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              className="rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200"
+              onClick={() => setShowCreateListPopup(true)}
+            >
+              <span className="text-blue-500 text-lg font-bold">+</span> Create
+            </Button>
+          </div>
+
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto">{renderContent()}</div>
         </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative mb-4">
-        <Input
-          placeholder="What are you looking for"
-          className="pr-10 rounded-full"
-        />
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 text-white bg-blue-500 rounded-full p-1" />
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            variant="outline"
-            className={cn(
-              "rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200",
-              activeTab === tab.id && "text-blue-500 border-blue-500"
-            )}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </Button>
-        ))}
-        <Button
-          variant="outline"
-          className="rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200"
+      )}
+      {!showArchive && (
+        <button
+          title="Copy Plus"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowCopyPopup(true);
+          }}
+          className="fixed bottom-6 left-160 md:left-40 lg:left-160 h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
         >
-          <span className="text-blue-500 text-lg font-bold">+</span> Create
-        </Button>
-      </div>
-
-      {/* Content */}
-      {renderContent()}
+          <TbCopyPlusFilled className="h-8 w-8 text-white" />
+        </button>
+      )}
     </div>
   );
 }

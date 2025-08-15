@@ -4,9 +4,10 @@ import { MessageSquare, Users, Repeat } from "lucide-react";
 import { useState } from "react";
 import ShareToFollowersPopup from "./ShareToFollowersPopup";
 
+
 interface SharePopupProps {
   onClose: () => void;
-  postId: number;
+  postId: string | number;
 }
 
 export default function SharePopup({}: SharePopupProps) {
@@ -36,5 +37,3 @@ export default function SharePopup({}: SharePopupProps) {
     </div>
   );
 }
-
-
