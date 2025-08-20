@@ -252,7 +252,6 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
       case "spam":
         return isAdmin ? (
           <SpamTab
-            // onMessageRightClick={handleMessageRightClick}
             onViewAnalytics={handleViewAnalytics}
           />
         ) : (

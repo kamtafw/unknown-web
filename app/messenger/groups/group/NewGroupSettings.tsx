@@ -138,7 +138,7 @@ export function NewGroupSettings({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens
+
   useEffect(() => {
     if (isOpen) {
       setGroupName("");
@@ -192,7 +192,7 @@ export function NewGroupSettings({
       const newValue = groupName.slice(0, start) + emoji + groupName.slice(end);
       setGroupName(newValue);
       
-      // Focus back to input and set cursor position after the emoji
+    
       setTimeout(() => {
         input.focus();
         const newPosition = start + emoji.length;
@@ -220,7 +220,7 @@ export function NewGroupSettings({
 
   return (
     <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-[400px] h-[580px] rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-white w-[400px] h-[480px] rounded-lg flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 p-4">
           <button onClick={onBack} title="Back" aria-label="Back">

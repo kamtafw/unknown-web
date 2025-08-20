@@ -27,6 +27,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState("groups");
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isAdmin] = useState(true);
+  const [currentUserRole] = useState<'Admin' | 'Member'>('Admin'); 
 
   const handleGroupSelect = (group: Group) => {
     console.log("Page: Group selected:", group.name);
@@ -46,6 +47,10 @@ export default function Home() {
     setActiveView("groups");
   };
 
+
+  console.log("Main component - currentUserRole:", currentUserRole);
+  console.log("Main component - isAdmin:", isAdmin);
+
   return (
     <div className="flex min-h-screen">
       <div className="w-[480px] border-r bg-white overflow-hidden">
@@ -58,6 +63,7 @@ export default function Home() {
           <Community
             onTabChange={setActiveView}
             onGroupSelect={handleGroupSelect}
+            currentUserRole={currentUserRole}
           />
         )}
       </div>

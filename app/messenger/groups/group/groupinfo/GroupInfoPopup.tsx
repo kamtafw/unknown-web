@@ -34,7 +34,7 @@ import { PauseGroupPopup } from "./PauseGroupPopup";
 import { RemoveMemberPopup } from "./RemoveMemberPopup";
 import { SuspendMemberPopup } from "./SuspendMemberPopup";
 import { AddToCommunityPopup } from "./AddToCommunityPopup";
-import "./GroupInfoPopup.css";
+import "@/app/global.css";
 
 interface GroupInfoPopupProps {
   isOpen: boolean;

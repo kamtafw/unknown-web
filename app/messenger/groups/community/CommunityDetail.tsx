@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { AddMembersModal } from "./AddMembersModal";
 import { AccessDeniedModal } from "./AccessDeniedModal";
+import CommunityInfoModal from "./CommunityInfoModal";
 
 interface Group {
   id: string;
@@ -36,6 +37,8 @@ interface Community {
   id: string;
   name: string;
   groupCount: number;
+  memberCount: number;
+  description: string;
   announcement: {
     title: string;
     message: string;
@@ -51,6 +54,7 @@ interface Community {
 
 interface CommunityDetailProps {
   community: Community;
+  currentUserRole?: "Admin" | "Member";
   onBack: () => void;
   onGroupSelect?: (group: Group) => void;
 }
@@ -96,12 +100,18 @@ const groupListData: Group[] = [
 
 export function CommunityDetail({
   community,
+  currentUserRole = "Member",
   onBack,
   onGroupSelect,
 }: CommunityDetailProps) {
   const [isAddMembersModalOpen, setIsAddMembersModalOpen] = useState(false);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isAccessDeniedModalOpen, setIsAccessDeniedModalOpen] = useState(false);
+  const [isCommunityInfoModalOpen, setIsCommunityInfoModalOpen] =
+    useState(false);
+
+  const [addedGroups, setAddedGroups] = useState<Group[]>([]);
+  const [currentCommunity, setCurrentCommunity] = useState(community);
 
   const getGroupsForCommunity = (communityId: string) => {
     if (communityId === "1") {
@@ -121,14 +131,44 @@ export function CommunityDetail({
     return [];
   };
 
-  const userGroups = getGroupsForCommunity(community.id);
-  const availableGroups = getAvailableGroups(community.id);
+  const userGroups = [...getGroupsForCommunity(community.id), ...addedGroups];
+  const availableGroups = getAvailableGroups(community.id).filter(
+    (group) => !addedGroups.some((added) => added.id === group.id)
+  );
+
+  const handleCommunityNameRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsCommunityInfoModalOpen(true);
+  };
+
+  const handleGroupsAdded = (selectedGroups: Group[]) => {
+    console.log("Groups added to community:", selectedGroups);
+    setAddedGroups((prev) => [...prev, ...selectedGroups]);
+    setCurrentCommunity((prev) => ({
+      ...prev,
+      groupCount: prev.groupCount + selectedGroups.length,
+    }));
+  };
+
+  const handleCommunityUpdated = (updatedData: {
+    name: string;
+    description: string;
+    avatar?: string;
+  }) => {
+    console.log("Community updated:", updatedData);
+    setCurrentCommunity((prev) => ({
+      ...prev,
+      name: updatedData.name,
+      description: updatedData.description,
+      avatar: updatedData.avatar,
+    }));
+  };
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 h-full flex flex-col ml-3 mr-2 mb-4 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <div className="flex items-center justify-between mt-5 mb-6 flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -138,14 +178,20 @@ export function CommunityDetail({
             >
               <ArrowLeft className="h-6 w-6" />
             </button>
-            <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onContextMenu={handleCommunityNameRightClick}
+              onClick={() => setIsCommunityInfoModalOpen(true)}
+            >
               <div className="h-12 w-12 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-100">
                 <HiUserGroup className="h-6 w-6 text-gray-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">{community.name}</h2>
+                <h2 className="text-lg font-semibold">
+                  {currentCommunity.name}
+                </h2>
                 <p className="text-sm text-gray-500">
-                  Community · {community.groupCount} groups
+                  Community · {currentCommunity.groupCount} groups
                 </p>
               </div>
             </div>
@@ -161,6 +207,10 @@ export function CommunityDetail({
                 <button
                   type="button"
                   className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                  onClick={() => {
+                    setIsCommunityInfoModalOpen(true);
+                    setIsPopoverOpen(false);
+                  }}
                 >
                   Community info
                 </button>
@@ -179,7 +229,7 @@ export function CommunityDetail({
           </Popover>
         </div>
 
-        {/* Scrollable Content */}
+        {/* Rest of your existing component code remains the same */}
         <div className="flex-1 overflow-y-auto">
           {/* Groups you are in section */}
           <div className="mb-6">
@@ -231,7 +281,7 @@ export function CommunityDetail({
             {userGroups.map((group) => (
               <div
                 key={group.id}
-                className="flex items-center gap-3 mb-4 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" // Add cursor-pointer
+                className="flex items-center gap-3 mb-4 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => onGroupSelect?.(group)}
               >
                 <div className="relative">
@@ -278,7 +328,7 @@ export function CommunityDetail({
 
           {/* Groups you can join section */}
           {availableGroups.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-3">
               <h3 className="text-sm text-gray-500 font-medium mb-3">
                 Groups you can join
               </h3>
@@ -329,16 +379,14 @@ export function CommunityDetail({
                   </div>
                 </div>
               ))}
+              <div className="flex-shrink-0 pt-4 mt-15">
+                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add group
+                </Button>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Add group button */}
-        <div className="flex-shrink-0 pt-4">
-          <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3">
-            <Plus className="h-4 w-4 mr-2" />
-            Add group
-          </Button>
         </div>
       </div>
       <AddMembersModal
@@ -351,6 +399,23 @@ export function CommunityDetail({
       <AccessDeniedModal
         isOpen={isAccessDeniedModalOpen}
         onClose={() => setIsAccessDeniedModalOpen(false)}
+      />
+      <CommunityInfoModal
+        isOpen={isCommunityInfoModalOpen}
+        onClose={() => setIsCommunityInfoModalOpen(false)}
+        community={{
+          id: currentCommunity.id,
+          name: currentCommunity.name,
+          groupCount: currentCommunity.groupCount,
+          memberCount: currentCommunity.memberCount || 28,
+          description:
+            currentCommunity.description ||
+            "Bring together a neighborhood, school, or more. Create topic-based group for members, and easily send them admin announcements",
+        }}
+        currentUserRole={currentUserRole}
+        availableGroups={availableGroups}
+        onGroupsAdded={handleGroupsAdded}
+        onCommunityUpdated={handleCommunityUpdated}
       />
     </div>
   );

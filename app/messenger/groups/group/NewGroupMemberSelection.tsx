@@ -162,7 +162,7 @@ export function NewGroupMemberSelection({
 
   return (
     <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-[400px] h-[580px] rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-white w-[400px] h-[480px] rounded-lg flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">

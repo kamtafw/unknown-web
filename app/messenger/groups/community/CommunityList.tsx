@@ -20,6 +20,8 @@ import { CopyPopup } from "@/app/messenger/schedule/CopyPopup";
 import { NewGroupMemberSelection } from "../group/NewGroupMemberSelection";
 import { NewGroupSettings } from "../group/NewGroupSettings";
 import { CommunityDetail } from "./CommunityDetail";
+import { CreateCommunityIntro } from "./CreateCommunityIntro";
+import { NewCommunityForm } from "./NewCommunityForm";
 
 interface Group {
   id: string;
@@ -42,6 +44,8 @@ interface Community {
   id: string;
   name: string;
   groupCount: number;
+  memberCount: number;
+  description: string;
   announcement: {
     title: string;
     message: string;
@@ -67,6 +71,9 @@ const communities: Community[] = [
     id: "1",
     name: "DTH",
     groupCount: 2,
+    memberCount: 15,
+    description:
+      "Bring together a neighbourhood, school, or more. Create topic-based group for members, and easily send them admin announcements", // Added description
     announcement: {
       title: "Announcement",
       message: "Welcome to you community",
@@ -92,6 +99,9 @@ const communities: Community[] = [
     id: "2",
     name: "Tech Community",
     groupCount: 1,
+    memberCount: 8,
+    description:
+      "A community for tech enthusiasts to share knowledge and collaborate on projects", // Added description
     announcement: {
       title: "Announcement",
       message: "Welcome to you community",
@@ -119,12 +129,14 @@ interface CommunityProps {
   onTabChange: (tab: string) => void;
   onGroupSelect?: (group: Group) => void;
   onGroupCreated?: (group: Group) => void;
+  currentUserRole?: "Admin" | "Member";
 }
 
 export function Community({
   onTabChange,
   onGroupSelect,
   onGroupCreated,
+  currentUserRole = "Member",
 }: CommunityProps) {
   const [activeTab, setActiveTab] = useState("communities");
   const [showCopyPopup, setShowCopyPopup] = useState(false);
@@ -137,6 +149,10 @@ export function Community({
     null
   );
 
+  const [showCreateCommunityIntro, setShowCreateCommunityIntro] =
+    useState(false);
+  const [showNewCommunityForm, setShowNewCommunityForm] = useState(false);
+
   const router = useRouter();
 
   const handleSchedule = () => {
@@ -144,7 +160,7 @@ export function Community({
   };
 
   const handleCreateCommunity = () => {
-    router.push("/create-community");
+    setShowCreateCommunityIntro(true);
   };
 
   const handleCreateGroup = () => {
@@ -214,11 +230,30 @@ export function Community({
     setSelectedCommunity(null);
   };
 
-  // If a community is selected, show the detail view
+  const handleCommunityIntroGetStarted = () => {
+    setShowCreateCommunityIntro(false);
+    setShowNewCommunityForm(true);
+  };
+
+  const handleCommunityFormBack = () => {
+    setShowNewCommunityForm(false);
+    setShowCreateCommunityIntro(true);
+  };
+
+  const handleCreateNewCommunity = (communityData: {
+    name: string;
+    description: string;
+    avatar?: string;
+  }) => {
+    console.log("New community data:", communityData);
+    setShowNewCommunityForm(false);
+  };
+
   if (selectedCommunity) {
     return (
       <CommunityDetail
         community={selectedCommunity}
+        currentUserRole={currentUserRole}
         onBack={handleBackFromCommunityDetail}
         onGroupSelect={onGroupSelect}
       />
@@ -250,7 +285,9 @@ export function Community({
                   >
                     New Group
                   </Button>
-                  <Button variant="ghost">New Community</Button>
+                  <Button variant="ghost" onClick={handleCreateCommunity}>
+                    New Community
+                  </Button>
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -424,8 +461,6 @@ export function Community({
           onCreateGroup={handleCreateGroup}
         />
       </div>
-
-      {/* Fixed floating copy button - same positioning as ChatList and GroupList */}
       <button
         title="Copy Plus"
         onClick={(e) => {
@@ -452,6 +487,18 @@ export function Community({
         selectedMembers={selectedMembers}
         onRemoveMember={handleRemoveMember}
         onCreateGroup={handleCreateNewGroup}
+      />
+      <CreateCommunityIntro
+        isOpen={showCreateCommunityIntro}
+        onClose={() => setShowCreateCommunityIntro(false)}
+        onGetStarted={handleCommunityIntroGetStarted}
+      />
+
+      <NewCommunityForm
+        isOpen={showNewCommunityForm}
+        onClose={() => setShowNewCommunityForm(false)}
+        onBack={handleCommunityFormBack}
+        onCreateCommunity={handleCreateNewCommunity}
       />
     </div>
   );
