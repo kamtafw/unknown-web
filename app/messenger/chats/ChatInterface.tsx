@@ -20,6 +20,7 @@ import { ChatAttachmentPopup } from "./ChatAttachmentPopup";
 import { EmojiPopup } from "@/components/ui/EmojiPicker";
 import { VoiceCallPopup } from "../calls/VoiceCallPopup";
 import { VideoCallPopup } from "../calls/VideoCallPopup";
+import ReadPostPopup from "../../(social)/home/main-popup/ReadPostPopup";
 import {
   Popover,
   PopoverTrigger,
@@ -144,6 +145,8 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
     x: 0,
     y: 0,
   });
+  const [showReadPostPopup, setShowReadPostPopup] = useState(false);
+
   const [showAttachmentPopup, setShowAttachmentPopup] = useState(false);
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
   const [showVoiceCall, setShowVoiceCall] = useState(false);
@@ -199,6 +202,12 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
     setShowTranslationPopup(false);
     setShowAttachmentPopup(false);
     setShowEmojiPopup(false);
+  };
+
+  const handleReadAloud = () => {
+    setShowReadPostPopup(true);
+    setShowMessageContextMenu(false);
+    setShowSentMessageContextMenu(false);
   };
 
   const handleReply = (messageText: string) => {
@@ -315,6 +324,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
     setShowTranslationPopup(false);
     setShowAttachmentPopup(false);
     setShowEmojiPopup(false);
+    setShowReadPostPopup(false);
   };
 
   useEffect(() => {
@@ -435,6 +445,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
         messageText={selectedMessage?.text || ""}
         onReply={handleReply}
         onForward={handleForward}
+        onReadAloud={handleReadAloud}
       />
 
       <SentMessageContextMenu
@@ -496,6 +507,12 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
         contact={contactInfo}
         onCallTypeChange={handleCallTypeChange}
       />
+      {showReadPostPopup && (
+        <ReadPostPopup
+          onClose={() => setShowReadPostPopup(false)}
+          postContent={selectedMessage?.text || ""}
+        />
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-2">

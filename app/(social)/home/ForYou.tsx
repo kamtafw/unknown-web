@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageSquare,
@@ -14,7 +15,6 @@ import SharePopup from "./main-popup/SharePopup";
 import MoreOptionsPopup from "./main-popup/MoreOptionsPopup";
 import ProfilePopup from "./main-popup/ProfilePopup";
 import RepostPopup from "./main-popup/RepostPopup";
-import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -78,8 +78,6 @@ export default function ForYouPage({
   setShowProfilePopup,
   setShowRepostPopup,
   sharePopupRef,
-  profilePicRef,
-  profilePopupRef,
   repostPopupRef,
   formatNumber,
 }: ForYouPageProps) {
@@ -88,9 +86,15 @@ export default function ForYouPage({
     show: boolean;
     content: string;
   }>({ show: false, content: "" });
-  const [showMutePopup, setShowMutePopup] = useState<{show: boolean, username: string}>({show: false, username: ""});
-const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
-const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: string}>({show: false, username: ""});
+  const [showMutePopup, setShowMutePopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
+  const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
+  const [showBlockPopup, setShowBlockPopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
 
   const handleLike = (postId: number) => {
     setLikedPosts((prev) =>
@@ -108,14 +112,6 @@ const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: s
     );
   };
 
-  const handleProfileClick = (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log(
-      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
-    );
-    setShowProfilePopup((prev) => (prev === postId ? null : postId));
-  };
-
   return (
     <div className="space-y-0">
       {posts.map((post) => (
@@ -125,23 +121,36 @@ const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: s
         >
           <div className="flex items-start justify-between mb-2 sm:mb-3">
             <div className="flex items-start flex-1 min-w-0">
-              <div
-                ref={showProfilePopup === post.id ? profilePicRef : null}
-                className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"
-                onClick={(e) => handleProfileClick(post.id, e)}
-              >
-                <Image
-                  src={post.profilePic}
-                  alt={post.name}
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                />
+              <div className="relative">
+                <div
+                  className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0 group"
+                  onMouseEnter={() => {
+                    setShowProfilePopup(post.id);
+                  }}
+                  onMouseLeave={() => {
+                    setTimeout(() => {
+                      setShowProfilePopup(null);
+                    }, 100);
+                  }}
+                >
+                  <Image
+                    src={post.profilePic}
+                    alt={post.name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                  />
+                </div>
+                {/* Render popup outside but keep it connected */}
                 {showProfilePopup === post.id && (
                   <div
-                    ref={profilePopupRef}
-                    className="relative"
-                    key={`profile-popup-${post.id}`}
+                    className="absolute top-0 left-0 z-50"
+                    onMouseEnter={() => {
+                      setShowProfilePopup(post.id);
+                    }}
+                    onMouseLeave={() => {
+                      setShowProfilePopup(null);
+                    }}
                   >
                     <ProfilePopup
                       name={post.name}
@@ -182,7 +191,7 @@ const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: s
               </PopoverTrigger>
               <PopoverContent align="end" className="w-64 p-0" asChild>
                 <div>
-                  {/* <MoreOptionsPopup
+                  <MoreOptionsPopup
                     username={post.username}
                     postContent={post.content}
                     onReadPost={(content: string) => {
@@ -194,21 +203,14 @@ const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: s
                         (trigger as HTMLElement).click();
                       }
                     }}
-                  /> */}
-                  <MoreOptionsPopup
-  username={post.username}
-  postContent={post.content}
-  onReadPost={(content: string) => {
-    setShowReadPostPopup({ show: true, content });
-    const trigger = document.querySelector('[data-state="open"]');
-    if (trigger) {
-      (trigger as HTMLElement).click();
-    }
-  }}
-  onMute={(username: string) => setShowMutePopup({show: true, username})}
-  onRequestNote={() => setShowRequestNotePopup(true)}
-  onBlock={(username: string) => setShowBlockPopup({show: true, username})}
-/>
+                    onMute={(username: string) =>
+                      setShowMutePopup({ show: true, username })
+                    }
+                    onRequestNote={() => setShowRequestNotePopup(true)}
+                    onBlock={(username: string) =>
+                      setShowBlockPopup({ show: true, username })
+                    }
+                  />
                 </div>
               </PopoverContent>
             </Popover>
@@ -334,20 +336,20 @@ const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: s
         />
       )}
       {showMutePopup.show && (
-  <MutePopup
-    onClose={() => setShowMutePopup({show: false, username: ""})}
-    username={showMutePopup.username}
-  />
-)}
-{showRequestNotePopup && (
-  <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
-)}
-{showBlockPopup.show && (
-  <BlockPopup
-    onClose={() => setShowBlockPopup({show: false, username: ""})}
-    username={showBlockPopup.username}
-  />
-)}
+        <MutePopup
+          onClose={() => setShowMutePopup({ show: false, username: "" })}
+          username={showMutePopup.username}
+        />
+      )}
+      {showRequestNotePopup && (
+        <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
+      )}
+      {showBlockPopup.show && (
+        <BlockPopup
+          onClose={() => setShowBlockPopup({ show: false, username: "" })}
+          username={showBlockPopup.username}
+        />
+      )}
     </div>
   );
 }

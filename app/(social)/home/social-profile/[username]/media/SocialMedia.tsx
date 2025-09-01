@@ -186,14 +186,6 @@ export default function SocialMedia() {
     );
   };
 
-  const handleProfileClick = (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log(
-      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
-    );
-    setShowProfilePopup((prev) => (prev === postId ? null : postId));
-  };
-
   const handleRemoveImage = (postId: number, index: number) => {
     setPostImages((prev) => ({
       ...prev,
@@ -262,20 +254,48 @@ export default function SocialMedia() {
           >
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <div className="flex items-start flex-1 min-w-0">
-                <div
-                  ref={showProfilePopup === post.id ? profilePicRef : null}
-                  className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"
-                  onClick={(e) => handleProfileClick(post.id, e)}
-                >
-                  <Image
-                    src={post.profilePic}
-                    alt={post.name}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
-                  />
+                <div className="relative">
+                  <div
+                    className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0 group"
+                    onMouseEnter={() => {
+                      console.log(
+                        "Mouse entered profile image for post:",
+                        post.id
+                      );
+                      setShowProfilePopup(post.id);
+                    }}
+                    onMouseLeave={() => {
+                      console.log(
+                        "Mouse left profile image area for post:",
+                        post.id
+                      );
+                      setTimeout(() => {
+                        setShowProfilePopup(null);
+                      }, 100);
+                    }}
+                  >
+                    <Image
+                      src={post.profilePic}
+                      alt={post.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
+                    />
+                  </div>
+
+                  {/* Render popup outside but keep it connected */}
                   {showProfilePopup === post.id && (
-                    <div ref={profilePopupRef} className="relative">
+                    <div
+                      className="absolute top-0 left-0 z-50"
+                      onMouseEnter={() => {
+                        console.log("Mouse entered popup for post:", post.id);
+                        setShowProfilePopup(post.id);
+                      }}
+                      onMouseLeave={() => {
+                        console.log("Mouse left popup for post:", post.id);
+                        setShowProfilePopup(null);
+                      }}
+                    >
                       <ProfilePopup
                         name={post.name}
                         username={post.username}

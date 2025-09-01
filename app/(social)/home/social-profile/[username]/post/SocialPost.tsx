@@ -68,6 +68,9 @@ export default function SocialPost() {
     show: boolean;
     username: string;
   }>({ show: false, username: "" });
+  const [showSecondProfilePopup, setShowSecondProfilePopup] = useState<
+    number | null
+  >(null);
   const sharePopupRef = useRef<HTMLDivElement | null>(null);
   const morePopupRef = useRef<HTMLDivElement | null>(null);
   const profilePicRef = useRef<HTMLDivElement | null>(null);
@@ -183,13 +186,6 @@ export default function SocialPost() {
     );
   };
 
-  const handleProfileClick = (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log(
-      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
-    );
-    setShowProfilePopup((prev) => (prev === postId ? null : postId));
-  };
 
   const handleRemoveImage = (postId: number, index: number) => {
     setPostImages((prev) => ({
@@ -263,20 +259,38 @@ export default function SocialPost() {
             {/* Main Post Header with More Options Button */}
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <div className="flex items-start flex-1 min-w-0">
-                <div
-                  ref={showProfilePopup === post.id ? profilePicRef : null}
-                  className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"
-                  onClick={(e) => handleProfileClick(post.id, e)}
-                >
-                  <Image
-                    src={post.profilePic}
-                    alt={post.name}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
-                  />
+                <div className="relative">
+                  <div
+                    className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0 group"
+                    onMouseEnter={() => {
+                      setShowProfilePopup(post.id);
+                    }}
+                    onMouseLeave={() => {
+                      setTimeout(() => {
+                        setShowProfilePopup(null);
+                      }, 100);
+                    }}
+                  >
+                    <Image
+                      src={post.profilePic}
+                      alt={post.name}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
+                    />
+                  </div>
+
+                  {/* Render popup outside but keep it connected */}
                   {showProfilePopup === post.id && (
-                    <div ref={profilePopupRef} className="relative">
+                    <div
+                      className="absolute top-0 left-0 z-50"
+                      onMouseEnter={() => {
+                        setShowProfilePopup(post.id);
+                      }}
+                      onMouseLeave={() => {
+                        setShowProfilePopup(null);
+                      }}
+                    >
                       <ProfilePopup
                         name={post.name}
                         username={post.username}
@@ -353,17 +367,44 @@ export default function SocialPost() {
               {post.id === 6 && (
                 <div className="flex items-start justify-between mb-2 sm:mb-3">
                   <div className="flex items-start flex-1 min-w-0">
-                    <div
-                      className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"
-                      onClick={(e) => handleProfileClick(post.id, e)}
-                    >
-                      <Image
-                        src={post.profilePic}
-                        alt={post.name}
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
-                      />
+                    <div className="relative">
+                      <div
+                        className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0 group"
+                        onMouseEnter={() => {
+                          setShowSecondProfilePopup(post.id);
+                        }}
+                        onMouseLeave={() => {
+                          setTimeout(() => {
+                            setShowSecondProfilePopup(null);
+                          }, 100);
+                        }}
+                      >
+                        <Image
+                          src={post.profilePic}
+                          alt={post.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover hover:opacity-90 transition-opacity duration-150"
+                        />
+                      </div>
+
+                      {showSecondProfilePopup === post.id && (
+                        <div
+                          className="absolute top-0 left-0 z-50"
+                          onMouseEnter={() =>
+                            setShowSecondProfilePopup(post.id)
+                          }
+                          onMouseLeave={() => setShowSecondProfilePopup(null)}
+                        >
+                          <ProfilePopup
+                            name={post.name}
+                            username={post.username}
+                            profilePic={post.profilePic}
+                            location={post.location}
+                            onClose={() => setShowSecondProfilePopup(null)}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="ml-2 sm:ml-3 flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-1">

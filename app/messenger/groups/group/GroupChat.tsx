@@ -26,6 +26,7 @@ import { FaSearch } from "react-icons/fa";
 import { Users } from "lucide-react";
 import Image from "next/image";
 import { GroupInfoPopup } from "./groupinfo/GroupInfoPopup";
+import ReadPostPopup from "../../../(social)/home/main-popup/ReadPostPopup";
 
 interface GroupChatProps {
   groupName: string;
@@ -56,6 +57,7 @@ export function GroupChat({
   const [showCall, setShowCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showReadPostPopup, setShowReadPostPopup] = useState(false);
 
   const handleGroupOptionSelect = (option: string) => {
     setShowGroupOptions(false);
@@ -86,6 +88,10 @@ export function GroupChat({
   const handleAddToFavorites = () => {
     console.log("Adding to favorites");
     setShowAddToList(false);
+  };
+  const handleReadPostOutLoud = () => {
+    setShowReadPostPopup(true);
+    setShowGroupOptions(false);
   };
 
   const handleMuteNotification = (duration: string) => {
@@ -212,6 +218,17 @@ export function GroupChat({
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
+                {/* <GroupOptionsPopup
+                  isOpen={true}
+                  onClose={() => setShowGroupOptions(false)}
+                  onOptionSelect={handleGroupOptionSelect}
+                  onNavigateToGroupList={onNavigateToGroupList}
+                  groupName={groupName}
+                  groupAvatar={groupAvatar}
+                  hasGroupIcon={hasGroupIcon}
+                  onStartVideoCall={handleStartVideoCall}
+                  onStartAudioCall={handleStartAudioCall}
+                /> */}
                 <GroupOptionsPopup
                   isOpen={true}
                   onClose={() => setShowGroupOptions(false)}
@@ -222,6 +239,7 @@ export function GroupChat({
                   hasGroupIcon={hasGroupIcon}
                   onStartVideoCall={handleStartVideoCall}
                   onStartAudioCall={handleStartAudioCall}
+                  onReadPostOutLoud={handleReadPostOutLoud}
                 />
               </PopoverContent>
             </Popover>
@@ -309,6 +327,12 @@ export function GroupChat({
         onClose={() => setShowMuteNotification(false)}
         onSave={handleMuteNotification}
       />
+      {showReadPostPopup && (
+        <ReadPostPopup
+          onClose={() => setShowReadPostPopup(false)}
+          postContent="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod"
+        />
+      )}
       {showGroupInfo && (
         <GroupInfoPopup
           isOpen={showGroupInfo}

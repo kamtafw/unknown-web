@@ -147,13 +147,6 @@ export default function BookmarkPage() {
     );
   };
 
-  const handleProfileClick = (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log(
-      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
-    );
-    setShowProfilePopup((prev) => (prev === postId ? null : postId));
-  };
 
   const [showReadPostPopup, setShowReadPostPopup] = useState<{
     show: boolean;
@@ -232,23 +225,37 @@ export default function BookmarkPage() {
             >
               <div className="flex items-start justify-between mb-2 sm:mb-3">
                 <div className="flex items-start flex-1 min-w-0">
-                  <div
-                    ref={showProfilePopup === post.id ? profilePicRef : null}
-                    className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0"
-                    onClick={(e) => handleProfileClick(post.id, e)}
-                  >
-                    <Image
-                      src={post.profilePic}
-                      alt={post.name}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                    />
+                  <div className="relative">
+                    <div
+                      className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-300 flex-shrink-0 group"
+                      onMouseEnter={() => {
+                        setShowProfilePopup(post.id);
+                      }}
+                      onMouseLeave={() => {
+                        setTimeout(() => {
+                          setShowProfilePopup(null);
+                        }, 100);
+                      }}
+                    >
+                      <Image
+                        src={post.profilePic}
+                        alt={post.name}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                      />
+                    </div>
+
+                    {/* Render popup outside but keep it connected */}
                     {showProfilePopup === post.id && (
                       <div
-                        ref={profilePopupRef}
-                        className="relative"
-                        key={`profile-popup-${post.id}`}
+                        className="absolute top-0 left-0 z-50"
+                        onMouseEnter={() => {
+                          setShowProfilePopup(post.id);
+                        }}
+                        onMouseLeave={() => {
+                          setShowProfilePopup(null);
+                        }}
                       >
                         <ProfilePopup
                           name={post.name}

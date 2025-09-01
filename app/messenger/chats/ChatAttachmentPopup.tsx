@@ -44,16 +44,36 @@ export function ChatAttachmentPopup({
   const attachmentOptions = [
     { id: "gallery", label: "Gallery", icon: GrGallery, color: "text-red-500" },
     { id: "camera", label: "Camera", icon: IoMdCamera, color: "text-blue-500" },
-    { id: "contact", label: "Contact", icon: MdContactPhone, color: "text-green-500" },
-    { id: "location", label: "Location", icon: IoLocation, color: "text-orange-500" },
+    {
+      id: "contact",
+      label: "Contact",
+      icon: MdContactPhone,
+      color: "text-green-500",
+    },
+    {
+      id: "location",
+      label: "Location",
+      icon: IoLocation,
+      color: "text-orange-500",
+    },
     {
       id: "document",
       label: "Document",
       icon: IoDocumentTextSharp,
       color: "text-purple-500",
     },
-    { id: "music", label: "Music", icon: IoMdMusicalNotes, color: "text-indigo-500" },
-    { id: "schedule", label: "Schedule", icon: FaCalendarAlt, color: "text-teal-500" },
+    {
+      id: "music",
+      label: "Music",
+      icon: IoMdMusicalNotes,
+      color: "text-indigo-500",
+    },
+    {
+      id: "schedule",
+      label: "Schedule",
+      icon: FaCalendarAlt,
+      color: "text-teal-500",
+    },
   ];
 
   return (

@@ -234,12 +234,14 @@ export default function PostPage() {
                     {formatCount(post.reposts)}
                   </span>
                 </button>
-                <button
-                  className="relative p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  onClick={() => setShowMainPostSharePopup(true)}
-                  aria-label="Share post"
-                >
-                  <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                <div className="relative">
+                  <button
+                    className="p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    onClick={() => setShowMainPostSharePopup(true)}
+                    aria-label="Share post"
+                  >
+                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                  </button>
                   {showMainPostSharePopup && (
                     <div ref={mainSharePopupRef}>
                       <SharePopup
@@ -248,7 +250,7 @@ export default function PostPage() {
                       />
                     </div>
                   )}
-                </button>
+                </div>
                 <button
                   className="p-1 sm:p-2 rounded-full hover:bg-blue-50 transition-colors"
                   onClick={() => setMainPostBookmarked(!mainPostBookmarked)}
@@ -411,12 +413,14 @@ export default function PostPage() {
                         {formatCount(post.reposts)}
                       </span>
                     </button>
-                    <button
-                      className="relative p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
-                      onClick={() => setShowReplySharePopup(true)}
-                      aria-label="Share reply"
-                    >
-                      <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                    <div className="relative">
+                      <button
+                        className="p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        onClick={() => setShowReplySharePopup(true)}
+                        aria-label="Share reply"
+                      >
+                        <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                      </button>
                       {showReplySharePopup && (
                         <div ref={replySharePopupRef}>
                           <SharePopup
@@ -425,7 +429,7 @@ export default function PostPage() {
                           />
                         </div>
                       )}
-                    </button>
+                    </div>
                     <button
                       className="p-1 sm:p-2 rounded-full hover:bg-blue-50 transition-colors"
                       onClick={() => setReplyBookmarked(!replyBookmarked)}
