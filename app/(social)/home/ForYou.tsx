@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import {
   Heart,
@@ -16,6 +15,16 @@ import MoreOptionsPopup from "./main-popup/MoreOptionsPopup";
 import ProfilePopup from "./main-popup/ProfilePopup";
 import RepostPopup from "./main-popup/RepostPopup";
 import { useRouter } from "next/navigation";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import ReadPostPopup from "./main-popup/ReadPostPopup";
+import { useState } from "react";
+import MutePopup from "./main-popup/MutePopup";
+import RequestNotePopup from "./main-popup/RequestNotePopup";
+import BlockPopup from "./main-popup/BlockPopup";
 
 interface Post {
   id: number;
@@ -61,23 +70,27 @@ export default function ForYouPage({
   bookmarkedPosts,
   repostedPosts,
   showSharePopup,
-  showMorePopup,
   showProfilePopup,
   showRepostPopup,
   setLikedPosts,
   setBookmarkedPosts,
   setShowSharePopup,
-  setShowMorePopup,
   setShowProfilePopup,
   setShowRepostPopup,
   sharePopupRef,
-  morePopupRef,
   profilePicRef,
   profilePopupRef,
   repostPopupRef,
   formatNumber,
 }: ForYouPageProps) {
   const router = useRouter();
+  const [showReadPostPopup, setShowReadPostPopup] = useState<{
+    show: boolean;
+    content: string;
+  }>({ show: false, content: "" });
+  const [showMutePopup, setShowMutePopup] = useState<{show: boolean, username: string}>({show: false, username: ""});
+const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
+const [showBlockPopup, setShowBlockPopup] = useState<{show: boolean, username: string}>({show: false, username: ""});
 
   const handleLike = (postId: number) => {
     setLikedPosts((prev) =>
@@ -97,7 +110,9 @@ export default function ForYouPage({
 
   const handleProfileClick = (postId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`);
+    console.log(
+      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
+    );
     setShowProfilePopup((prev) => (prev === postId ? null : postId));
   };
 
@@ -156,26 +171,47 @@ export default function ForYouPage({
                 </p>
               </div>
             </div>
-            <button
-              className="relative p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
-              onClick={() => {
-                setShowSharePopup(null);
-                setShowProfilePopup(null);
-                setShowRepostPopup(null);
-                setShowMorePopup(post.id);
-              }}
-              aria-label="More options"
-            >
-              <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-              {showMorePopup === post.id && (
-                <div ref={morePopupRef}>
-                  <MoreOptionsPopup
-                    onClose={() => setShowMorePopup(null)}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                  aria-label="More options"
+                >
+                  <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-0" asChild>
+                <div>
+                  {/* <MoreOptionsPopup
                     username={post.username}
-                  />
+                    postContent={post.content}
+                    onReadPost={(content: string) => {
+                      setShowReadPostPopup({ show: true, content });
+                      const trigger = document.querySelector(
+                        '[data-state="open"]'
+                      );
+                      if (trigger) {
+                        (trigger as HTMLElement).click();
+                      }
+                    }}
+                  /> */}
+                  <MoreOptionsPopup
+  username={post.username}
+  postContent={post.content}
+  onReadPost={(content: string) => {
+    setShowReadPostPopup({ show: true, content });
+    const trigger = document.querySelector('[data-state="open"]');
+    if (trigger) {
+      (trigger as HTMLElement).click();
+    }
+  }}
+  onMute={(username: string) => setShowMutePopup({show: true, username})}
+  onRequestNote={() => setShowRequestNotePopup(true)}
+  onBlock={(username: string) => setShowBlockPopup({show: true, username})}
+/>
                 </div>
-              )}
-            </button>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="ml-0 sm:ml-0">
             <p className="text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 leading-relaxed">
@@ -291,6 +327,27 @@ export default function ForYouPage({
           </div>
         </div>
       ))}
+      {showReadPostPopup.show && (
+        <ReadPostPopup
+          onClose={() => setShowReadPostPopup({ show: false, content: "" })}
+          postContent={showReadPostPopup.content}
+        />
+      )}
+      {showMutePopup.show && (
+  <MutePopup
+    onClose={() => setShowMutePopup({show: false, username: ""})}
+    username={showMutePopup.username}
+  />
+)}
+{showRequestNotePopup && (
+  <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
+)}
+{showBlockPopup.show && (
+  <BlockPopup
+    onClose={() => setShowBlockPopup({show: false, username: ""})}
+    username={showBlockPopup.username}
+  />
+)}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import { AttachmentPopup } from "./AttachmentPopup";
 import { CreatePollPopup } from "./CreatePollPopup";
 import { MessagesTab } from "./MessagesTab";
 import { TrendingTab } from "./TrendingTab";
-import { SpamTab } from "./SpamTab"; 
+import { SpamTab } from "./SpamTab";
 import { FaMicrophone, FaRegSmile } from "react-icons/fa";
 import { BsPaperclip } from "react-icons/bs";
 import { GroupTranslationPopup } from "./GroupTranslationPopup";
@@ -45,11 +45,14 @@ interface Message {
 }
 
 interface GroupChatInterfaceProps {
-  activeTab: "messages" | "trending" | "spam"; 
-  isAdmin?: boolean; 
+  activeTab: "messages" | "trending" | "spam";
+  isAdmin?: boolean;
 }
 
-export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInterfaceProps) {
+export function GroupChatInterface({
+  activeTab,
+  isAdmin = false,
+}: GroupChatInterfaceProps) {
   const [showMessageOptions, setShowMessageOptions] = useState<{
     show: boolean;
     messageId: string;
@@ -72,6 +75,7 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const messages: Message[] = [
     {
@@ -219,13 +223,17 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
 
-      if (showEmojiPopup && !target.closest('[data-radix-popper-content-wrapper]') && !target.closest('button[aria-label="Emoji picker"]')) {
+      if (
+        showEmojiPopup &&
+        !target.closest("[data-radix-popper-content-wrapper]") &&
+        !target.closest('button[aria-label="Emoji picker"]')
+      ) {
         setShowEmojiPopup(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEmojiPopup]);
 
   const handleSendMessage = () => {
@@ -234,9 +242,15 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
       setMessage("");
       setReplyingTo(null);
       setShowEmojiPopup(false);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
     }
   };
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeTab]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -251,9 +265,7 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
         return <TrendingTab onViewAnalytics={handleViewAnalytics} />;
       case "spam":
         return isAdmin ? (
-          <SpamTab
-            onViewAnalytics={handleViewAnalytics}
-          />
+          <SpamTab onViewAnalytics={handleViewAnalytics} />
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p>Access denied</p>
@@ -275,6 +287,7 @@ export function GroupChatInterface({ activeTab, isAdmin = false }: GroupChatInte
       {/* Messages Content */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
         {renderTabContent()}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Reply View */}

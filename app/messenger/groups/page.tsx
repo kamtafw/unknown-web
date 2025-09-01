@@ -28,42 +28,42 @@ export default function Home() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isAdmin] = useState(true);
   const [currentUserRole] = useState<'Admin' | 'Member'>('Admin'); 
+  const [showCreateCommunityIntro, setShowCreateCommunityIntro] = useState(false);
 
   const handleGroupSelect = (group: Group) => {
-    console.log("Page: Group selected:", group.name);
-    console.log("Page: Group avatar:", group.avatar);
-    console.log("Page: Group hasGroupIcon:", group.hasGroupIcon);
     setSelectedGroup(group);
   };
 
   const handleBackFromGroupChat = () => {
-    console.log("Page: Going back to group list");
     setSelectedGroup(null);
   };
 
   const handleNavigateToGroupList = () => {
-    console.log("Page: Navigating back to group list from archive");
     setSelectedGroup(null);
     setActiveView("groups");
   };
 
-
-  console.log("Main component - currentUserRole:", currentUserRole);
-  console.log("Main component - isAdmin:", isAdmin);
+  const handleCreateCommunityFromGroupList = () => {
+    setActiveView("communities");
+    setShowCreateCommunityIntro(true);
+  };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen">
       <div className="w-[480px] border-r bg-white overflow-hidden">
         {activeView === "groups" ? (
           <GroupList
             onTabChange={setActiveView}
             onGroupSelect={handleGroupSelect}
+            onCreateCommunity={handleCreateCommunityFromGroupList}
           />
         ) : (
           <Community
             onTabChange={setActiveView}
             onGroupSelect={handleGroupSelect}
             currentUserRole={currentUserRole}
+            showCreateCommunityIntro={showCreateCommunityIntro}
+            onCloseCreateCommunityIntro={() => setShowCreateCommunityIntro(false)}
           />
         )}
       </div>

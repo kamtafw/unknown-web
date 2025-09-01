@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { EllipsisVertical, Camera, Search, Users } from "lucide-react";
 import { TbCopyPlusFilled } from "react-icons/tb";
@@ -22,6 +22,7 @@ import { NewGroupSettings } from "../group/NewGroupSettings";
 import { CommunityDetail } from "./CommunityDetail";
 import { CreateCommunityIntro } from "./CreateCommunityIntro";
 import { NewCommunityForm } from "./NewCommunityForm";
+import { CommunityGroupManagement } from "./CommunityGroupManagement";
 
 interface Group {
   id: string;
@@ -73,7 +74,7 @@ const communities: Community[] = [
     groupCount: 2,
     memberCount: 15,
     description:
-      "Bring together a neighbourhood, school, or more. Create topic-based group for members, and easily send them admin announcements", // Added description
+      "Bring together a neighbourhood, school, or more. Create topic-based group for members, and easily send them admin announcements",
     announcement: {
       title: "Announcement",
       message: "Welcome to you community",
@@ -101,7 +102,7 @@ const communities: Community[] = [
     groupCount: 1,
     memberCount: 8,
     description:
-      "A community for tech enthusiasts to share knowledge and collaborate on projects", // Added description
+      "A community for tech enthusiasts to share knowledge and collaborate on projects",
     announcement: {
       title: "Announcement",
       message: "Welcome to you community",
@@ -130,6 +131,8 @@ interface CommunityProps {
   onGroupSelect?: (group: Group) => void;
   onGroupCreated?: (group: Group) => void;
   currentUserRole?: "Admin" | "Member";
+  showCreateCommunityIntro?: boolean;
+  onCloseCreateCommunityIntro?: () => void;
 }
 
 export function Community({
@@ -137,6 +140,8 @@ export function Community({
   onGroupSelect,
   onGroupCreated,
   currentUserRole = "Member",
+  showCreateCommunityIntro = false,
+  onCloseCreateCommunityIntro,
 }: CommunityProps) {
   const [activeTab, setActiveTab] = useState("communities");
   const [showCopyPopup, setShowCopyPopup] = useState(false);
@@ -149,9 +154,51 @@ export function Community({
     null
   );
 
-  const [showCreateCommunityIntro, setShowCreateCommunityIntro] =
+  const [localShowCreateCommunityIntro, setLocalShowCreateCommunityIntro] =
     useState(false);
   const [showNewCommunityForm, setShowNewCommunityForm] = useState(false);
+  const [showCommunityGroupManagement, setShowCommunityGroupManagement] =
+    useState(false);
+  const [newCommunityName, setNewCommunityName] = useState("");
+
+  useEffect(() => {
+    if (showCreateCommunityIntro) {
+      setLocalShowCreateCommunityIntro(true);
+    }
+  }, [showCreateCommunityIntro]);
+
+  const availableGroups: Group[] = [
+    {
+      id: "available_1",
+      name: "Tech Support",
+      message: "Help and support for technical issues",
+      time: "10:30",
+      avatar: "/Rectangle 3.png",
+      hasGroupIcon: false,
+    },
+    {
+      id: "available_2", 
+      name: "Marketing Team",
+      message: "Marketing discussions and campaigns",
+      time: "09:15",
+      hasGroupIcon: true,
+    },
+    {
+      id: "available_3",
+      name: "Product Updates",
+      message: "Latest product news and updates",
+      time: "14:22",
+      hasGroupIcon: true,
+    },
+    {
+      id: "available_4",
+      name: "Design Team",
+      message: "UI/UX design discussions",
+      time: "16:45",
+      avatar: "/Rectangle 3.png",
+      hasGroupIcon: false,
+    },
+  ];
 
   const router = useRouter();
 
@@ -160,7 +207,7 @@ export function Community({
   };
 
   const handleCreateCommunity = () => {
-    setShowCreateCommunityIntro(true);
+    setLocalShowCreateCommunityIntro(true);
   };
 
   const handleCreateGroup = () => {
@@ -231,13 +278,23 @@ export function Community({
   };
 
   const handleCommunityIntroGetStarted = () => {
-    setShowCreateCommunityIntro(false);
+    setLocalShowCreateCommunityIntro(false);
+    if (onCloseCreateCommunityIntro) {
+      onCloseCreateCommunityIntro();
+    }
     setShowNewCommunityForm(true);
+  };
+
+  const handleCloseCreateCommunityIntro = () => {
+    setLocalShowCreateCommunityIntro(false);
+    if (onCloseCreateCommunityIntro) {
+      onCloseCreateCommunityIntro();
+    }
   };
 
   const handleCommunityFormBack = () => {
     setShowNewCommunityForm(false);
-    setShowCreateCommunityIntro(true);
+    setLocalShowCreateCommunityIntro(true);
   };
 
   const handleCreateNewCommunity = (communityData: {
@@ -246,8 +303,43 @@ export function Community({
     avatar?: string;
   }) => {
     console.log("New community data:", communityData);
+    setNewCommunityName(communityData.name);
     setShowNewCommunityForm(false);
+    setShowCommunityGroupManagement(true);
   };
+
+  const handleBackFromGroupManagement = () => {
+    setShowCommunityGroupManagement(false);
+    setNewCommunityName("");
+  };
+
+  const handleCreateNewGroupFromManagement = () => {
+    setShowCommunityGroupManagement(false);
+    setShowNewGroupMemberSelection(true);
+  };
+
+  const handleAddExistingGroups = () => {
+    console.log("Add existing groups clicked");
+  };
+
+  const handleGroupSelectFromManagement = (group: Group) => {
+    if (onGroupSelect) {
+      onGroupSelect(group);
+    }
+  };
+
+  if (showCommunityGroupManagement) {
+    return (
+      <CommunityGroupManagement
+        communityName={newCommunityName}
+        onBack={handleBackFromGroupManagement}
+        onCreateNewGroup={handleCreateNewGroupFromManagement}
+        onAddExistingGroups={handleAddExistingGroups}
+        onGroupSelect={handleGroupSelectFromManagement}
+        availableGroups={availableGroups}
+      />
+    );
+  }
 
   if (selectedCommunity) {
     return (
@@ -489,8 +581,8 @@ export function Community({
         onCreateGroup={handleCreateNewGroup}
       />
       <CreateCommunityIntro
-        isOpen={showCreateCommunityIntro}
-        onClose={() => setShowCreateCommunityIntro(false)}
+        isOpen={localShowCreateCommunityIntro}
+        onClose={handleCloseCreateCommunityIntro}
         onGetStarted={handleCommunityIntroGetStarted}
       />
 

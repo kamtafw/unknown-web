@@ -87,11 +87,16 @@ const initialGroups: Group[] = [
 interface GroupListProps {
   onTabChange: (tab: string) => void;
   onGroupSelect: (group: Group) => void;
+  onCreateCommunity?: () => void;
   sharedGroups?: Group[];
   onGroupsUpdated?: (groups: Group[]) => void;
 }
 
-export function GroupList({ onTabChange, onGroupSelect }: GroupListProps) {
+export function GroupList({ 
+  onTabChange, 
+  onGroupSelect,
+  onCreateCommunity 
+}: GroupListProps) {
   const [activeTab, setActiveTab] = useState("groups");
   const [showCopyPopup, setShowCopyPopup] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
@@ -109,7 +114,9 @@ export function GroupList({ onTabChange, onGroupSelect }: GroupListProps) {
   };
 
   const handleCreateCommunity = () => {
-    router.push("/create-community");
+    if (onCreateCommunity) {
+      onCreateCommunity();
+    }
   };
 
   const handleCreateGroup = () => {
@@ -160,10 +167,9 @@ export function GroupList({ onTabChange, onGroupSelect }: GroupListProps) {
       approveNewMembers: boolean;
     };
   }) => {
-    // Generate new group ID
     const newGroupId = (groups.length + 1).toString();
 
-    // Create new group object
+
     const newGroup: Group = {
       id: newGroupId,
       name: groupData.name,
@@ -178,14 +184,11 @@ export function GroupList({ onTabChange, onGroupSelect }: GroupListProps) {
       badge: 0,
     };
 
-    // Add to groups list
-    setGroups((prev) => [...prev, newGroup]);
 
-    // Close popups
+    setGroups((prev) => [...prev, newGroup]);
     setShowNewGroupSettings(false);
     setSelectedMembers([]);
 
-    // Auto-select the new group
     onGroupSelect(newGroup);
   };
 
@@ -372,7 +375,6 @@ export function GroupList({ onTabChange, onGroupSelect }: GroupListProps) {
         />
       </div>
 
-      {/* Fixed floating copy button - same positioning as ChatList */}
       {!showArchive && (
         <button
           title="Copy Plus"

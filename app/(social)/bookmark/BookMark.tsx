@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Heart,
@@ -15,7 +16,15 @@ import SharePopup from "../home/main-popup/SharePopup";
 import MoreOptionsPopup from "../home/main-popup/MoreOptionsPopup";
 import ProfilePopup from "../home/main-popup/ProfilePopup";
 import RepostPopup from "../home/main-popup/RepostPopup";
-import { useRouter } from "next/navigation";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import ReadPostPopup from "../home/main-popup/ReadPostPopup";
+import MutePopup from "../home/main-popup/MutePopup";
+import RequestNotePopup from "../home/main-popup/RequestNotePopup";
+import BlockPopup from "../home/main-popup/BlockPopup";
 
 interface Post {
   id: number;
@@ -34,12 +43,22 @@ interface Post {
 export default function BookmarkPage() {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([1, 2, 3, 4]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([
+    1, 2, 3, 4,
+  ]);
   const [repostedPosts, setRepostedPosts] = useState<number[]>([]);
   const [showSharePopup, setShowSharePopup] = useState<number | null>(null);
-  const [showMorePopup, setShowMorePopup] = useState<number | null>(null);
   const [showProfilePopup, setShowProfilePopup] = useState<number | null>(null);
   const [showRepostPopup, setShowRepostPopup] = useState<number | null>(null);
+  const [showMutePopup, setShowMutePopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
+  const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
+  const [showBlockPopup, setShowBlockPopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
   const sharePopupRef = useRef<HTMLDivElement | null>(null);
   const morePopupRef = useRef<HTMLDivElement | null>(null);
   const profilePicRef = useRef<HTMLDivElement | null>(null);
@@ -130,9 +149,16 @@ export default function BookmarkPage() {
 
   const handleProfileClick = (postId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`);
+    console.log(
+      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
+    );
     setShowProfilePopup((prev) => (prev === postId ? null : postId));
   };
+
+  const [showReadPostPopup, setShowReadPostPopup] = useState<{
+    show: boolean;
+    content: string;
+  }>({ show: false, content: "" });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -147,7 +173,7 @@ export default function BookmarkPage() {
           morePopupRef.current &&
           !morePopupRef.current.contains(event.target as Node)
         ) {
-          setShowMorePopup(null);
+          // setShowMorePopup(null);
         }
         if (
           profilePopupRef.current &&
@@ -252,28 +278,40 @@ export default function BookmarkPage() {
                     </p>
                   </div>
                 </div>
-                <div className="relative">
-                  <button
-                    className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
-                    onClick={() => {
-                      setShowSharePopup(null);
-                      setShowProfilePopup(null);
-                      setShowRepostPopup(null);
-                      setShowMorePopup(post.id);
-                    }}
-                    aria-label="More options"
-                  >
-                    <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                  </button>
-                  {showMorePopup === post.id && (
-                    <div ref={morePopupRef}>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                      aria-label="More options"
+                    >
+                      <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-0" asChild>
+                    <div>
                       <MoreOptionsPopup
-                        onClose={() => setShowMorePopup(null)}
                         username={post.username}
+                        postContent={post.content}
+                        onReadPost={(content: string) => {
+                          setShowReadPostPopup({ show: true, content });
+                          const trigger = document.querySelector(
+                            '[data-state="open"]'
+                          );
+                          if (trigger) {
+                            (trigger as HTMLElement).click();
+                          }
+                        }}
+                        onMute={(username: string) =>
+                          setShowMutePopup({ show: true, username })
+                        }
+                        onRequestNote={() => setShowRequestNotePopup(true)}
+                        onBlock={(username: string) =>
+                          setShowBlockPopup({ show: true, username })
+                        }
                       />
                     </div>
-                  )}
-                </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="ml-0 sm:ml-0">
                 <p className="text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 leading-relaxed">
@@ -327,7 +365,9 @@ export default function BookmarkPage() {
                       className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 rounded-full hover:bg-green-50 transition-colors group"
                       onClick={() => setShowRepostPopup(post.id)}
                       aria-label={
-                        repostedPosts.includes(post.id) ? "Undo repost" : "Repost"
+                        repostedPosts.includes(post.id)
+                          ? "Undo repost"
+                          : "Repost"
                       }
                     >
                       <Repeat
@@ -392,6 +432,27 @@ export default function BookmarkPage() {
           ))
         )}
       </div>
+      {showReadPostPopup.show && (
+        <ReadPostPopup
+          onClose={() => setShowReadPostPopup({ show: false, content: "" })}
+          postContent={showReadPostPopup.content}
+        />
+      )}
+      {showMutePopup.show && (
+        <MutePopup
+          onClose={() => setShowMutePopup({ show: false, username: "" })}
+          username={showMutePopup.username}
+        />
+      )}
+      {showRequestNotePopup && (
+        <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
+      )}
+      {showBlockPopup.show && (
+        <BlockPopup
+          onClose={() => setShowBlockPopup({ show: false, username: "" })}
+          username={showBlockPopup.username}
+        />
+      )}
     </div>
   );
 }

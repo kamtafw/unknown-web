@@ -9,26 +9,30 @@ import {
   FileText,
   CircleSlash2,
 } from "lucide-react";
-import { useState } from "react";
-import MutePopup from "./MutePopup";
-import RequestNotePopup from "./RequestNotePopup";
-import BlockPopup from "./BlockPopup";
 
 interface MoreOptionsPopupProps {
-  onClose: () => void;
   username: string;
+  postContent?: string;
+  onReadPost?: (content: string) => void;
+  onMute?: (username: string) => void;
+  onRequestNote?: () => void;
+  onBlock?: (username: string) => void;
 }
 
 export default function MoreOptionsPopup({
   username,
+  postContent = "",
+  onReadPost,
+  onMute,
+  onRequestNote,
+  onBlock,
 }: MoreOptionsPopupProps) {
-  const [showMutePopup, setShowMutePopup] = useState(false);
-  const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
-  const [showBlockPopup, setShowBlockPopup] = useState(false);
-
   return (
-    <div className="absolute bottom-12 right-0 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-64">
-      <button className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-50">
+    <div className="p-4">
+      <button
+        className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-50"
+        onClick={() => onReadPost?.(postContent)}
+      >
         Read post out loud
         <Volume2 className="h-5 w-5 text-gray-500" />
       </button>
@@ -50,40 +54,43 @@ export default function MoreOptionsPopup({
       </button>
       <button
         className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-50"
-        onClick={() => setShowMutePopup(true)}
+        onClick={() => {
+          const trigger = document.querySelector('[data-state="open"]');
+          if (trigger) {
+            (trigger as HTMLElement).click();
+          }
+          onMute?.(username);
+        }}
       >
         Mute {username}
         <UserMinus className="h-5 w-5 text-gray-500" />
       </button>
       <button
         className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-50"
-        onClick={() => setShowRequestNotePopup(true)}
+        onClick={() => {
+          const trigger = document.querySelector('[data-state="open"]');
+          if (trigger) {
+            (trigger as HTMLElement).click();
+          }
+          onRequestNote?.();
+        }}
       >
         Request community Note
         <FileText className="h-5 w-5 text-gray-500" />
       </button>
       <button
         className="flex items-center justify-between w-full text-left py-2 text-red-600"
-        onClick={() => setShowBlockPopup(true)}
+        onClick={() => {
+          const trigger = document.querySelector('[data-state="open"]');
+          if (trigger) {
+            (trigger as HTMLElement).click();
+          }
+          onBlock?.(username);
+        }}
       >
         Block {username}
         <CircleSlash2 className="h-5 w-5 text-gray-500" />
       </button>
-      {showMutePopup && (
-        <MutePopup
-          onClose={() => setShowMutePopup(false)}
-          username={username}
-        />
-      )}
-      {showRequestNotePopup && (
-        <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
-      )}
-      {showBlockPopup && (
-        <BlockPopup
-          onClose={() => setShowBlockPopup(false)}
-          username={username}
-        />
-      )}
     </div>
   );
 }

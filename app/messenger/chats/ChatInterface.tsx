@@ -146,13 +146,11 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
   });
   const [showAttachmentPopup, setShowAttachmentPopup] = useState(false);
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
-
-  // Call states
   const [showVoiceCall, setShowVoiceCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  // const [currentCallType, setCurrentCallType] = useState<"video" | "audio">("audio");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -276,7 +274,6 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
     console.log("Selected attachment type:", type);
   };
 
-  
   const handleStartVoiceCall = () => {
     console.log("Starting voice call with:", chatName);
     closeAllPopups();
@@ -334,22 +331,29 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEmojiPopup]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSendMessage = () => {
     if (message.trim()) {
       console.log("Sending message:", message);
       setMessage("");
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
       setShowEmojiPopup(false);
     }
   };
 
-  // Contact object for call popups
   const contactInfo = {
     name: chatName,
     avatar: chatAvatar,
-    phone: "+234 8123456789", // You can make this dynamic based on your data
+    phone: "+234 8123456789",
   };
 
   return (
@@ -451,6 +455,8 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
         chatName={chatName}
         onArchiveChat={handleArchiveChat}
         onAddToFavorites={handleAddToFavorites}
+        chatAvatar={chatAvatar}
+        accountType="business"
       />
 
       <DeleteMessagePopup
@@ -599,6 +605,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}

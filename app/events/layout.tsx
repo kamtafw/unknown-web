@@ -21,7 +21,7 @@ export default function EventsLayout({ children }: { children: ReactNode }) {
         isOpen={isMobileSidebarOpen}
         onClose={closeMobileSidebar}
       />
-        <div className="flex-1 flex flex-col transition-all duration-300 lg:ml-[240px]">
+        <div className="flex-1 flex flex-col transition-all duration-300">
         <Topbar onToggleSidebar={toggleMobileSidebar} />
         <main className="flex-1 px-4 lg:px-6 pb-6 pt-20 overflow-y-auto">
           {children}

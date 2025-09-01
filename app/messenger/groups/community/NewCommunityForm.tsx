@@ -25,7 +25,6 @@ interface NewCommunityFormProps {
 
 export function NewCommunityForm({
   isOpen,
-  onClose,
   onBack,
   onCreateCommunity,
 }: NewCommunityFormProps) {
@@ -112,8 +111,12 @@ export function NewCommunityForm({
   };
 
   const handleCreateCommunity = () => {
-    // For now, do nothing as requested
-    console.log("Create community clicked - no action taken as requested");
+    // Call the onCreateCommunity function with the form data
+    onCreateCommunity({
+      name: communityName,
+      description: description,
+      avatar: avatar || undefined,
+    });
   };
 
   if (!isOpen) return null;

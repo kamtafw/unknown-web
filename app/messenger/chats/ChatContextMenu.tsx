@@ -18,6 +18,9 @@ import { CreateListPopup } from "./CreateListPopup";
 import { MuteNotificationPopup } from "./MuteNotificationPopup";
 import { BlockContactPopup } from "./BlockContactPopup";
 import { ClearChatPopup } from "./ClearChatPopup";
+import { ViewContactPopup } from "./ViewContactPopup";
+import MediaGalleryPopup from "./MediaGalleryPopup";
+import { chatsData } from "./chatData";
 
 interface ChatContextMenuProps {
   isOpen: boolean;
@@ -41,12 +44,13 @@ export function ChatContextMenu({
   const [isVisible, setIsVisible] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
- 
   const [showAddToList, setShowAddToList] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
   const [showMuteNotification, setShowMuteNotification] = useState(false);
   const [showBlockContact, setShowBlockContact] = useState(false);
   const [showClearChat, setShowClearChat] = useState(false);
+  const [showViewContact, setShowViewContact] = useState(false);
+  const [showMediaGallery, setShowMediaGallery] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -75,17 +79,17 @@ export function ChatContextMenu({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
 
-
       if (
         showAddToList ||
         showCreateList ||
         showMuteNotification ||
         showBlockContact ||
-        showClearChat
+        showClearChat ||
+        showViewContact ||
+        showMediaGallery
       ) {
         return;
       }
-
 
       if (target.closest("[data-context-menu]")) {
         return;
@@ -98,19 +102,22 @@ export function ChatContextMenu({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isOpen) {
-
         if (
           showAddToList ||
           showCreateList ||
           showMuteNotification ||
           showBlockContact ||
-          showClearChat
+          showClearChat ||
+          showViewContact ||
+          showMediaGallery
         ) {
           setShowAddToList(false);
           setShowCreateList(false);
           setShowMuteNotification(false);
           setShowBlockContact(false);
           setShowClearChat(false);
+          setShowViewContact(false);
+          setShowMediaGallery(false);
         } else {
           onClose();
         }
@@ -118,7 +125,6 @@ export function ChatContextMenu({
     };
 
     if (isOpen) {
-
       const timeoutId = setTimeout(() => {
         document.addEventListener("click", handleClickOutside, true);
         document.addEventListener("keydown", handleEscape);
@@ -138,7 +144,12 @@ export function ChatContextMenu({
     showMuteNotification,
     showBlockContact,
     showClearChat,
+    showViewContact,
+    showMediaGallery,
   ]);
+
+ 
+  const currentChat = chatsData.find(chat => chat.id === chatId);
 
   const menuItems = [
     {
@@ -148,8 +159,7 @@ export function ChatContextMenu({
       action: (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log("View contact:", chatName, chatId);
-        onClose();
+        setShowViewContact(true);
       },
     },
     {
@@ -159,8 +169,7 @@ export function ChatContextMenu({
       action: (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log("Media, Links & Docs for:", chatName, chatId);
-        onClose();
+        setShowMediaGallery(true);
       },
     },
     {
@@ -181,7 +190,7 @@ export function ChatContextMenu({
       action: (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
- 
+
         setTimeout(() => {
           setShowMuteNotification(true);
         }, 0);
@@ -215,7 +224,7 @@ export function ChatContextMenu({
       action: (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-  
+
         setTimeout(() => {
           setShowBlockContact(true);
         }, 0);
@@ -259,19 +268,18 @@ export function ChatContextMenu({
 
   const handleCreateListDone = () => {
     setShowCreateList(false);
-    onAddToFavorites(); 
+    onAddToFavorites();
     onClose();
   };
 
   const handleMuteSave = (duration: string) => {
     console.log("Muting chat for:", duration);
     setShowMuteNotification(false);
-    onClose(); 
+    onClose();
   };
 
   const handleMuteClose = () => {
     setShowMuteNotification(false);
- 
   };
 
   const handleBlock = (reason: string, feedback: string) => {
@@ -284,40 +292,48 @@ export function ChatContextMenu({
       feedback
     );
     setShowBlockContact(false);
-    onClose(); 
+    onClose();
   };
 
   const handleBlockClose = () => {
     setShowBlockContact(false);
-    
   };
 
   const handleClearChat = (deleteMedia: boolean) => {
     console.log("Clearing chat:", chatName, "Delete media:", deleteMedia);
     setShowClearChat(false);
-    onClose(); 
+    onClose();
   };
 
   const handleClearChatClose = () => {
     setShowClearChat(false);
-    
   };
 
   const handleAddToListClose = () => {
     setShowAddToList(false);
- 
+  };
+
+  const handleViewContactClose = () => {
+    setShowViewContact(false);
+    onClose();
+  };
+
+  const handleMediaGalleryClose = () => {
+    setShowMediaGallery(false);
+    onClose();
   };
 
   if (!isVisible) return null;
 
   return (
     <>
-      {/* Backdrop - only show if no popups are open */}
       {!showAddToList &&
         !showCreateList &&
         !showMuteNotification &&
         !showBlockContact &&
-        !showClearChat && (
+        !showClearChat &&
+        !showViewContact &&
+        !showMediaGallery && (
           <div className="fixed inset-0 z-40" onClick={onClose} />
         )}
 
@@ -351,7 +367,39 @@ export function ChatContextMenu({
         ))}
       </div>
 
-      {/* Popups */}
+      {/* All Popups */}
+      <ViewContactPopup
+        isOpen={showViewContact}
+        onClose={handleViewContactClose}
+        contactName={chatName}
+        contactAvatar={currentChat?.avatar || "/default-avatar.jpg"}
+        contactPhone="+234 8143245678"
+        accountType="business"
+        onMessage={() => {
+          console.log("Message contact:", chatName);
+          setShowViewContact(false);
+          onClose();
+        }}
+        onCall={() => {
+          console.log("Call contact:", chatName);
+          setShowViewContact(false);
+          onClose();
+        }}
+        onContactUpdated={(firstName, lastName, phoneNumber) => {
+          console.log("Contact updated:", { firstName, lastName, phoneNumber });
+        }}
+        onContactShared={(selectedContacts) => {
+          console.log("Contact shared:", selectedContacts);
+        }}
+      />
+
+      <MediaGalleryPopup
+        isOpen={showMediaGallery}
+        onClose={handleMediaGalleryClose}
+        contactName={chatName}
+        contactAvatar={currentChat?.avatar || "/default-avatar.jpg"}
+      />
+
       <AddToListPopup
         isOpen={showAddToList}
         onClose={handleAddToListClose}

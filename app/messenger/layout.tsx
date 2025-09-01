@@ -37,7 +37,7 @@ export default function MessengerLayout({ children }: { children: ReactNode }) {
         isDesktopSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[240px]'
       }`}>
         <Topbar onToggleSidebar={toggleMobileSidebar} />
-        <main className="flex-1 px-4 lg:px-6 pb-6 pt-20 overflow-y-auto">
+        <main className="flex-1 px-4 lg:px-6 pb-6 pt-20">
           {children}
         </main>
       </div>

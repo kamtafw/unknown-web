@@ -1,5 +1,6 @@
 "use client";
 
+
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -30,6 +31,7 @@ export function CreateCommunityIntro({
 
         {/* Content */}
         <div className=" flex flex-col items-center justify-center p-6 text-center">
+
           <div className="mb-5">
             <div className="relative">
               <div className="flex justify-center -mt-2">

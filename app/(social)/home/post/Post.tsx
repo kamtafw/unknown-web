@@ -18,6 +18,15 @@ import SharePopup from "../main-popup/SharePopup";
 import MoreOptionsPopup from "../main-popup/MoreOptionsPopup";
 import CommentPopup from "../main-popup/CommentPopup";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import ReadPostPopup from "../main-popup/ReadPostPopup";
+import MutePopup from "../main-popup/MutePopup";
+import RequestNotePopup from "../main-popup/RequestNotePopup";
+import BlockPopup from "../main-popup/BlockPopup";
 
 export default function PostPage() {
   const router = useRouter();
@@ -30,9 +39,20 @@ export default function PostPage() {
   const [showMainPostSharePopup, setShowMainPostSharePopup] = useState(false);
   const [showReplySharePopup, setShowReplySharePopup] = useState(false);
 
-  const [showMorePopup, setShowMorePopup] = useState(false);
   const [showCommentPopup, setShowCommentPopup] = useState(false);
-  const [activeMorePopup, setActiveMorePopup] = useState<string | null>(null);
+  const [showReadPostPopup, setShowReadPostPopup] = useState<{
+    show: boolean;
+    content: string;
+  }>({ show: false, content: "" });
+  const [showMutePopup, setShowMutePopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
+  const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
+  const [showBlockPopup, setShowBlockPopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
 
   const mainSharePopupRef = useRef<HTMLDivElement>(null);
   const replySharePopupRef = useRef<HTMLDivElement>(null);
@@ -75,8 +95,8 @@ export default function PostPage() {
       morePopupRef.current &&
       !morePopupRef.current.contains(event.target as Node)
     ) {
-      setShowMorePopup(false);
-      setActiveMorePopup(null);
+      // setShowMorePopup(false);
+      // setActiveMorePopup(null);
     }
   };
 
@@ -84,11 +104,6 @@ export default function PostPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleMoreOptionsClick = (popupId: string) => {
-    setActiveMorePopup(popupId);
-    setShowMorePopup(true);
-  };
 
   return (
     <div className="ml-1 lg:ml-1 w-full">
@@ -136,24 +151,40 @@ export default function PostPage() {
                   </p>
                 </div>
               </div>
-              <button
-                className="relative p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
-                onClick={() => handleMoreOptionsClick("main-post")}
-                aria-label="More options"
-              >
-                <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                {showMorePopup && activeMorePopup === "main-post" && (
-                  <div ref={morePopupRef}>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                    aria-label="More options"
+                  >
+                    <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-0" asChild>
+                  <div>
                     <MoreOptionsPopup
-                      onClose={() => {
-                        setShowMorePopup(false);
-                        setActiveMorePopup(null);
-                      }}
                       username={post.username}
+                      postContent={post.content}
+                      onReadPost={(content: string) => {
+                        setShowReadPostPopup({ show: true, content });
+                        const trigger = document.querySelector(
+                          '[data-state="open"]'
+                        );
+                        if (trigger) {
+                          (trigger as HTMLElement).click();
+                        }
+                      }}
+                      onMute={(username: string) =>
+                        setShowMutePopup({ show: true, username })
+                      }
+                      onRequestNote={() => setShowRequestNotePopup(true)}
+                      onBlock={(username: string) =>
+                        setShowBlockPopup({ show: true, username })
+                      }
                     />
                   </div>
-                )}
-              </button>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="ml-0 sm:ml-0">
               <p className="text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 leading-relaxed">
@@ -297,24 +328,40 @@ export default function PostPage() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    className="relative p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
-                    onClick={() => handleMoreOptionsClick("reply-post")}
-                    aria-label="More options"
-                  >
-                    <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                    {showMorePopup && activeMorePopup === "reply-post" && (
-                      <div ref={morePopupRef}>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                        aria-label="More options"
+                      >
+                        <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-64 p-0" asChild>
+                      <div>
                         <MoreOptionsPopup
-                          onClose={() => {
-                            setShowMorePopup(false);
-                            setActiveMorePopup(null);
-                          }}
                           username={post.username}
+                          postContent={post.content}
+                          onReadPost={(content: string) => {
+                            setShowReadPostPopup({ show: true, content });
+                            const trigger = document.querySelector(
+                              '[data-state="open"]'
+                            );
+                            if (trigger) {
+                              (trigger as HTMLElement).click();
+                            }
+                          }}
+                          onMute={(username: string) =>
+                            setShowMutePopup({ show: true, username })
+                          }
+                          onRequestNote={() => setShowRequestNotePopup(true)}
+                          onBlock={(username: string) =>
+                            setShowBlockPopup({ show: true, username })
+                          }
                         />
                       </div>
-                    )}
-                  </button>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="ml-0 sm:ml-0">
                   <p className="text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 leading-relaxed">
@@ -406,6 +453,27 @@ export default function PostPage() {
           <CommentPopup
             onClose={() => setShowCommentPopup(false)}
             post={post}
+          />
+        )}
+        {showReadPostPopup.show && (
+          <ReadPostPopup
+            onClose={() => setShowReadPostPopup({ show: false, content: "" })}
+            postContent={showReadPostPopup.content}
+          />
+        )}
+        {showMutePopup.show && (
+          <MutePopup
+            onClose={() => setShowMutePopup({ show: false, username: "" })}
+            username={showMutePopup.username}
+          />
+        )}
+        {showRequestNotePopup && (
+          <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
+        )}
+        {showBlockPopup.show && (
+          <BlockPopup
+            onClose={() => setShowBlockPopup({ show: false, username: "" })}
+            username={showBlockPopup.username}
           />
         )}
       </div>

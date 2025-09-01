@@ -138,7 +138,7 @@ function LoginFormModule() {
                                     </FormItem>
                                 )}
                             />
-                            <Link href='forgotpassword' className="text-base text-center text-[#6A88D1] font-bold cursor-pointer">Forgot Password?</Link>
+                            <Link href='forgot-password' className="text-base text-center text-[#6A88D1] font-bold cursor-pointer">Forgot Password?</Link>
                         </div>
                     </div>
                     <div className="flex flex-col items-center gap-[24px]">

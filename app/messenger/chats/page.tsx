@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen">
       {/* Left Sidebar - Chat List */}
       <div className="w-[480px] border-r bg-white flex flex-col overflow-y-auto">
         <ChatList onChatSelect={handleChatSelect} />

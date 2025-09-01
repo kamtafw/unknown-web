@@ -4,12 +4,8 @@ import {
   Search,
   Flame,
   Home,
-  Bell,
   ChevronRight,
   Menu,
-  LogOut,
-  User,
-  Plus,
 } from "lucide-react";
 import { FaLink } from "react-icons/fa";
 import { BsFillChatDotsFill } from "react-icons/bs";
@@ -24,6 +20,7 @@ import {
 import Logo from "@/assets/appcombohallogo.svg";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import NotificationPopover from "../NotificationPopover";
 
 export default function Topbar({
   onToggleSidebar,
@@ -174,13 +171,7 @@ export default function Topbar({
 
         {/* Right Section */}
         <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full hover:bg-gray-100 p-2 shrink-0"
-          >
-            <Bell className="h-5 w-5 text-gray-600" />
-          </Button>
+          <NotificationPopover />
 
           <Popover
             open={isProfilePopoverOpen}

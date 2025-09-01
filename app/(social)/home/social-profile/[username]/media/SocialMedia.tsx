@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Heart,
@@ -15,7 +16,16 @@ import SharePopup from "../../../main-popup/SharePopup";
 import MoreOptionsPopup from "../../../main-popup/MoreOptionsPopup";
 import ProfilePopup from "../../../main-popup/ProfilePopup";
 import RepostPopup from "../../../main-popup/RepostPopup";
-import { useRouter } from "next/navigation";
+
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import ReadPostPopup from "../../../main-popup/ReadPostPopup";
+import MutePopup from "../../..//main-popup/MutePopup";
+import RequestNotePopup from "../../..//main-popup/RequestNotePopup";
+import BlockPopup from "../../..//main-popup/BlockPopup";
 
 interface Post {
   id: number;
@@ -34,10 +44,11 @@ interface Post {
 export default function SocialMedia() {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<number[]>([1, 2, 3, 4, 5, 6]);
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([1, 2, 3, 4]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<number[]>([
+    1, 2, 3, 4,
+  ]);
   const [repostedPosts, setRepostedPosts] = useState<number[]>([]);
   const [showSharePopup, setShowSharePopup] = useState<number | null>(null);
-  const [showMorePopup, setShowMorePopup] = useState<number | null>(null);
   const [showProfilePopup, setShowProfilePopup] = useState<number | null>(null);
   const [showRepostPopup, setShowRepostPopup] = useState<number | null>(null);
   const [postImages, setPostImages] = useState<{ [key: number]: string[] }>({
@@ -45,6 +56,19 @@ export default function SocialMedia() {
     2: ["/Beli.png", "/Beli.png", "/Beli.png", "/Beli.png"],
     4: ["/Beli.png", "/Beli.png", "/Beli.png", "/Beli.png"],
   });
+  const [showReadPostPopup, setShowReadPostPopup] = useState<{
+    show: boolean;
+    content: string;
+  }>({ show: false, content: "" });
+  const [showMutePopup, setShowMutePopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
+  const [showRequestNotePopup, setShowRequestNotePopup] = useState(false);
+  const [showBlockPopup, setShowBlockPopup] = useState<{
+    show: boolean;
+    username: string;
+  }>({ show: false, username: "" });
   const sharePopupRef = useRef<HTMLDivElement | null>(null);
   const morePopupRef = useRef<HTMLDivElement | null>(null);
   const profilePicRef = useRef<HTMLDivElement | null>(null);
@@ -71,7 +95,8 @@ export default function SocialMedia() {
       username: "@john_doe",
       time: "3 Hours ago",
       location: "Victoria Island, Lagos",
-      content: "Just finished an amazing project! The client was thrilled with the results.",
+      content:
+        "Just finished an amazing project! The client was thrilled with the results.",
       image: "/Beli.png",
       profilePic: "/Rectangle 1.png",
       likes: 15000,
@@ -84,7 +109,8 @@ export default function SocialMedia() {
       username: "@sarah_j",
       time: "5 Hours ago",
       location: "Ikeja, Lagos",
-      content: "Morning coffee thoughts: Sometimes the best ideas come when you're not actively trying to think of them.",
+      content:
+        "Morning coffee thoughts: Sometimes the best ideas come when you're not actively trying to think of them.",
       image: "/bottle.png",
       profilePic: "/Rectangle 3.png",
       likes: 5600,
@@ -97,7 +123,8 @@ export default function SocialMedia() {
       username: "@mike_chen",
       time: "6 Hours ago",
       location: "Lekki, Lagos",
-      content: "New blog post is live! Sharing my thoughts on the future of web development.",
+      content:
+        "New blog post is live! Sharing my thoughts on the future of web development.",
       image: "/Beli.png",
       profilePic: "/Rectangle 4.png",
       likes: 12000,
@@ -110,7 +137,8 @@ export default function SocialMedia() {
       username: "@emma_w",
       time: "8 Hours ago",
       location: "Surulere, Lagos",
-      content: "Grateful for this beautiful sunset. Nature never fails to inspire.",
+      content:
+        "Grateful for this beautiful sunset. Nature never fails to inspire.",
       image: "/Frame 427321627.png",
       profilePic: "/Rectangle 1.png",
       likes: 8900,
@@ -123,7 +151,8 @@ export default function SocialMedia() {
       username: "@david_brown",
       time: "10 Hours ago",
       location: "Yaba, Lagos",
-      content: "Just launched our new startup! Excited to share this journey with everyone.",
+      content:
+        "Just launched our new startup! Excited to share this journey with everyone.",
       image: "/Rectangle 12.png",
       profilePic: "/Rectangle 2.png",
       likes: 18000,
@@ -159,7 +188,9 @@ export default function SocialMedia() {
 
   const handleProfileClick = (postId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log(`Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`);
+    console.log(
+      `Clicked on ${posts.find((p) => p.id === postId)?.name}'s profile picture`
+    );
     setShowProfilePopup((prev) => (prev === postId ? null : postId));
   };
 
@@ -183,7 +214,7 @@ export default function SocialMedia() {
           morePopupRef.current &&
           !morePopupRef.current.contains(event.target as Node)
         ) {
-          setShowMorePopup(null);
+          // setShowMorePopup(null);
         }
         if (
           profilePopupRef.current &&
@@ -269,26 +300,40 @@ export default function SocialMedia() {
                   </p>
                 </div>
               </div>
-              <button
-                className="relative p-1 rounded-full hover:bg-gray-100 transition-colors duration-150 flex-shrink-0 ml-2"
-                onClick={() => {
-                  setShowSharePopup(null);
-                  setShowProfilePopup(null);
-                  setShowRepostPopup(null);
-                  setShowMorePopup(post.id);
-                }}
-                aria-label="More options"
-              >
-                <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                {showMorePopup === post.id && (
-                  <div ref={morePopupRef}>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-150 flex-shrink-0 ml-2"
+                    aria-label="More options"
+                  >
+                    <EllipsisVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-0" asChild>
+                  <div>
                     <MoreOptionsPopup
-                      onClose={() => setShowMorePopup(null)}
                       username={post.username}
+                      postContent={post.content}
+                      onReadPost={(content: string) => {
+                        setShowReadPostPopup({ show: true, content });
+                        const trigger = document.querySelector(
+                          '[data-state="open"]'
+                        );
+                        if (trigger) {
+                          (trigger as HTMLElement).click();
+                        }
+                      }}
+                      onMute={(username: string) =>
+                        setShowMutePopup({ show: true, username })
+                      }
+                      onRequestNote={() => setShowRequestNotePopup(true)}
+                      onBlock={(username: string) =>
+                        setShowBlockPopup({ show: true, username })
+                      }
                     />
                   </div>
-                )}
-              </button>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="ml-0 sm:ml-0">
               <p className="text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 leading-relaxed">
@@ -311,8 +356,7 @@ export default function SocialMedia() {
                         className="absolute top-1 right-1 rounded-full p-1 hover:bg-black/80 transition-colors"
                         onClick={() => handleRemoveImage(post.id, index)}
                         aria-label="Remove image"
-                      >
-                      </button>
+                      ></button>
                     </div>
                   ))}
                 </div>
@@ -329,7 +373,9 @@ export default function SocialMedia() {
                     height={300}
                     className={cn(
                       "w-full rounded-lg",
-                      post.image === "/bottle.png" ? "object-contain max-h-[300px]" : "object-cover max-h-64 sm:max-h-80"
+                      post.image === "/bottle.png"
+                        ? "object-contain max-h-[300px]"
+                        : "object-cover max-h-64 sm:max-h-80"
                     )}
                   />
                 </button>
@@ -338,7 +384,9 @@ export default function SocialMedia() {
                 <button
                   className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 rounded-full hover:bg-red-50 transition-colors duration-150 group"
                   onClick={() => handleLike(post.id)}
-                  aria-label={likedPosts.includes(post.id) ? "Unlike post" : "Like post"}
+                  aria-label={
+                    likedPosts.includes(post.id) ? "Unlike post" : "Like post"
+                  }
                 >
                   <Heart
                     className={cn(
@@ -366,7 +414,9 @@ export default function SocialMedia() {
                   <button
                     className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 rounded-full hover:bg-green-50 transition-colors duration-150 group"
                     onClick={() => setShowRepostPopup(post.id)}
-                    aria-label={repostedPosts.includes(post.id) ? "Undo repost" : "Repost"}
+                    aria-label={
+                      repostedPosts.includes(post.id) ? "Undo repost" : "Repost"
+                    }
                   >
                     <Repeat
                       className={cn(
@@ -409,7 +459,11 @@ export default function SocialMedia() {
                 <button
                   className="p-1 sm:p-2 rounded-full hover:bg-blue-50 transition-colors duration-150"
                   onClick={() => handleBookmark(post.id)}
-                  aria-label={bookmarkedPosts.includes(post.id) ? "Remove bookmark" : "Bookmark post"}
+                  aria-label={
+                    bookmarkedPosts.includes(post.id)
+                      ? "Remove bookmark"
+                      : "Bookmark post"
+                  }
                 >
                   <Bookmark
                     className={cn(
@@ -425,6 +479,27 @@ export default function SocialMedia() {
           </div>
         ))}
       </div>
+      {showReadPostPopup.show && (
+        <ReadPostPopup
+          onClose={() => setShowReadPostPopup({ show: false, content: "" })}
+          postContent={showReadPostPopup.content}
+        />
+      )}
+      {showMutePopup.show && (
+        <MutePopup
+          onClose={() => setShowMutePopup({ show: false, username: "" })}
+          username={showMutePopup.username}
+        />
+      )}
+      {showRequestNotePopup && (
+        <RequestNotePopup onClose={() => setShowRequestNotePopup(false)} />
+      )}
+      {showBlockPopup.show && (
+        <BlockPopup
+          onClose={() => setShowBlockPopup({ show: false, username: "" })}
+          username={showBlockPopup.username}
+        />
+      )}
     </div>
   );
 }

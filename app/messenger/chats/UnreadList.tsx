@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { ArchivePage } from "./Archive";
+import { UnreadChatContextMenu } from "./UnreadChatContextMenu";
 
 interface Chat {
   id: string;
@@ -86,12 +87,67 @@ const unreadChats: Chat[] = [
 // Props interface for UnreadContent
 interface UnreadContentProps {
   onArchiveClick: () => void;
+  onChatSelect?: (chatId: string, chatName: string, chatAvatar: string) => void;
 }
 
 // UnreadContent component - just the content part, no header
-export function UnreadContent({ onArchiveClick }: UnreadContentProps) {
+export function UnreadContent({ onArchiveClick, onChatSelect }: UnreadContentProps) {
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    chatId: string;
+    chatName: string;
+    chatAvatar: string;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    chatId: "",
+    chatName: "",
+    chatAvatar: "",
+    position: { x: 0, y: 0 },
+  });
+
   const handleArchiveClick = () => {
     onArchiveClick(); // Use the callback from parent
+  };
+
+  const handleChatClick = (chat: Chat) => {
+    if (contextMenu.isOpen) {
+      return;
+    }
+    if (onChatSelect) {
+      onChatSelect(chat.id, chat.name, chat.avatar || "/default-avatar.jpg");
+    }
+  };
+
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    chatId: string,
+    chatName: string,
+    chatAvatar: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setContextMenu({
+      isOpen: true,
+      chatId,
+      chatName,
+      chatAvatar,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleArchiveFromContext = () => {
+    onArchiveClick();
+  };
+
+  const handleAddToFavoritesFromContext = () => {
+    // Add to favorites logic can be implemented here
+    console.log("Added to favorites");
   };
 
   return (
@@ -117,7 +173,12 @@ export function UnreadContent({ onArchiveClick }: UnreadContentProps) {
       </div>
       <div className="flex-1">
         {unreadChats.map((chat) => (
-          <div key={chat.id} className="flex items-center gap-3 py-2">
+          <div 
+            key={chat.id} 
+            className="flex items-center gap-3 py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer transition-colors"
+            onClick={() => handleChatClick(chat)}
+            onContextMenu={(e) => handleContextMenu(e, chat.id, chat.name, chat.avatar || "/default-avatar.jpg")}
+          >
             <div className="relative">
               {chat.hasStatusIndicator ? (
                 <StatusIndicator variant={chat.statusIndicatorType}>
@@ -192,13 +253,42 @@ export function UnreadContent({ onArchiveClick }: UnreadContentProps) {
           </div>
         ))}
       </div>
+      
+      {/* Context Menu */}
+      <UnreadChatContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={handleCloseContextMenu}
+        chatId={contextMenu.chatId}
+        chatName={contextMenu.chatName}
+        chatAvatar={contextMenu.chatAvatar}
+        onArchiveChat={handleArchiveFromContext}
+        onAddToFavorites={handleAddToFavoritesFromContext}
+      />
     </>
   );
 }
 
 // Full UnreadList component with header - handles its own archive state
-export function UnreadList() {
+interface UnreadListProps {
+  onChatSelect?: (chatId: string, chatName: string, chatAvatar: string) => void;
+}
+
+export function UnreadList({ onChatSelect }: UnreadListProps) {
   const [showArchive, setShowArchive] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    chatId: string;
+    chatName: string;
+    chatAvatar: string;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    chatId: "",
+    chatName: "",
+    chatAvatar: "",
+    position: { x: 0, y: 0 },
+  });
 
   const handleArchiveClick = () => {
     setShowArchive(true);
@@ -207,6 +297,38 @@ export function UnreadList() {
   const handleBackFromArchive = () => {
     setShowArchive(false);
   };
+
+  const handleChatSelect = (chatId: string, chatName: string, chatAvatar: string) => {
+    if (contextMenu.isOpen) {
+      return;
+    }
+    if (onChatSelect) {
+      onChatSelect(chatId, chatName, chatAvatar);
+    }
+  };
+
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    chatId: string,
+    chatName: string,
+    chatAvatar: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setContextMenu({
+      isOpen: true,
+      chatId,
+      chatName,
+      chatAvatar,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  };
+;
 
   return (
     <div className="p-4 h-full flex flex-col overflow-hidden">
@@ -260,7 +382,12 @@ export function UnreadList() {
             {/* Chat list */}
             <div className="flex-1">
               {unreadChats.map((chat) => (
-                <div key={chat.id} className="flex items-center gap-3 py-2">
+                <div 
+                  key={chat.id} 
+                  className="flex items-center gap-3 py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer transition-colors"
+                  onClick={() => handleChatSelect(chat.id, chat.name, chat.avatar || "/default-avatar.jpg")}
+                  onContextMenu={(e) => handleContextMenu(e, chat.id, chat.name, chat.avatar || "/default-avatar.jpg")}
+                >
                   <div className="relative">
                     {chat.hasStatusIndicator ? (
                       <StatusIndicator variant={chat.statusIndicatorType}>
@@ -335,6 +462,15 @@ export function UnreadList() {
                 </div>
               ))}
             </div>
+            
+            {/* Context Menu */}
+            <UnreadChatContextMenu
+              isOpen={contextMenu.isOpen}
+              position={contextMenu.position}
+              onClose={handleCloseContextMenu}
+              chatId={contextMenu.chatId}
+              chatName={contextMenu.chatName}
+            />
           </div>
         </>
       )}

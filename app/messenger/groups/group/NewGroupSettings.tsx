@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Camera, X, Smile } from "lucide-react";
+import { ArrowLeft, Camera, X, Smile, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ interface NewGroupSettingsProps {
     name: string;
     avatar?: string;
     members: Contact[];
+    objective?: string;
+    severity?: 'strict' | 'moderate' | 'relaxed';
     settings: {
       editGroupSettings: boolean;
       sendMessages: boolean;
@@ -119,6 +121,116 @@ const EmojiPicker = ({
   );
 };
 
+const SeverityDropdown = ({
+  isOpen,
+  onClose,
+  selectedSeverity,
+  onSelectSeverity,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedSeverity: 'strict' | 'moderate' | 'relaxed' | null;
+  onSelectSeverity: (severity: 'strict' | 'moderate' | 'relaxed') => void;
+}) => {
+  const [tempSelection, setTempSelection] = useState<'strict' | 'moderate' | 'relaxed' | null>(selectedSeverity);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTempSelection(selectedSeverity);
+    }
+  }, [isOpen, selectedSeverity]);
+
+  if (!isOpen) return null;
+
+  const handleSelect = () => {
+    if (tempSelection) {
+      onSelectSeverity(tempSelection);
+    }
+    onClose();
+  };
+
+  const handleCancel = () => {
+    setTempSelection(selectedSeverity);
+    onClose();
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleCancel();
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" 
+      onClick={handleBackdropClick}
+    >
+      {/* Dropdown */}
+      <div 
+        className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 w-80 max-w-[90vw]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold mb-2">Group severity</h3>
+        <p className="text-gray-600 text-sm mb-6">Some description about the group severity</p>
+        
+        <div className="space-y-4 mb-6">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="severity"
+              value="strict"
+              checked={tempSelection === 'strict'}
+              onChange={() => setTempSelection('strict')}
+              className="w-4 h-4 text-blue-500 border-2 border-gray-300 focus:ring-blue-500"
+            />
+            <span className="text-base font-medium">Strict</span>
+          </label>
+          
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="severity"
+              value="moderate"
+              checked={tempSelection === 'moderate'}
+              onChange={() => setTempSelection('moderate')}
+              className="w-4 h-4 text-blue-500 border-2 border-gray-300 focus:ring-blue-500"
+            />
+            <span className="text-base font-medium">Moderate</span>
+          </label>
+          
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="severity"
+              value="relaxed"
+              checked={tempSelection === 'relaxed'}
+              onChange={() => setTempSelection('relaxed')}
+              className="w-4 h-4 text-blue-500 border-2 border-gray-300 focus:ring-blue-500"
+            />
+            <span className="text-base font-medium">Relaxed</span>
+          </label>
+        </div>
+        
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={handleCancel}
+            className="text-red-500 hover:text-red-700 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSelect}
+            className="text-blue-500 hover:text-blue-700 font-medium"
+            disabled={!tempSelection}
+          >
+            Select
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function NewGroupSettings({
   isOpen,
   onBack,
@@ -128,6 +240,9 @@ export function NewGroupSettings({
 }: NewGroupSettingsProps) {
   const [groupName, setGroupName] = useState("");
   const [groupAvatar, setGroupAvatar] = useState<string | null>(null);
+  const [objective, setObjective] = useState("");
+  const [groupSeverity, setGroupSeverity] = useState<'strict' | 'moderate' | 'relaxed' | null>(null);
+  const [showSeverityDropdown, setShowSeverityDropdown] = useState(false);
   const [editGroupSettings, setEditGroupSettings] = useState(true);
   const [sendMessages, setSendMessages] = useState(true);
   const [addOtherMember, setAddOtherMember] = useState(true);
@@ -143,6 +258,9 @@ export function NewGroupSettings({
     if (isOpen) {
       setGroupName("");
       setGroupAvatar(null);
+      setObjective("");
+      setGroupSeverity(null);
+      setShowSeverityDropdown(false);
       setEditGroupSettings(true);
       setSendMessages(true);
       setAddOtherMember(true);
@@ -192,7 +310,6 @@ export function NewGroupSettings({
       const newValue = groupName.slice(0, start) + emoji + groupName.slice(end);
       setGroupName(newValue);
       
-    
       setTimeout(() => {
         input.focus();
         const newPosition = start + emoji.length;
@@ -202,12 +319,26 @@ export function NewGroupSettings({
     setShowEmojiPicker(false);
   };
 
+  const handleObjectiveChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (value.length <= 200) {
+      setObjective(value);
+    }
+  };
+
+  const getSeverityDisplayText = () => {
+    if (!groupSeverity) return "Select";
+    return groupSeverity.charAt(0).toUpperCase() + groupSeverity.slice(1);
+  };
+
   const handleCreateGroup = () => {
     if (groupName.trim()) {
       onCreateGroup({
         name: groupName,
         avatar: groupAvatar || undefined,
         members: selectedMembers,
+        objective: objective.trim() || undefined,
+        severity: groupSeverity || undefined,
         settings: {
           editGroupSettings,
           sendMessages,
@@ -220,7 +351,7 @@ export function NewGroupSettings({
 
   return (
     <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-[400px] h-[480px] rounded-lg flex flex-col overflow-hidden">
+      <div className="bg-white w-[400px] h-[600px] rounded-lg flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 p-4">
           <button onClick={onBack} title="Back" aria-label="Back">
@@ -276,6 +407,8 @@ export function NewGroupSettings({
             className="hidden"
             title="Upload group avatar"
           />
+
+
 
           {/* Members */}
           <div className="mb-6">
@@ -355,7 +488,7 @@ export function NewGroupSettings({
           </div>
 
           {/* Admin Permissions */}
-          <div className="space-y-4">
+          <div className="space-y-4 mb-6">
             <p className="text-sm font-medium text-gray-700">Admins can</p>
 
             <div className="flex items-start justify-between">
@@ -372,6 +505,39 @@ export function NewGroupSettings({
               />
             </div>
           </div>
+
+          {/* Objective */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Objective
+            </label>
+            <div className="relative">
+              <textarea
+                placeholder="Write something, min words 20"
+                value={objective}
+                onChange={handleObjectiveChange}
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                maxLength={200}
+              />
+              <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+                {objective.length}/200
+              </div>
+            </div>
+          </div>
+
+          {/* Group Severity */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Group severity
+            </label>
+            <button
+              onClick={() => setShowSeverityDropdown(!showSeverityDropdown)}
+              className="w-full p-3 border border-gray-300 rounded-lg text-left text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+            >
+              <span>{getSeverityDisplayText()}</span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Create Button */}
@@ -386,7 +552,15 @@ export function NewGroupSettings({
         </div>
       </div>
 
-      {/* Emoji Picker */}
+      <SeverityDropdown
+        isOpen={showSeverityDropdown}
+        onClose={() => setShowSeverityDropdown(false)}
+        selectedSeverity={groupSeverity}
+        onSelectSeverity={(severity) => {
+          setGroupSeverity(severity);
+          setShowSeverityDropdown(false);
+        }}
+      />
       <EmojiPicker
         isOpen={showEmojiPicker}
         onClose={() => setShowEmojiPicker(false)}

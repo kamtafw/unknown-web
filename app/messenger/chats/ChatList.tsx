@@ -158,7 +158,7 @@ export function ChatList({
   const renderContent = () => {
     switch (activeTab) {
       case "unread":
-        return <UnreadContent onArchiveClick={handleUnreadArchiveClick} />;
+        return <UnreadContent onArchiveClick={handleUnreadArchiveClick} onChatSelect={onChatSelect} />;
       case "favorites":
         return <FavoritesList />;
       case "groups":
