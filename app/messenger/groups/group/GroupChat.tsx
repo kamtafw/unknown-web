@@ -218,17 +218,6 @@ export function GroupChat({
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
-                {/* <GroupOptionsPopup
-                  isOpen={true}
-                  onClose={() => setShowGroupOptions(false)}
-                  onOptionSelect={handleGroupOptionSelect}
-                  onNavigateToGroupList={onNavigateToGroupList}
-                  groupName={groupName}
-                  groupAvatar={groupAvatar}
-                  hasGroupIcon={hasGroupIcon}
-                  onStartVideoCall={handleStartVideoCall}
-                  onStartAudioCall={handleStartAudioCall}
-                /> */}
                 <GroupOptionsPopup
                   isOpen={true}
                   onClose={() => setShowGroupOptions(false)}
