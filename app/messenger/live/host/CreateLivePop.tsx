@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, ChevronRight, Smile, ArrowLeft, Search } from "lucide-react";
+import Image from "next/image";
 
 const mockCoHosts = [
   {
@@ -69,7 +70,7 @@ interface CreateLivePopupProps {
     description: string;
     tags: string[];
     visibility: string;
-    coHosts?: any[];
+    coHosts?: CoHost[];
     isScheduled: boolean;
     scheduledDate?: string;
     scheduledTime?: string;
@@ -140,9 +141,11 @@ function CoHostSelectionPopup({
             <div key={host.id} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gray-300 rounded-full overflow-hidden">
-                  <img
+                  <Image
                     src={host.avatar}
                     alt={host.name}
+                    width={48}
+                    height={48}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -243,7 +246,6 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
     setShowCoHostSelection(false);
   };
 
-
   if (showCoHostSelection) {
     return (
       <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
@@ -272,7 +274,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
             </button>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold">Go live!</h2>
-              <img
+              <Image
                 src="/live.png"
                 alt="Live"
                 width={24}
@@ -369,9 +371,11 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
               {selectedCoHosts.map((host) => (
                 <div key={host.id} className="relative">
                   <div className="w-12 h-12 bg-gray-300 rounded-full overflow-hidden">
-                    <img
+                    <Image
                       src={host.avatar}
                       alt={host.name}
+                      width={48}
+                      height={48}
                       className="w-full h-full object-cover"
                     />
                   </div>

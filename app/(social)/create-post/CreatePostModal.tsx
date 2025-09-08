@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 import { X, Image as ImageIcon, Camera, MapPin, Hash } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+
 import { useRouter } from "next/navigation";
 import VisibilityDropdown from "./VisibilityDropdown";
 import ReplyDropdown from "./ReplyDropdown";
@@ -40,7 +41,6 @@ export default function CreatePostModal() {
     }
   }, [textareaValue]);
 
-
   useEffect(() => {
     return () => {
       images.forEach((imageUrl) => URL.revokeObjectURL(imageUrl));
@@ -57,7 +57,7 @@ export default function CreatePostModal() {
     } else {
       setTextareaValue(tagText);
     }
-    setShowTagPopup(false); 
+    setShowTagPopup(false);
   };
 
   const handleLocationSelect = (location: string) => {
@@ -103,7 +103,7 @@ export default function CreatePostModal() {
     console.log("Starting camera...");
     setCameraError("");
     setCameraReady(false);
-    
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -113,7 +113,7 @@ export default function CreatePostModal() {
         },
         audio: false,
       });
-      
+
       console.log("Camera stream obtained");
       setCameraStream(stream);
       setShowCamera(true);
@@ -123,10 +123,11 @@ export default function CreatePostModal() {
         if (videoRef.current && stream) {
           console.log("Setting video source");
           videoRef.current.srcObject = stream;
-          
+
           const handleLoadedMetadata = () => {
-            console.log("Video metadata loaded, dimensions:", 
-              videoRef.current?.videoWidth, 
+            console.log(
+              "Video metadata loaded, dimensions:",
+              videoRef.current?.videoWidth,
               videoRef.current?.videoHeight
             );
             setCameraReady(true);
@@ -147,12 +148,19 @@ export default function CreatePostModal() {
             setCameraError("Video playback error");
           };
 
-          videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
-          videoRef.current.addEventListener('canplay', handleCanPlay, { once: true });
-          videoRef.current.addEventListener('error', handleError, { once: true });
+          videoRef.current.addEventListener(
+            "loadedmetadata",
+            handleLoadedMetadata,
+            { once: true }
+          );
+          videoRef.current.addEventListener("canplay", handleCanPlay, {
+            once: true,
+          });
+          videoRef.current.addEventListener("error", handleError, {
+            once: true,
+          });
         }
       }, 100);
-      
     } catch (error) {
       console.error("Error accessing camera:", error);
       const errorMessage =
@@ -164,7 +172,7 @@ export default function CreatePostModal() {
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     console.log("Stopping camera");
     if (cameraStream) {
       cameraStream.getTracks().forEach((track) => {
@@ -176,11 +184,11 @@ export default function CreatePostModal() {
     setShowCamera(false);
     setCameraReady(false);
     setCameraError("");
-  };
+  }, [cameraStream]);
 
   const capturePhoto = () => {
     console.log("Attempting to capture photo");
-    
+
     if (!videoRef.current || !canvasRef.current || !cameraReady) {
       console.error("Video or canvas not ready for capture");
       alert("Camera not ready. Please wait a moment and try again.");
@@ -208,7 +216,7 @@ export default function CreatePostModal() {
         // Mirror the image horizontally for front camera
         context.scale(-1, 1);
         context.drawImage(video, -canvas.width, 0);
-        
+
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -265,7 +273,7 @@ export default function CreatePostModal() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [showCamera, showLocationPopup, showTagPopup]);
+  }, [showCamera, showLocationPopup, showTagPopup, stopCamera]);
 
   return (
     <>
@@ -412,7 +420,7 @@ export default function CreatePostModal() {
 
       {/* Camera Modal */}
       {showCamera && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -420,7 +428,7 @@ export default function CreatePostModal() {
             }
           }}
         >
-          <div 
+          <div
             className="bg-white rounded-lg p-4 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
@@ -456,7 +464,8 @@ export default function CreatePostModal() {
                 onClick={capturePhoto}
                 className={cn(
                   "px-6 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-medium",
-                  (!cameraReady || cameraError) && "opacity-50 cursor-not-allowed"
+                  (!cameraReady || cameraError) &&
+                    "opacity-50 cursor-not-allowed"
                 )}
                 disabled={!cameraReady || !!cameraError}
               >
@@ -478,16 +487,16 @@ export default function CreatePostModal() {
         />
       )}
 
-        {/* Location Popup */}
-        {showLocationPopup && (
-          <LocationPopup
-            onClose={() => {
-              console.log("Closing location popup");
-              setShowLocationPopup(false);
-            }}
-            onLocationSelect={handleLocationSelect}
-          />
-        )}
-            </>
-          );
-      }
+      {/* Location Popup */}
+      {showLocationPopup && (
+        <LocationPopup
+          onClose={() => {
+            console.log("Closing location popup");
+            setShowLocationPopup(false);
+          }}
+          onLocationSelect={handleLocationSelect}
+        />
+      )}
+    </>
+  );
+}

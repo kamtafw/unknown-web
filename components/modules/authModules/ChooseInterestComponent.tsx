@@ -38,7 +38,7 @@ const ChooseInterestComponent = () => {
         if (isSuccess) {
             setDisplaySuggestions(!displaySuggestions)
         }
-    }, [isSuccess])
+   }, [isSuccess, displaySuggestions])
     
     console.log('error', error);
     

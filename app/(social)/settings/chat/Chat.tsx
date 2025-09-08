@@ -1,7 +1,7 @@
 "use client";
-
-import { ArrowLeft, Paintbrush, Image, Archive } from "lucide-react";
 import { useState } from "react";
+import { ArrowLeft, Paintbrush, Archive } from "lucide-react";
+import { MdImage } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import ThemePopup from "./ThemePopup";
 import FontSizePopup from "./FontSizePopup";
@@ -54,7 +54,7 @@ export default function ChatPage({ onBack, onNavigate }: ChatPageProps) {
               onClick={() => onNavigate("chat-wallpaper")}
               className="w-full flex items-center justify-start gap-3 bg-white text-gray-900 hover:bg-gray-100"
             >
-              <Image size={20} className="text-[#6A88D1]" />
+              <MdImage size={30} className="text-[#6A88D1]" />
               <span className="text-sm font-semibold text-[14px]">
                 Wallpaper
               </span>

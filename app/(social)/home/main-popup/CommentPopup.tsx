@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   X,
   Image as ImageIcon,
@@ -13,7 +14,7 @@ import {
   MapPin,
 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import SharePopup from "./SharePopup";
@@ -114,13 +115,13 @@ export default function CommentPopup({
     }
   };
 
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setCameraStream(null);
-    }
-    setShowCamera(false);
-  };
+const stopCamera = useCallback(() => {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    setCameraStream(null);
+  }
+  setShowCamera(false);
+}, [cameraStream]);
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -195,14 +196,14 @@ export default function CommentPopup({
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     return () => {
       images.forEach((imageUrl) => URL.revokeObjectURL(imageUrl));
       if (cameraStream) {
         cameraStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+}, [images, cameraStream, stopCamera]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

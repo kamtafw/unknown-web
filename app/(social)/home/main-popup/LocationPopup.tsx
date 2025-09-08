@@ -14,6 +14,47 @@ interface Location {
   description: string;
 }
 
+const mockLocations: Location[] = [
+  {
+    id: "1",
+    name: "Jos, Plateau State, Nigeria",
+    description: "City in Nigeria",
+  },
+  {
+    id: "2",
+    name: "Abuja, Federal Capital Territory, Nigeria",
+    description: "Capital of Nigeria",
+  },
+  {
+    id: "3",
+    name: "Lagos, Lagos State, Nigeria",
+    description: "Commercial hub of Nigeria",
+  },
+  {
+    id: "4",
+    name: "Port Harcourt, Rivers State, Nigeria",
+    description: "Oil city in Nigeria",
+  },
+  {
+    id: "5",
+    name: "Kano, Kano State, Nigeria",
+    description: "Northern Nigeria",
+  },
+  {
+    id: "6",
+    name: "New York, NY, USA",
+    description: "City in United States",
+  },
+  { id: "7", name: "London, UK", description: "Capital of United Kingdom" },
+  { id: "8", name: "Paris, France", description: "Capital of France" },
+  { id: "9", name: "Tokyo, Japan", description: "Capital of Japan" },
+  {
+    id: "10",
+    name: "Dubai, UAE",
+    description: "City in United Arab Emirates",
+  },
+];
+
 export default function LocationPopup({
   onClose,
   onLocationSelect,
@@ -22,47 +63,6 @@ export default function LocationPopup({
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const mockLocations: Location[] = [
-    {
-      id: "1",
-      name: "Jos, Plateau State, Nigeria",
-      description: "City in Nigeria",
-    },
-    {
-      id: "2",
-      name: "Abuja, Federal Capital Territory, Nigeria",
-      description: "Capital of Nigeria",
-    },
-    {
-      id: "3",
-      name: "Lagos, Lagos State, Nigeria",
-      description: "Commercial hub of Nigeria",
-    },
-    {
-      id: "4",
-      name: "Port Harcourt, Rivers State, Nigeria",
-      description: "Oil city in Nigeria",
-    },
-    {
-      id: "5",
-      name: "Kano, Kano State, Nigeria",
-      description: "Northern Nigeria",
-    },
-    {
-      id: "6",
-      name: "New York, NY, USA",
-      description: "City in United States",
-    },
-    { id: "7", name: "London, UK", description: "Capital of United Kingdom" },
-    { id: "8", name: "Paris, France", description: "Capital of France" },
-    { id: "9", name: "Tokyo, Japan", description: "Capital of Japan" },
-    {
-      id: "10",
-      name: "Dubai, UAE",
-      description: "City in United Arab Emirates",
-    },
-  ];
 
   useEffect(() => {
     if (searchInputRef.current) {
@@ -74,7 +74,6 @@ export default function LocationPopup({
     if (searchQuery.trim()) {
       setIsLoading(true);
 
-      
       const timer = setTimeout(() => {
         const filteredLocations = mockLocations.filter(
           (location) =>
