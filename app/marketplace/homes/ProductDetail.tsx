@@ -113,7 +113,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={() => setIsLoved(!isLoved)}
-                className="p-2  hover:bg-white rounded-full transition-colors shadow-md"
+                className="p-2 bg-white/80 hover:bg-white rounded-full transition-colors shadow-md"
                 aria-label={
                   isLoved ? "Remove from favorites" : "Add to favorites"
                 }
@@ -131,7 +131,7 @@ export function ProductDetail({ product, onClose }: ProductDetailProps) {
                 alt={product.name}
                 width={1000}
                 height={1000}
-                className="object-cover w-full h-120"
+                className="object-cover w-full h-96"
               />
             </div>
 
