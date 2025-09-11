@@ -52,10 +52,10 @@ import BlockedContactsPage from "./privacy/BlockedContact";
 import UnblockContactPopup from "./privacy/UnblockContactPopup";
 
 
-export default function SettingsPage({ initialView }: { initialView?: string } = {}) {
+export default function SettingsPage() {
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
-  const [activeView, setActiveView] = useState(viewParam || initialView || "settingsMain");
+  const [activeView, setActiveView] = useState(viewParam || "settingsMain");
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [lastSeenText, setLastSeenText] = useState("Nobody, Same as last seen");
   const [statusText, setStatusText] = useState("My contacts");
