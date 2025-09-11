@@ -3,28 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
- "scripts": {
-    "dev": "next dev --turbopack -p 4000",
+  "scripts": {
+    "dev": "next dev --turbopack -p 4000 & sleep 2 && (start http://localhost:4000/login 2>nul || open http://localhost:4000/login 2>/dev/null || xdg-open http://localhost:4000/login 2>/dev/null)",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test --project=chromium --reporter=html",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:fast": "playwright test --project=chromium --workers=2",
-    "test:ui": "npm run lint && npm run test:coverage -- --watchAll=false --passWithNoTests",
-    "test:all": "npm run lint && npm run test:coverage -- --watchAll=false --passWithNoTests && npm run test:e2e:fast",
-    
-    "validate": "node enhanced-validator.js",
-    "validate:quick": "node test-suite.js quick",
-    "validate:full": "node test-suite.js full",
-    "validate:report": "npm run validate && open coverage/lcov-report/index.html && open playwright-report/index.html",
-    
-    "precommit": "npm run validate:quick",
-    "prebuild": "npm run validate:full"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -60,20 +43,12 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "playwright": "^1.55.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

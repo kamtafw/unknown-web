@@ -42,7 +42,12 @@ export default function RepostPopup({ onClose, post }: RepostPopupProps) {
   };
 
   if (showTagPopup) {
-    return <TagPopup onClose={() => setShowTagPopup(false)} />;
+    return <TagPopup 
+  onClose={() => setShowTagPopup(false)} 
+  onTagSelect={(tag) => {
+    console.log('Selected tag:', tag);
+  }}
+/>;
   }
 
   if (showQuotePopup) {

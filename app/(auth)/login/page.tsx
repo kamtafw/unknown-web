@@ -9,14 +9,14 @@ import React from "react";
 const LoginPage = () => {
   return (
     <AuthLayout>
-      <section className="mx-auto py-6 md:py-0 flex flex-col-reverse md:flex-row items-center md:items-start justify-center w-full gap-[32px] md:gap-[116px] px-6">
-        <div className="w-full md:w-[437px] flex flex-col h-auto gap-[42px] mb-10">
-          <div className="hidden md:block w-full md:w-[410px] max-w-[410px] h-auto md:h-[514px] mx-auto">
+      <section className="mx-auto flex flex-col-reverse md:flex-row items-center justify-center w-full gap-[20px] md:gap-[60px] px-6">
+        <div className="w-full md:w-[437px] flex flex-col h-auto gap-[20px]">
+          <div className="hidden md:block w-full md:w-[410px] max-w-[410px] h-auto md:h-[400px] mx-auto mb-10">
             <Image
               src="/signup.svg"
               alt="Sign up illustration"
-              width={410}
-              height={514}
+              width={350}
+              height={300}
               className="object-contain"
             />
           </div>
@@ -37,7 +37,7 @@ const LoginPage = () => {
             </Button>
           </div>
         </div>
-        <div className="w-full md:w-[384px] flex flex-col gap-[32px]">
+        <div className="w-full md:w-[384px] flex flex-col gap-[12px]">
           <h2 className="text-[28px] font-bold text-[#111827]">
             Sign in to AppsCombo
           </h2>

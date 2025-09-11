@@ -95,9 +95,9 @@ function SignupFormModule() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full flex flex-col gap-[32px]"
+          className="w-full flex flex-col gap-[20px]"
         >
-          <div className="flex flex-col items-center md:items-start gap-[24px] w-full md:w-[384px] max-w-[384px]">
+          <div className="flex flex-col items-center md:items-start gap-[20px] w-full md:w-[384px] max-w-[384px]">
             {/* Email Field */}
             <FormField
               control={form.control}

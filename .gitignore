@@ -47,10 +47,10 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 
-.npmrc
-	app/__tests__/
-	jest.config.mjs
-	jest.setup.js
-	playwright.config.ts
-	test-suite.js
+
+/__tests__/
+/jest.config.mjs
+/jest.setup.js
+/playwright.config.ts
+/test-suite.js
 

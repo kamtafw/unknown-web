@@ -394,7 +394,7 @@ export default function SettingsPage({ initialView }: { initialView?: string } =
           onUpdateText={(count) => {
             setLastSeenText(`My contact except, ${count} excluded, ${lastSeenOnlineStatus}`);
             setLastSeenPersonalInfo("My contact except");
-            setLastSeenExcludedCount(count);
+            setLastSeenExcludedCount(Number(count));
           }}
           initialCount={lastSeenExcludedCount}
           setExcludedCount={setLastSeenExcludedCount}
