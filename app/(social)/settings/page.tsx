@@ -51,7 +51,7 @@ import ChatLockPage from "./privacy/ChatLock";
 import BlockedContactsPage from "./privacy/BlockedContact";
 import UnblockContactPopup from "./privacy/UnblockContactPopup";
 
-export default function SettingsPage() {
+function SettingsContent() { 
   const searchParams = useSearchParams();
   const viewParam = searchParams.get("view");
   const [activeView, setActiveView] = useState(viewParam || "settingsMain");
@@ -188,7 +188,6 @@ export default function SettingsPage() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
       <div className="flex flex-col md:flex-row justify-start mb-14">
         <SettingsMainPage
           onVerificationClick={() => handleViewChange("verification")}
@@ -503,14 +502,16 @@ export default function SettingsPage() {
           />
         )}
         {activeView.startsWith("larger-than-5mb-image-") && (
-          <LargerThan5MBImagePage
-            onNavigate={() => {
-              const urlParams = new URLSearchParams(window.location.search);
-              const index = urlParams.get("selected");
-              const parsedIndex = index ? parseInt(index, 10) : undefined;
-              handleViewChange("larger-than-5mb", parsedIndex);
-            }}
-          />
+          <Suspense fallback={<div>Loading...</div>}>
+            <LargerThan5MBImagePage
+              onNavigate={() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const index = urlParams.get("selected");
+                const parsedIndex = index ? parseInt(index, 10) : undefined;
+                handleViewChange("larger-than-5mb", parsedIndex);
+              }}
+            />
+          </Suspense>
         )}
         {activeView === "network-usage" && (
           <NetworkUsagePage onBack={handleBackToDataAndStorage} />
@@ -522,6 +523,13 @@ export default function SettingsPage() {
           <ChatUserPage onBack={handleBackToDataAndStorage} />
         )}
       </div>
+  );
+}
+
+export default function SettingsPage() {  
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SettingsContent /> 
     </Suspense>
   );
 }
