@@ -1,14 +1,16 @@
 import { Star, ChevronRight } from "lucide-react";
 import Image from "next/image";
 
+
 interface ReviewsProps {
   product: {
     rating: number;
     totalRatings: number;
   };
+  onShowReviewsModal?: () => void;
 }
 
-export function Reviews({ product }: ReviewsProps) {
+export function Reviews({ product, onShowReviewsModal }: ReviewsProps) {
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => {
       const isFull = i < Math.floor(rating);
@@ -98,7 +100,13 @@ export function Reviews({ product }: ReviewsProps) {
           <h3 className="text-xl font-semibold text-gray-900">
             Product ratings & Reviews
           </h3>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+          <button
+            onClick={() => onShowReviewsModal?.()}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="View all reviews"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
 
         <div className="flex items-start space-x-6">

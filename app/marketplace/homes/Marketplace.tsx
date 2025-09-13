@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { ChevronRight, Search } from "lucide-react";
 import { ProductDetail } from "./ProductDetail";
+import { CategoryPage } from "./CategoryPage";
 
 interface CategoryItem {
   id: string;
@@ -153,10 +154,21 @@ export function Marketplace() {
     null
   );
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(null);
+const [showCategoryPage, setShowCategoryPage] = useState(false);
 
-  const handleCategoryClick = (categoryId: string) => {
-    console.log(`Clicked category: ${categoryId}`);
-  };
+const handleCategoryClick = (categoryId: string) => {
+  const category = categories.find(c => c.id === categoryId);
+  if (category) {
+    setSelectedCategory(category);
+    setShowCategoryPage(true);
+  }
+};
+
+const handleCloseCategoryPage = () => {
+  setShowCategoryPage(false);
+  setSelectedCategory(null);
+};
 
   const handleProductClick = (productId: string) => {
     const product = products.find((p) => p.id === productId);
@@ -193,9 +205,14 @@ export function Marketplace() {
     setSelectedProduct(null);
   };
 
-  return (
-    <>
-      {showProductDetail && selectedProduct ? (
+return (
+  <>
+    {showCategoryPage && selectedCategory ? (
+      <CategoryPage
+        category={selectedCategory}
+        onClose={handleCloseCategoryPage}
+      />
+    ) : showProductDetail && selectedProduct ? (
         <ProductDetail
           product={selectedProduct}
           onClose={handleCloseProductDetail}
