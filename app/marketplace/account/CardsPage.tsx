@@ -208,33 +208,33 @@ export default function CardsPage({  }: { onBack?: () => void }) {
 
   if (showAddCardForm) {
     return (
-      <div className="w-[600px] bg-white rounded-lg overflow-hidden">
-        <div className="p-6">
+      <div className="w-full max-w-[600px] lg:w-[600px] bg-white rounded-lg overflow-hidden">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowAddCardForm(false)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Go back to cards list"
               >
-                <X className="w-5 h-5 text-gray-500 rotate-45" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 rotate-45" />
               </button>
-              <h1 className="text-2xl font-semibold text-gray-900">Add New Card</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Add New Card</h1>
             </div>
           </div>
 
           {/* Card Type Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
               Select Card Type
             </label>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {cardTypeOptions.map((option) => (
                 <button
                   key={option.type}
                   onClick={() => setSelectedCardType(option.type)}
-                  className={`p-3 border rounded-lg flex flex-col items-center justify-center space-y-2 transition-colors ${
+                  className={`p-2 sm:p-3 border rounded-lg flex flex-col items-center justify-center space-y-1 sm:space-y-2 transition-colors ${
                     selectedCardType === option.type
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:bg-gray-50'
@@ -245,13 +245,13 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                     alt={option.name}
                     width={32}
                     height={20}
-                    className="object-contain"
+                    className="object-contain w-6 h-4 sm:w-8 sm:h-5"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = "none";
                     }}
                   />
-                  <span className="text-xs text-gray-600 font-medium">
+                  <span className="text-xs text-gray-600 font-medium text-center">
                     {option.name}
                   </span>
                 </button>
@@ -259,12 +259,12 @@ export default function CardsPage({  }: { onBack?: () => void }) {
             </div>
           </div>
 
-          <form className="space-y-4">
+          <form className="space-y-3 sm:space-y-4">
             {selectedCardType !== 'bank' && (
               <>
                 {/* Card Number */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Card Number
                   </label>
                   <div className="relative">
@@ -273,18 +273,18 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                       value={cardDetails.number}
                       onChange={(e) => handleCardNumberChange(e.target.value)}
                       placeholder="1234 5678 9012 3456"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                      className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 sm:pr-12"
                       maxLength={19}
                       aria-label="Card number"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
+                    <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1 sm:space-x-2">
                       {detectCardType(cardDetails.number) && (
                         <Image
                           src={getCardIcon(detectCardType(cardDetails.number))}
                           alt="Detected card type"
                           width={24}
                           height={15}
-                          className="object-contain"
+                          className="object-contain w-5 h-3 sm:w-6 sm:h-4"
                         />
                       )}
                       {isCardNumberValid(cardDetails.number) && (
@@ -293,7 +293,7 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                           alt="Valid card number"
                           width={16}
                           height={16}
-                          className="text-green-500"
+                          className="text-green-500 w-3 h-3 sm:w-4 sm:h-4"
                         />
                       )}
                     </div>
@@ -301,9 +301,9 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                 </div>
 
                 {/* Expiry Date and CVV */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Expiry Date
                     </label>
                     <input
@@ -311,13 +311,13 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                       value={cardDetails.expiryDate}
                       onChange={(e) => handleExpiryChange(e.target.value)}
                       placeholder="MM/YY"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       maxLength={5}
                       aria-label="Card expiry date"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       CVV
                     </label>
                     <input
@@ -325,7 +325,7 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                       value={cardDetails.cvv}
                       onChange={(e) => handleCvvChange(e.target.value)}
                       placeholder="123"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       maxLength={4}
                       aria-label="Card CVV security code"
                     />
@@ -336,7 +336,7 @@ export default function CardsPage({  }: { onBack?: () => void }) {
 
             {/* Cardholder Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 {selectedCardType === 'bank' ? 'Account Holder Name' : 'Cardholder Name'}
               </label>
               <input
@@ -349,17 +349,17 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                   }))
                 }
                 placeholder="John Doe"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 aria-label="Cardholder name"
               />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-3 pt-4">
+            <div className="flex space-x-3 pt-3 sm:pt-4">
               <button
                 type="button"
                 onClick={() => setShowAddCardForm(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
@@ -367,7 +367,7 @@ export default function CardsPage({  }: { onBack?: () => void }) {
                 type="button"
                 onClick={handleSaveCard}
                 disabled={!isFormValid()}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                   isFormValid()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -383,45 +383,45 @@ export default function CardsPage({  }: { onBack?: () => void }) {
   }
 
   return (
-    <div className="w-[600px] bg-white rounded-lg overflow-hidden">
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Cards</h1>
+    <div className="w-full max-w-[600px] lg:w-[600px] bg-white rounded-lg overflow-hidden">
+      <div className="p-4 sm:p-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Cards</h1>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {cards.map((card) => (
             <div
               key={card.id}
               onClick={() => handleCardSelect(card.id)}
-              className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100 rounded-lg"
+              className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100 rounded-lg"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-8 h-6 flex items-center justify-center ">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-6 h-4 sm:w-8 sm:h-6 flex items-center justify-center">
                   <Image
                     src={getCardIcon(card.type)}
                     alt={`${card.type} card`}
                     width={24}
                     height={15}
-                    className="object-contain"
+                    className="object-contain w-5 h-3 sm:w-6 sm:h-4"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = "none";
                     }}
                   />
                 </div>
-                <span className="text-gray-700 font-medium">
+                <span className="text-sm sm:text-base text-gray-700 font-medium truncate">
                   {getCardLabel(card.type, card.number)}
                 </span>
               </div>
               {card.isSelected && (
-                <div className="w-5 h-5 flex items-center justify-center">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center flex-shrink-0">
                   <Image
                     src="/check.svg"
                     alt="Selected"
                     width={16}
                     height={16}
-                    className="text-green-500"
+                    className="text-green-500 w-3 h-3 sm:w-4 sm:h-4"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = "none";
@@ -435,27 +435,27 @@ export default function CardsPage({  }: { onBack?: () => void }) {
           {/* Add Another Card Button */}
           <div
             onClick={handleAddCardClick}
-            className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors cursor-pointer border border-dashed border-gray-300 rounded-lg"
+            className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer border border-dashed border-gray-300 rounded-lg"
           >
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">
-                <Plus className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center bg-gray-100 rounded-full">
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
               </div>
-              <span className="text-gray-700 font-medium">Add another card</span>
+              <span className="text-sm sm:text-base text-gray-700 font-medium">Add another card</span>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
         </div>
 
         {/* Payment Method Icons */}
-        <div className="mt-8 pt-6 border-t border-gray-100">
-          <div className="flex items-center space-x-4">
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
             <Image
               src="/visa.svg"
               alt="Visa"
               width={40}
               height={25}
-              className="object-contain"
+              className="object-contain w-8 h-5 sm:w-10 sm:h-6"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
@@ -466,7 +466,7 @@ export default function CardsPage({  }: { onBack?: () => void }) {
               alt="Mastercard"
               width={40}
               height={25}
-              className="object-contain"
+              className="object-contain w-8 h-5 sm:w-10 sm:h-6"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
@@ -477,25 +477,25 @@ export default function CardsPage({  }: { onBack?: () => void }) {
               alt="Verve"
               width={40}
               height={25}
-              className="object-contain"
+              className="object-contain w-8 h-5 sm:w-10 sm:h-6"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
               }}
             />
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <Image
                 src="/banks.svg"
                 alt="Bank Transfer"
                 width={40}
                 height={25}
-                className="object-contain"
+                className="object-contain w-8 h-5 sm:w-10 sm:h-6"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
                 }}
               />
-              <span className="text-sm text-gray-600">Bank Transfer</span>
+              <span className="text-xs sm:text-sm text-gray-600">Bank Transfer</span>
             </div>
           </div>
         </div>
