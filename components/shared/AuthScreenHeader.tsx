@@ -11,7 +11,7 @@ const AuthScreenHeader = () => {
           alt="App Combo"
           width={100}
           height={100}
-          className="w-[180.49px] h-[34px] mr-2"
+          className="w-[180.49px] h-[34px] mr-2 object-contain"
         />
       </div>
     </header>

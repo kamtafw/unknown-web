@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 4000 & sleep 2 && (start http://localhost:4000/login 2>nul || open http://localhost:4000/login 2>/dev/null || xdg-open http://localhost:4000/login 2>/dev/null)",
+    "dev": "next dev --turbopack -p 5000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

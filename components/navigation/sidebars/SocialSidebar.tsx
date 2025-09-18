@@ -8,7 +8,6 @@ import {
   Bot,
   UserPlus,
   Plus,
-  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -73,13 +72,6 @@ export default function SocialSidebar() {
           </div>
         </div>
         <div className="mt-auto p-4 border-t border-gray-200">
-          <Link
-            href="/logout"
-            className="flex items-center px-4 py-3 text-sm font-2 medium text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
-          >
-            <LogOut className="w-5 h-5 text-red-600 shrink-0 mr-3" />
-            <span>Logout</span>
-          </Link>
         </div>
       </nav>
     </aside>

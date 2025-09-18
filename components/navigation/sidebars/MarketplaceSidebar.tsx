@@ -16,7 +16,7 @@ export default function MarketplaceSidebar({
   const pathname = usePathname();
 
   const navigationItems = [
-    { href: "/marketplace/home", label: "Home", icon: Home },
+    { href: "/marketplace/homes", label: "Homes", icon: Home },
     { href: "/marketplace/liked", label: "Liked", icon: Heart },
     { href: "/marketplace/account", label: "Account", icon: User },
     { href: "/marketplace/cart", label: "Cart", icon: ShoppingCart },
@@ -59,7 +59,7 @@ export default function MarketplaceSidebar({
             {/* Vendor Dashboard Button */}
             <div className="pt-4">
               <Link
-                href="/market-vendor/goods"
+                href="/market-vendor/setup"
                 className={cn(
                   "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 group",
                   isCollapsed ? "justify-center" : ""

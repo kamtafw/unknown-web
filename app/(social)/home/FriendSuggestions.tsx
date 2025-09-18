@@ -81,7 +81,7 @@ export default function FriendSuggestionsPage() {
   };
 
   return (
-    <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mt-5">
       <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
         <div className="px-4 py-3">
           <h1 className="text-xl font-bold text-gray-900">Friend Suggestions</h1>

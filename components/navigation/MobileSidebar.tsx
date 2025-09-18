@@ -129,7 +129,7 @@ export default function MobileSidebar({
         { href: "/marketplace/account", label: "Account", icon: User },
         { href: "/marketplace/cart", label: "Cart", icon: ShoppingCart },
         { href: "/marketplace/alerts", label: "Alerts", icon: Bell },
-        { href: "/market-vendor/goods", label: "Vendor Dashboard", icon: Package },
+        { href: "/market-vendor/setup", label: "Vendor Dashboard", icon: Package },
         { href: "/logout", label: "Logout", icon: LogOut },
       ]
     }

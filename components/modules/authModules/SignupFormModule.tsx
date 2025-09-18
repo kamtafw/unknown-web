@@ -262,7 +262,7 @@ function SignupFormModule() {
               Sign Up
             </Button>
             <Link
-              href="/login"
+              href="/"
               className="text-base text-center text-[#1F2937] font-bold cursor-pointer"
             >
               Already a user? <span className="text-[#6A88D1]">Sign in</span>
