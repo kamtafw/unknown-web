@@ -9,6 +9,7 @@ import {
   UserMinus,
   LogOut,
   Clock,
+  ChevronLeft,
 } from "lucide-react";
 
 interface AccountPageProps {
@@ -20,6 +21,7 @@ interface AccountPageProps {
   onDeleteAccountClick: () => void;
   onTimeZoneClick: () => void;
   onLogoutClick: () => void;
+  onBack: () => void;
 }
 
 export default function AccountPage({
@@ -31,12 +33,21 @@ export default function AccountPage({
   onDeleteAccountClick,
   onTimeZoneClick,
   onLogoutClick,
+  onBack,
 }: AccountPageProps) {
   return (
     <div className="flex justify-center sm:justify-start w-full md:ml-3">
       <div className="w-full max-w-[530px] h-[796px] max-h-[100vh] bg-white text-gray-900 overflow-auto shadow-md rounded-lg border border-gray-200">
         <div className="sticky top-0 bg-white/80 backdrop-blur-sm z-10">
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="lg:hidden p-1 hover:bg-gray-100 rounded"
+              aria-label="Go back to settings"
+              title="Go back to settings"
+            >
+              <ChevronLeft size={20} />
+            </button>
             <h1 className="text-xl font-bold">Account</h1>
           </div>
         </div>
@@ -46,56 +57,72 @@ export default function AccountPage({
             onClick={onSecurityClick}
           >
             <Shield size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Security Notification</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Security Notification
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onTwoStepVerificationClick}
           >
             <Lock size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Two-Step Verification</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Two-Step Verification
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onReportProblemClick}
           >
             <AlertCircle size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Report Problem</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Report Problem
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onChangePhoneNumberClick}
           >
             <Phone size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Change Phone Number</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Change Phone Number
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onAddAccountClick}
           >
             <UserPlus size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Add Account</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Add Account
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onDeleteAccountClick}
           >
             <UserMinus size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Delete Account</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Delete Account
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onTimeZoneClick}
           >
             <Clock size={20} className="text-gray-500" />
-            <span className="font-semibold text-sm sm:text-base">Time Zone</span>
+            <span className="font-semibold text-sm sm:text-base">
+              Time Zone
+            </span>
           </button>
           <button
             className="flex items-center gap-3 w-full text-left py-2 hover:bg-gray-50 rounded-md"
             onClick={onLogoutClick}
           >
             <LogOut size={20} className="text-red-500" />
-            <span className="font-semibold text-red-500 text-sm sm:text-base">Logout</span>
+            <span className="font-semibold text-red-500 text-sm sm:text-base">
+              Logout
+            </span>
           </button>
         </div>
       </div>

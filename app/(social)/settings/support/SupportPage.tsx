@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, File, Shield } from "lucide-react";
+import { MessageCircle, File, Shield, ChevronLeft, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SupportPageProps {
@@ -19,6 +19,7 @@ export default function SupportPage({ onBack, onNavigate }: SupportPageProps) {
               className="p-2 rounded-full hover:bg-gray-100"
               aria-label="Back to Settings"
             >
+               <ChevronLeft size={20} />
             </button>
             <h1 className="text-xl font-bold">Support</h1>
           </div>

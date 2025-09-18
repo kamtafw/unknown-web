@@ -51,7 +51,7 @@ import ChatLockPage from "./privacy/ChatLock";
 import BlockedContactsPage from "./privacy/BlockedContact";
 import UnblockContactPopup from "./privacy/UnblockContactPopup";
 
-function SettingsContent() { 
+function SettingsContent() {
   const searchParams = useSearchParams();
   const viewParam = searchParams.get("view");
   const [activeView, setActiveView] = useState(viewParam || "settingsMain");
@@ -188,7 +188,8 @@ function SettingsContent() {
   };
 
   return (
-      <div className="flex flex-col md:flex-row justify-start mb-14">
+    <div className="flex flex-col md:flex-row justify-start mb-14">
+      {(activeView === "settingsMain" || window.innerWidth >= 1024) && (
         <SettingsMainPage
           onVerificationClick={() => handleViewChange("verification")}
           onAccountClick={() => handleViewChange("account")}
@@ -200,336 +201,338 @@ function SettingsContent() {
           onSupportClick={() => handleViewChange("support")}
           onProfileClick={() => handleViewChange("profile")}
         />
-        {activeView === "verification" && <VerificationPage />}
-        {activeView === "account" && (
-          <AccountPage
-            onSecurityClick={() => handleViewChange("securityNotification")}
-            onTwoStepVerificationClick={() =>
-              handleViewChange("twoStepVerification")
-            }
-            onReportProblemClick={() => handleViewChange("reportProblem")}
-            onChangePhoneNumberClick={() => handleViewChange("changeNumber")}
-            onAddAccountClick={() => handleViewChange("addAccount")}
-            onDeleteAccountClick={() => handleViewChange("deleteAccount")}
-            onTimeZoneClick={() => handleViewChange("timeZone")}
-            onLogoutClick={() => handleViewChange("logout")}
-          />
-        )}
-        {activeView === "alert" && (
-          <AlertPage onBack={handleBackToSettingsMain} />
-        )}
-        {activeView === "securityNotification" && (
-          <SecurityNotificationPage onBack={handleBackToAccount} />
-        )}
-        {activeView === "reportProblem" && (
-          <ReportProblemPage onBack={handleBackToAccount} />
-        )}
-        {activeView === "twoStepVerification" && (
-          <TwoStepVerificationPage
-            onBack={handleBackToAccount}
-            onCreatePinClick={() => handleViewChange("createPin")}
-            onGoogleAuthenticatorClick={() =>
-              handleViewChange("googleAuthenticator")
-            }
-          />
-        )}
-        {activeView === "createPin" && (
-          <CreatePinPage
-            onBack={handleBackToTwoStepVerification}
-            onNext={() => handleViewChange("confirmPin")}
-          />
-        )}
-        {activeView === "confirmPin" && (
-          <ConfirmPinPage
-            onBack={() => handleViewChange("createPin")}
-            onNext={handleBackToAccount}
-          />
-        )}
-        {activeView === "googleAuthenticator" && (
-          <GoogleAuthenticatorPage
-            onBack={handleBackToTwoStepVerification}
-            onNext={() => handleViewChange("googleAuthenticator2")}
-          />
-        )}
-        {activeView === "googleAuthenticator2" && (
-          <GoogleAuthenticatorPage2
-            onBack={handleBackToGoogleAuthenticator}
-            onNext={() => handleViewChange("googleAuthenticator3")}
-          />
-        )}
-        {activeView === "googleAuthenticator3" && (
-          <GoogleAuthenticatorPage3
-            onBack={handleBackToGoogleAuthenticator2}
-            onNext={handleBackToAccount}
-          />
-        )}
-        {activeView === "changeNumber" && (
-          <ChangeNumberPage
-            onBack={handleBackToAccount}
-            onNext={() => handleViewChange("changeNumber2")}
-          />
-        )}
-        {activeView === "changeNumber2" && (
-          <ChangeNumberPage2
-            onBack={handleBackToChangeNumber}
-            onNext={() => handleViewChange("changeNumber3")}
-          />
-        )}
-        {activeView === "changeNumber3" && (
-          <ChangeNumberPage3
-            onBack={handleBackToChangeNumber2}
-            onNext={() => handleViewChange("changeNumber4")}
-          />
-        )}
-        {activeView === "changeNumber4" && (
-          <ChangeNumberPage4
-            onBack={handleBackToChangeNumber3}
-            onNext={handleBackToAccount}
-          />
-        )}
-        {activeView === "addAccount" && (
-          <AddAccountPage onBack={handleBackToAccount} />
-        )}
-        {activeView === "deleteAccount" && (
-          <DeleteAccountPage
-            onBack={handleBackToAccount}
-            onNext={() => handleViewChange("deleteAccount2")}
-          />
-        )}
-        {activeView === "deleteAccount2" && (
-          <DeleteAccountPage2
-            onBack={handleBackToDeleteAccount}
-            onNext={() => handleViewChange("signup")}
-          />
-        )}
-        {activeView === "timeZone" && (
-          <TimeZonePage
-            onBack={handleBackToAccount}
-            onSave={handleBackToAccount}
-          />
-        )}
-        {activeView === "languages" && (
-          <LanguagesPage onBack={handleBackToSettingsMain} />
-        )}
-        {activeView === "support" && (
-          <SupportPage
-            onBack={handleBackToSettingsMain}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "support-ask-question" && (
-          <AskQuestionPage
-            onBack={handleBackToSupport}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "support-faq" && (
-          <FAQPage onBack={handleBackToSupport} onNavigate={handleViewChange} />
-        )}
-        {activeView === "support-privacy-policy" && (
-          <PrivacyPolicyPage onBack={handleBackToSupport} />
-        )}
-        {activeView === "chat" && (
-          <ChatPage
-            onBack={handleBackToSettingsMain}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "chat-wallpaper" && (
-          <WallpaperPage onBack={handleBackToChat} />
-        )}
-        {activeView === "chat-backup" && (
-          <ChatBackupPage
-            onBack={handleBackToChat}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "privacy" && (
-          <PrivacyPage
-            onBack={handleBackToSettingsMain}
-            onNavigate={handleViewChange}
-            lastSeenText={lastSeenText}
-            statusText={statusText}
-            groupText={groupText}
-            blockedCount={blockedCount}
-          />
-        )}
-        {activeView === "liveLocation" && (
-          <LiveLocationPage
-            onBack={handleBackToPrivacy}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "liveLocationSharing" && (
-          <LiveLocationSharingPage
-            onBack={handleBackToLiveLocation}
-            onStopSharing={handleBackToPrivacy}
-          />
-        )}
-        {activeView === "chatLock" && (
-          <ChatLockPage onBack={handleBackToPrivacy} />
-        )}
-        {activeView === "blockedContacts" && (
-          <BlockedContactsPage
-            onBack={handleBackToPrivacy}
-            onNavigate={handleViewChange}
-            setBlockedCount={setBlockedCount}
-            blockedCount={blockedCount}
-          />
-        )}
-        {activeView === "unblockContactPopup" && (
-          <UnblockContactPopup
-            onCancel={handleBackToPrivacy}
-            onUnblock={handleBackToPrivacy}
-            selectedCount={selectedCount}
-            setBlockedCount={setBlockedCount}
-            blockedCount={blockedCount}
-          />
-        )}
-        {activeView === "lastSeen" && (
-          <LastSeenOnlinePage
-            onBack={() =>
-              handleBackFromSubPage({ type: "lastSeen", text: lastSeenText })
-            }
-            onNavigate={handleViewChange}
-            onUpdateText={(text) => setLastSeenText(text)}
-            initialPersonalInfo={lastSeenPersonalInfo}
-            initialOnlineStatus={lastSeenOnlineStatus}
-            initialExcludedCount={lastSeenExcludedCount}
-          />
-        )}
-        {activeView === "myContactExcept" && (
-          <MyContactExceptPage
-            onBack={handleBackToLastSeen}
-            onUpdateText={(count) => {
-              setLastSeenText(
-                `My contact except, ${count} excluded, ${lastSeenOnlineStatus}`
-              );
-              setLastSeenPersonalInfo("My contact except");
-              setLastSeenExcludedCount(Number(count));
+      )}
+      {activeView === "verification" && <VerificationPage onBack={handleBackToSettingsMain} />}
+      {activeView === "account" && (
+        <AccountPage
+          onSecurityClick={() => handleViewChange("securityNotification")}
+          onTwoStepVerificationClick={() =>
+            handleViewChange("twoStepVerification")
+          }
+          onReportProblemClick={() => handleViewChange("reportProblem")}
+          onChangePhoneNumberClick={() => handleViewChange("changeNumber")}
+          onAddAccountClick={() => handleViewChange("addAccount")}
+          onDeleteAccountClick={() => handleViewChange("deleteAccount")}
+          onTimeZoneClick={() => handleViewChange("timeZone")}
+          onLogoutClick={() => handleViewChange("logout")}
+          onBack={handleBackToSettingsMain} // ADD this line
+        />
+      )}
+      {activeView === "alert" && (
+        <AlertPage onBack={handleBackToSettingsMain} />
+      )}
+      {activeView === "securityNotification" && (
+        <SecurityNotificationPage onBack={handleBackToAccount} />
+      )}
+      {activeView === "reportProblem" && (
+        <ReportProblemPage onBack={handleBackToAccount} />
+      )}
+      {activeView === "twoStepVerification" && (
+        <TwoStepVerificationPage
+          onBack={handleBackToAccount}
+          onCreatePinClick={() => handleViewChange("createPin")}
+          onGoogleAuthenticatorClick={() =>
+            handleViewChange("googleAuthenticator")
+          }
+        />
+      )}
+      {activeView === "createPin" && (
+        <CreatePinPage
+          onBack={handleBackToTwoStepVerification}
+          onNext={() => handleViewChange("confirmPin")}
+        />
+      )}
+      {activeView === "confirmPin" && (
+        <ConfirmPinPage
+          onBack={() => handleViewChange("createPin")}
+          onNext={handleBackToAccount}
+        />
+      )}
+      {activeView === "googleAuthenticator" && (
+        <GoogleAuthenticatorPage
+          onBack={handleBackToTwoStepVerification}
+          onNext={() => handleViewChange("googleAuthenticator2")}
+        />
+      )}
+      {activeView === "googleAuthenticator2" && (
+        <GoogleAuthenticatorPage2
+          onBack={handleBackToGoogleAuthenticator}
+          onNext={() => handleViewChange("googleAuthenticator3")}
+        />
+      )}
+      {activeView === "googleAuthenticator3" && (
+        <GoogleAuthenticatorPage3
+          onBack={handleBackToGoogleAuthenticator2}
+          onNext={handleBackToAccount}
+        />
+      )}
+      {activeView === "changeNumber" && (
+        <ChangeNumberPage
+          onBack={handleBackToAccount}
+          onNext={() => handleViewChange("changeNumber2")}
+        />
+      )}
+      {activeView === "changeNumber2" && (
+        <ChangeNumberPage2
+          onBack={handleBackToChangeNumber}
+          onNext={() => handleViewChange("changeNumber3")}
+        />
+      )}
+      {activeView === "changeNumber3" && (
+        <ChangeNumberPage3
+          onBack={handleBackToChangeNumber2}
+          onNext={() => handleViewChange("changeNumber4")}
+        />
+      )}
+      {activeView === "changeNumber4" && (
+        <ChangeNumberPage4
+          onBack={handleBackToChangeNumber3}
+          onNext={handleBackToAccount}
+        />
+      )}
+      {activeView === "addAccount" && (
+        <AddAccountPage onBack={handleBackToAccount} />
+      )}
+      {activeView === "deleteAccount" && (
+        <DeleteAccountPage
+          onBack={handleBackToAccount}
+          onNext={() => handleViewChange("deleteAccount2")}
+        />
+      )}
+      {activeView === "deleteAccount2" && (
+        <DeleteAccountPage2
+          onBack={handleBackToDeleteAccount}
+          onNext={() => handleViewChange("signup")}
+        />
+      )}
+      {activeView === "timeZone" && (
+        <TimeZonePage
+          onBack={handleBackToAccount}
+          onSave={handleBackToAccount}
+        />
+      )}
+      {activeView === "languages" && (
+        <LanguagesPage onBack={handleBackToSettingsMain} />
+      )}
+      {activeView === "support" && (
+        <SupportPage
+          onBack={handleBackToSettingsMain}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "support-ask-question" && (
+        <AskQuestionPage
+          onBack={handleBackToSupport}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "support-faq" && (
+        <FAQPage onBack={handleBackToSupport} onNavigate={handleViewChange} />
+      )}
+      {activeView === "support-privacy-policy" && (
+        <PrivacyPolicyPage onBack={handleBackToSupport} />
+      )}
+      {activeView === "chat" && (
+        <ChatPage
+          onBack={handleBackToSettingsMain}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "chat-wallpaper" && (
+        <WallpaperPage onBack={handleBackToChat} />
+      )}
+      {activeView === "chat-backup" && (
+        <ChatBackupPage
+          onBack={handleBackToChat}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "privacy" && (
+        <PrivacyPage
+          onBack={handleBackToSettingsMain}
+          onNavigate={handleViewChange}
+          lastSeenText={lastSeenText}
+          statusText={statusText}
+          groupText={groupText}
+          blockedCount={blockedCount}
+        />
+      )}
+      {activeView === "liveLocation" && (
+        <LiveLocationPage
+          onBack={handleBackToPrivacy}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "liveLocationSharing" && (
+        <LiveLocationSharingPage
+          onBack={handleBackToLiveLocation}
+          onStopSharing={handleBackToPrivacy}
+        />
+      )}
+      {activeView === "chatLock" && (
+        <ChatLockPage onBack={handleBackToPrivacy} />
+      )}
+      {activeView === "blockedContacts" && (
+        <BlockedContactsPage
+          onBack={handleBackToPrivacy}
+          onNavigate={handleViewChange}
+          setBlockedCount={setBlockedCount}
+          blockedCount={blockedCount}
+        />
+      )}
+      {activeView === "unblockContactPopup" && (
+        <UnblockContactPopup
+          onCancel={handleBackToPrivacy}
+          onUnblock={handleBackToPrivacy}
+          selectedCount={selectedCount}
+          setBlockedCount={setBlockedCount}
+          blockedCount={blockedCount}
+        />
+      )}
+      {activeView === "lastSeen" && (
+        <LastSeenOnlinePage
+          onBack={() =>
+            handleBackFromSubPage({ type: "lastSeen", text: lastSeenText })
+          }
+          onNavigate={handleViewChange}
+          onUpdateText={(text) => setLastSeenText(text)}
+          initialPersonalInfo={lastSeenPersonalInfo}
+          initialOnlineStatus={lastSeenOnlineStatus}
+          initialExcludedCount={lastSeenExcludedCount}
+        />
+      )}
+      {activeView === "myContactExcept" && (
+        <MyContactExceptPage
+          onBack={handleBackToLastSeen}
+          onUpdateText={(count) => {
+            setLastSeenText(
+              `My contact except, ${count} excluded, ${lastSeenOnlineStatus}`
+            );
+            setLastSeenPersonalInfo("My contact except");
+            setLastSeenExcludedCount(Number(count));
+          }}
+          initialCount={lastSeenExcludedCount}
+          setExcludedCount={setLastSeenExcludedCount}
+        />
+      )}
+      {activeView === "status" && (
+        <StatusPage
+          activeView={activeView}
+          onBack={() =>
+            handleBackFromSubPage({ type: "status", text: statusText })
+          }
+          onNavigate={handleViewChange}
+          onUpdateText={(text) => setStatusText(text)}
+          initialOption={statusOption}
+          initialExcludedCount={statusExcludedCount}
+          initialIncludedCount={statusIncludedCount}
+        />
+      )}
+      {activeView === "myContactExceptStatus" && (
+        <MyContactExceptStatusPage
+          onBack={() =>
+            handleBackFromSubPage({ type: "status", text: statusText })
+          }
+          onUpdateText={(count) => {
+            setStatusText(`My contact except, ${count} excluded`);
+            setStatusOption("My contact except");
+            setStatusExcludedCount(count);
+          }}
+          initialCount={statusExcludedCount}
+          setExcludedCount={setStatusExcludedCount}
+        />
+      )}
+      {activeView === "onlyShareWithStatus" && (
+        <OnlyShareWithStatusPage
+          onBack={() =>
+            handleBackFromSubPage({ type: "status", text: statusText })
+          }
+          onUpdateText={(count) => {
+            setStatusText(`Only share with, ${count} included`);
+            setStatusOption("Only share with");
+            setStatusIncludedCount(count);
+          }}
+          initialCount={statusIncludedCount}
+          setIncludedCount={setStatusIncludedCount}
+        />
+      )}
+      {activeView === "group" && (
+        <GroupPage
+          activeView={activeView}
+          onBack={() =>
+            handleBackFromSubPage({ type: "group", text: groupText })
+          }
+          onNavigate={handleViewChange}
+          onUpdateText={(text) => setGroupText(text)}
+          initialOption={groupOption}
+          initialExcludedCount={groupExcludedCount}
+        />
+      )}
+      {activeView === "myContactExceptGroup" && (
+        <MyContactExceptGroupPage
+          onBack={() =>
+            handleBackFromSubPage({ type: "group", text: groupText })
+          }
+          onUpdateText={(count) => {
+            setGroupText(`My contact except, ${count} excluded`);
+            setGroupOption("My contact except");
+            setGroupExcludedCount(count);
+          }}
+          initialCount={groupExcludedCount}
+          setExcludedCount={setGroupExcludedCount}
+        />
+      )}
+      {activeView === "data-and-storage" && (
+        <DataAndStorage
+          onBack={handleBackToSettingsMain}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "manage-storage" && (
+        <ManageStorage
+          onBack={handleBackToDataAndStorage}
+          onNavigate={handleViewChange}
+        />
+      )}
+      {activeView === "forward-many-times" && (
+        <ForwardManyTimesPage onBack={handleBackToDataAndStorage} />
+      )}
+      {activeView === "larger-than-5mb" && (
+        <LargerThan5MBPage
+          onBack={handleBackToDataAndStorage}
+          onNavigate={handleViewChange}
+          selectedIndex={selectedImageIndex}
+        />
+      )}
+      {activeView.startsWith("larger-than-5mb-image-") && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <LargerThan5MBImagePage
+            onNavigate={() => {
+              const urlParams = new URLSearchParams(window.location.search);
+              const index = urlParams.get("selected");
+              const parsedIndex = index ? parseInt(index, 10) : undefined;
+              handleViewChange("larger-than-5mb", parsedIndex);
             }}
-            initialCount={lastSeenExcludedCount}
-            setExcludedCount={setLastSeenExcludedCount}
           />
-        )}
-        {activeView === "status" && (
-          <StatusPage
-            activeView={activeView}
-            onBack={() =>
-              handleBackFromSubPage({ type: "status", text: statusText })
-            }
-            onNavigate={handleViewChange}
-            onUpdateText={(text) => setStatusText(text)}
-            initialOption={statusOption}
-            initialExcludedCount={statusExcludedCount}
-            initialIncludedCount={statusIncludedCount}
-          />
-        )}
-        {activeView === "myContactExceptStatus" && (
-          <MyContactExceptStatusPage
-            onBack={() =>
-              handleBackFromSubPage({ type: "status", text: statusText })
-            }
-            onUpdateText={(count) => {
-              setStatusText(`My contact except, ${count} excluded`);
-              setStatusOption("My contact except");
-              setStatusExcludedCount(count);
-            }}
-            initialCount={statusExcludedCount}
-            setExcludedCount={setStatusExcludedCount}
-          />
-        )}
-        {activeView === "onlyShareWithStatus" && (
-          <OnlyShareWithStatusPage
-            onBack={() =>
-              handleBackFromSubPage({ type: "status", text: statusText })
-            }
-            onUpdateText={(count) => {
-              setStatusText(`Only share with, ${count} included`);
-              setStatusOption("Only share with");
-              setStatusIncludedCount(count);
-            }}
-            initialCount={statusIncludedCount}
-            setIncludedCount={setStatusIncludedCount}
-          />
-        )}
-        {activeView === "group" && (
-          <GroupPage
-            activeView={activeView}
-            onBack={() =>
-              handleBackFromSubPage({ type: "group", text: groupText })
-            }
-            onNavigate={handleViewChange}
-            onUpdateText={(text) => setGroupText(text)}
-            initialOption={groupOption}
-            initialExcludedCount={groupExcludedCount}
-          />
-        )}
-        {activeView === "myContactExceptGroup" && (
-          <MyContactExceptGroupPage
-            onBack={() =>
-              handleBackFromSubPage({ type: "group", text: groupText })
-            }
-            onUpdateText={(count) => {
-              setGroupText(`My contact except, ${count} excluded`);
-              setGroupOption("My contact except");
-              setGroupExcludedCount(count);
-            }}
-            initialCount={groupExcludedCount}
-            setExcludedCount={setGroupExcludedCount}
-          />
-        )}
-        {activeView === "data-and-storage" && (
-          <DataAndStorage
-            onBack={handleBackToSettingsMain}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "manage-storage" && (
-          <ManageStorage
-            onBack={handleBackToDataAndStorage}
-            onNavigate={handleViewChange}
-          />
-        )}
-        {activeView === "forward-many-times" && (
-          <ForwardManyTimesPage onBack={handleBackToDataAndStorage} />
-        )}
-        {activeView === "larger-than-5mb" && (
-          <LargerThan5MBPage
-            onBack={handleBackToDataAndStorage}
-            onNavigate={handleViewChange}
-            selectedIndex={selectedImageIndex}
-          />
-        )}
-        {activeView.startsWith("larger-than-5mb-image-") && (
-          <Suspense fallback={<div>Loading...</div>}>
-            <LargerThan5MBImagePage
-              onNavigate={() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const index = urlParams.get("selected");
-                const parsedIndex = index ? parseInt(index, 10) : undefined;
-                handleViewChange("larger-than-5mb", parsedIndex);
-              }}
-            />
-          </Suspense>
-        )}
-        {activeView === "network-usage" && (
-          <NetworkUsagePage onBack={handleBackToDataAndStorage} />
-        )}
-        {activeView === "chat-cameron" && (
-          <ChatUserPage onBack={handleBackToDataAndStorage} />
-        )}
-        {activeView === "chat-lucas" && (
-          <ChatUserPage onBack={handleBackToDataAndStorage} />
-        )}
-      </div>
+        </Suspense>
+      )}
+      {activeView === "network-usage" && (
+        <NetworkUsagePage onBack={handleBackToDataAndStorage} />
+      )}
+      {activeView === "chat-cameron" && (
+        <ChatUserPage onBack={handleBackToDataAndStorage} />
+      )}
+      {activeView === "chat-lucas" && (
+        <ChatUserPage onBack={handleBackToDataAndStorage} />
+      )}
+    </div>
   );
 }
 
-export default function SettingsPage() {  
+export default function SettingsPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SettingsContent /> 
+      <SettingsContent />
     </Suspense>
   );
 }
