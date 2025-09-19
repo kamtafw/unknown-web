@@ -82,7 +82,7 @@ export function ArchiveContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[160px]"
+      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-2 w-[130px] sm:w-[140px] lg:min-w-[160px]"
       style={{
         left: adjustedX,
         top: adjustedY,
@@ -90,21 +90,21 @@ export function ArchiveContextMenu({
     >
       <Button
         variant="ghost"
-        className="w-full justify-start px-4 py-2 text-sm hover:bg-gray-100 rounded-none"
+        className="w-full justify-start px-3 sm:px-4 py-2 text-xs sm:text-sm hover:bg-gray-100 rounded-none"
         onClick={handleUnarchive}
       >
         Unarchive
       </Button>
       <Button
         variant="ghost"
-        className="w-full justify-start px-4 py-2 text-sm hover:bg-gray-100 rounded-none"
+        className="w-full justify-start px-3 sm:px-4 py-2 text-xs sm:text-sm hover:bg-gray-100 rounded-none"
         onClick={handleClearMessages}
       >
         Clear Messages
       </Button>
       <Button
         variant="ghost"
-        className="w-full justify-start px-4 py-2 text-sm hover:bg-gray-100 rounded-none"
+        className="w-full justify-start px-3 sm:px-4 py-2 text-xs sm:text-sm hover:bg-gray-100 rounded-none"
         onClick={handleMarkAsRead}
       >
         Mark as read

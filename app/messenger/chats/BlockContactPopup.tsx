@@ -47,10 +47,12 @@ export function BlockContactPopup({
       />
 
       {/* Popup */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg z-50 w-96 h-180 p-6">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg z-50 w-[90%] max-w-[320px] sm:max-w-[384px] lg:w-96 h-auto max-h-[80vh] overflow-y-auto p-4 sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">Block {chatName}</h3>
+          <h3 className="text-base sm:text-lg lg:text-lg font-semibold">
+            Block {chatName}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -72,12 +74,12 @@ export function BlockContactPopup({
         </div>
 
         {/* Description */}
-        <p className="text-gray-600 mb-6 text-left">
+        <p className="text-gray-600 mb-4 sm:mb-6 text-left text-sm sm:text-base lg:text-base">
           {chatName} wont be able to message or call you anymore.
         </p>
 
         {/* Reason for Blocking */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <label className="block text-sm text-black mb-2 font-semibold">
             Reason for blocking:
           </label>
@@ -113,7 +115,7 @@ export function BlockContactPopup({
         </div>
 
         {/* Feedback */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <p className="text-sm text-black mb-2 font-semibold">
             Your feedback is very much appreciated
           </p>
@@ -135,7 +137,7 @@ export function BlockContactPopup({
         </div>
 
         {/* Block Button */}
-        <div className="mt-40 w-full flex justify-center bg-blue-500 hover:bg-blue-600 rounded-full">
+        <div className="mt-6 sm:mt-8 lg:mt-40 w-full flex justify-center bg-blue-500 hover:bg-blue-600 rounded-full">
           <Button
             variant="ghost"
             onClick={handleBlock}

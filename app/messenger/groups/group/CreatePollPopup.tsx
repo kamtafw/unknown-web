@@ -43,7 +43,7 @@ export function CreatePollPopup({ isOpen, onClose }: CreatePollPopupProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative z-50 bg-white rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[100vh] flex flex-col">
+      <div className="relative z-50 bg-white rounded-lg shadow-lg w-[95vw] max-w-[380px] lg:max-w-md mx-4 max-h-[100vh] flex flex-col">
         {/* Header */}
         <div className="px-4 pt-4 pb-2">
           <div className="flex items-center justify-between">

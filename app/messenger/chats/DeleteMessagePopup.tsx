@@ -10,26 +10,25 @@ interface DeleteMessagePopupProps {
   onDeleteForMe: () => void;
 }
 
-export function DeleteMessagePopup({ 
-  isOpen, 
-  onClose, 
+export function DeleteMessagePopup({
+  isOpen,
+  onClose,
   onDeleteForEveryone,
-  onDeleteForMe
+  onDeleteForMe,
 }: DeleteMessagePopupProps) {
-
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
+      if (event.key === "Escape" && isOpen) {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
 
@@ -38,16 +37,15 @@ export function DeleteMessagePopup({
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 z-40 bg-black/20"
-        onClick={onClose}
-      />
-      
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+
       {/* Delete Popup */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-100">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-[90vw] max-w-[400px]">
         {/* Header */}
         <div className="p-4 border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Delete message?</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Delete message?
+          </h3>
         </div>
 
         {/* Content */}

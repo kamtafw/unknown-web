@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TiPin } from "react-icons/ti";
 import { HiDotsVertical } from "react-icons/hi";
+import { ArrowLeft } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -40,6 +41,7 @@ interface GroupChatProps {
 export function GroupChat({
   groupName,
   isAdmin = false,
+  onBack,
   onNavigateToGroupList,
   groupAvatar,
   hasGroupIcon = false,
@@ -89,6 +91,7 @@ export function GroupChat({
     console.log("Adding to favorites");
     setShowAddToList(false);
   };
+
   const handleReadPostOutLoud = () => {
     setShowReadPostPopup(true);
     setShowGroupOptions(false);
@@ -146,16 +149,26 @@ export function GroupChat({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="border-b bg-white p-4">
+    <div className="flex flex-col h-screen">
+      <div className="border-b bg-white p-2 xs:p-3 sm:p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-2 xs:mb-3 sm:mb-4 lg:mb-5">
+          <div className="flex items-center gap-1 xs:gap-2 sm:gap-3 flex-1 min-w-0">
+            {/* Mobile back button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-100 rounded-full lg:hidden flex-shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4 xs:h-5 xs:w-5 text-black" />
+            </Button>
+
+            <div className="flex items-center gap-1 xs:gap-2 sm:gap-3 flex-1 min-w-0">
               {/* Dynamic Avatar Display */}
               {hasGroupIcon || !groupAvatar ? (
-                <div className="h-10 w-10 border-2 border-gray-300 rounded-full flex items-center justify-center bg-gray-100">
-                  <Users className="h-6 w-6 text-gray-600" />
+                <div className="h-6 w-6 xs:h-8 xs:w-8 sm:h-10 sm:w-10 border-2 border-gray-300 rounded-full flex items-center justify-center bg-gray-100 flex-shrink-0">
+                  <Users className="h-3 w-3 xs:h-4 xs:w-4 sm:h-6 sm:w-6 text-gray-600" />
                 </div>
               ) : (
                 <Image
@@ -163,58 +176,64 @@ export function GroupChat({
                   alt={groupName}
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-6 w-6 xs:h-8 xs:w-8 sm:h-10 sm:w-10 rounded-full object-cover flex-shrink-0"
                 />
               )}
-              <div>
-                <h3 className="font-medium">{groupName}</h3>
-                <p className="text-sm text-gray-500">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-xs xs:text-sm sm:text-base truncate">
+                  {groupName}
+                </h3>
+                <p className="text-xs xs:text-xs sm:text-sm text-gray-500 truncate hidden xs:block">
                   Arlene McCoy, Mercy Cameron...
                 </p>
               </div>
             </div>
-            <div className="bg-blue-400 border h-10 w-10 rounded-lg flex items-center justify-center">
-              <MdGroups2 className="text-white w-6 h-6" />
+
+            <div className="bg-blue-400 border h-6 w-6 xs:h-8 xs:w-8 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <MdGroups2 className="text-white w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="border rounded-lg px-1.5 py-1 bg-gray-200 flex items-center">
+
+          <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2 flex-shrink-0 ml-1 xs:ml-2">
+            <div className="border rounded-lg px-0.5 xs:px-1 py-0.5 xs:py-1 bg-gray-200 flex items-center">
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-2 hover:bg-gray-100 rounded-full border-l-red-800"
+                className="p-0.5 xs:p-1 sm:p-2 hover:bg-gray-100 rounded-full border-l-red-800"
                 onClick={handleStartAudioCall}
               >
-                <IoCall className="h-5 w-5 text-black" />
+                <IoCall className="h-3 w-3 xs:h-4 xs:w-4 sm:h-5 sm:w-5 text-black" />
               </Button>
 
-              <div className="w-px h-6 bg-gray-300 mx-1"></div>
+              <div className="w-px h-3 xs:h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1"></div>
 
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-2 hover:bg-gray-100 rounded-full"
+                className="p-0.5 xs:p-1 sm:p-2 hover:bg-gray-100 rounded-full"
                 onClick={handleStartVideoCall}
               >
-                <IoMdVideocam className="h-5 w-5 text-black" />
+                <IoMdVideocam className="h-3 w-3 xs:h-4 xs:w-4 sm:h-5 sm:w-5 text-black" />
               </Button>
             </div>
+
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowSearch(true)}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-0.5 xs:p-1 sm:p-2 hover:bg-gray-100 rounded-full"
             >
-              <FaSearch className="h-7 w-7 text-black" />
+              <FaSearch className="h-3 w-3 xs:h-4 xs:w-4 sm:h-5 sm:w-5 lg:h-7 lg:w-7 text-black" />
             </Button>
+
             <Popover open={showGroupOptions} onOpenChange={setShowGroupOptions}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  className="p-0.5 xs:p-1 sm:p-2 hover:bg-gray-100 rounded-full"
                 >
-                  <HiDotsVertical className="h-7 w-7 text-black" />
+                  <HiDotsVertical className="h-3 w-3 xs:h-4 xs:w-4 sm:h-5 sm:w-5 lg:h-7 lg:w-7 text-black" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
@@ -234,12 +253,12 @@ export function GroupChat({
             </Popover>
           </div>
         </div>
-
+        
         {/* Tabs */}
-        <div className="mt-2 bg-gray-100 px-3 py-2 rounded-full mb-8">
+        <div className="mt-1 bg-gray-100 px-1 xs:px-2 sm:px-3 py-1 xs:py-1.5 sm:py-2 rounded-full mb-2 xs:mb-4 sm:mb-6 lg:mb-8">
           <div className="flex rounded-full">
             <button
-              className={`flex-1 py-1 text-center font-medium ${
+              className={`flex-1 py-0.5 xs:py-1 text-center font-medium text-xs sm:text-sm ${
                 activeTab === "messages"
                   ? "text-black bg-white rounded-full"
                   : "text-black"
@@ -249,7 +268,7 @@ export function GroupChat({
               Messages
             </button>
             <button
-              className={`flex-1 py-1 text-center font-medium ${
+              className={`flex-1 py-0.5 xs:py-1 text-center font-medium text-xs sm:text-sm ${
                 activeTab === "trending"
                   ? "text-black bg-white rounded-full"
                   : "text-black"
@@ -260,7 +279,7 @@ export function GroupChat({
             </button>
             {isAdmin && (
               <button
-                className={`flex-1 py-1 text-center font-medium ${
+                className={`flex-1 py-0.5 xs:py-1 text-center font-medium text-xs sm:text-sm ${
                   activeTab === "spam"
                     ? "text-black bg-white rounded-full"
                     : "text-black"
@@ -274,9 +293,10 @@ export function GroupChat({
             )}
           </div>
         </div>
-        <div className="ml-6 flex items-center">
-          <TiPin className="text-red-500 w-7 h-7 mr-3" />
-          <p>
+
+        <div className="ml-1 xs:ml-2 sm:ml-6 flex items-start">
+          <TiPin className="text-red-500 w-3 h-3 xs:w-4 xs:h-4 sm:w-7 sm:h-7 mr-1 xs:mr-2 sm:mr-3 flex-shrink-0 mt-0.5" />
+          <p className="text-xs xs:text-xs sm:text-base leading-tight">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
             eiusmod
           </p>
@@ -284,7 +304,9 @@ export function GroupChat({
       </div>
 
       {/* Messages Interface Component */}
-      <GroupChatInterface activeTab={activeTab} isAdmin={isAdmin} />
+      <div className="flex-1 min-h-0">
+        <GroupChatInterface activeTab={activeTab} isAdmin={isAdmin} />
+      </div>
 
       {/* Popups */}
       <SearchPopup
@@ -316,12 +338,14 @@ export function GroupChat({
         onClose={() => setShowMuteNotification(false)}
         onSave={handleMuteNotification}
       />
+
       {showReadPostPopup && (
         <ReadPostPopup
           onClose={() => setShowReadPostPopup(false)}
           postContent="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod"
         />
       )}
+
       {showGroupInfo && (
         <GroupInfoPopup
           isOpen={showGroupInfo}

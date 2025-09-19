@@ -29,7 +29,9 @@ export default function Home() {
   const [showMyStatus, setShowMyStatus] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Status | null>(null);
   const [showEditStory, setShowEditStory] = useState(false);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | undefined>(undefined);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | undefined>(
+    undefined
+  );
 
   const handleMyStatusClick = () => {
     setShowMyStatus(true);
@@ -59,19 +61,23 @@ export default function Home() {
   return (
     <div className="flex h-screen">
       {/* Left Sidebar - Status List */}
-      <div className="w-[480px] border-r bg-white overflow-y-auto">
-        <StatusList 
+      <div
+        className={`w-full lg:w-[480px] border-r bg-white overflow-y-auto ${
+          showMyStatus || selectedContact ? "hidden lg:block" : "block"
+        }`}
+      >
+        <StatusList
           onMyStatusClick={handleMyStatusClick}
           onContactStatusClick={handleContactStatusClick}
           onEditStoryClick={handleEditStoryOpen}
         />
       </div>
-      
+
       {/* Right Main Content */}
       {showMyStatus ? (
-        <MyStatus />
+        <MyStatus onBack={handleBackToList} />
       ) : selectedContact ? (
-        <ContactStatus 
+        <ContactStatus
           contact={{
             id: selectedContact.id,
             name: selectedContact.name,
@@ -81,11 +87,12 @@ export default function Home() {
           }}
           stories={selectedContact.stories}
           onClose={handleBackToList}
+          onBack={handleBackToList}
         />
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="hidden lg:flex flex-1 flex-col items-center justify-center">
           <Image
-            src="/appcombo.svg" 
+            src="/appcombo.svg"
             alt="Logo"
             width={50}
             height={50}
@@ -98,8 +105,8 @@ export default function Home() {
       )}
 
       {/* Edit Story Popup - Rendered at page level */}
-      <EditStory 
-        isOpen={showEditStory} 
+      <EditStory
+        isOpen={showEditStory}
         onClose={handleEditStoryClose}
         imageFile={selectedImageFile}
       />

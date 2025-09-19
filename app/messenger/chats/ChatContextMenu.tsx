@@ -57,13 +57,27 @@ export function ChatContextMenu({
       setIsVisible(true);
       document.body.style.overflow = "hidden";
 
+      const menuWidth = 180; // Mobile width
       const menuHeight = 320;
+      const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const shouldShowAbove = position.y + menuHeight > viewportHeight;
+
+      let adjustedX = position.x;
+      let adjustedY = position.y;
+
+      // Adjust X position if menu would go off-screen
+      if (position.x + menuWidth > viewportWidth) {
+        adjustedX = Math.max(10, position.x - menuWidth); // Keep 10px margin from edge
+      }
+
+      // Adjust Y position if menu would go off-screen
+      if (position.y + menuHeight > viewportHeight) {
+        adjustedY = position.y - menuHeight;
+      }
 
       setAdjustedPosition({
-        x: position.x,
-        y: shouldShowAbove ? position.y - menuHeight : position.y,
+        x: adjustedX,
+        y: adjustedY,
       });
     } else {
       setIsVisible(false);
@@ -148,8 +162,7 @@ export function ChatContextMenu({
     showMediaGallery,
   ]);
 
- 
-  const currentChat = chatsData.find(chat => chat.id === chatId);
+  const currentChat = chatsData.find((chat) => chat.id === chatId);
 
   const menuItems = [
     {
@@ -340,7 +353,7 @@ export function ChatContextMenu({
       {/* Context Menu */}
       <div
         data-context-menu
-        className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
+        className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-[180px] sm:w-[200px] lg:min-w-[200px]"
         style={{
           left: adjustedPosition.x,
           top: adjustedPosition.y,
@@ -351,7 +364,7 @@ export function ChatContextMenu({
           <div key={item.id}>
             <Button
               variant="ghost"
-              className={`w-full justify-start px-4 py-2 h-auto font-normal hover:bg-gray-100 rounded-none ${
+              className={`w-full justify-start px-3 sm:px-4 py-2 h-auto font-normal hover:bg-gray-100 rounded-none ${
                 item.destructive
                   ? "text-red-600 hover:text-red-700 hover:bg-red-50"
                   : "text-gray-700"
@@ -360,7 +373,9 @@ export function ChatContextMenu({
             >
               <div className="flex items-center gap-3">
                 {item.icon}
-                <span className="text-sm">{item.label}</span>
+                <span className="text-xs sm:text-sm lg:text-sm">
+                  {item.label}
+                </span>
               </div>
             </Button>
           </div>

@@ -147,7 +147,7 @@ export function SentMessageContextMenu({
       {isVisible && (
         <div
           data-sent-message-context-menu
-          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px]"
+          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-[calc(100vw-40px)] max-w-[200px]"
           style={{
             left: adjustedPosition.x,
             top: adjustedPosition.y,

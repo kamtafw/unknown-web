@@ -267,9 +267,9 @@ export function GroupChatInterface({
         return isAdmin ? (
           <SpamTab onViewAnalytics={handleViewAnalytics} />
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p>Access denied</p>
-            <p className="text-sm">Admin privileges required</p>
+          <div className="text-center py-4 sm:py-8 text-gray-500">
+            <p className="text-sm sm:text-base">Access denied</p>
+            <p className="text-xs sm:text-sm">Admin privileges required</p>
           </div>
         );
       default:
@@ -283,9 +283,9 @@ export function GroupChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-screen overflow-hidden">
       {/* Messages Content */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
+      <div className="flex-1 overflow-y-auto p-1 xs:p-2 sm:p-3 lg:p-4 bg-gray-100 pb-12 xs:pb-16 sm:pb-20">
         {renderTabContent()}
         <div ref={messagesEndRef} />
       </div>
@@ -297,34 +297,35 @@ export function GroupChatInterface({
 
       {/* Bottom Input - Hide for spam tab or show admin controls */}
       {activeTab !== "spam" && (
-        <div className="p-4 bg-white border-t relative">
-          <div className="flex items-center gap-2">
+        <div className="p-1 xs:p-2 sm:p-3 lg:p-4 bg-white border-t relative">
+          <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2">
             <Popover open={showEmojiPopup}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-100 rounded-full min-w-[28px] xs:min-w-[32px] sm:min-w-[40px] h-7 xs:h-8 sm:h-10"
                   onClick={() => setShowEmojiPopup(!showEmojiPopup)}
                 >
-                  <FaRegSmile className="!h-6 !w-6 text-black" />
+                  <FaRegSmile className="!h-3 !w-3 xs:!h-4 xs:!w-4 sm:!h-5 sm:!w-5 lg:!h-6 lg:!w-6 text-black" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-lg ml-180 mb-4">
+              <PopoverContent className="w-auto p-0 rounded-lg ml-1 xs:ml-2 sm:ml-4 lg:ml-180 mb-4">
                 <EmojiPopup
                   onSelect={handleEmojiSelect}
                   onClose={() => setShowEmojiPopup(false)}
                 />
               </PopoverContent>
             </Popover>
+            
             <div className="relative">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAttachment(true)}
-                className="p-2 hover:bg-gray-100 rounded-full"
+                className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-100 rounded-full min-w-[28px] xs:min-w-[32px] sm:min-w-[40px] h-7 xs:h-8 sm:h-10"
               >
-                <BsPaperclip className="!h-6 !w-6 text-black" />
+                <BsPaperclip className="!h-3 !w-3 xs:!h-4 xs:!w-4 sm:!h-5 sm:!w-5 lg:!h-6 lg:!w-6 text-black" />
               </Button>
               <AttachmentPopup
                 isOpen={showAttachment}
@@ -332,44 +333,47 @@ export function GroupChatInterface({
                 onSelect={handleAttachmentSelect}
               />
             </div>
+            
             <Button
               variant="ghost"
               size="sm"
-              className="p-2"
+              className="p-1 xs:p-1.5 sm:p-2 min-w-[28px] xs:min-w-[32px] sm:min-w-[40px] h-7 xs:h-8 sm:h-10"
               onClick={handleLanguageAIClick}
             >
               <Image
                 src="/languageai.png"
                 alt="Language AI"
-                width={20}
-                height={20}
+                width={16}
+                height={16}
+                className="w-3 h-3 xs:w-4 xs:h-4 sm:w-[18px] sm:h-[18px] lg:w-[20px] lg:h-[20px]"
               />
             </Button>
-            <div className="flex-1 relative">
+            
+            <div className="flex-1 relative min-w-0">
               <Input
                 ref={inputRef}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type a message here"
-                className="flex-1 rounded-full border-none pr-12"
+                className="flex-1 rounded-full border-none pr-8 xs:pr-10 sm:pr-12 text-xs xs:text-sm sm:text-base h-8 xs:h-9 sm:h-10"
                 onKeyPress={handleKeyPress}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="absolute right-1 xs:right-2 sm:right-3 top-1/2 -translate-y-1/2">
                 {message.trim() ? (
                   <Button
                     onClick={handleSendMessage}
                     size="sm"
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2"
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-1 xs:p-1.5 sm:p-2 min-w-[24px] min-h-[24px] xs:min-w-[28px] xs:min-h-[28px] sm:min-w-[32px] sm:min-h-[32px]"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-2.5 w-2.5 xs:h-3 xs:w-3 sm:h-4 sm:w-4" />
                   </Button>
                 ) : (
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="p-2 hover:bg-gray-100 rounded-full"
+                    className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-100 rounded-full min-w-[24px] min-h-[24px] xs:min-w-[28px] xs:min-h-[28px] sm:min-w-[32px] sm:min-h-[32px]"
                   >
-                    <FaMicrophone className="!h-6 !w-6 text-blue-500" />
+                    <FaMicrophone className="!h-3 !w-3 xs:!h-4 xs:!w-4 sm:!h-5 sm:!w-5 lg:!h-6 lg:!w-6 text-blue-500" />
                   </Button>
                 )}
               </div>

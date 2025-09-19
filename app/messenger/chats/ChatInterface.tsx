@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Phone, Video, Search, Send, Mic, CheckCheck } from "lucide-react";
+import { Phone, Video, Search, Send, Mic, CheckCheck, ArrowLeft } from "lucide-react";
 import { BsPaperclip, BsThreeDotsVertical } from "react-icons/bs";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,7 @@ const sampleMessages: Message[] = [
   },
 ];
 
-export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
+export function ChatInterface({ chatName, chatAvatar, onBack }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
   const [messages] = useState<Message[]>(sampleMessages);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
@@ -369,9 +369,20 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
   return (
     <div className="flex flex-col h-full bg-gray-200">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-1">
+      <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Mobile back button */}
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 lg:hidden"
+                onClick={onBack}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
             <div className="relative">
               <Image
                 src={chatAvatar}
@@ -382,18 +393,18 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
               />
             </div>
             <div>
-              <h3 className="font-semibold text-[12px]">{chatName}</h3>
-              <p className="text-sm text-gray-500">Business Account</p>
+              <h3 className="font-semibold text-[12px] sm:text-sm">{chatName}</h3>
+              <p className="text-xs sm:text-sm text-gray-500">Business Account</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
               className="p-2"
               onClick={handleStartVoiceCall}
             >
-              <Phone className="h-5 w-5 text-black" />
+              <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
             </Button>
             <Button
               variant="ghost"
@@ -401,7 +412,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
               className="p-2"
               onClick={handleStartVideoCall}
             >
-              <Video className="h-5 w-5 text-black" />
+              <Video className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
             </Button>
             <Button
               variant="ghost"
@@ -409,7 +420,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
               className="p-2"
               onClick={() => setShowSearchPopup(true)}
             >
-              <Search className="h-5 w-5 text-black" />
+              <Search className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
             </Button>
             <Button
               variant="ghost"
@@ -417,7 +428,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
               className="p-2"
               onClick={handleThreeDotsClick}
             >
-              <BsThreeDotsVertical className="h-5 w-5 text-black" />
+              <BsThreeDotsVertical className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
             </Button>
           </div>
         </div>
@@ -515,16 +526,16 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.isSent ? "justify-end" : "justify-start"}`}
           >
-            <div className="flex items-end gap-2 max-w-[70%]">
+            <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[70%]">
               <div>
                 <div
-                  className={`rounded-2xl px-4 py-2 cursor-pointer ${
+                  className={`rounded-2xl px-3 sm:px-4 py-2 cursor-pointer ${
                     msg.isSent
                       ? "bg-gray-300 text-black rounded-br-md"
                       : "bg-white text-gray-800 rounded-bl-md shadow-sm"
@@ -601,11 +612,11 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
                         alt="Shared image"
                         width={300}
                         height={200}
-                        className="object-cover"
+                        className="object-cover max-w-full h-auto"
                       />
                     </div>
                   ) : (
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <p className="text-sm leading-relaxed break-words">{msg.text}</p>
                   )}
                 </div>
                 <div
@@ -636,7 +647,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
         />
 
         <div className="p-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Popover open={showEmojiPopup}>
               <PopoverTrigger asChild>
                 <Button
@@ -644,10 +655,10 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
                   className="p-2"
                   onClick={() => setShowEmojiPopup(!showEmojiPopup)}
                 >
-                  <FaRegSmile className="!h-6 !w-6 text-black" />
+                  <FaRegSmile className="!h-5 !w-5 sm:!h-6 sm:!w-6 text-black" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-lg ml-180 mb-4">
+              <PopoverContent className="w-auto p-0 rounded-lg ml-4 sm:ml-180 mb-4">
                 <EmojiPopup
                   onSelect={handleEmojiSelect}
                   onClose={() => setShowEmojiPopup(false)}
@@ -660,7 +671,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
                 className="p-1"
                 onClick={() => setShowAttachmentPopup(true)}
               >
-                <BsPaperclip className="!h-10 !w-6 text-black" />
+                <BsPaperclip className="!h-5 !w-5 sm:!h-6 sm:!w-6 text-black" />
               </Button>
               <ChatAttachmentPopup
                 isOpen={showAttachmentPopup}
@@ -671,15 +682,15 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="p-2"
+              className="p-2 sm:p-4"
               onClick={handleLanguageAIClick}
             >
               <Image
                 src="/languageai.png"
                 alt="Language AI"
-                width={20}
-                height={20}
-                className="object-contain"
+                width={16}
+                height={16}
+                className="sm:w-5 sm:h-5 object-contain"
               />
             </Button>
             <div className="flex-1 relative">
@@ -689,7 +700,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type a message here..."
-                className="w-full resize-none border border-white/90 rounded-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px] max-h-[120px]"
+                className="w-full resize-none border border-white/90 rounded-full p-2 sm:p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px] max-h-[120px] text-sm sm:text-base"
                 rows={1}
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -703,7 +714,7 @@ export function ChatInterface({ chatName, chatAvatar }: ChatInterfaceProps) {
                   </Button>
                 ) : (
                   <Button variant="ghost" className="p-2">
-                    <FaMicrophone className="!h-7 !w-7 text-blue-500" />
+                    <FaMicrophone className="!h-6 !w-6 sm:!h-7 sm:!w-7 text-blue-500" />
                   </Button>
                 )}
               </div>

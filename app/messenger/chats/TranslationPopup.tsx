@@ -127,7 +127,7 @@ export function TranslationPopup({
       {/* Translation Popup */}
       <div
         data-translation-popup
-        className="fixed z-60 bg-white rounded-lg shadow-xl border border-gray-200 min-w-[280px] max-h-[400px] overflow-hidden"
+        className="fixed z-60 bg-white rounded-lg shadow-xl border border-gray-200 w-[calc(100vw-40px)] max-w-[280px] max-h-[400px] overflow-hidden"
         style={{
           left: adjustedPosition.x,
           top: adjustedPosition.y,

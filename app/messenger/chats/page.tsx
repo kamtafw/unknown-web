@@ -22,13 +22,8 @@ export default function Home() {
 
   return (
     <div className="flex h-screen">
-      {/* Left Sidebar - Chat List */}
-      <div className="w-[480px] border-r bg-white flex flex-col overflow-y-auto">
-        <ChatList onChatSelect={handleChatSelect} />
-      </div>
-      
-      {/* Right Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* Mobile Layout */}
+      <div className="flex-1 lg:hidden">
         {selectedChat ? (
           <ChatInterface
             chatName={selectedChat.name}
@@ -36,19 +31,39 @@ export default function Home() {
             onBack={handleBackToChats}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <Image
-              src="/appcombo.svg" 
-              alt="Logo"
-              width={50}
-              height={50}
-              className="mb-4 object-contain"
-            />
-            <p className="text-lg text-gray-600">
-              Send and receive messages with your laptop
-            </p>
-          </div>
+          <ChatList onChatSelect={handleChatSelect} />
         )}
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex w-full h-full">
+        {/* Left Sidebar - Chat List */}
+        <div className="w-[480px] border-r bg-white flex flex-col overflow-y-auto">
+          <ChatList onChatSelect={handleChatSelect} />
+        </div>
+        
+        {/* Right Main Content */}
+        <div className="flex-1 flex flex-col">
+          {selectedChat ? (
+            <ChatInterface
+              chatName={selectedChat.name}
+              chatAvatar={selectedChat.avatar}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <Image
+                src="/appcombo.svg" 
+                alt="Logo"
+                width={50}
+                height={50}
+                className="mb-4 object-contain"
+              />
+              <p className="text-lg text-gray-600">
+                Send and receive messages with your laptop
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

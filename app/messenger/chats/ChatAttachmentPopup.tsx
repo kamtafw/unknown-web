@@ -81,10 +81,10 @@ export function ChatAttachmentPopup({
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         ref={popupRef}
-        className="absolute z-50 bg-white rounded-t-lg shadow-lg border bottom-full mb-5.5 left-0"
-        style={{ width: "780px", marginLeft: "-53px" }}
+        className="absolute z-50 bg-white rounded-t-lg shadow-lg border bottom-full mb-5.5 left-[300%] transform -translate-x-1/2 w-[90vw] max-w-[780px]"
+        // style={{ marginLeft: "-53px" }}
       >
-        <div className="flex flex-cols-1 gap-18 p-3">
+        <div className="flex flex-wrap justify-center gap-4 p-3">
           {attachmentOptions.map((option) => (
             <button
               key={option.id}

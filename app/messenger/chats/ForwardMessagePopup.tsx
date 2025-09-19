@@ -153,7 +153,7 @@ export function ForwardMessagePopup({
       />
       
       {/* Forward Popup */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-96 max-h-[90vh] flex flex-col">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-[90vw] max-w-96 max-h-[70vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-gray-200">
           <Button

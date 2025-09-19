@@ -317,10 +317,10 @@ export function ChatList({
       {showArchive ? (
         <ArchivePage onBack={handleBackFromArchive} />
       ) : (
-        <div className="p-4 h-full flex flex-col overflow-hidden">
+       <div className="p-2 sm:p-4 h-full flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
-            <h2 className="text-xl font-bold">
+            <h2 className="text-lg sm:text-xl font-bold">
               {activeTab === "unread"
                 ? "Unread"
                 : activeTab === "favorites"
@@ -354,13 +354,13 @@ export function ChatList({
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-4 flex-shrink-0">
+          <div className="flex gap-1 sm:gap-2 mb-4 flex-shrink-0 overflow-x-auto pb-2">
             {tabsData.map((tab) => (
               <Button
                 key={tab.id}
                 variant="outline"
                 className={cn(
-                  "rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200",
+                  "rounded-full text-xs sm:text-sm py-1 px-3 sm:px-5 bg-gray-100 hover:bg-gray-200 whitespace-nowrap flex-shrink-0",
                   activeTab === tab.id && "text-blue-500 border-blue-500"
                 )}
                 onClick={() => setActiveTab(tab.id)}
@@ -370,7 +370,7 @@ export function ChatList({
             ))}
             <Button
               variant="outline"
-              className="rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200"
+              className="rounded-full text-sm py-1 px-5 bg-gray-100 hover:bg-gray-200 whitespace-nowrap"
               onClick={() => setShowCreateListPopup(true)}
             >
               <span className="text-blue-500 text-lg font-bold">+</span> Create
@@ -388,7 +388,7 @@ export function ChatList({
             e.stopPropagation();
             setShowCopyPopup(true);
           }}
-          className="fixed bottom-6 left-160 md:left-40 lg:left-160 h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
+          className="fixed bottom-6 right-6 lg:left-160 md:left-40 h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
         >
           <TbCopyPlusFilled className="h-8 w-8 text-white" />
         </button>

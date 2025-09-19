@@ -67,7 +67,7 @@ export function GroupOptionsPopup({
   }
 
   return (
-    <div className="flex flex-col gap-1 py-2 w-80">
+    <div className="flex flex-col gap-1 py-2 w-[95vw] max-w-[320px] lg:w-80">
       {options.map((option) => (
         <Button
           key={option.id}

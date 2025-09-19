@@ -410,7 +410,7 @@ export function Community({
               key={tab.id}
               variant="ghost"
               className={cn(
-                "rounded-full text-sm py-1 px-25 hover:bg-gray-200 transition-colors",
+                "rounded-full text-sm py-1 px-4 sm:px-6 md:px-8 lg:px-25 hover:bg-gray-200 transition-colors flex-1",
                 activeTab === tab.id
                   ? "bg-white text-blue-500 shadow"
                   : "bg-gray-100"
@@ -431,75 +431,75 @@ export function Community({
             <div
               key={community.id}
               className={`${
-                community.id !== "1" ? "pt-8 border-t-8 border-gray-100" : ""
-              } mb-5 w-full cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors`}
+                community.id !== "1" ? "pt-6 sm:pt-8 border-t-4 sm:border-t-8 border-gray-100" : ""
+              } mb-4 sm:mb-5 w-full cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors`}
               onClick={() => handleCommunityClick(community)}
             >
               {/* Community Header */}
-              <div className="flex items-center gap-3 mb-1">
-                <div className="h-15 w-15 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-100">
-                  <HiUserGroup className="h-8 w-8 text-gray-600" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                <div className="h-12 w-12 sm:h-15 sm:w-15 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-100 flex-shrink-0">
+                  <HiUserGroup className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between w-full">
-                    <p className="font-medium">{community.name}</p>
+                    <p className="font-medium text-sm sm:text-base truncate">{community.name}</p>
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
                     Community: {community.groupCount} groups
                   </p>
                 </div>
               </div>
 
               {/* Announcement */}
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                 <Image
                   src="/Annoucement.png"
                   alt="Announcement"
                   width={48}
                   height={48}
-                  className="h-12 w-12 object-cover"
+                  className="h-10 w-10 sm:h-12 sm:w-12 object-cover flex-shrink-0"
                 />
-                <div className="flex-1">
-                  <p className="font-medium">{community.announcement.title}</p>
-                  <p className="text-sm text-gray-500">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">{community.announcement.title}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
                     {community.announcement.message}
                   </p>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 flex-shrink-0">
                   {community.announcement.time}
                 </p>
               </div>
 
               {/* General Group */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <Image
                   src="/Group-Com.png"
                   alt="General Group"
                   width={48}
                   height={48}
-                  className="h-12 w-12 object-cover"
+                  className="h-10 w-10 sm:h-12 sm:w-12 object-cover flex-shrink-0"
                 />
-                <div className="flex-1">
-                  <p className="font-medium">General group</p>
-                  <p className="text-sm text-gray-500">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">General group</p>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
                     {community.generalGroup.message}
                   </p>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 flex-shrink-0">
                   {community.generalGroup.time}
                 </p>
               </div>
-              <hr className="border-gray-200 mb-4" />
+              <hr className="border-gray-200 mb-3 sm:mb-4" />
 
               {/* Community Groups */}
               {community.groups.map((group) => (
-                <div key={group.id} className="flex items-center gap-3 py-3">
-                  <div className="relative">
+                <div key={group.id} className="flex items-center gap-2 sm:gap-3 py-2 sm:py-3">
+                  <div className="relative flex-shrink-0">
                     {group.hasGroupIcon ? (
-                      <div className="h-15 w-15 border-2 border-gray-300 rounded-full flex items-center justify-center bg-gray-100">
-                        <Users className="h-8 w-8 text-gray-600" />
+                      <div className="h-12 w-12 sm:h-15 sm:w-15 border-2 border-gray-300 rounded-full flex items-center justify-center bg-gray-100">
+                        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />
                         {group.online && (
-                          <div className="absolute top-0 right-0 h-5 w-5 bg-green-500 rounded-full border-2 border-white" />
+                          <div className="absolute top-0 right-0 h-4 w-4 sm:h-5 sm:w-5 bg-green-500 rounded-full border-2 border-white" />
                         )}
                       </div>
                     ) : (
@@ -508,31 +508,31 @@ export function Community({
                         alt={group.name}
                         width={60}
                         height={60}
-                        className="h-15 w-15 rounded-full object-cover"
+                        className="h-12 w-12 sm:h-15 sm:w-15 rounded-full object-cover"
                       />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{group.name}</p>
+                      <p className="font-medium text-sm sm:text-base truncate">{group.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {group.icon}
-                      <p className="text-sm text-gray-500">{group.message}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">{group.message}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <p className="text-sm text-gray-500">{group.time}</p>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <p className="text-xs sm:text-sm text-gray-500">{group.time}</p>
                     {(group.badge || group.pinned || group.isMuted) && (
                       <div className="flex items-center gap-1">
                         {group.pinned && (
-                          <BsPinAngleFill className="h-4 w-4 text-red-600" />
+                          <BsPinAngleFill className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                         )}
                         {group.isMuted && (
-                          <IoVolumeMuteOutline className="h-4 w-4 text-gray-500" />
+                          <IoVolumeMuteOutline className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
                         )}
                         {group.badge && (
-                          <div className="bg-blue-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                          <div className="bg-blue-500 text-white rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-xs">
                             {group.badge}
                           </div>
                         )}
@@ -559,9 +559,9 @@ export function Community({
           e.stopPropagation();
           setShowCopyPopup(true);
         }}
-        className="fixed bottom-6 left-160 h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
+        className="fixed bottom-6 right-6 lg:left-160 h-12 w-12 sm:h-14 sm:w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
       >
-        <TbCopyPlusFilled className="h-8 w-8 text-white" />
+        <TbCopyPlusFilled className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
       </button>
       <NewGroupMemberSelection
         isOpen={showNewGroupMemberSelection}

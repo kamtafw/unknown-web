@@ -160,7 +160,7 @@ export function StatusList({
   );
 
   return (
-    <div className="p-4 h-full flex flex-col relative">
+    <div className="p-4 h-full flex flex-col relative w-full lg:w-auto">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

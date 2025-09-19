@@ -24,9 +24,10 @@ interface ContactStatusProps {
   };
   stories: StatusStory[];
   onClose?: () => void;
+  onBack: () => void; 
 }
 
-export function ContactStatus({ contact, stories }: ContactStatusProps) {
+export function ContactStatus({ contact, stories, onBack }: ContactStatusProps) {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [showActionsPopup, setShowActionsPopup] = useState(false);
   const [showForwardPopup, setShowForwardPopup] = useState(false); // Add this state
@@ -35,13 +36,13 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
 
   const nextStory = () => {
     if (currentStoryIndex < stories.length - 1) {
-      setCurrentStoryIndex(prev => prev + 1);
+      setCurrentStoryIndex((prev) => prev + 1);
     }
   };
 
   const prevStory = () => {
     if (currentStoryIndex > 0) {
-      setCurrentStoryIndex(prev => prev - 1);
+      setCurrentStoryIndex((prev) => prev - 1);
     }
   };
 
@@ -49,12 +50,10 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
     setCurrentStoryIndex(index);
   };
 
-
   const handleForwardClick = () => {
     console.log("Forward action triggered - showing ForwardPopup");
     setShowForwardPopup(true);
   };
-
 
   const handleForwardClose = () => {
     console.log("Forward popup closing");
@@ -63,10 +62,17 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
 
   return (
     <>
-      <div className="w-2/3 flex flex-col h-full bg-[#111827]">
+      <div className="w-full lg:w-2/3 flex flex-col h-full bg-[#111827]">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
+            <button
+              className="lg:hidden p-2 hover:bg-gray-700 rounded-full transition-colors"
+              onClick={onBack}
+              title="Go back"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
             <Image
               src={contact.avatar}
               alt={contact.name}
@@ -75,8 +81,12 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
               className="rounded-full object-cover"
             />
             <div>
-              <h2 className="font-semibold text-lg text-white">{contact.name}</h2>
-              <p className="text-sm text-white">{contact.date}, {contact.time}</p>
+              <h2 className="font-semibold text-lg text-white">
+                {contact.name}
+              </h2>
+              <p className="text-sm text-white">
+                {contact.date}, {contact.time}
+              </p>
             </div>
           </div>
           <div className="relative">
@@ -85,7 +95,7 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
               onClick={() => setShowActionsPopup(true)}
             />
             {showActionsPopup && (
-              <ContactStatusActionsPopup 
+              <ContactStatusActionsPopup
                 onClose={() => setShowActionsPopup(false)}
                 onForward={handleForwardClick}
               />
@@ -94,7 +104,7 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-start pt-2 px-6">
+        <div className="flex-1 flex flex-col items-center justify-start pt-2 px-2 lg:px-6">
           {/* Progress Indicators */}
           <div className="flex gap-2 mb-6">
             {stories.map((_, index) => (
@@ -113,8 +123,8 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
           </div>
 
           {/* Image Container */}
-          <div className="relative mb-6 px-16">
-            <div className="relative w-96 h-[35rem] rounded-lg overflow-hidden">
+          <div className="relative mb-6 px-4 lg:px-16">
+            <div className="relative w-72 h-[32rem] lg:w-96 lg:h-[35rem] rounded-lg overflow-hidden mx-auto">
               <Image
                 src={currentStory.image}
                 alt="Status Image"
@@ -154,9 +164,7 @@ export function ContactStatus({ contact, stories }: ContactStatusProps) {
           </div>
         </div>
       </div>
-      {showForwardPopup && (
-        <ForwardPopup onClose={handleForwardClose} />
-      )}
+      {showForwardPopup && <ForwardPopup onClose={handleForwardClose} />}
     </>
   );
 }

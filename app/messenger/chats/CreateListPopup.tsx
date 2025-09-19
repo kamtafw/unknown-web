@@ -35,7 +35,7 @@ export function CreateListPopup({
       />
 
       {/* Popup */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg z-50 w-130 h-180 p-6">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg z-50 w-[90vw] max-w-md h-150 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Create a custom list</h3>
@@ -83,7 +83,7 @@ export function CreateListPopup({
         </p>
 
         {/* Done Button */}
-        <div className="mt-100 w-full flex justify-center bg-blue-500 hover:bg-blue-600 rounded-full">
+        <div className="mt-67 sm:mt-100 w-full flex justify-center bg-blue-500 hover:bg-blue-600 rounded-full">
           <Button
             variant="ghost"
             onClick={handleDone}

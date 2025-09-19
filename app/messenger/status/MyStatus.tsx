@@ -10,6 +10,10 @@ import { ForwardPopup } from "./ForwardPopup";
 import EditStory from "./EditStory";
 import { PiEyesFill } from "react-icons/pi";
 
+interface MyStatusProps {
+  onBack?: () => void;
+}
+
 interface StatusStory {
   id: string;
   image: string;
@@ -63,7 +67,7 @@ const statusStories: StatusStory[] = [
   },
 ];
 
-export function MyStatus() {
+export function MyStatus({ onBack }: MyStatusProps) {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [showActionsPopup, setShowActionsPopup] = useState(false);
   const [showViewersPopup, setShowViewersPopup] = useState(false);
@@ -108,10 +112,17 @@ export function MyStatus() {
 
   return (
     <>
-      <div className="w-2/3 flex flex-col h-full bg-[#111827]">
+      <div className="w-full lg:w-2/3 flex flex-col h-full bg-[#111827]">
         {/* Header */}
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
+            <button
+              className="lg:hidden p-2 hover:bg-gray-700 rounded-full transition-colors"
+              onClick={onBack}
+              title="Go back"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
             <Image
               src="/Rectangle 2.png"
               alt="My Profile"
@@ -130,7 +141,7 @@ export function MyStatus() {
               onClick={() => setShowActionsPopup(true)}
             />
             {showActionsPopup && (
-              <StatusActionsPopup 
+              <StatusActionsPopup
                 onClose={() => setShowActionsPopup(false)}
                 onForward={handleForwardClick}
                 onEditStory={handleEditStoryClick}
@@ -140,7 +151,7 @@ export function MyStatus() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-start pt-2 px-6">
+        <div className="flex-1 flex flex-col items-center justify-start pt-2 px-2 lg:px-6">
           {/* Progress Indicators */}
           <div className="flex gap-2 mb-6">
             {statusStories.map((_, index) => (
@@ -159,8 +170,8 @@ export function MyStatus() {
           </div>
 
           {/* Image Container */}
-          <div className="relative mb-6 px-16">
-            <div className="relative w-96 h-[35rem] rounded-lg overflow-hidden">
+          <div className="relative mb-6 px-4 lg:px-16">
+           <div className="relative w-72 h-150 lg:w-96 lg:h-[35rem] rounded-lg overflow-hidden mx-auto">
               <Image
                 src={currentStory.image}
                 alt="Status Image"
@@ -221,15 +232,10 @@ export function MyStatus() {
         </div>
       </div>
 
-      {showForwardPopup && (
-        <ForwardPopup onClose={handleForwardClose} />
-      )}
+      {showForwardPopup && <ForwardPopup onClose={handleForwardClose} />}
 
       {/* Add EditStory popup */}
-      <EditStory 
-        isOpen={showEditStory} 
-        onClose={handleEditStoryClose} 
-      />
+      <EditStory isOpen={showEditStory} onClose={handleEditStoryClose} />
     </>
   );
 }

@@ -46,7 +46,6 @@ interface ArchivedItem {
 }
 
 const archivedItems: ArchivedItem[] = [
-  // Groups
   {
     id: "group1",
     name: "Good",
@@ -248,9 +247,9 @@ export function ArchivePage({ onBack,  }: ArchivePageProps) {
   };
 
   return (
-    <div className="p-3 h-full flex flex-col">
+    <div className="p-2 sm:p-3 lg:p-3 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0 mt-3">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0 mt-2 sm:mt-3">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -260,7 +259,7 @@ export function ArchivePage({ onBack,  }: ArchivePageProps) {
           >
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h2 className="text-xl font-bold">Archive</h2>
+          <h2 className="text-lg sm:text-xl lg:text-xl font-bold">Archive</h2>
         </div>
         <Popover>
           <PopoverTrigger asChild>
@@ -310,7 +309,7 @@ export function ArchivePage({ onBack,  }: ArchivePageProps) {
         {archivedItems.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-3 py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
+            className="flex items-center gap-2 sm:gap-3 py-2 hover:bg-gray-50 rounded-lg px-1 sm:px-2 cursor-pointer"
             onClick={() => handleChatClick(item)}
             onContextMenu={(e) => handleContextMenu(e, item.id, item.name)}
           >

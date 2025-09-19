@@ -54,7 +54,7 @@ export function SearchPopup({ isOpen, onClose, onOpenCalendar }: SearchPopupProp
       />
       
       {/* Search Popup */}
-      <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-120">
+      <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-[90vw] max-w-[480px]">
         {/* Search Form */}
         <div className="p-4">
           <form onSubmit={handleSearchSubmit}>
