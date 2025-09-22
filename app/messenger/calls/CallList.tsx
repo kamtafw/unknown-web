@@ -141,7 +141,7 @@ export function CallList() {
 
   return (
     <>
-      <div className="p-1 h-full flex flex-col ml-3 mr-2">
+      <div className="p-1 h-full flex flex-col ml-3 mr-2 mb-75">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 mt-3">
           <h2 className="text-xl font-bold">Calls</h2>
@@ -149,7 +149,7 @@ export function CallList() {
             <Search className="h-5 w-5" />
             <Popover>
               <PopoverTrigger>
-                <EllipsisVertical className="h-5 w-5" />
+                <EllipsisVertical className="h-5 w-5"/>
               </PopoverTrigger>
               <PopoverContent className="w-48">
                 <div className="flex flex-col gap-2">
