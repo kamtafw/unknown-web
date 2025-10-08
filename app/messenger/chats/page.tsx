@@ -12,7 +12,11 @@ export default function Home() {
     avatar: string;
   } | null>(null);
 
-  const handleChatSelect = (chatId: string, chatName: string, chatAvatar: string) => {
+  const handleChatSelect = (
+    chatId: string,
+    chatName: string,
+    chatAvatar: string
+  ) => {
     setSelectedChat({ id: chatId, name: chatName, avatar: chatAvatar });
   };
 
@@ -38,10 +42,12 @@ export default function Home() {
       {/* Desktop Layout */}
       <div className="hidden lg:flex w-full h-full">
         {/* Left Sidebar - Chat List */}
-        <div className="w-[480px] border-r bg-white flex flex-col overflow-y-auto">
+        {/* <div className="w-[500px] border-r bg-white flex flex-col overflow-y-auto">
+         */}
+        <div className="w-2/5 min-w-[400px] max-w-[600px] border-r bg-white flex flex-col overflow-y-auto">
           <ChatList onChatSelect={handleChatSelect} />
         </div>
-        
+
         {/* Right Main Content */}
         <div className="flex-1 flex flex-col">
           {selectedChat ? (
@@ -52,7 +58,7 @@ export default function Home() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center">
               <Image
-                src="/appcombo.svg" 
+                src="/appcombo.svg"
                 alt="Logo"
                 width={50}
                 height={50}
@@ -68,5 +74,3 @@ export default function Home() {
     </div>
   );
 }
-
-

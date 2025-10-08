@@ -1,4 +1,4 @@
-import RootLayout from '@/app/layout';
+// import RootLayout from '@/app/layout';
 import AuthLayout from '@/components/layout/authLayout';
 import ChooseInterestComponent from '@/components/modules/authModules/ChooseInterestComponent';
 import React from 'react';
@@ -7,7 +7,7 @@ import React from 'react';
 
 const ChoseInterest = () => {
     return (
-        <RootLayout>
+        // <RootLayout>
             <AuthLayout>
                 <section className='w-full flex items-center justify-center mx-auto py-3'>
                     <div className='flex items-center justify-center gap-[66px] w-full lg:w-[598px] max-w-[598px] mx-auto'>
@@ -24,7 +24,7 @@ const ChoseInterest = () => {
                     </div>
                 </section>
             </AuthLayout>
-        </RootLayout>
+        // </RootLayout>
     );
 }
 

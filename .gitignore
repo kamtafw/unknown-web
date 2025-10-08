@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # next.js
 /.next/
@@ -31,7 +35,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env
+.env*
+.env.local
+.env.production
 
 # vercel
 .vercel
@@ -40,17 +46,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Testing
-/coverage
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-
-/__tests__/
-/jest.config.mjs
-/jest.setup.js
-/playwright.config.ts
-/test-suite.js
+# vitest
+vitest.config.ts.timestamp-*
 

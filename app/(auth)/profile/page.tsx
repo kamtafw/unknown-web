@@ -1,11 +1,9 @@
 "use client"
 import AuthLayout from '@/components/layout/authLayout';
 import CompleteProfileFormModule from '@/components/modules/authModules/CompleteProfileFormModule';
-// import { useAuthStore } from '@/store/userStore';
 import React from 'react';
 
 const CompleteProfile = () => {
-    //   const user = useAuthStore((state) => state.user);
     return (
         <AuthLayout>
             <section className='flex items-center justify-center mx-auto mt-[60px] px-5 lg:px-0'>

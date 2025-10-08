@@ -5,49 +5,31 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useResendResetCode, useVerifyResetOtp } from '@/services/queryHooks/useUserAuthService';
+import { useAuthStore } from '@/store/userStore';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function VerifyCodePage() {
   const [code, setCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const { mutate: verifyOtp, isPending } = useVerifyResetOtp();
+  const { mutate: resendCode, isPending: isResending } = useResendResetCode();
+
+  const email = user?.email || '';
 
   const handleBack = () => {
     router.push('/forgot-password');
   };
 
-  const handleVerifyCode = async () => {
+  const handleVerifyCode = () => {
     if (code.length !== 6) return;
     
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to create new password page
-      router.push('/create-password');
-    } catch (error) {
-      console.error('Error verifying code:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    verifyOtp({ email, otp: code });
   };
 
-  const handleResendCode = async () => {
-    setIsResending(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Show success message or handle resend logic
-      console.log('Code resent successfully');
-    } catch (error) {
-      console.error('Error resending code:', error);
-    } finally {
-      setIsResending(false);
-    }
+  const handleResendCode = () => {
+    resendCode(email);
   };
 
   return (
@@ -67,7 +49,7 @@ export default function VerifyCodePage() {
             <p className="text-gray-600">
               Enter the 6 digit code we sent to your email.
             </p>
-            <p className="font-medium text-gray-900">chiomachukwu@gmail.com</p>
+            <p className="font-medium text-gray-900">{email}</p>
           </div>
         </div>
 
@@ -92,10 +74,10 @@ export default function VerifyCodePage() {
 
           <Button
             onClick={handleVerifyCode}
-            disabled={code.length !== 6 || isLoading}
+            disabled={code.length !== 6 || isPending}
             className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Verifying...' : 'Verify Code'}
+            {isPending ? 'Verifying...' : 'Verify Code'}
           </Button>
 
           <div className="text-center">
@@ -112,6 +94,7 @@ export default function VerifyCodePage() {
           </div>
         </div>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 }

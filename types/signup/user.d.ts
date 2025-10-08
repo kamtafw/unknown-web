@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface User {
-  // email: string;
-  // phone_number: string;
-  // token?: string;
+
   success: boolean,
   status_code: number,
   message: string,
@@ -28,12 +26,19 @@ export interface User {
   }
 }
 
+
 export interface UserAuthState {
-  user: any;
+  user: {
+    email?: string;
+    otp?: string;
+    password?: string;
+    [key: string]: any; 
+  } | null;
+  accessToken: string | null;
   setUser: (user: any) => void;
+  setAccessToken: (token: string) => void;
   logout: () => void;
 }
-
 export interface SignupPayload {
   email: string;
   phone_number: string;
@@ -43,8 +48,12 @@ export interface SignupPayload {
 export interface VerifyOtpPayload {
   email: string;
   otp: string;
-  need_tokens: boolean; // use false if you don't need auth tokens to be returned
+  need_tokens: boolean;
   need_otp_token: boolean;
+}
+
+export interface ResendOtpPayload {
+  email: string;
 }
 
 export interface UserProfilePayload {
