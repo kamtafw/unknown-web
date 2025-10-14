@@ -28,7 +28,6 @@ const FormSchema = z.object({
 });
 
 function LoginFormModule() {
-  const { mutate, isPending } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -36,6 +35,15 @@ function LoginFormModule() {
     defaultValues: {
       identifier: "",
       password: "",
+    },
+  });
+
+  const { mutate, isPending } = useLogin({
+    onErrorCallback: () => {
+      form.reset({
+        identifier: form.getValues("identifier"),
+        password: "",
+      });
     },
   });
 

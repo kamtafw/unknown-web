@@ -15,6 +15,7 @@ vi.mock("@/services/queries/userAuthQueries");
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
+    refresh: vi.fn(),
   }),
 }));
 
@@ -38,7 +39,7 @@ const createWrapper = () => {
 describe("useSignUp", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuthStore.getState().logout(); // Clear store before each test
+    useAuthStore.getState().logout();
   });
 
   it("calls signUpRequest with correct payload", async () => {

@@ -29,14 +29,23 @@ export interface User {
 
 export interface UserAuthState {
   user: {
+    user?: {
+      email?: string;
+      [key: string]: any;
+    };
     email?: string;
     otp?: string;
     password?: string;
     [key: string]: any; 
   } | null;
   accessToken: string | null;
+  tempCredentials: {
+    email?: string;
+    password?: string;
+  } | null;
   setUser: (user: any) => void;
-  setAccessToken: (token: string) => void;
+  setAccessToken: (token: string | null) => void;
+  setTempCredentials: (credentials: { email?: string; password?: string }) => void; // Add this line
   logout: () => void;
 }
 export interface SignupPayload {

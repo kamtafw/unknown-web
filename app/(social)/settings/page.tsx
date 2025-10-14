@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLogout } from '@/services/queryHooks/useUserAuthService';
 import SettingsMainPage from "./SettingsMainPage";
 import AccountPage from "./account/AccountPage";
 import SecurityNotificationPage from "./account/SecurityNotificationPage";
@@ -58,6 +59,7 @@ function SettingsContent() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
+  const { mutate: logout } = useLogout();
   const [lastSeenText, setLastSeenText] = useState("Nobody, Same as last seen");
   const [statusText, setStatusText] = useState("My contacts");
   const [groupText, setGroupText] = useState("Everyone");
@@ -214,8 +216,8 @@ function SettingsContent() {
           onAddAccountClick={() => handleViewChange("addAccount")}
           onDeleteAccountClick={() => handleViewChange("deleteAccount")}
           onTimeZoneClick={() => handleViewChange("timeZone")}
-          onLogoutClick={() => handleViewChange("logout")}
-          onBack={handleBackToSettingsMain} // ADD this line
+          onLogoutClick={logout}
+          onBack={handleBackToSettingsMain}
         />
       )}
       {activeView === "alert" && (

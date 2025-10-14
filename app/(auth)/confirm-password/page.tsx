@@ -20,7 +20,7 @@ export default function ConfirmPasswordPage() {
 
   const email = user?.email || "";
   const otpToken = user?.otp_token || "";;
-  const savedPassword = newPassword;
+  // const savedPassword = newPassword;
 
   const passwordRequirements = [
     {
@@ -66,11 +66,11 @@ export default function ConfirmPasswordPage() {
   const handleChangePassword = () => {
     if (!canSubmit) return;
 
-    console.log("Email:", email);
-    console.log("OTP:", otpToken);
-    console.log("Saved Password:", savedPassword);
-    console.log("Confirm Password:", confirmPassword);
-    console.log("Full user object:", user);
+    // console.log("Email:", email);
+    // console.log("OTP:", otpToken);
+    // console.log("Saved Password:", savedPassword);
+    // console.log("Confirm Password:", confirmPassword);
+    // console.log("Full user object:", user);
 
     resetPasswordMutation({
       email,
