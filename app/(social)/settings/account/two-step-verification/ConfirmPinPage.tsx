@@ -3,16 +3,26 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useVerifyPin, useSwitchOtpDefault } from "../../../../../services/queryHooks/useUserAuthService";
+import { useAuthStore } from "@/store/userStore";
+import { toast } from "sonner";
 
 interface ConfirmPinPageProps {
   onBack: () => void;
   onNext: () => void;
+  createdPin: string;
 }
 
-export default function ConfirmPinPage({ onBack, onNext }: ConfirmPinPageProps) {
+export default function ConfirmPinPage({ onBack, onNext, createdPin }: ConfirmPinPageProps) {
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const verifyPinMutation = useVerifyPin();
+  const switchOtpMutation = useSwitchOtpDefault();
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  
+  const userEmail = user?.user?.email || user?.email;
 
   const handleChange = (index: number, value: string) => {
     if (/^\d$/.test(value) || value === "") {
@@ -38,7 +48,61 @@ export default function ConfirmPinPage({ onBack, onNext }: ConfirmPinPageProps) 
 
   const isComplete = pin.every((digit) => digit !== "");
 
-   return (
+  const handleNext = () => {
+    const pinString = pin.join("");
+    // console.log("Confirming PIN:", pinString);
+    // console.log("Created PIN:", createdPin);
+    
+
+    if (pinString !== createdPin) {
+      toast.error("PINs do not match. Please try again.", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+    
+
+    verifyPinMutation.mutate(
+      { pin: pinString },
+      {
+        onSuccess: () => {
+          if (!userEmail) {
+            toast.error("User email not found", {
+              style: { background: "red", color: "white" },
+            });
+            return;
+          }
+
+          switchOtpMutation.mutate(
+            { 
+              identifier: userEmail, 
+              otp_default: "pin" 
+            },
+            {
+              onSuccess: () => {
+                // console.log("✅ PIN 2FA activated:", data);
+                
+                // Update user's otp_default in store
+                const currentUser = useAuthStore.getState().user;
+                setUser({
+                  ...currentUser,
+                  otp_default: "pin",
+                  user: {
+                    ...currentUser?.user,
+                    otp_default: "pin"
+                  }
+                });
+                
+                onNext();
+              },
+            }
+          );
+        },
+      }
+    );
+  };
+
+  return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
       <div className="w-full max-w-[546px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg border border-gray-200">
         <div className="sticky top-0 bg-white/80 backdrop-blur-sm z-10">
@@ -68,9 +132,10 @@ export default function ConfirmPinPage({ onBack, onNext }: ConfirmPinPageProps) 
                 className={`w-[40px] h-[40px] text-center text-lg border-2 rounded-md ${
                   index === activeIndex ? "border-blue-500" : "border-gray-300"
                 } focus:outline-none`}
-                placeholder={``}
+                placeholder=""
                 title={`PIN digit ${index + 1}`}
                 aria-label={`PIN digit ${index + 1}`}
+                disabled={verifyPinMutation.isPending || switchOtpMutation.isPending}
               />
             ))}
           </div>
@@ -79,11 +144,11 @@ export default function ConfirmPinPage({ onBack, onNext }: ConfirmPinPageProps) 
             <div className="w-3 h-3 bg-blue-500 rounded-full" />
           </div>
           <Button
-            onClick={onNext}
-            disabled={!isComplete}
+            onClick={handleNext}
+            disabled={!isComplete || verifyPinMutation.isPending || switchOtpMutation.isPending}
             className="mt-125 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Next
+            {(verifyPinMutation.isPending || switchOtpMutation.isPending) ? "Activating..." : "Next"}
           </Button>
         </div>
       </div>

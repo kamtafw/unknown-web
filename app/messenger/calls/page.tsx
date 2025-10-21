@@ -28,35 +28,36 @@ export default function Home() {
   const [showGroupCall, setShowGroupCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callParticipants, setCallParticipants] = useState<Participant[]>([]);
+  const [callType, setCallType] = useState<"phone" | "video">("phone");
 
   const handleStartCall = (selectedContacts: Contact[]) => {
-    const participants: Participant[] = selectedContacts.map(contact => ({
+    const participants: Participant[] = selectedContacts.map((contact) => ({
       ...contact,
-      isMuted: Math.random() > 0.5, 
+      isMuted: Math.random() > 0.5,
       isSpeaking: false,
     }));
-    
 
-    const allParticipants: Participant[] = [
-      {
-        id: -1,
-        name: "Me",
-        phone: "",
-        avatar: "/Rectangle 1.png",
-        isMuted: true,
-        isSpeaking: false,
-      },
-      ...participants
-    ];
-    
-    setCallParticipants(allParticipants);
-    setShowGroupCall(true);
+    if (callType === "phone") {
+      const allParticipants: Participant[] = [
+        {
+          id: -1,
+          name: "Me",
+          phone: "",
+          avatar: "/Rectangle 1.png",
+          isMuted: true,
+          isSpeaking: false,
+        },
+        ...participants,
+      ];
+
+      setCallParticipants(allParticipants);
+      setShowGroupCall(true);
+    } else if (callType === "video") {
+      setCallParticipants(participants);
+      setShowVideoCall(true);
+    }
+
     setShowContactPopup(false);
-  };
-
-  const handleStartVideoCall = () => {
-    setCallParticipants([]);
-    setShowVideoCall(true);
   };
 
   const handleEndCall = () => {
@@ -73,6 +74,16 @@ export default function Home() {
     setShowContactPopup(true);
   };
 
+  const openPhoneCall = () => {
+    setCallType("phone");
+    setShowContactPopup(true);
+  };
+
+  const openVideoCall = () => {
+    setCallType("video");
+    setShowContactPopup(true);
+  };
+
   return (
     <div className="flex">
       {/* Sidebar - Hidden on mobile, visible on desktop */}
@@ -83,12 +94,12 @@ export default function Home() {
       {/* Mobile Full Width Call List - Visible only on mobile */}
       <div className="block lg:hidden w-full relative">
         <CallList />
-        
+
         {/* Mobile Floating Action Buttons */}
         <div className="fixed bottom-6 right-6 flex flex-col gap-4 z-40">
           {/* Video Call Button */}
           <button
-            onClick={handleStartVideoCall}
+            onClick={openVideoCall}
             className="h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform"
             aria-label="Start video call"
           >
@@ -97,8 +108,8 @@ export default function Home() {
 
           {/* Phone Call Button */}
           <button
-            onClick={() => setShowContactPopup(true)}
-            className="h-14 w-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600  shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform"
+            onClick={openPhoneCall}
+            className="h-14 w-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform"
             aria-label="Start phone call"
           >
             <Phone className="h-6 w-6 text-white" />
@@ -107,19 +118,19 @@ export default function Home() {
       </div>
 
       {/* Desktop Main Content Area - Hidden on mobile */}
-      <div className="hidden lg:flex ml-35  items-center justify-center gap-8 flex-1">
+      <div className="hidden lg:flex ml-35 items-center justify-center gap-8 flex-1">
         <button
-          onClick={() => setShowContactPopup(true)}
-          className="h-19 w-19 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+          onClick={openPhoneCall}
+          className="h-19 w-19 bg-blue-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
           aria-label="Start phone call"
         >
           <Phone className="h-5 w-5 text-white" />
         </button>
 
         <button
-          onClick={handleStartVideoCall}
+          onClick={openVideoCall}
           className="h-19 w-19 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
-         aria-label="Start video call"
+          aria-label="Start video call"
         >
           <Video className="h-5 w-5 text-white" />
         </button>

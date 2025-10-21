@@ -90,7 +90,7 @@ export function GroupCallPage({
     },
     {
       id: 3,
-      name: "Jenny Wilson",
+      name: "Jenny Wils",
       phone: "+234 8134567890",
       avatar: "/Rectangle 1.png",
       isMuted: true,

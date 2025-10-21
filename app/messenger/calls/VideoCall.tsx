@@ -12,6 +12,7 @@ import { ContactPopup } from "./ContactPopup";
 
 interface Participant {
   id: number;
+  name: string;
   avatar: string;
 }
 
@@ -41,56 +42,17 @@ export function VideoCall({
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isVolumeOn, setIsVolumeOn] = useState(true);
   const [showContactPopup, setShowContactPopup] = useState(false);
+  const displayedParticipants = participants.length > 0 ? participants : [];
 
-  const mockParticipants: Participant[] = [
-    {
-      id: 1,
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 2,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 3,
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 4,
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 5,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 6,
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 7,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 8,
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 9,
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 10,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 11,
-      avatar: "/Rectangle 1.png",
-    },
-  ];
-
-  const displayedParticipants =
-    participants.length > 0 ? participants : mockParticipants;
+  const getGridLayout = (count: number) => {
+    if (count === 1) return { cols: 1, size: "w-80 h-80 sm:w-96 sm:h-96" };
+    if (count === 2) return { cols: 2, size: "w-64 h-64 sm:w-80 sm:h-80" };
+    if (count === 3) return { cols: 3, size: "w-48 h-48 sm:w-56 sm:h-56" };
+    if (count === 4) return { cols: 2, size: "w-56 h-56 sm:w-64 sm:h-64" };
+    if (count <= 6) return { cols: 3, size: "w-40 h-40 sm:w-48 sm:h-48" };
+    if (count <= 9) return { cols: 3, size: "w-36 h-36 sm:w-40 sm:h-40" };
+    return { cols: 4, size: "w-32 h-32 sm:w-36 sm:h-36" };
+  };
 
   const handleEndCall = () => {
     setIsVideoOn(true);
@@ -112,37 +74,26 @@ export function VideoCall({
   };
 
   const handleContactSelect = (selectedContacts: Contact[]) => {
-    const newParticipants = selectedContacts.map(contact => ({
+    const newParticipants = selectedContacts.map((contact) => ({
       id: contact.id,
+       name: contact.name,
       avatar: contact.avatar,
     }));
-    
+
     console.log("Adding participants:", newParticipants);
 
     setShowContactPopup(false);
   };
 
-  const chunkParticipants = (participants: Participant[], chunkSize: number) => {
-    const chunks = [];
-    for (let i = 0; i < participants.length; i += chunkSize) {
-      chunks.push(participants.slice(i, i + chunkSize));
-    }
-    return chunks;
-  };
-
   if (!isOpen) return null;
-
-  // Mobile: 2 participants per row, Desktop: 5 participants per row
-  const participantRowsMobile = chunkParticipants(displayedParticipants, 2);
-  const participantRowsDesktop = chunkParticipants(displayedParticipants, 5);
 
   return (
     <>
       <div className="fixed inset-0 bg-black/70 z-[50] flex items-center justify-center">
         <div
           className={`bg-[#111827] rounded-xl shadow-2xl transition-all duration-300 p-3 sm:p-4 lg:p-6 border-none ${
-            isExpanded 
-              ? "w-full h-full rounded-none" 
+            isExpanded
+              ? "w-full h-full rounded-none"
               : "w-[90%] h-[85%] sm:w-[90%] sm:h-[90%] lg:w-[800px] lg:h-[600px] sm:rounded-xl"
           } relative flex flex-col`}
         >
@@ -157,7 +108,7 @@ export function VideoCall({
           </div>
 
           {/* Video Grid - Mobile Layout */}
-          <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 overflow-y-auto block lg:hidden">
+          {/* <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 overflow-y-auto block lg:hidden">
             {participantRowsMobile.map((row, rowIndex) => (
               <div key={rowIndex} className="grid grid-cols-2 gap-2 sm:gap-3 mb-3">
                 {row.map((participant) => (
@@ -174,29 +125,45 @@ export function VideoCall({
                 ))}
               </div>
             ))}
-          </div>
-
-          {/* Video Grid - Desktop Layout */}
-          <div className="flex-1 mb-6 overflow-y-auto hidden lg:block">
-            {participantRowsDesktop.map((row, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-5 gap-3 mb-4">
-                {row.map((participant) => (
-                  <div key={participant.id} className="relative">
-                    <div className="relative overflow-hidden rounded-lg min-h-[120px]">
-                      <Image
-                        src={participant.avatar}
-                        alt={`Participant ${participant.id}`}
-                        fill
-                        className="object-cover"
-                      />
+          </div> */}
+          <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 overflow-auto p-2 sm:p-4 flex items-center justify-center">
+            <div
+              className="grid gap-3 sm:gap-4 justify-items-center"
+              style={{
+                gridTemplateColumns: `repeat(${
+                  getGridLayout(displayedParticipants.length).cols
+                }, minmax(0, 1fr))`,
+              }}
+            >
+              {displayedParticipants.map((participant) => (
+                <div
+                  key={participant.id}
+                  className="flex flex-col items-center gap-2"
+                >
+                  {/* Video Frame */}
+                  <div
+                    className={`relative rounded-xl overflow-hidden bg-gray-800 shadow-lg border border-gray-700 ${
+                      getGridLayout(displayedParticipants.length).size
+                    }`}
+                  >
+                    <Image
+                      src={participant.avatar}
+                      alt={participant.name}
+                      fill
+                      className="object-cover"
+                    />
+                    {/* Name overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2 sm:p-3">
+                      <p className="text-white font-semibold text-xs sm:text-sm truncate">
+                        {participant.name}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Control Buttons - Mobile Layout */}
+          {/* Video Grid - Desktop Layout */}  
           <div className="flex justify-center space-x-2 sm:space-x-3 lg:hidden">
             {/* End call - Always visible */}
             <button

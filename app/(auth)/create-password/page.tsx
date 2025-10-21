@@ -37,27 +37,11 @@ export default function CreatePasswordPage() {
 
   const isPasswordValid = passwordRequirements.every((req) => req.met);
 
-  // const handleChangePassword = async () => {
-  //   if (!isPasswordValid) return;
 
-  //   setIsLoading(true);
-
-  //   try {
-  //     // Simulate API call
-  //     await new Promise(resolve => setTimeout(resolve, 1000));
-
-  //     // Navigate to confirm password page
-  //     router.push('/confirm-password');
-  //   } catch (error) {
-  //     console.error('Error creating password:', error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   const handleChangePassword = () => {
     if (!isPasswordValid) return;
 
-    // Store password in state for confirmation page
+
     setUser({ ...user, password: newPassword });
     router.push("/confirm-password");
   };

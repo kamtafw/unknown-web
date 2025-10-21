@@ -30,20 +30,65 @@ export const loginRequest = async (payload: {
   return response.data;
 };
 
-// Verify TOTP - NO TOKEN
-export const verifyTotp = async (payload: { email: string; otp: string }) => {
-  const response = await axiosIsntanceAuth.post("/auth/verify-totp", {
-    email: payload.email,
-    otp: payload.otp,
+// Switch OTP Default (Initial setup) - NEEDS TOKEN
+export const switchOtpDefault = async (payload: {
+  identifier: string;
+  otp_default: string;
+}) => {
+  const response = await axiosIstanceAuthenticated.post(
+    "/users/switch-otp-default",
+    payload
+  );
+  return response.data;
+};
+
+// Change OTP Default (Change existing method) - NEEDS TOKEN
+export const changeOtpDefault = async (payload: { otp_default: string }) => {
+  const response = await axiosIstanceAuthenticated.patch(
+    "/users/change-otp-default",
+    payload
+  );
+  return response.data;
+};
+
+// Set PIN - NEEDS TOKEN
+export const setPin = async (payload: { pin: string }) => {
+  const response = await axiosIstanceAuthenticated.post(
+    "/users/set-pin",
+    payload
+  );
+  return response.data;
+};
+
+// Verify PIN - NEEDS TOKEN
+export const verifyPin = async (payload: { pin: string }) => {
+  const response = await axiosIstanceAuthenticated.post(
+    "/users/verify-pin",
+    payload
+  );
+  return response.data;
+};
+
+// Generate TOTP (Google Authenticator) - NO TOKEN
+export const generateTotp = async (email: string) => {
+  const response = await axiosIsntanceAuth.post("/auth/generate-totp", {
+    email,
   });
   return response.data;
 };
 
-// Resend TOTP - NO TOKEN
-export const resendTotp = async (identifier: string) => {
-  const response = await axiosIsntanceAuth.post("/auth/generate-totp", {
-    identifier,
-  });
+// Verify TOTP - NO TOKEN (used during setup)
+export const verifyTotpSetup = async (payload: { email: string; otp: string }) => {
+  const response = await axiosIsntanceAuth.post("/auth/verify-totp", payload);
+  return response.data;
+};
+
+// Confirm Password - NEEDS TOKEN
+export const confirmPassword = async (payload: { password: string }) => {
+  const response = await axiosIstanceAuthenticated.post(
+    "/users/confirm-password",
+    payload
+  );
   return response.data;
 };
 

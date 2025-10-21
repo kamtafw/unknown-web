@@ -20,7 +20,6 @@ export default function ConfirmPasswordPage() {
 
   const email = user?.email || "";
   const otpToken = user?.otp_token || "";;
-  // const savedPassword = newPassword;
 
   const passwordRequirements = [
     {
@@ -46,31 +45,8 @@ export default function ConfirmPasswordPage() {
     newPassword === confirmPassword && confirmPassword.length > 0;
   const canSubmit = isPasswordValid && doPasswordsMatch;
 
-  //   if (!canSubmit) return;
-
-  //   setIsLoading(true);
-
-  //   try {
-  //     // Simulate API call
-  //     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //     // Navigate to success page
-  //     router.push("/success");
-  //     console.log("Password changed successfully");
-  //   } catch (error) {
-  //     console.error("Error changing password:", error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   const handleChangePassword = () => {
     if (!canSubmit) return;
-
-    // console.log("Email:", email);
-    // console.log("OTP:", otpToken);
-    // console.log("Saved Password:", savedPassword);
-    // console.log("Confirm Password:", confirmPassword);
-    // console.log("Full user object:", user);
 
     resetPasswordMutation({
       email,

@@ -2,26 +2,39 @@
 
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
-import AuthImage from "@/public/Auth.png"; 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import QRCode from "qrcode";
 
 interface GoogleAuthenticatorPage2Props {
   onBack: () => void;
   onNext: () => void;
+  secret: string;
+  otpAuthUrl: string;
 }
 
-export default function GoogleAuthenticatorPage2({ onBack, onNext }: GoogleAuthenticatorPage2Props) {
-  const [key] = useState("ABCD-1234-EFGH-5678")
+export default function GoogleAuthenticatorPage2({
+  onBack,
+  onNext,
+  secret,
+  otpAuthUrl,
+}: GoogleAuthenticatorPage2Props) {
   const [copied, setCopied] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+
+  useEffect(() => {
+    QRCode.toDataURL(otpAuthUrl)
+      .then((url) => setQrCodeUrl(url))
+      .catch((err) => console.error("QR Code generation error:", err));
+  }, [otpAuthUrl]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(key);
+    navigator.clipboard.writeText(secret);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
- return (
+  return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
       <div className="w-full max-w-[546px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg border border-gray-200">
         <div className="sticky top-0 bg-white/80 backdrop-blur-sm z-10">
@@ -37,19 +50,25 @@ export default function GoogleAuthenticatorPage2({ onBack, onNext }: GoogleAuthe
           </div>
         </div>
         <div className="px-2 sm:px-4 py-2 flex flex-col items-center">
-          <Image
-            src={AuthImage}
-            alt="Security Illustration"
-            width={100}
-            height={100}
-            className="mt-4"
-          />
-          <h2 className="mt-4 text-lg font-semibold text-[16px] text-center">Copy key and add to Google Authenticator</h2>
-          <p className="mt-2 text-sm text-gray-500 text-center text-[12px]">(Google Authenticator)</p>
+          {qrCodeUrl && (
+            <Image
+              src={qrCodeUrl}
+              alt="QR Code"
+              width={200}
+              height={200}
+              className="mt-4"
+            />
+          )}
+          <h2 className="mt-4 text-lg font-semibold text-[16px] text-center">
+            Copy key and add to Google Authenticator
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 text-center text-[12px]">
+            (Google Authenticator)
+          </p>
           <div className="mt-10 flex items-center w-full border border-gray-300 rounded-md">
             <input
               type="text"
-              value={key}
+              value={secret}
               readOnly
               className="flex-1 p-2 text-sm bg-gray-50"
               placeholder="Authentication key"

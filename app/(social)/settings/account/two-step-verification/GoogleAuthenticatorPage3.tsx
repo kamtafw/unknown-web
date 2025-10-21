@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import GoogleAuthSuccessPopup from "./GoogleAuthSuccessPopup";
+import { useVerifyTotpSetup, useSwitchOtpDefault } from "@/services/queryHooks/useUserAuthService";
+import { useAuthStore } from "@/store/userStore";
 
 interface GoogleAuthenticatorPage3Props {
   onBack: () => void;
@@ -15,6 +17,12 @@ export default function GoogleAuthenticatorPage3({ onBack, onNext }: GoogleAuthe
   const [activeIndex, setActiveIndex] = useState(0);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  const verifyTotpMutation = useVerifyTotpSetup();
+  const switchOtpMutation = useSwitchOtpDefault();
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const userEmail = user?.user?.email || user?.email;
 
   const handleChange = (index: number, value: string) => {
     if (/^\d$/.test(value) || value === "") {
@@ -41,9 +49,42 @@ export default function GoogleAuthenticatorPage3({ onBack, onNext }: GoogleAuthe
   const isComplete = code.every((digit) => digit !== "");
 
   const handleContinue = () => {
-    if (isComplete) {
-      setShowSuccessPopup(true);
-    }
+    if (!isComplete || !userEmail) return;
+
+    const otpCode = code.join("");
+
+  
+    verifyTotpMutation.mutate(
+      {
+        email: userEmail,
+        otp: otpCode,
+      },
+      {
+        onSuccess: () => {
+          switchOtpMutation.mutate(
+            {
+              identifier: userEmail,
+              otp_default: "2fa",
+            },
+            {
+              onSuccess: () => {
+                const currentUser = useAuthStore.getState().user;
+                setUser({
+                  ...currentUser,
+                  otp_default: "2fa",
+                  user: {
+                    ...currentUser?.user,
+                    otp_default: "2fa",
+                  },
+                });
+                
+                setShowSuccessPopup(true);
+              },
+            }
+          );
+        },
+      }
+    );
   };
 
   return (
@@ -80,6 +121,7 @@ export default function GoogleAuthenticatorPage3({ onBack, onNext }: GoogleAuthe
                 className={`w-[40px] h-[40px] text-center text-lg border-2 rounded-md ${
                   index === activeIndex ? "border-blue-500" : "border-gray-300"
                 } focus:outline-none`}
+                disabled={verifyTotpMutation.isPending || switchOtpMutation.isPending}
               />
             ))}
           </div>
@@ -88,10 +130,10 @@ export default function GoogleAuthenticatorPage3({ onBack, onNext }: GoogleAuthe
           </p>
           <Button
             onClick={handleContinue}
-            disabled={!isComplete}
+            disabled={!isComplete || verifyTotpMutation.isPending || switchOtpMutation.isPending}
             className="mt-12 mb-4 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Continue
+            {(verifyTotpMutation.isPending || switchOtpMutation.isPending) ? "Verifying..." : "Continue"}
           </Button>
         </div>
         {showSuccessPopup && (

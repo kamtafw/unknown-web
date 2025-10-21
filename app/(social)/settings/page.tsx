@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState,  Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useLogout } from '@/services/queryHooks/useUserAuthService';
+import { useLogout } from "@/services/queryHooks/useUserAuthService";
 import SettingsMainPage from "./SettingsMainPage";
 import AccountPage from "./account/AccountPage";
 import SecurityNotificationPage from "./account/SecurityNotificationPage";
@@ -74,17 +74,9 @@ function SettingsContent() {
   const [statusIncludedCount, setStatusIncludedCount] = useState(47);
   const [groupOption, setGroupOption] = useState("");
   const [groupExcludedCount, setGroupExcludedCount] = useState<number>(47);
-
-  useEffect(() => {
-    console.log(
-      "Current activeView:",
-      activeView,
-      "Selected Index:",
-      selectedImageIndex,
-      "Blocked Count:",
-      blockedCount
-    );
-  }, [activeView, selectedImageIndex, blockedCount]);
+  const [createdPin, setCreatedPin] = useState<string>("");
+  const [totpSecret, setTotpSecret] = useState<string>("");
+  const [totpAuthUrl, setTotpAuthUrl] = useState<string>("");
 
   const handleViewChange = (
     view: string,
@@ -204,7 +196,9 @@ function SettingsContent() {
           onProfileClick={() => handleViewChange("profile")}
         />
       )}
-      {activeView === "verification" && <VerificationPage onBack={handleBackToSettingsMain} />}
+      {activeView === "verification" && (
+        <VerificationPage onBack={handleBackToSettingsMain} />
+      )}
       {activeView === "account" && (
         <AccountPage
           onSecurityClick={() => handleViewChange("securityNotification")}
@@ -241,31 +235,41 @@ function SettingsContent() {
       {activeView === "createPin" && (
         <CreatePinPage
           onBack={handleBackToTwoStepVerification}
-          onNext={() => handleViewChange("confirmPin")}
+          onNext={(pin: string) => {
+            setCreatedPin(pin);
+            handleViewChange("confirmPin");
+          }}
         />
       )}
       {activeView === "confirmPin" && (
         <ConfirmPinPage
           onBack={() => handleViewChange("createPin")}
-          onNext={handleBackToAccount}
+          onNext={handleBackToTwoStepVerification}
+          createdPin={createdPin}
         />
       )}
       {activeView === "googleAuthenticator" && (
         <GoogleAuthenticatorPage
           onBack={handleBackToTwoStepVerification}
-          onNext={() => handleViewChange("googleAuthenticator2")}
+          onNext={(secret: string, otpAuthUrl: string) => {
+            setTotpSecret(secret);
+            setTotpAuthUrl(otpAuthUrl);
+            handleViewChange("googleAuthenticator2");
+          }}
         />
       )}
       {activeView === "googleAuthenticator2" && (
         <GoogleAuthenticatorPage2
           onBack={handleBackToGoogleAuthenticator}
           onNext={() => handleViewChange("googleAuthenticator3")}
+          secret={totpSecret}
+          otpAuthUrl={totpAuthUrl}
         />
       )}
       {activeView === "googleAuthenticator3" && (
         <GoogleAuthenticatorPage3
           onBack={handleBackToGoogleAuthenticator2}
-          onNext={handleBackToAccount}
+          onNext={handleBackToTwoStepVerification}
         />
       )}
       {activeView === "changeNumber" && (

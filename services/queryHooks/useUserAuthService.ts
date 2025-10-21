@@ -16,8 +16,8 @@ import {
   getListOfInterests,
   getListOfUsersToFollow,
   loginRequest,
-  // verifyTotp,
-  // resendTotp,
+  generateTotp,
+  verifyTotpSetup,
   resendOtp,
   setUserInterests,
   signUpRequest,
@@ -25,6 +25,11 @@ import {
   verifyOtp,
   forgotPassword,
   resetPassword,
+  switchOtpDefault,
+  changeOtpDefault,
+  setPin,
+  verifyPin,
+  confirmPassword,
 } from "../queries/userAuthQueries";
 
 export const useSignUp = () => {
@@ -37,7 +42,7 @@ export const useSignUp = () => {
       console.log("Signup response:", data);
       if (data?.status_code === 201) {
         setUser(data?.data);
-        document.cookie = `signupFlow=true; path=/; max-age=600; SameSite=Strict`;
+        document.cookie = `signupFlow=true; path=/; max-age=600; SameSite=Strict; Secure`;
         setTimeout(() => {
           router.push("/otp");
           router.refresh();
@@ -62,30 +67,45 @@ export const useLogin = ({
       variables: { identifier: string; password: string }
     ) => {
       if (data?.status_code === 200) {
+        const userOtpDefault =
+          data?.data?.user?.otp_default || data?.data?.otp_default;
+
+        if (!data?.data?.access_token) {
+          if (userOtpDefault && userOtpDefault !== "email") {
+            setUser(data?.data);
+            setTempCredentials({
+              email: variables.identifier,
+              password: variables.password,
+            });
+
+            toast.info("Please verify your identity", {
+              style: { background: "#2196F3", color: "white" },
+            });
+
+            setTimeout(() => {
+              router.push("/2fa-verification");
+            }, 500);
+            return;
+          }
+        }
         setUser(data?.data);
         if (data?.data?.access_token) {
           setAccessToken(data.data.access_token);
-          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict`;
+          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
         }
-        document.cookie = `loginFlow=true; path=/; max-age=600; SameSite=Strict`;
-        setTempCredentials({
-          email: data?.data?.user?.email || variables.identifier,
-        });
 
-        toast.success("OTP has been sent to your email for verification", {
+        toast.success("Login successful", {
           style: { background: "green", color: "white" },
         });
 
         setTimeout(() => {
-          router.push("/verify-email");
-          router.refresh();
-        }, 100);
+          router.push("/home");
+        }, 500);
       }
     },
     onError: (error: any) => {
       const errorMessage =
-        error?.response?.data?.message ||
-        "Login failed. Please sign up instead.";
+        error?.response?.data?.message || "Login failed. Please try again.";
       toast.error(errorMessage, {
         style: { background: "red", color: "white" },
       });
@@ -94,33 +114,20 @@ export const useLogin = ({
   });
 };
 
-export const useVerifyLoginOtp = () => {
-  const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
-  const setAccessToken = useAuthStore((state) => state.setAccessToken);
-
+export const useSwitchOtpDefault = () => {
   return useMutation({
-    mutationFn: (payload: { email: string; otp: string }) =>
-      verifyOtp({ ...payload, need_tokens: true, need_otp_token: false }),
+    mutationFn: (payload: { identifier: string; otp_default: string }) =>
+      switchOtpDefault(payload),
     onSuccess: (data: any) => {
       if (data?.status_code === 200) {
-        setUser(data?.data);
-        if (data?.data?.access_token) {
-          setAccessToken(data.data.access_token);
-          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict`;
-        }
-        toast.success("Email verified successfully", {
+        toast.success("2FA method enabled successfully", {
           style: { background: "green", color: "white" },
         });
-        setTimeout(() => {
-          router.push("/home");
-          router.refresh();
-        }, 100);
       }
     },
     onError: (error: any) => {
       const errorMessage =
-        error?.response?.data?.message || "Invalid verification code";
+        error?.response?.data?.message || "Failed to enable 2FA method";
       toast.error(errorMessage, {
         style: { background: "red", color: "white" },
       });
@@ -128,7 +135,27 @@ export const useVerifyLoginOtp = () => {
   });
 };
 
-export const useVerifyTotp = () => {
+export const useChangeOtpDefault = () => {
+  return useMutation({
+    mutationFn: (payload: { otp_default: string }) => changeOtpDefault(payload),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 200) {
+        toast.success("2FA method updated successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update 2FA method";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useVerifyLoginOtp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
@@ -146,15 +173,17 @@ export const useVerifyTotp = () => {
         setUser(data?.data);
         if (data?.data?.access_token) {
           setAccessToken(data.data.access_token);
+          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
         }
-        toast.success("2FA verification successful", {
+        toast.success("Login successful", {
           style: { background: "green", color: "white" },
         });
-        router.push("/home");
+        setTimeout(() => {
+          router.push("/home");
+        }, 500);
       }
     },
     onError: (error: any) => {
-      console.log("Full error:", error?.response?.data);
       const errorMessage =
         error?.response?.data?.message || "Invalid verification code";
       toast.error(errorMessage, {
@@ -164,7 +193,7 @@ export const useVerifyTotp = () => {
   });
 };
 
-export const useResendTotp = () => {
+export const useResendLoginOtp = () => {
   return useMutation({
     mutationFn: (email: string) => resendOtp(email),
     onSuccess: (data: any) => {
@@ -175,8 +204,109 @@ export const useResendTotp = () => {
       }
     },
     onError: (error: any) => {
-      console.error("Resend OTP error:", error);
-      toast.error("Failed to resend code", {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to resend code";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useSetPin = () => {
+  return useMutation({
+    mutationFn: (payload: { pin: string }) => setPin(payload),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 200 || data?.status_code === 201) {
+        toast.success("PIN set successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to set PIN";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useVerifyPin = () => {
+  return useMutation({
+    mutationFn: (payload: { pin: string }) => verifyPin(payload),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 200) {
+        toast.success("PIN verified successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || "Incorrect PIN";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useConfirmPassword = () => {
+  return useMutation({
+    mutationFn: (payload: { password: string }) => confirmPassword(payload),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 200) {
+        toast.success("Password confirmed successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message || "Incorrect password";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useGenerateTotp = () => {
+  return useMutation({
+    mutationFn: (email: string) => generateTotp(email),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 201 || data?.status_code === 200) {
+        toast.success("2FA QR code generated successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to generate 2FA code";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+export const useVerifyTotpSetup = () => {
+  return useMutation({
+    mutationFn: (payload: { email: string; otp: string }) =>
+      verifyTotpSetup(payload),
+    onSuccess: (data: any) => {
+      if (data?.status_code === 200) {
+        toast.success("2FA code verified successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message || "Invalid verification code";
+      toast.error(errorMessage, {
         style: { background: "red", color: "white" },
       });
     },
@@ -207,7 +337,7 @@ export const useVerifyOtp = () => {
         setUser(data);
         if (data?.data?.access_token) {
           setAccessToken(data.data.access_token);
-          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict`;
+          document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
         }
         toast.success("OTP verified successfully", {
           style: { background: "green", color: "white" },
@@ -305,7 +435,7 @@ export const useForgotPassword = () => {
         toast.success("Reset code sent to your email", {
           style: { background: "green", color: "white" },
         });
-        document.cookie = `resetFlow=true; path=/; max-age=600; SameSite=Strict`;
+        document.cookie = `resetFlow=true; path=/; max-age=600; SameSite=Strict; Secure`;
         setTimeout(() => {
           router.push("/verify-code");
           router.refresh();
@@ -436,16 +566,25 @@ export const useUnfollowAUserAction = () => {
 
 export const useLogout = () => {
   const router = useRouter();
-  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const logout = useAuthStore((state) => state.logout);
 
   return useMutation({
     mutationFn: async () => {
-      document.cookie =
-        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      const cookiesToClear = [
+        "accessToken",
+        "signupFlow",
+        "loginFlow",
+        "resetFlow",
+      ];
+
+      cookiesToClear.forEach((cookieName) => {
+        document.cookie = `${cookieName}=; path=/; max-age=0; SameSite=Strict; Secure`;
+      });
+
       return { status_code: 200 };
     },
     onSuccess: () => {
-      setAccessToken(null);
+      logout();
       toast.success("Logged out successfully", {
         style: { background: "green", color: "white" },
       });

@@ -3,16 +3,19 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useSetPin } from "../../../../../services/queryHooks/useUserAuthService";
+// import { useAuthStore } from "@/store/userStore";
 
 interface CreatePinPageProps {
   onBack: () => void;
-  onNext: () => void;
+  onNext: (pin: string) => void;
 }
 
 export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const setPinMutation = useSetPin();
 
   const handleChange = (index: number, value: string) => {
     if (/^\d$/.test(value) || value === "") {
@@ -29,7 +32,10 @@ export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Backspace" && !pin[index] && index > 0) {
       setActiveIndex(index - 1);
       inputRefs.current[index - 1]?.focus();
@@ -37,6 +43,23 @@ export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
   };
 
   const isComplete = pin.every((digit) => digit !== "");
+
+  const handleNext = () => {
+    const pinString = pin.join("");
+    // console.log("Setting PIN:", pinString);
+    // const { accessToken } = useAuthStore.getState();
+    // console.log("Access Token:", accessToken);
+    // console.log("Full User:", useAuthStore.getState().user);
+
+    setPinMutation.mutate(
+      { pin: pinString },
+      {
+        onSuccess: () => {
+          onNext(pinString);
+        },
+      }
+    );
+  };
 
   return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
@@ -54,7 +77,9 @@ export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
           </div>
         </div>
         <div className="px-2 sm:px-4 py-3 flex flex-col items-center">
-          <h2 className="mt-4 text-lg font-semibold text-[16px]">Create a 6-digit PIN that you can remember</h2>
+          <h2 className="mt-4 text-lg font-semibold text-[16px]">
+            Create a 6-digit PIN that you can remember
+          </h2>
           <div className="mt-6 flex gap-2">
             {pin.map((digit, index) => (
               <input
@@ -64,13 +89,16 @@ export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                ref={(el) => { inputRefs.current[index] = el; }}
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
                 placeholder=""
                 title={`PIN digit ${index + 1}`}
                 aria-label={`PIN digit ${index + 1}`}
                 className={`w-[40px] h-[40px] text-center text-lg border-2 rounded-md ${
                   index === activeIndex ? "border-blue-500" : "border-gray-300"
                 } focus:outline-none`}
+                disabled={setPinMutation.isPending}
               />
             ))}
           </div>
@@ -79,14 +107,14 @@ export default function CreatePinPage({ onBack, onNext }: CreatePinPageProps) {
             <div className="w-3 h-3 bg-gray-300 rounded-full" />
           </div>
           <Button
-            onClick={onNext}
-            disabled={!isComplete}
+            onClick={handleNext}
+            disabled={!isComplete || setPinMutation.isPending}
             className="mt-125 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Next
+            {setPinMutation.isPending ? "Setting..." : "Next"}
           </Button>
         </div>
       </div>
     </div>
-    );
-  }
+  );
+}
