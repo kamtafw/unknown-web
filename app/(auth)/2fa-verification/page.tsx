@@ -14,7 +14,7 @@ import { useAuthStore } from "@/store/userStore";
 import {
   useVerifyLoginOtp,
   useResendLoginOtp,
-} from "@/services/queryHooks/useUserAuthService";
+} from "@/services/auth/useUserAuthService";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
@@ -26,11 +26,9 @@ export default function TwoFactorVerificationPage() {
   const user = useAuthStore((state) => state.user);
   const tempCredentials = useAuthStore((state) => state.tempCredentials);
 
-  // const otpDefault = (user?.user?.otp_default || user?.otp_default || "email") as TwoFAMethod;
   const otpDefault = (user?.user?.otp_default || user?.otp_default) as
     | TwoFAMethod
     | undefined;
-  // const [activeMethod, setActiveMethod] = useState<TwoFAMethod>(otpDefault);
   const [activeMethod, setActiveMethod] = useState<TwoFAMethod>(
     otpDefault || "email"
   );
@@ -47,7 +45,6 @@ export default function TwoFactorVerificationPage() {
   }, [userEmail, router]);
 
   useEffect(() => {
-    // Redirect to home if no 2FA is set up
     if (!otpDefault) {
       router.push("/home");
     }

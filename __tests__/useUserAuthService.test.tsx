@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useSignUp,
   useVerifyOtp,
-} from "@/services/queryHooks/useUserAuthService";
-import * as queries from "@/services/queries/userAuthQueries";
+} from "@/services/auth/useUserAuthService";
+import * as queries from "@/services/auth/userAuthQueries";
 import { useAuthStore } from "@/store/userStore";
 
 // Mock the queries

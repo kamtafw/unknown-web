@@ -5,11 +5,11 @@ import React from "react";
 import CustomLoader from "@/components/shared/Loader/CustomLoader";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Toaster } from "@/components/ui/sonner";
+// import { Toaster } from "@/components/ui/sonner";
 import {
   useFollowAUserAction,
   useUnfollowAUserAction,
-} from "@/services/queryHooks/useUserAuthService";
+} from "@/services/auth/useUserAuthService";
 
 interface CompProps {
   userData: any;
@@ -38,6 +38,7 @@ const SuggestionsCardModule = ({ userData }: CompProps) => {
       });
     }
   };
+
 
   const isPending = isFollowPending || isUnfollowPending;
 
@@ -89,7 +90,7 @@ const SuggestionsCardModule = ({ userData }: CompProps) => {
           </p>
         </div>
       </div>
-      <Toaster position="top-right" />
+      {/* <Toaster position="top-right" /> */}
     </>
   );
 };

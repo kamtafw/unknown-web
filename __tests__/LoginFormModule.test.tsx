@@ -30,7 +30,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoginFormModule from "@/components/modules/authModules/LoginFormModule"; // Update this path
-import { useLogin } from "@/services/queryHooks/useUserAuthService";
+import { useLogin } from "@/services/auth/useUserAuthService";
 
 // Mock the useLogin hook
 vi.mock("@/services/queryHooks/useUserAuthService", () => ({

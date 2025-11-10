@@ -26,7 +26,7 @@ vi.mock('@/store/userStore', () => ({
   },
 }));
 
-import { signUpRequest, verifyOtp, loginRequest } from '@/services/queries/userAuthQueries';
+import { signUpRequest, verifyOtp, loginRequest } from '@/services/auth/userAuthQueries';
 import { axiosIsntanceAuth } from '@/lib/api/axiosInstance';
 
 describe('userAuthQueries', () => {

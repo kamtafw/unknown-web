@@ -26,11 +26,11 @@ export interface User {
   }
 }
 
-
 export interface UserAuthState {
   user: {
     user?: {
       email?: string;
+      phone_number?: string;
       [key: string]: any;
     };
     email?: string;
@@ -45,7 +45,8 @@ export interface UserAuthState {
   } | null;
   setUser: (user: any) => void;
   setAccessToken: (token: string | null) => void;
-  setTempCredentials: (credentials: { email?: string; password?: string }) => void; // Add this line
+  setTempCredentials: (credentials: { email?: string; password?: string }) => void;
+  updatePhoneNumber: (phoneNumber: string) => void;
   logout: () => void;
 }
 export interface SignupPayload {

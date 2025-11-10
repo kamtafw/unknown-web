@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   useGetListOfInterests,
   useSetUserInterests,
-} from "@/services/queryHooks/useUserAuthService";
+} from "@/services/auth/useUserAuthService";
 import CustomLoader from "@/components/shared/Loader/CustomLoader";
 import { Skeleton } from "@/components/ui/skeleton";
 import FriendsSuggestionModal from "./FriendsSuggestionModal";
@@ -13,7 +13,7 @@ import FriendsSuggestionModal from "./FriendsSuggestionModal";
 const ChooseInterestComponent = () => {
   const [displaySuggestions, setDisplaySuggestions] = useState(false);
   const { data: interest, isLoading } = useGetListOfInterests();
-  const { mutate, isPending, error, isSuccess } = useSetUserInterests();
+  const { mutate, isPending, isSuccess } = useSetUserInterests();
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
   const handleSelect = (item: string) => {
@@ -35,7 +35,6 @@ useEffect(() => {
   }
 }, [isSuccess]); 
 
-  console.log("error", error);
 
   return (
     <>

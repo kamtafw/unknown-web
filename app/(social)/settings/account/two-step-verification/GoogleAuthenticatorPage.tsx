@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   useConfirmPassword,
   useGenerateTotp,
-} from "@/services/queryHooks/useUserAuthService";
+} from "@/services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 import { toast } from "sonner";
 

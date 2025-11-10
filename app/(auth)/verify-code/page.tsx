@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { useResendResetCode, useVerifyResetOtp } from '@/services/queryHooks/useUserAuthService';
+import { useResendResetCode, useVerifyResetOtp } from '@/services/auth/useUserAuthService';
 import { useAuthStore } from '@/store/userStore';
 import { Toaster } from '@/components/ui/sonner';
 

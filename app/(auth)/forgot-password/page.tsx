@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
-import { useForgotPassword } from "@/services/queryHooks/useUserAuthService";
+import { ArrowLeft, Mail } from "lucide-react";
+import { useForgotPassword } from "@/services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const { mutate, isPending } = useForgotPassword();
   const setUser = useAuthStore((state) => state.setUser);
@@ -20,10 +22,20 @@ export default function ForgotPasswordPage() {
     setUser({ email: emailOrPhone });
     mutate(emailOrPhone);
   };
+  const handleBack = () => {
+    router.push("/");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-6">
+        <button
+          onClick={handleBack}
+          className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back</span>
+        </button>
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900">Forgot Password</h1>
           <p className="text-gray-600">

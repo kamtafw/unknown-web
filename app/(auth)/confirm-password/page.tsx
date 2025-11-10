@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Lock, Check, X } from "lucide-react";
-import { useResetPassword } from "@/services/queryHooks/useUserAuthService";
+import { useResetPassword } from "@/services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 import { Toaster } from "@/components/ui/sonner";
 

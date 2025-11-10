@@ -22,12 +22,20 @@ export default function TwoStepVerificationPage({
   onCreatePinClick,
   onGoogleAuthenticatorClick,
 }: TwoStepVerificationPageProps) {
-  const [selectedOption, setSelectedOption] = useState("");
+
   const [showOtpConfirmation, setShowOtpConfirmation] = useState(false);
   const user = useAuthStore((state) => state.user);
   const currentOtpDefault = user?.user?.otp_default || user?.otp_default;
+  const [selectedOption, setSelectedOption] = useState(
+    currentOtpDefault === "email"
+      ? "otp"
+      : currentOtpDefault === "pin"
+      ? "pin"
+      : currentOtpDefault === "2fa"
+      ? "google"
+      : ""
+  );
   const [activeMethod, setActiveMethod] = useState<string | null>(null);
-
 
   const options = [
     {
@@ -86,6 +94,16 @@ export default function TwoStepVerificationPage({
       setActiveMethod("PIN");
     } else if (currentOtpDefault === "2fa") {
       setActiveMethod("Google Authenticator");
+    }
+  }, [currentOtpDefault]);
+
+  useEffect(() => {
+    if (currentOtpDefault === "email") {
+      setSelectedOption("otp");
+    } else if (currentOtpDefault === "pin") {
+      setSelectedOption("pin");
+    } else if (currentOtpDefault === "2fa") {
+      setSelectedOption("google");
     }
   }, [currentOtpDefault]);
 

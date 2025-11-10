@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { useVerifyPin, useSwitchOtpDefault } from "../../../../../services/queryHooks/useUserAuthService";
+import { useVerifyPin, useSwitchOtpDefault } from "../../../../../services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 import { toast } from "sonner";
 
@@ -50,8 +50,6 @@ export default function ConfirmPinPage({ onBack, onNext, createdPin }: ConfirmPi
 
   const handleNext = () => {
     const pinString = pin.join("");
-    // console.log("Confirming PIN:", pinString);
-    // console.log("Created PIN:", createdPin);
     
 
     if (pinString !== createdPin) {
@@ -80,9 +78,6 @@ export default function ConfirmPinPage({ onBack, onNext, createdPin }: ConfirmPi
             },
             {
               onSuccess: () => {
-                // console.log("✅ PIN 2FA activated:", data);
-                
-                // Update user's otp_default in store
                 const currentUser = useAuthStore.getState().user;
                 setUser({
                   ...currentUser,

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSubmitProfile } from '@/services/queryHooks/useUserAuthService';
+import { useSubmitProfile } from '@/services/auth/useUserAuthService';
 import { zodResolver } from '@hookform/resolvers/zod';
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -21,7 +21,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const CompleteProfileFormModule = () => {
     // const router = useRouter();
-    const { mutate, isPending, error, isSuccess } = useSubmitProfile()
+    const { mutate, isPending,  } = useSubmitProfile()
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -33,12 +33,9 @@ const CompleteProfileFormModule = () => {
     });
 
     const onSubmit = (values: ProfileFormValues) => {
-        console.log(values)
         mutate(values)
-        // router.push('/auth/interest')
     };
-    console.log('profile error', error);
-    console.log('profile success', isSuccess);
+ 
 
 
 

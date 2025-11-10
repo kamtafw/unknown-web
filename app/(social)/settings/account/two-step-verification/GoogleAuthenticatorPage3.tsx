@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import GoogleAuthSuccessPopup from "./GoogleAuthSuccessPopup";
-import { useVerifyTotpSetup, useSwitchOtpDefault } from "@/services/queryHooks/useUserAuthService";
+import { useVerifyTotpSetup, useSwitchOtpDefault } from "@/services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 
 interface GoogleAuthenticatorPage3Props {

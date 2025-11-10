@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -13,12 +14,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { EmailIcon, PadlockIcon, PhoneIcon } from "@/components/shared/Icons";
-import { useSignUp } from "@/services/queryHooks/useUserAuthService";
+import { useSignUp } from "@/services/auth/useUserAuthService";
 import { Toaster } from "@/components/ui/sonner";
 import SignupConfirmationModule from "./SignupConfirmationModule";
 
@@ -38,13 +38,12 @@ const FormSchema = z.object({
 
 function SignupFormModule() {
   const [displayConfirmation, setDisplayConfirmation] = useState(false);
+  const { mutate, isPending, error, reset } = useSignUp();
   const [formData, setFormData] = useState<payload>({
     email: "",
     phone_number: "",
     password: "",
   });
-  const { mutate, isPending, error } = useSignUp();
-
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -69,6 +68,7 @@ function SignupFormModule() {
   };
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    reset();
     setFormData(data);
     setDisplayConfirmation(true);
   }
@@ -104,7 +104,8 @@ function SignupFormModule() {
                       />
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  {form.formState.errors.email && <FormMessage />}
+                  {/* <FormMessage /> */}
                 </FormItem>
               )}
             />
@@ -132,7 +133,8 @@ function SignupFormModule() {
                       />
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  {form.formState.errors.phone_number && <FormMessage />}
+                  {/* <FormMessage /> */}
                 </FormItem>
               )}
             />
@@ -232,7 +234,8 @@ function SignupFormModule() {
                       </div>
                     ))}
                   </div>
-                  <FormMessage />
+                  {form.formState.errors.password && <FormMessage />}
+                  {/* <FormMessage /> */}
                 </FormItem>
               )}
             />

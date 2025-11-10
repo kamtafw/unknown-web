@@ -19,7 +19,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { EmailIcon, PadlockIcon } from "@/components/shared/Icons";
 import { Toaster } from "@/components/ui/sonner";
-import { useLogin } from "@/services/queryHooks/useUserAuthService";
+import { useLogin } from "@/services/auth/useUserAuthService";
 
 
 const FormSchema = z.object({

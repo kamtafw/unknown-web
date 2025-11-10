@@ -18,12 +18,12 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 // import Link from "next/link"
-import { useVerifyOtp } from "@/services/queryHooks/useUserAuthService";
+import { useVerifyOtp } from "@/services/auth/useUserAuthService";
 import CustomLoader from "@/components/shared/Loader/CustomLoader";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { useEffect } from "react";
-import { useResendOtp } from "@/services/queryHooks/useUserAuthService";
+import { useResendOtp } from "@/services/auth/useUserAuthService";
 
 const FormSchema = z.object({
   pin: z.string().min(6, {

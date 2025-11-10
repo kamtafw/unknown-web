@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { useSetPin } from "../../../../../services/queryHooks/useUserAuthService";
+import { useSetPin } from "../../../../../services/auth/useUserAuthService";
 // import { useAuthStore } from "@/store/userStore";
 
 interface CreatePinPageProps {

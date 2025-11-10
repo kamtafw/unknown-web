@@ -2,7 +2,7 @@
 
 import { useState,  Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useLogout } from "@/services/queryHooks/useUserAuthService";
+import { useLogout } from "@/services/auth/useUserAuthService";
 import SettingsMainPage from "./SettingsMainPage";
 import AccountPage from "./account/AccountPage";
 import SecurityNotificationPage from "./account/SecurityNotificationPage";

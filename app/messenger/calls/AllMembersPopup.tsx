@@ -10,7 +10,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 interface Participant {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -105,13 +105,28 @@ export function AllMembersPopup({
                 <div key={participant.id}>
                   <div className="flex items-center gap-3 py-2">
                     <div className="relative">
-                      <Image
+                      {/* <Image
                         src={participant.avatar}
                         alt={participant.name}
                         width={40}
                         height={40}
                         className="w-10 h-10 rounded-full object-cover"
-                      />
+                      /> */}
+                      {participant.avatar ? (
+                        <Image
+                          src={participant.avatar}
+                          alt={participant.name}
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">
+                            {participant.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-white text-sm truncate">

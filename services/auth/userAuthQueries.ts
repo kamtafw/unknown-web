@@ -140,10 +140,11 @@ export const setUserInterests = async (payload: any) => {
   return response.data;
 };
 
+
 // Get Users to Follow - NEEDS TOKEN
 export const getListOfUsersToFollow = async () => {
   const response = await axiosIstanceAuthenticated.get(
-    "/users/friend-suggestions"
+    "/users/list?page=1&limit=20"
   );
   return response.data;
 };

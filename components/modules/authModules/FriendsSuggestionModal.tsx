@@ -10,7 +10,7 @@ import React, { Dispatch, SetStateAction } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // import Friend from '@/assets/friend.png';
 import SuggestionsCardModule from "./SuggestionsCardModule";
-import { useGetListOfUsersToFollow } from "@/services/queryHooks/useUserAuthService";
+import { useGetListOfUsersToFollow } from "@/services/auth/useUserAuthService";
 import Link from "next/link";
 
 interface CompProps {
@@ -22,10 +22,9 @@ const FriendsSuggestionModal = ({
   setDisplaySuggestions,
   displaySuggestions,
 }: CompProps) => {
-
   const { data: suggestion, isLoading, error } = useGetListOfUsersToFollow();
 
-
+  
   return (
     <>
       <Dialog open={displaySuggestions} onOpenChange={setDisplaySuggestions}>

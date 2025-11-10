@@ -6,16 +6,17 @@ import { GroupCallPage } from "./GroupCall";
 import { VideoCall } from "./VideoCall";
 import { Phone, Video } from "lucide-react";
 import { CallList } from "./CallList";
+import { useAuthStore } from "@/store/userStore";
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
 }
 
 interface Participant {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -24,6 +25,7 @@ interface Participant {
 }
 
 export default function Home() {
+  const user = useAuthStore((state) => state.user);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [showGroupCall, setShowGroupCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
@@ -37,13 +39,17 @@ export default function Home() {
       isSpeaking: false,
     }));
 
+
     if (callType === "phone") {
       const allParticipants: Participant[] = [
         {
-          id: -1,
-          name: "Me",
-          phone: "",
-          avatar: "/Rectangle 1.png",
+          id: user?.id || "-1", 
+          name:
+            user?.first_name && user?.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : "Me", 
+          phone: user?.phone_number || "",
+          avatar: user?.profile_photo,
           isMuted: true,
           isSpeaking: false,
         },

@@ -1,23 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BsArrowsAngleExpand, BsArrowsAngleContract } from "react-icons/bs";
 import { MdOutlinePersonAddAlt } from "react-icons/md";
 import { LuVolumeOff, LuVolume2 } from "react-icons/lu";
 import { BsCameraVideo, BsCameraVideoOff } from "react-icons/bs";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { MdCallEnd } from "react-icons/md";
-import Image from "next/image";
+// import Image from "next/image";
 import { ContactPopup } from "./ContactPopup";
+import { webrtcService } from "../../../services/calls/webrtcService";
 
 interface Participant {
-  id: number;
+  id: string;
   name: string;
   avatar: string;
 }
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -42,19 +43,40 @@ export function VideoCall({
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isVolumeOn, setIsVolumeOn] = useState(true);
   const [showContactPopup, setShowContactPopup] = useState(false);
-  const displayedParticipants = participants.length > 0 ? participants : [];
+  // const displayedParticipants = participants.length > 0 ? participants : [];
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const getGridLayout = (count: number) => {
-    if (count === 1) return { cols: 1, size: "w-80 h-80 sm:w-96 sm:h-96" };
-    if (count === 2) return { cols: 2, size: "w-64 h-64 sm:w-80 sm:h-80" };
-    if (count === 3) return { cols: 3, size: "w-48 h-48 sm:w-56 sm:h-56" };
-    if (count === 4) return { cols: 2, size: "w-56 h-56 sm:w-64 sm:h-64" };
-    if (count <= 6) return { cols: 3, size: "w-40 h-40 sm:w-48 sm:h-48" };
-    if (count <= 9) return { cols: 3, size: "w-36 h-36 sm:w-40 sm:h-40" };
-    return { cols: 4, size: "w-32 h-32 sm:w-36 sm:h-36" };
-  };
+  useEffect(() => {
+    if (isOpen && localVideoRef.current && remoteVideoRef.current) {
+      // Start the video call with actual streams
+      const roomId = "generated-room-id"; // Get from your call state
+      webrtcService.startCall(
+        localVideoRef.current,
+        remoteVideoRef.current,
+        roomId
+      );
+    }
+
+    return () => {
+      if (!isOpen) {
+        webrtcService.endCall();
+      }
+    };
+  }, [isOpen]);
+
+  // const getGridLayout = (count: number) => {
+  //   if (count === 1) return { cols: 1, size: "w-80 h-80 sm:w-96 sm:h-96" };
+  //   if (count === 2) return { cols: 2, size: "w-64 h-64 sm:w-80 sm:h-80" };
+  //   if (count === 3) return { cols: 3, size: "w-48 h-48 sm:w-56 sm:h-56" };
+  //   if (count === 4) return { cols: 2, size: "w-56 h-56 sm:w-64 sm:h-64" };
+  //   if (count <= 6) return { cols: 3, size: "w-40 h-40 sm:w-48 sm:h-48" };
+  //   if (count <= 9) return { cols: 3, size: "w-36 h-36 sm:w-40 sm:h-40" };
+  //   return { cols: 4, size: "w-32 h-32 sm:w-36 sm:h-36" };
+  // };
 
   const handleEndCall = () => {
+    webrtcService.endCall();
     setIsVideoOn(true);
     setIsVolumeOn(true);
     setIsExpanded(false);
@@ -76,7 +98,7 @@ export function VideoCall({
   const handleContactSelect = (selectedContacts: Contact[]) => {
     const newParticipants = selectedContacts.map((contact) => ({
       id: contact.id,
-       name: contact.name,
+      name: contact.name,
       avatar: contact.avatar,
     }));
 
@@ -108,62 +130,34 @@ export function VideoCall({
           </div>
 
           {/* Video Grid - Mobile Layout */}
-          {/* <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 overflow-y-auto block lg:hidden">
-            {participantRowsMobile.map((row, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-2 gap-2 sm:gap-3 mb-3">
-                {row.map((participant) => (
-                  <div key={participant.id} className="relative">
-                    <div className="relative overflow-hidden rounded-lg aspect-video">
-                      <Image
-                        src={participant.avatar}
-                        alt={`Participant ${participant.id}`}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                ))}
+          {/* Video Streams */}
+          <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 relative overflow-hidden">
+            {/* Your Camera (Large) */}
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-lg bg-gray-900"
+            />
+            <div className="absolute bottom-4 left-4 text-white bg-black/50 px-3 py-1 rounded-lg">
+              You
+            </div>
+
+            {/* Remote Camera (Picture-in-Picture) */}
+            <div className="absolute top-4 right-4 w-32 h-32 sm:w-48 sm:h-48 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover bg-gray-800"
+              />
+              <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+                {participants[0]?.name || "Connecting..."}
               </div>
-            ))}
-          </div> */}
-          <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 overflow-auto p-2 sm:p-4 flex items-center justify-center">
-            <div
-              className="grid gap-3 sm:gap-4 justify-items-center"
-              style={{
-                gridTemplateColumns: `repeat(${
-                  getGridLayout(displayedParticipants.length).cols
-                }, minmax(0, 1fr))`,
-              }}
-            >
-              {displayedParticipants.map((participant) => (
-                <div
-                  key={participant.id}
-                  className="flex flex-col items-center gap-2"
-                >
-                  {/* Video Frame */}
-                  <div
-                    className={`relative rounded-xl overflow-hidden bg-gray-800 shadow-lg border border-gray-700 ${
-                      getGridLayout(displayedParticipants.length).size
-                    }`}
-                  >
-                    <Image
-                      src={participant.avatar}
-                      alt={participant.name}
-                      fill
-                      className="object-cover"
-                    />
-                    {/* Name overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2 sm:p-3">
-                      <p className="text-white font-semibold text-xs sm:text-sm truncate">
-                        {participant.name}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
-          {/* Video Grid - Desktop Layout */}  
+          {/* Video Grid - Desktop Layout */}
           <div className="flex justify-center space-x-2 sm:space-x-3 lg:hidden">
             {/* End call - Always visible */}
             <button

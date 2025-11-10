@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -28,7 +29,6 @@ interface CompProps {
   error: any;
 }
 
-
 const SignupConfirmationModule = ({
   displayConfirmation,
   setDisplayConfirmation,
@@ -42,8 +42,7 @@ const SignupConfirmationModule = ({
   };
 
   useEffect(() => {
-    if (error) {
-
+    if (error && displayConfirmation) {
       const emailError =
         error?.response?.data?.errors?.email || error?.errors?.email;
       const phoneError =
@@ -59,12 +58,9 @@ const SignupConfirmationModule = ({
         );
         setDisplayConfirmation(false);
       } else if (phoneError) {
-        toast.error(
-          `${phoneError?.message || phoneError}.`,
-          {
-            style: { background: "red", color: "white" },
-          }
-        );
+        toast.error(`${phoneError?.message || phoneError}.`, {
+          style: { background: "red", color: "white" },
+        });
         setDisplayConfirmation(false);
       } else if (error?.response?.data?.message) {
         toast.error(`${error.response.data.message}. Please login instead.`, {
@@ -73,7 +69,7 @@ const SignupConfirmationModule = ({
         setDisplayConfirmation(false);
       }
     }
-  }, [error, setDisplayConfirmation]);
+  }, [error, setDisplayConfirmation, displayConfirmation]);
 
   return (
     <>
@@ -93,6 +89,9 @@ const SignupConfirmationModule = ({
                 <span className="font-bold text-[#6A88D1]">Apps</span>combo
               </span>
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Terms and conditions confirmation dialog
+            </DialogDescription>
           </DialogHeader>
           <div className="flex items-center ">
             <span className="text-base font-medium text-[#111827] text-center">

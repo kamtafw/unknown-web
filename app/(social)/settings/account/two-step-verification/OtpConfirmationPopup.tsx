@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useSwitchOtpDefault } from "../../../../../services/queryHooks/useUserAuthService";
+import { useSwitchOtpDefault } from "../../../../../services/auth/useUserAuthService";
 import { useAuthStore } from "@/store/userStore";
 
 interface OtpConfirmationPopupProps {

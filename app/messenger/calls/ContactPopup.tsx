@@ -4,9 +4,11 @@ import { X, Check } from "lucide-react";
 import { IoSearch } from "react-icons/io5";
 import { useState } from "react";
 import Image from "next/image";
+import { useGetCallContacts } from "../../../services/calls/usecallService";
+import { FollowingResult } from "../../../services/calls/callQueries";
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -25,89 +27,100 @@ export function ContactPopup({
 }: ContactPopupProps) {
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: followingsData, isLoading } = useGetCallContacts();
 
-  const contacts: Contact[] = [
-    {
-      id: 1,
-      name: "Cameron Williamson",
-      phone: "+234 8123456789",
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 2,
-      name: "Jenny Wilson",
-      phone: "+234 8134567890",
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 3,
-      name: "Wade Warren",
-      phone: "+234 8145678901",
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 4,
-      name: "Esther Howard",
-      phone: "+234 8156789012",
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 5,
-      name: "Robert Fox",
-      phone: "+234 8167890123",
-      avatar: "/Rectangle5.png",
-    },
-    {
-      id: 6,
-      name: "Jacob Jones",
-      phone: "+234 8178901234",
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 7,
-      name: "Courtney Henry",
-      phone: "+234 8189012345",
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 8,
-      name: "Darrell Steward",
-      phone: "+234 8190123456",
-      avatar: "/Rectangle5.png",
-    },
-    {
-      id: 9,
-      name: "Savannah Nguyen",
-      phone: "+234 8101234567",
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 10,
-      name: "Brooklyn Simmons",
-      phone: "+234 8112345678",
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 11,
-      name: "Cody Fisher",
-      phone: "+234 8123456780",
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 12,
-      name: "Arlene McCoy",
-      phone: "+234 8134567891",
-      avatar: "/Rectangle 1.png",
-    },
-  ];
+  //   {
+  //     id: 1,
+  //     name: "Cameron Williamson",
+  //     phone: "+234 8123456789",
+  //     avatar: "/Rectangle 2.png",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Jenny Wilson",
+  //     phone: "+234 8134567890",
+  //     avatar: "/Rectangle 1.png",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Wade Warren",
+  //     phone: "+234 8145678901",
+  //     avatar: "/Rectangle 3.png",
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "Esther Howard",
+  //     phone: "+234 8156789012",
+  //     avatar: "/Rectangle 4.png",
+  //   },
+  //   {
+  //     id: 5,
+  //     name: "Robert Fox",
+  //     phone: "+234 8167890123",
+  //     avatar: "/Rectangle5.png",
+  //   },
+  //   {
+  //     id: 6,
+  //     name: "Jacob Jones",
+  //     phone: "+234 8178901234",
+  //     avatar: "/Rectangle 1.png",
+  //   },
+  //   {
+  //     id: 7,
+  //     name: "Courtney Henry",
+  //     phone: "+234 8189012345",
+  //     avatar: "/Rectangle 2.png",
+  //   },
+  //   {
+  //     id: 8,
+  //     name: "Darrell Steward",
+  //     phone: "+234 8190123456",
+  //     avatar: "/Rectangle5.png",
+  //   },
+  //   {
+  //     id: 9,
+  //     name: "Savannah Nguyen",
+  //     phone: "+234 8101234567",
+  //     avatar: "/Rectangle 3.png",
+  //   },
+  //   {
+  //     id: 10,
+  //     name: "Brooklyn Simmons",
+  //     phone: "+234 8112345678",
+  //     avatar: "/Rectangle 4.png",
+  //   },
+  //   {
+  //     id: 11,
+  //     name: "Cody Fisher",
+  //     phone: "+234 8123456780",
+  //     avatar: "/Rectangle 2.png",
+  //   },
+  //   {
+  //     id: 12,
+  //     name: "Arlene McCoy",
+  //     phone: "+234 8134567891",
+  //     avatar: "/Rectangle 1.png",
+  //   },
+  // ];
+
+ const contacts: Contact[] =
+    followingsData?.data?.results?.map((result: FollowingResult) => ({
+      id: result.followed_user.id,  // Access nested followed_user
+      name: `${result.followed_user.first_name} ${result.followed_user.last_name}`.trim() || result.followed_user.username,
+      phone: result.followed_user.phone_number || "",
+      avatar: result.followed_user.profile_photo || "/default-avatar.png",
+    })) || [];
+
+  console.log("Followings Data:", followingsData);  // ADD THIS
+  console.log("Contacts:", contacts);
 
   if (!isOpen) return null;
 
-  const filteredContacts = contacts.filter(
-    (contact) =>
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.phone.includes(searchTerm)
-  );
+  // const filteredContacts = contacts.filter(
+  //   (contact) =>
+  //     contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     contact.phone.includes(searchTerm)
+  // );
 
   const toggleContactSelection = (contact: Contact) => {
     setSelectedContacts((prev) => {
@@ -120,11 +133,11 @@ export function ContactPopup({
     });
   };
 
-  const removeFromSelected = (contactId: number) => {
+  const removeFromSelected = (contactId: string) => {
     setSelectedContacts((prev) => prev.filter((c) => c.id !== contactId));
   };
 
-  const isContactSelected = (contactId: number) => {
+  const isContactSelected = (contactId: string) => {
     return selectedContacts.some((c) => c.id === contactId);
   };
 
@@ -145,6 +158,33 @@ export function ContactPopup({
     setSearchTerm("");
     onClose();
   };
+
+  // return (isLoading) (
+  //   <>
+  //     <div className="fixed inset-0 bg-black/80 z-40" onClick={onClose} />
+  //     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  //       <div className="bg-white rounded-lg shadow-xl w-[400px] max-h-[500px] relative flex flex-col">
+  //         <p className="text-gray-600">Loading contacts...</p>
+  //         {/* Header */}
+  //         <div className="flex items-center justify-between p-4">
+  if (isLoading) {
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/80 z-40" onClick={onClose} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-[400px] p-8 text-center">
+            <p className="text-gray-600">Loading contacts...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const filteredContacts = contacts.filter(
+    (contact) =>
+      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.phone.includes(searchTerm)
+  );
 
   return (
     <>

@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/userStore";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { initializeSocket } from "../calls/socketService";
+import { disconnectSocket } from "../calls/socketService";
 
 import {
   FollowAUser,
@@ -30,8 +33,9 @@ import {
   setPin,
   verifyPin,
   confirmPassword,
-} from "../queries/userAuthQueries";
+} from "./userAuthQueries";
 
+// SignUP
 export const useSignUp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -39,7 +43,6 @@ export const useSignUp = () => {
   return useMutation({
     mutationFn: signUpRequest,
     onSuccess: (data: any) => {
-      console.log("Signup response:", data);
       if (data?.status_code === 201) {
         setUser(data?.data);
         document.cookie = `signupFlow=true; path=/; max-age=600; SameSite=Strict; Secure`;
@@ -52,6 +55,7 @@ export const useSignUp = () => {
   });
 };
 
+// Login
 export const useLogin = ({
   onErrorCallback,
 }: { onErrorCallback?: () => void } = {}) => {
@@ -71,7 +75,7 @@ export const useLogin = ({
           data?.data?.user?.otp_default || data?.data?.otp_default;
 
         if (!data?.data?.access_token) {
-          if (userOtpDefault && userOtpDefault !== "email") {
+          if (userOtpDefault) {
             setUser(data?.data);
             setTempCredentials({
               email: variables.identifier,
@@ -92,6 +96,7 @@ export const useLogin = ({
         if (data?.data?.access_token) {
           setAccessToken(data.data.access_token);
           document.cookie = `accessToken=${data.data.access_token}; path=/; max-age=86400; SameSite=Strict; Secure`;
+          initializeSocket();
         }
 
         toast.success("Login successful", {
@@ -114,6 +119,7 @@ export const useLogin = ({
   });
 };
 
+// Switch OTP Default
 export const useSwitchOtpDefault = () => {
   return useMutation({
     mutationFn: (payload: { identifier: string; otp_default: string }) =>
@@ -135,6 +141,7 @@ export const useSwitchOtpDefault = () => {
   });
 };
 
+// Change OTP Default
 export const useChangeOtpDefault = () => {
   return useMutation({
     mutationFn: (payload: { otp_default: string }) => changeOtpDefault(payload),
@@ -155,6 +162,7 @@ export const useChangeOtpDefault = () => {
   });
 };
 
+// Verify Login OTP from email
 export const useVerifyLoginOtp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -193,6 +201,7 @@ export const useVerifyLoginOtp = () => {
   });
 };
 
+// Resend Login OTP
 export const useResendLoginOtp = () => {
   return useMutation({
     mutationFn: (email: string) => resendOtp(email),
@@ -213,6 +222,7 @@ export const useResendLoginOtp = () => {
   });
 };
 
+// Set PIN for 2FA
 export const useSetPin = () => {
   return useMutation({
     mutationFn: (payload: { pin: string }) => setPin(payload),
@@ -233,6 +243,7 @@ export const useSetPin = () => {
   });
 };
 
+// Use Verify PIN for 2FA
 export const useVerifyPin = () => {
   return useMutation({
     mutationFn: (payload: { pin: string }) => verifyPin(payload),
@@ -252,6 +263,7 @@ export const useVerifyPin = () => {
   });
 };
 
+// Confirm Password in forgotten password
 export const useConfirmPassword = () => {
   return useMutation({
     mutationFn: (payload: { password: string }) => confirmPassword(payload),
@@ -272,6 +284,7 @@ export const useConfirmPassword = () => {
   });
 };
 
+// 2FA for Login - Generate Google Authenticator TOTP
 export const useGenerateTotp = () => {
   return useMutation({
     mutationFn: (email: string) => generateTotp(email),
@@ -292,6 +305,7 @@ export const useGenerateTotp = () => {
   });
 };
 
+// 2FA for Login - Verify Google Authenticator TOTP
 export const useVerifyTotpSetup = () => {
   return useMutation({
     mutationFn: (payload: { email: string; otp: string }) =>
@@ -313,6 +327,7 @@ export const useVerifyTotpSetup = () => {
   });
 };
 
+// Get List of interests for user after signup
 export const useGetListOfInterests = () => {
   return useQuery<string[]>({
     queryKey: ["interests"],
@@ -325,6 +340,7 @@ export const useGetListOfInterests = () => {
   });
 };
 
+// Verify OTP for signup
 export const useVerifyOtp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -351,13 +367,19 @@ export const useVerifyOtp = () => {
   });
 };
 
+// Verify OTP for password reset
 export const useVerifyResetOtp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
 
   return useMutation({
     mutationFn: (payload: { email: string; otp: string }) =>
-      verifyOtp({ ...payload, need_tokens: false, need_otp_token: true }),
+      verifyOtp({
+        ...payload,
+        need_tokens: false,
+        need_otp_token: true,
+        verification_type: "email",
+      }),
     onSuccess: (data: any, variables: { email: string; otp: string }) => {
       if (data?.status_code === 200) {
         const currentUser = useAuthStore.getState().user;
@@ -384,6 +406,7 @@ export const useVerifyResetOtp = () => {
   });
 };
 
+// resend OTP
 export const useResendOtp = () => {
   return useMutation({
     mutationFn: (email: string) => resendOtp(email),
@@ -398,12 +421,25 @@ export const useResendOtp = () => {
   });
 };
 
+// Submit User Profile after signup
 export const useSubmitProfile = () => {
   const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
   return useMutation({
     mutationFn: (payload: UserProfilePayload) => submitUserProfile(payload),
     onSuccess: (data: any) => {
       if (data?.status_code == 200) {
+        const currentUser = useAuthStore.getState().user;
+        setUser({
+          ...currentUser,
+          user: {
+            ...currentUser?.user,
+            first_name: data?.data?.first_name,
+            last_name: data?.data?.last_name,
+            dob: data?.data?.dob,
+          },
+        });
+
         toast.success("Profile completed successfully", {
           style: { background: "green", color: "white" },
         });
@@ -425,6 +461,7 @@ export const useSubmitProfile = () => {
   });
 };
 
+// Forgot Password
 export const useForgotPassword = () => {
   const router = useRouter();
 
@@ -453,6 +490,7 @@ export const useForgotPassword = () => {
   });
 };
 
+// Reset Password
 export const useResetPassword = () => {
   const router = useRouter();
 
@@ -485,6 +523,7 @@ export const useResetPassword = () => {
   });
 };
 
+// Resend Reset Code
 export const useResendResetCode = () => {
   return useMutation({
     mutationFn: (email: string) => forgotPassword(email),
@@ -495,9 +534,7 @@ export const useResendResetCode = () => {
         });
       }
     },
-    onError: (error: any) => {
-      console.log("Reset password error:", error);
-      console.log("Error response:");
+    onError: () => {
       toast.error("Failed to resend code", {
         style: { background: "red", color: "white" },
       });
@@ -505,11 +542,19 @@ export const useResendResetCode = () => {
   });
 };
 
+// Set User Interests after signup
 export const useSetUserInterests = () => {
+  const setUser = useAuthStore((state) => state.setUser);
   return useMutation({
     mutationFn: (payload: InterestsPayload) => setUserInterests(payload),
     onSuccess: (data: any) => {
       if (data?.status_code == 200) {
+        const currentUser = useAuthStore.getState().user;
+        setUser({
+          ...currentUser,
+          interests: data?.data?.interests || data?.interests,
+        });
+
         toast.success("Interests saved successfully", {
           style: { background: "green", color: "white" },
         });
@@ -518,21 +563,29 @@ export const useSetUserInterests = () => {
   });
 };
 
+// Get List of Users to Follow
 export const useGetListOfUsersToFollow = () => {
   return useQuery<any>({
     queryKey: ["suggestions"],
     queryFn: getListOfUsersToFollow,
     staleTime: 1000 * 60 * 5,
     retry: 1,
+    refetchOnWindowFocus: false,
   });
 };
 
+
+// Follow User
 export const useFollowAUserAction = () => {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: FollowAUser) => followAUser(payload),
     onSuccess: (data: any) => {
-      if (data?.status_code == 201) {
+      if (data?.status_code == 201 || data?.status_code == 200) {
+        queryClient.invalidateQueries({ queryKey: ["suggestions"] });
         toast.success("User followed successfully", {
+          id: 'follow-success',
           style: { background: "green", color: "white" },
         });
       }
@@ -540,30 +593,41 @@ export const useFollowAUserAction = () => {
     onError: (error: any) => {
       console.log("Follow error details:", error?.response?.data);
       toast.error(error?.response?.data?.message || "Failed to follow user", {
+        id: 'follow-error',
         style: { background: "red", color: "white" },
       });
     },
   });
 };
 
+// Unfollow User
 export const useUnfollowAUserAction = () => {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: FollowAUser) => unfollowAUser(payload),
     onSuccess: (data: any) => {
-      if (data?.status_code == 201) {
+      console.log("Unfollow response:", data);
+      if (data?.status_code == 200 || data?.status_code == 201 || data?.status_code == 204) {
+        queryClient.invalidateQueries({ queryKey: ["suggestions"] });
         toast.success("User unfollowed successfully", {
+          id: 'unfollow-success',
           style: { background: "green", color: "white" },
         });
       }
     },
     onError: (error: any) => {
+      console.log("Unfollow error:", error);
       toast.error(error?.response?.data?.message || "Failed to unfollow user", {
+        id: 'unfollow-error',
         style: { background: "red", color: "white" },
       });
     },
   });
 };
 
+
+// Logout
 export const useLogout = () => {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
@@ -584,6 +648,7 @@ export const useLogout = () => {
       return { status_code: 200 };
     },
     onSuccess: () => {
+      disconnectSocket();
       logout();
       toast.success("Logged out successfully", {
         style: { background: "green", color: "white" },

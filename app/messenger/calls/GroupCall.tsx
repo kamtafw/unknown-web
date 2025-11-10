@@ -10,9 +10,10 @@ import { HiDotsHorizontal } from "react-icons/hi";
 import { MdCallEnd } from "react-icons/md";
 import Image from "next/image";
 import { AllMembersPopup } from "./AllMembersPopup";
+// import { webrtcService } from '../../../services/calls/webrtcService';
 
 interface Participant {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -26,7 +27,7 @@ interface GroupCallPageProps {
   onEndCall: () => void;
   participants: Participant[];
   onAddParticipant?: () => void;
-  groupName?: string; 
+  groupName?: string;
 }
 
 export function GroupCallPage({
@@ -42,16 +43,41 @@ export function GroupCallPage({
   const [callDuration, setCallDuration] = useState("00:00:00");
   const [seconds, setSeconds] = useState(0);
   const [showAllMembers, setShowAllMembers] = useState(false);
+  const [callAnswered, setCallAnswered] = useState(false);
+
+  //   const toggleMute = () => {
+  //   const newMutedState = !isMuted;
+  //   setIsMuted(newMutedState);
+  //   webrtcService.toggleAudio(newMutedState);
+  // };
+
+  // useEffect(() => {
+  //   if (!isOpen) return;
+
+  //   const timer = setInterval(() => {
+  //     setSeconds((prev) => prev + 1);
+  //   }, 1000);
+
+  //   return () => clearInterval(timer);
+  // }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !callAnswered) return; // Only count when answered
 
     const timer = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen]);
+  }, [isOpen, callAnswered]);
+
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     setTimeout(() => {
+  //       setCallAnswered(true);
+  //     }, 3000);
+  //   }
+  // }, [isOpen]);
 
   useEffect(() => {
     const hours = Math.floor(seconds / 3600);
@@ -71,75 +97,77 @@ export function GroupCallPage({
     }
   }, [isOpen]);
 
-  const mockParticipants: Participant[] = [
-    {
-      id: -1,
-      name: "Me",
-      phone: "",
-      avatar: "/Rectangle 1.png",
-      isMuted: true,
-      isSpeaking: false,
-    },
-    {
-      id: 2,
-      name: "Cameron Williamson",
-      phone: "+234 8123456789",
-      avatar: "/Rectangle 2.png",
-      isMuted: false,
-      isSpeaking: true,
-    },
-    {
-      id: 3,
-      name: "Jenny Wils",
-      phone: "+234 8134567890",
-      avatar: "/Rectangle 1.png",
-      isMuted: true,
-      isSpeaking: false,
-    },
-    {
-      id: 4,
-      name: "Wade Warren",
-      phone: "+234 8145678901",
-      avatar: "/Rectangle 3.png",
-      isMuted: false,
-      isSpeaking: false,
-    },
-    {
-      id: 5,
-      name: "Esther Howard",
-      phone: "+234 8156789012",
-      avatar: "/Rectangle 4.png",
-      isMuted: true,
-      isSpeaking: false,
-    },
-    {
-      id: 6,
-      name: "Robert Fox",
-      phone: "+234 8167890123",
-      avatar: "/Rectangle5.png",
-      isMuted: true,
-      isSpeaking: false,
-    },
-    {
-      id: 7,
-      name: "Jacob Jones",
-      phone: "+234 8178901234",
-      avatar: "/Rectangle 1.png",
-      isMuted: true,
-      isSpeaking: false,
-    },
-    {
-      id: 8,
-      name: "Courtney Henry",
-      phone: "+234 8189012345",
-      avatar: "/Rectangle 2.png",
-      isMuted: false,
-      isSpeaking: false,
-    },
-  ];
+  // const mockParticipants: Participant[] = [
+  //   {
+  //     id: "-1",
+  //     name: "Me",
+  //     phone: "",
+  //     avatar: "/Rectangle 1.png",
+  //     isMuted: true,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "2",
+  //     name: "Cameron Williamson",
+  //     phone: "+234 8123456789",
+  //     avatar: "/Rectangle 2.png",
+  //     isMuted: false,
+  //     isSpeaking: true,
+  //   },
+  //   {
+  //     id: "3",
+  //     name: "Jenny Wils",
+  //     phone: "+234 8134567890",
+  //     avatar: "/Rectangle 1.png",
+  //     isMuted: true,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "4",
+  //     name: "Wade Warren",
+  //     phone: "+234 8145678901",
+  //     avatar: "/Rectangle 3.png",
+  //     isMuted: false,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "5",
+  //     name: "Esther Howard",
+  //     phone: "+234 8156789012",
+  //     avatar: "/Rectangle 4.png",
+  //     isMuted: true,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "6",
+  //     name: "Robert Fox",
+  //     phone: "+234 8167890123",
+  //     avatar: "/Rectangle5.png",
+  //     isMuted: true,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "7",
+  //     name: "Jacob Jones",
+  //     phone: "+234 8178901234",
+  //     avatar: "/Rectangle 1.png",
+  //     isMuted: true,
+  //     isSpeaking: false,
+  //   },
+  //   {
+  //     id: "8",
+  //     name: "Courtney Henry",
+  //     phone: "+234 8189012345",
+  //     avatar: "/Rectangle 2.png",
+  //     isMuted: false,
+  //     isSpeaking: false,
+  //   },
+  // ];
 
-  const displayedParticipants =
-    participants.length > 0 ? participants : mockParticipants;
+  // const displayedParticipants =
+  //   participants.length > 0 ? participants : [];
+
+  const displayedParticipants = participants;
   const visibleParticipants = displayedParticipants.slice(0, 8);
   const remainingCount = displayedParticipants.length - 8;
 
@@ -196,7 +224,9 @@ export function GroupCallPage({
       <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-2 sm:p-4">
         <div
           className={`rounded-xl lg:rounded-xl shadow-2xl transition-all duration-300 p-2 sm:p-3 border-none bg-[#1F2937] ${
-            isExpanded ? "w-full h-full rounded-none lg:rounded-none" : "w-full h-full sm:w-[600px] sm:h-[550px] lg:w-[700px] lg:h-[550px] sm:rounded-xl"
+            isExpanded
+              ? "w-full h-full rounded-none lg:rounded-none"
+              : "w-full h-full sm:w-[600px] sm:h-[550px] lg:w-[700px] lg:h-[550px] sm:rounded-xl"
           } relative flex flex-col`}
         >
           <div className="p-1 border-none rounded-xl bg-[#111827]">
@@ -229,7 +259,7 @@ export function GroupCallPage({
                 <MdOutlinePersonAddAlt className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </button>
             </div>
-            
+
             {/* Participants Grid */}
             <div className="flex-1 p-2 sm:p-5">
               <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-xs sm:max-w-md mx-auto">
@@ -247,6 +277,14 @@ export function GroupCallPage({
                       className="flex flex-col items-center space-y-1 sm:space-y-2"
                     >
                       <div className="relative">
+                        {/* <Image
+                          src={participant.avatar}
+                          alt={participant.name}
+                          width={80}
+                          height={80}
+                          className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover"
+                        /> */}
+                        participant.avatar ? (
                         <Image
                           src={participant.avatar}
                           alt={participant.name}
@@ -254,6 +292,13 @@ export function GroupCallPage({
                           height={80}
                           className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover"
                         />
+                        ) : (
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gray-600 flex items-center justify-center">
+                          <span className="text-white text-xs sm:text-sm font-bold">
+                            {participant.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        )
                         {/* Mic status indicator */}
                         <div
                           className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4 h-4 sm:w-6 sm:h-6 rounded-full flex items-center justify-center ${
@@ -271,10 +316,10 @@ export function GroupCallPage({
                         <p
                           className="text-xs sm:text-sm font-medium text-white truncate max-w-[56px] sm:max-w-[80px]"
                           title={
-                            participant.id === -1 ? "Me" : participant.name
+                            participant.id === "-1" ? "Me" : participant.name
                           }
                         >
-                          {participant.id === -1 ? "Me" : participant.name}
+                          {participant.id === "-1" ? "Me" : participant.name}
                         </p>
                         {participant.id && (
                           <p
@@ -321,10 +366,10 @@ export function GroupCallPage({
                         <p
                           className="text-xs sm:text-sm font-medium text-white truncate max-w-[56px] sm:max-w-[80px]"
                           title={
-                            participant.id === -1 ? "Me" : participant.name
+                            participant.id === "-1" ? "Me" : participant.name
                           }
                         >
-                          {participant.id === -1 ? "Me" : participant.name}
+                          {participant.id === "-1" ? "Me" : participant.name}
                         </p>
                         <p
                           className="text-xs text-white truncate max-w-[56px] sm:max-w-[80px] hidden sm:block"
@@ -356,13 +401,30 @@ export function GroupCallPage({
               )}
 
               {/* Call Duration */}
-              <div className="flex justify-center mt-4 sm:mt-8">
+              {/* <div className="flex justify-center mt-4 sm:mt-8">
                 <div className="bg-[#1F2937] rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center space-x-1.5 sm:space-x-2">
                   <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-xs sm:text-sm font-mono text-gray-300">
                     {callDuration}
                   </span>
                 </div>
+              </div> */}
+
+              <div className="flex justify-center mt-4 sm:mt-8">
+                {!callAnswered ? (
+                  <div className="bg-[#1F2937] rounded-full px-3 py-1.5 sm:px-4 sm:py-2">
+                    <span className="text-xs sm:text-sm font-mono text-gray-300 animate-pulse">
+                      Ringing...
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-[#1F2937] rounded-full px-3 py-1.5 sm:px-4 sm:py-2 flex items-center space-x-1.5 sm:space-x-2">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs sm:text-sm font-mono text-gray-300">
+                      {callDuration}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
