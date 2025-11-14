@@ -150,7 +150,7 @@ export const getListOfUsersToFollow = async () => {
 };
 
 // Follow User - NEEDS TOKEN
-export const followAUser = async (payload: any) => {
+export const followAUser = async (payload: { followed_user: number }) => {
   const response = await axiosIstanceAuthenticated.post(
     "/users/follow",
     payload
@@ -159,10 +159,11 @@ export const followAUser = async (payload: any) => {
 };
 
 // Unfollow User - NEEDS TOKEN
-export const unfollowAUser = async (payload: any) => {
+export const unfollowAUser = async (payload: { followed_user: number }) => {
   const response = await axiosIstanceAuthenticated.post(
     "/users/unfollow",
     payload
   );
   return response.data;
 };
+

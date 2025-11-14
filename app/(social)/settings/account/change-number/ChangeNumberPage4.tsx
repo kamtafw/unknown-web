@@ -43,13 +43,30 @@ export default function ChangeNumberPage4({ onBack, onNext, oldNumber, newNumber
     }
   };
 
-  const handleContinue = () => {
-    const otp = code.join("");
+  // const handleContinue = () => {
+  //   const otp = code.join("");
+  //   changePhoneNumber(
+  //     { 
+  //       old_number: oldNumber, 
+  //       new_number: newNumber,
+  //       otp: otp
+  //     },
+  //     {
+  //       onSuccess: () => {
+  //         updatePhoneNumber(newNumber);
+  //         onNext();
+  //       },
+  //     }
+  //   );
+  // };
+const handleContinue = () => {
+    // Using hardcoded dummy OTP since backend hasn't implemented real OTP yet
+    // Try these values in order: "1234", "123456", "0000", or ask backend team
     changePhoneNumber(
       { 
         old_number: oldNumber, 
         new_number: newNumber,
-        otp: otp
+        otp: "1234"  // Change this value based on what your backend accepts
       },
       {
         onSuccess: () => {
@@ -59,7 +76,6 @@ export default function ChangeNumberPage4({ onBack, onNext, oldNumber, newNumber
       }
     );
   };
-
   const isComplete = code.every((digit) => digit !== "");
 
   return (

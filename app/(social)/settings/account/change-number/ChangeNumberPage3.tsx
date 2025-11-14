@@ -3,27 +3,18 @@
 import { ArrowLeft, Phone } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useChangePhoneNumber } from "@/services/account/useAccountService";
-import { useAuthStore } from "@/store/userStore";
 import { toast } from "sonner";
 
 interface ChangeNumberPage3Props {
   onBack: () => void;
-  onNext: () => void;
+  onNext: (oldNumber: string, newNumber: string) => void;
 }
 
-export default function ChangeNumberPage3({
-  onBack,
-  onNext,
-}: ChangeNumberPage3Props) {
+export default function ChangeNumberPage3({ onBack, onNext }: ChangeNumberPage3Props) {
   const [oldNumber, setOldNumber] = useState("");
   const [newNumber, setNewNumber] = useState("");
 
-  const updatePhoneNumber = useAuthStore((state) => state.updatePhoneNumber);
-  const { mutate: changePhoneNumber, isPending } = useChangePhoneNumber();
-
   const handleContinue = () => {
-    // Validate before sending
     if (!oldNumber.trim() || !newNumber.trim()) {
       toast.error("Both phone numbers are required", {
         style: { background: "red", color: "white" },
@@ -38,16 +29,9 @@ export default function ChangeNumberPage3({
       return;
     }
 
-    changePhoneNumber(
-      { old_number: oldNumber.trim(), new_number: newNumber.trim() },
-      {
-        onSuccess: () => {
-          updatePhoneNumber(newNumber);
-          onNext();
-        },
-      }
-    );
+    onNext(oldNumber, newNumber);
   };
+
   return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
       <div className="w-full max-w-[546px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg border border-gray-200">
@@ -66,16 +50,12 @@ export default function ChangeNumberPage3({
         <div className="px-2 sm:px-4 py-3 flex flex-col">
           <h2 className="mt-4 text-lg font-semibold text-[16px]">Old number</h2>
           <div className="mt-1 relative">
-            <Phone
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-            />
+            <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
             <input
               type="tel"
               value={oldNumber}
               onChange={(e) => {
-                // Remove non-numeric characters except + at start
-                const value = e.target.value.replace(/[^\d+]/g, "");
+                const value = e.target.value.replace(/[^\d+]/g, '');
                 setOldNumber(value);
               }}
               placeholder="e.g., +1234567890"
@@ -84,15 +64,12 @@ export default function ChangeNumberPage3({
           </div>
           <h2 className="mt-4 text-lg font-semibold text-[16px]">New number</h2>
           <div className="mt-1 relative">
-            <Phone
-              size={20}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-            />
+            <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
             <input
               type="tel"
               value={newNumber}
               onChange={(e) => {
-                const value = e.target.value.replace(/[^\d+]/g, "");
+                const value = e.target.value.replace(/[^\d+]/g, '');
                 setNewNumber(value);
               }}
               placeholder="e.g., +1234567890"
@@ -101,10 +78,10 @@ export default function ChangeNumberPage3({
           </div>
           <Button
             onClick={handleContinue}
-            disabled={!oldNumber || !newNumber || isPending}
+            disabled={!oldNumber || !newNumber}
             className="mt-115 sm:mt-110 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            {isPending ? "Changing..." : "Continue"}
+            Continue
           </Button>
         </div>
       </div>

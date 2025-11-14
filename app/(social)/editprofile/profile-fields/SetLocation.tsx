@@ -2,16 +2,22 @@
 
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { useUpdateLocation } from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
 
 interface SetLocationPageProps {
   onBack: () => void;
   onSave: () => void;
 }
 
-export default function SetLocationPage({ onBack, onSave }: SetLocationPageProps) {
-  const [country, setCountry] = useState("Nigeria");
-  const [state, setState] = useState("Lagos");
-
+export default function SetLocationPage({
+  onBack,
+  onSave,
+}: SetLocationPageProps) {
+  const user = useAuthStore((state) => state.user?.user);
+  const [country, setCountry] = useState(user?.country || "Nigeria");
+  const [state, setState] = useState(user?.state || "Lagos");
+  const updateLocationMutation = useUpdateLocation();
 
   const countries = ["Nigeria", "United States", "United Kingdom"];
   const states: { [key: string]: string[] } = {
@@ -85,10 +91,16 @@ export default function SetLocationPage({ onBack, onSave }: SetLocationPageProps
             </div>
           </div>
           <button
-            onClick={onSave}
-            className=" mt-160 md:mt-170 w-full h-[30px] py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base"
+            onClick={() => {
+              updateLocationMutation.mutate(
+                { country, state },
+                { onSuccess: () => onSave() }
+              );
+            }}
+            disabled={updateLocationMutation.isPending}
+            className=" mt-160 md:mt-170 w-full h-[30px] py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base disabled:opacity-50"
           >
-            Save
+            {updateLocationMutation.isPending ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

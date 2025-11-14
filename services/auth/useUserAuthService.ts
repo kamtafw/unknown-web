@@ -574,26 +574,28 @@ export const useGetListOfUsersToFollow = () => {
   });
 };
 
-
 // Follow User
 export const useFollowAUserAction = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (payload: FollowAUser) => followAUser(payload),
+
     onSuccess: (data: any) => {
       if (data?.status_code == 201 || data?.status_code == 200) {
         queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+        queryClient.invalidateQueries({ queryKey: ["followers"] });
+        queryClient.invalidateQueries({ queryKey: ["following"] });
+        queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
         toast.success("User followed successfully", {
-          id: 'follow-success',
+          id: "follow-success",
           style: { background: "green", color: "white" },
         });
       }
     },
     onError: (error: any) => {
-      console.log("Follow error details:", error?.response?.data);
       toast.error(error?.response?.data?.message || "Failed to follow user", {
-        id: 'follow-error',
+        id: "follow-error",
         style: { background: "red", color: "white" },
       });
     },
@@ -603,29 +605,32 @@ export const useFollowAUserAction = () => {
 // Unfollow User
 export const useUnfollowAUserAction = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (payload: FollowAUser) => unfollowAUser(payload),
+    mutationFn: (payload: { followed_user: number }) => unfollowAUser(payload),
     onSuccess: (data: any) => {
-      console.log("Unfollow response:", data);
-      if (data?.status_code == 200 || data?.status_code == 201 || data?.status_code == 204) {
+      if (
+        data?.status_code == 200 ||
+        data?.status_code == 201 ||
+        data?.status_code == 204
+      ) {
         queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+        queryClient.invalidateQueries({ queryKey: ["following"] });
+        queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
         toast.success("User unfollowed successfully", {
-          id: 'unfollow-success',
+          id: "unfollow-success",
           style: { background: "green", color: "white" },
         });
       }
     },
     onError: (error: any) => {
-      console.log("Unfollow error:", error);
       toast.error(error?.response?.data?.message || "Failed to unfollow user", {
-        id: 'unfollow-error',
+        id: "unfollow-error",
         style: { background: "red", color: "white" },
       });
     },
   });
 };
-
 
 // Logout
 export const useLogout = () => {

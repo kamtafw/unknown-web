@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,8 +13,12 @@ import {
   Edit,
 } from "lucide-react";
 import Image from "next/image";
-import CoverPic from "@/assets/profilecover.jpg";
-import ProfilePic from "@/public/profilepic.jpg";
+import {
+  useGetCurrentUserProfile,
+  useUpdateProfilePhoto,
+  useUpdateCoverPhoto,
+  useGetLiveLocation,
+} from "@/services/profile/useProfileService";
 
 interface ProfilePageProps {
   onFollowersClick: () => void;
@@ -34,19 +38,51 @@ export default function ProfilePage({
   const [showMenu, setShowMenu] = useState(false);
   const router = useRouter();
 
-  const profile = {
-    name: "Cameron Williamson",
-    username: "@Cameron_Williamson",
-    bio: "Product Designer who likes exploring many aspect of creativity",
-    website: "https://www.behance.net...",
-    location: "Lagos, Nigeria",
-    joinDate: "2 Dec, 2024",
-    connections: "1,717",
-    following: 93,
-    followers: 29,
-    followedBy: ["John adolp", "chinedu", "2 others you follow"],
+  const { data: userData } = useGetCurrentUserProfile();
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null);
+  const updateProfilePhotoMutation = useUpdateProfilePhoto();
+  const updateCoverPhotoMutation = useUpdateCoverPhoto();
+  const { data: locationData } = useGetLiveLocation(userData?.id || "");
+
+  const handleProfilePhotoClick = () => profilePhotoInputRef.current?.click();
+  const handleCoverPhotoClick = () => coverPhotoInputRef.current?.click();
+
+  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) updateProfilePhotoMutation.mutate(file);
   };
 
+  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) updateCoverPhotoMutation.mutate(file);
+  };
+
+  const profile = {
+    name:
+      `${userData?.first_name || ""} ${userData?.last_name || ""}`.trim() ||
+      "User",
+    username: `@${userData?.username || "username"}`,
+    bio: userData?.profile?.about_me || "No bio yet",
+    website: userData?.external_links?.[0]?.url || "No website",
+    location:
+      locationData?.address ||
+      (userData?.state && userData?.country
+        ? `${userData.state}, ${userData.country}`
+        : "Not set"),
+    joinDate: new Date(userData?.date_joined || Date.now()).toLocaleDateString(
+      "en-US",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }
+    ),
+    connections: "0",
+    following: userData?.following_count || 0,
+    followers: userData?.follower_count || 0,
+    followedBy: ["John adolp", "chinedu", "2 others you follow"],
+  };
   const handleBackToSettings = () => {
     router.push("/settings");
   };
@@ -73,12 +109,26 @@ export default function ProfilePage({
       <div className="flex flex-col w-full max-w-[550px] min-h-[auto] bg-white text-black overflow-auto border border-gray-200 rounded-lg shadow-md lg:w-[525px] lg:h-[796px]">
         <div className="relative">
           <div className="w-full h-32 bg-gray-700 relative sm:h-48 lg:h-[256px]">
-            <Image
-              src={CoverPic}
-              alt="Cover"
-              width={546}
-              height={256}
-              className="w-full h-full object-cover"
+            {userData?.cover_photo && (
+              <Image
+                src={
+                  userData.cover_photo.startsWith("http")
+                    ? userData.cover_photo
+                    : `https://appscombo.s3.amazonaws.com${userData.cover_photo}`
+                }
+                alt="Cover"
+                width={546}
+                height={256}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={handleCoverPhotoClick}
+              />
+            )}
+            <input
+              ref={coverPhotoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverPhotoChange}
             />
             <div
               className="absolute top-2 left-2 p-1 rounded-full bg-black/50 cursor-pointer sm:top-4 sm:left-4 sm:p-2"
@@ -119,12 +169,26 @@ export default function ProfilePage({
         <div className="px-3 sm:px-4">
           <div className="flex justify-between items-start">
             <div className="w-16 h-16 rounded-full border-2 border-white overflow-hidden bg-gray-600 relative -mt-8 sm:w-20 sm:h-20 sm:border-4 sm:-mt-10">
-              <Image
-                src={ProfilePic}
-                alt="Profile"
-                width={80}
-                height={80}
-                className="w-full h-full object-cover"
+              {userData?.profile_photo && (
+                <Image
+                  src={
+                    userData.profile_photo.startsWith("http")
+                      ? userData.profile_photo
+                      : `https://appscombo.s3.amazonaws.com${userData.profile_photo}`
+                  }
+                  alt="Profile"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={handleProfilePhotoClick}
+                />
+              )}
+              <input
+                ref={profilePhotoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePhotoChange}
               />
             </div>
             <button
@@ -196,11 +260,14 @@ export default function ProfilePage({
             <div className="flex items-center gap-2 cursor-pointer">
               <Link size={14} className="text-gray-500 sm:w-4 sm:h-4" />
               <span className="font-semibold text-sm sm:text-base">
-                {profile.website}
+                {userData?.external_links?.[0]?.url || "No website"}
               </span>
-              <span className="text-blue-500 text-xs sm:text-sm">
-                and 2 more
-              </span>
+              {userData?.external_links &&
+                userData.external_links.length > 1 && (
+                  <span className="text-blue-500 text-xs sm:text-sm">
+                    and {userData.external_links.length - 1} more
+                  </span>
+                )}
             </div>
             <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:mt-4">
               <div className="flex items-center gap-1">

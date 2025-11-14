@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@radix-ui/react-radio-group";
 import { Label } from "@radix-ui/react-label";
 import MyContactExceptGroupPage from "./MyContactExpectGroup";
@@ -25,6 +25,10 @@ export default function GroupPage({
 }: GroupPageProps) {
   const [selectedOption, setSelectedOption] = useState<string>(initialOption);
   const [excludedCount, setExcludedCount] = useState(initialExcludedCount);
+
+  useEffect(() => {
+    setSelectedOption(initialOption);
+  }, [initialOption]);
 
   const handleOptionChange = (value: string) => {
     setSelectedOption(value);

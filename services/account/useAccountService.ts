@@ -1,9 +1,12 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   reportProblem,
   changePhoneNumber,
   confirmPassword,
+  getCurrentTimezone,
+  getAvailableTimezones,
+  changeTimezone,
 } from "./accountQueries";
 import { useAccountStore } from "@/store/accountStore";
 
@@ -59,50 +62,9 @@ export const useReportProblem = () => {
 };
 
 // Change Phone Number
-// export const useChangePhoneNumber = () => {
-//   return useMutation({
-//     mutationFn: (payload: { old_number: string; new_number: string }) =>
-//       changePhoneNumber(payload),
-//     onSuccess: (data) => {
-//       if (data?.status_code === 200) {
-//         toast.success(data.message || "Phone number changed successfully", {
-//           style: { background: "green", color: "white" },
-//         });
-//       }
-//     },
-//     onError: (error: ApiError & { response?: { data?: { error?: Record<string, string[]> } } }) => {
-//       const errorData = error?.response?.data?.error;
-
-//       if (errorData) {
-//         // Handle field-specific errors
-//         const errorMessages = Object.entries(errorData)
-//           .map(([field, messages]) => {
-//             if (field === "non_field_errors") {
-//               return messages.join(", ");
-//             }
-//             return `${field}: ${messages.join(", ")}`;
-//           })
-//           .join("; ");
-
-//         toast.error(errorMessages, {
-//           style: { background: "red", color: "white" },
-//         });
-//       } else {
-//         const errorMessage =
-//           error?.response?.data?.message || "Failed to change phone number";
-//         toast.error(errorMessage, {
-//           style: { background: "red", color: "white" },
-//         });
-//       }
-//     },
-//   });
-// };
-
-// Change Phone Number
-// Change Phone Number
 export const useChangePhoneNumber = () => {
   return useMutation({
-    mutationFn: (payload: { old_number: string; new_number: string }) =>
+    mutationFn: (payload: { old_number: string; new_number: string; otp?: string }) =>
       changePhoneNumber(payload),
     onSuccess: (data) => {
       console.log("Phone change success:", data); // Debug log
@@ -182,6 +144,59 @@ export const useConfirmPassword = () => {
         errorMessage = error.response.data.message;
       }
 
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+// Get Current Timezone
+export const useGetCurrentTimezone = () => {
+  const setCurrentTimezone = useAccountStore(
+    (state) => state.setCurrentTimezone
+  );
+
+  return useQuery({
+    queryKey: ["current-timezone"],
+    queryFn: async () => {
+      const data = await getCurrentTimezone();
+      if (data?.status_code === 200) {
+        setCurrentTimezone(data.data.timezone);
+      }
+      return data;
+    },
+    retry: 1,
+  });
+};
+
+// Get Available Timezones (use useQuery for this)
+export const useGetAvailableTimezones = (locale: string = "en") => {
+  return useQuery({
+    queryKey: ["available-timezones", locale],
+    queryFn: () => getAvailableTimezones(locale),
+  });
+};
+
+// Change Timezone
+export const useChangeTimezone = () => {
+  const setCurrentTimezone = useAccountStore(
+    (state) => state.setCurrentTimezone
+  );
+
+  return useMutation({
+    mutationFn: (payload: { timezone: string }) => changeTimezone(payload),
+    onSuccess: (data) => {
+      if (data?.status_code === 200) {
+        setCurrentTimezone(data.data.timezone);
+        toast.success(data.message || "Timezone updated successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: ApiError) => {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to change timezone";
       toast.error(errorMessage, {
         style: { background: "red", color: "white" },
       });

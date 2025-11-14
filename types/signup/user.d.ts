@@ -77,5 +77,9 @@ export interface InterestsPayload {
 }
 
 export type FollowAUser = {
-  followed_user: string | number
+  followed_user: number;
+}
+
+export type UnfollowAUser = {
+  followed_user: number;
 }

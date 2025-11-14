@@ -13,7 +13,7 @@ import EditUsernamePage from "./profile-fields/edit-username";
 import EditBioPage from "./profile-fields/edit-bio";
 import AddLinkPage from "./profile-fields/add-link";
 import SetLocationPage from "./profile-fields/SetLocation";
-import EditLinkPage from "./profile-fields/EditPortfolio";
+import EditLinkPage from "./profile-fields/EditLink";
 import ChangeNumberPage from "../settings/account/change-number/ChangeNumberPage";
 
 export default function EditPage() {
@@ -59,7 +59,7 @@ export default function EditPage() {
       {activeView === "setLocation" && (
         <SetLocationPage
           onBack={() => handleViewChange("editProfile")}
-          onSave={() => handleViewChange("verified")}
+          onSave={() => handleViewChange("editProfile")}
         />
       )}
       {activeView === "editPortfolio" && (
