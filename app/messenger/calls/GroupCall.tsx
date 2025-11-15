@@ -43,26 +43,11 @@ export function GroupCallPage({
   const [callDuration, setCallDuration] = useState("00:00:00");
   const [seconds, setSeconds] = useState(0);
   const [showAllMembers, setShowAllMembers] = useState(false);
-  const [callAnswered, setCallAnswered] = useState(false);
+  const [callAnswered] = useState(false);
 
-  //   const toggleMute = () => {
-  //   const newMutedState = !isMuted;
-  //   setIsMuted(newMutedState);
-  //   webrtcService.toggleAudio(newMutedState);
-  // };
-
-  // useEffect(() => {
-  //   if (!isOpen) return;
-
-  //   const timer = setInterval(() => {
-  //     setSeconds((prev) => prev + 1);
-  //   }, 1000);
-
-  //   return () => clearInterval(timer);
-  // }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !callAnswered) return; // Only count when answered
+    if (!isOpen || !callAnswered) return; 
 
     const timer = setInterval(() => {
       setSeconds((prev) => prev + 1);
@@ -71,13 +56,6 @@ export function GroupCallPage({
     return () => clearInterval(timer);
   }, [isOpen, callAnswered]);
 
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     setTimeout(() => {
-  //       setCallAnswered(true);
-  //     }, 3000);
-  //   }
-  // }, [isOpen]);
 
   useEffect(() => {
     const hours = Math.floor(seconds / 3600);

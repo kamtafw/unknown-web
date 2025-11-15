@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, Search, Menu } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { usePrivacyStore } from "@/store/privacyStore";
 import { useGetContacts } from "@/services/privacy/usePrivacyService";
@@ -19,18 +19,23 @@ export default function OnlyShareWithStatusPage({
   initialCount,
   setIncludedCount,
 }: OnlyShareWithStatusPageProps) {
-  useGetContacts(); 
+  useGetContacts();
   const storeContacts = usePrivacyStore((state) => state.contacts);
-  const setIncludedContactIds = usePrivacyStore((state) => state.setIncludedContactIds);
-  
-  const contacts = storeContacts.length > 0 ? storeContacts : [];
+  const setIncludedContactIds = usePrivacyStore(
+    (state) => state.setIncludedContactIds
+  );
+
+  // const contacts = storeContacts.length > 0 ? storeContacts : [];
+  const contacts = useMemo(
+    () => (storeContacts.length > 0 ? storeContacts : []),
+    [storeContacts]
+  );
 
   const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
 
-
   useEffect(() => {
     if (initialCount > 0 && contacts.length > 0) {
-      setSelectedContacts(contacts.slice(0, initialCount).map(c => c.pkid));
+      setSelectedContacts(contacts.slice(0, initialCount).map((c) => c.pkid));
     }
   }, [contacts, initialCount]);
 
@@ -113,7 +118,9 @@ export default function OnlyShareWithStatusPage({
                   </div>
                   <div>
                     <p className="text-[16px] text-black">{contact.username}</p>
-                    <p className="text-[14px] text-gray-500">{contact.phone_number || contact.phone}</p>
+                    <p className="text-[14px] text-gray-500">
+                      {contact.phone_number || contact.phone}
+                    </p>
                   </div>
                 </div>
                 <div>
