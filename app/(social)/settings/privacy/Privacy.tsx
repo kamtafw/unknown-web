@@ -5,6 +5,7 @@ import { usePrivacyStore } from "@/store/privacyStore";
 import {
   useGetStatusVisibility,
   useGetBlockedUsers,
+  useGetLiveLocationSharing,
 } from "@/services/privacy/usePrivacyService";
 import { useEffect, useState } from "react";
 
@@ -28,8 +29,7 @@ export default function PrivacyPage({
   onNavigate,
   statusText,
   groupText,
-}:
-PrivacyPageProps) {
+}: PrivacyPageProps) {
   const lastSeenVisibility = usePrivacyStore(
     (state) => state.lastSeenVisibility
   );
@@ -48,6 +48,7 @@ PrivacyPageProps) {
   const [lastSeenText, setLastSeenText] =
     useState<string>("Everyone, Everyone");
   const [calculatedStatusText, setCalculatedStatusText] = useState(statusText);
+  const { data: liveLocationData } = useGetLiveLocationSharing();
 
   useEffect(() => {
     const lastSeenUI = visibilityToUI[lastSeenVisibility] || "Everyone";
@@ -138,12 +139,21 @@ PrivacyPageProps) {
               <div className="text-[14px] text-gray-500">{groupText}</div>
             </button>
             <div className="mt-2 h-px w-full bg-gray-300" />
-            <button
+            {/* <button
               onClick={() => handleViewChange("liveLocation")}
               className="w-full text-left py-3 hover:bg-gray-50 rounded-lg"
             >
               <div className="text-[16px] text-black">Live Location</div>
               <div className="text-[14px] text-gray-500">Everyone</div>
+            </button> */}
+            <button
+              onClick={() => handleViewChange("liveLocation")}
+              className="w-full text-left py-3 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="text-[16px] text-black">Live Location</div>
+              <div className="text-[14px] text-gray-500">
+                {liveLocationData?.data?.is_sharing ? "Sharing" : "Not Sharing"}
+              </div>
             </button>
 
             <button

@@ -14,7 +14,7 @@ import {
   deleteExternalLink,
   updateCoverPhoto,
   updateProfilePhoto,
-  getLiveLocation,
+  // getLiveLocation,
   getExternalLinks,
   getConnections,
   getFollowing,
@@ -363,19 +363,19 @@ export const useUpdateDobVisibility = () => {
 };
 
 // Get Live Location
-export const useGetLiveLocation = (userId: string) => {
-  return useQuery<
-    ApiResponse<{ latitude: number; longitude: number; address?: string }>,
-    Error,
-    { latitude: number; longitude: number; address?: string }
-  >({
-    queryKey: ["liveLocation", userId],
-    queryFn: () => getLiveLocation(userId),
-    staleTime: 1000 * 60 * 5,
-    select: (data) => data?.data,
-    enabled: !!userId,
-  });
-};
+// export const useGetLiveLocation = (userId: string) => {
+//   return useQuery<
+//     ApiResponse<{ latitude: number; longitude: number; address?: string }>,
+//     Error,
+//     { latitude: number; longitude: number; address?: string }
+//   >({
+//     queryKey: ["liveLocation", userId],
+//     queryFn: () => getLiveLocation(userId),
+//     staleTime: 1000 * 60 * 5,
+//     select: (data) => data?.data,
+//     enabled: !!userId,
+//   });
+// };
 
 // Update Location
 export const useUpdateLocation = () => {

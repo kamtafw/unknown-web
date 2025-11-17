@@ -22,7 +22,6 @@ interface PrivacySettings {
 }
 
 interface StatusVisibilityData {
-  last_seen_visibility: string;
   status_visibility: string;
   except_users: Contact[];
   only_share_with_users: Contact[];
@@ -51,7 +50,6 @@ interface PrivacyStore {
   includedContactIds: number[];
   selectedStatusOption: string;
   blockedUsers: BlockedUser[];
-
 
   setPrivacySettings: (settings: PrivacySettings) => void;
   setStatusVisibility: (data: StatusVisibilityData) => void;
@@ -103,6 +101,7 @@ export const usePrivacyStore = create<PrivacyStore>()(
             ? data.only_share_with_users.map((user) => user.pkid as number)
             : [],
         }),
+
       setIncludedContactIds: (ids) => set({ includedContactIds: ids }),
       setSelectedStatusOption: (option) =>
         set({ selectedStatusOption: option }),

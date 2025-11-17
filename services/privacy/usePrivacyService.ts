@@ -11,6 +11,8 @@ import {
   getBlockedUsers,
   unblockUser,
   unblockUsers,
+  getLiveLocationSharing,
+  toggleLiveLocationSharing,
 } from "./privacyQueries";
 import { usePrivacyStore } from "@/store/privacyStore";
 
@@ -254,6 +256,37 @@ export const useUnblockUsers = () => {
     onError: (error: ApiError) => {
       const errorMessage =
         error?.response?.data?.message || "Failed to unblock users";
+      toast.error(errorMessage, {
+        style: { background: "red", color: "white" },
+      });
+    },
+  });
+};
+
+// Get Live Location Sharing Status
+export const useGetLiveLocationSharing = () => {
+  return useQuery({
+    queryKey: ["live-location-sharing"],
+    queryFn: getLiveLocationSharing,
+    retry: 1,
+  });
+};
+
+// Toggle Live Location Sharing (Start/Stop)
+export const useToggleLiveLocationSharing = () => {
+  return useMutation({
+    mutationFn: (payload: { is_sharing: boolean; duration_minutes?: number }) =>
+      toggleLiveLocationSharing(payload),
+    onSuccess: (data) => {
+      if (data?.status_code === 200) {
+        toast.success(data.message || "Location sharing updated successfully", {
+          style: { background: "green", color: "white" },
+        });
+      }
+    },
+    onError: (error: ApiError) => {
+      const errorMessage =
+        error?.response?.data?.message || "Failed to update location sharing";
       toast.error(errorMessage, {
         style: { background: "red", color: "white" },
       });

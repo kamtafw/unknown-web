@@ -91,12 +91,12 @@ export const updateDobVisibility = async (payload: {
 };
 
 // Get Live Location
-export const getLiveLocation = async (userId: string) => {
-  const response = await axiosInstanceAuthenticated.get(
-    `/users/${userId}/live-location`
-  );
-  return response.data;
-};
+// export const getLiveLocation = async (userId: string) => {
+//   const response = await axiosInstanceAuthenticated.get(
+//     `/users/${userId}/live-location`
+//   );
+//   return response.data;
+// };
 
 // Update Location
 export const updateLocation = async (payload: {

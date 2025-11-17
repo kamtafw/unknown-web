@@ -78,7 +78,10 @@ export const generateTotp = async (email: string) => {
 };
 
 // Verify TOTP - NO TOKEN (used during setup)
-export const verifyTotpSetup = async (payload: { email: string; otp: string }) => {
+export const verifyTotpSetup = async (payload: {
+  email: string;
+  otp: string;
+}) => {
   const response = await axiosIsntanceAuth.post("/auth/verify-totp", payload);
   return response.data;
 };
@@ -94,9 +97,15 @@ export const confirmPassword = async (payload: { password: string }) => {
 
 // Forgot Password - NO TOKEN
 export const forgotPassword = async (email: string) => {
+  console.log("=== FORGOT PASSWORD API CALL ===");
+  console.log("Email being sent:", email);
+  console.log("Axios instance headers:", axiosIsntanceAuth.defaults.headers);
   const response = await axiosIsntanceAuth.post("/auth/forgot-password", {
     email,
   });
+  console.log("=== FORGOT PASSWORD RAW RESPONSE ===");
+  console.log("Full response:", response);
+  console.log("Response data:", response.data);
   return response.data;
 };
 
@@ -140,7 +149,6 @@ export const setUserInterests = async (payload: any) => {
   return response.data;
 };
 
-
 // Get Users to Follow - NEEDS TOKEN
 export const getListOfUsersToFollow = async () => {
   const response = await axiosIstanceAuthenticated.get(
@@ -166,4 +174,3 @@ export const unfollowAUser = async (payload: { followed_user: number }) => {
   );
   return response.data;
 };
-
