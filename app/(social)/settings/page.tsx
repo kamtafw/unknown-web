@@ -382,12 +382,6 @@ function SettingsContent() {
           groupText={groupText}
         />
       )}
-      {/* {activeView === "liveLocation" && (
-        <LiveLocationPage
-          onBack={handleBackToPrivacy}
-          onNavigate={handleViewChange}
-        />
-      )} */}
       {activeView === "liveLocation" && (
         <LiveLocationPage
           onBack={handleBackToPrivacy}
@@ -395,12 +389,6 @@ function SettingsContent() {
           onStartSharing={() => handleViewChange("liveLocationSharing")}
         />
       )}
-      {/* {activeView === "liveLocationSharing" && (
-        <LiveLocationSharingPage
-          onBack={handleBackToLiveLocation}
-          onStopSharing={handleBackToPrivacy}
-        />
-      )} */}
       {activeView === "liveLocationSharing" && (
         <LiveLocationSharingPage onBack={handleBackToLiveLocation} />
       )}

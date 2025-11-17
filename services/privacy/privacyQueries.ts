@@ -101,21 +101,24 @@ export const unblockUsers = async (userIds: number[]) => {
   return response.data;
 };
 
-// Get Live Location Sharing Status - NEEDS TOKEN
-export const getLiveLocationSharing = async () => {
+
+// Get Live Location Sharing Status - NEEDS TOKEN (POST)
+export const getUserLiveLocation = async () => {
   const response = await axiosIstanceAuthenticated.post(
     "/users/security/location-sharing"
   );
   return response.data;
 };
 
-// Start/Stop Live Location Sharing - NEEDS TOKEN
+// Start/Stop Live Location Sharing - NEEDS TOKEN (PATCH)
 export const toggleLiveLocationSharing = async (payload: {
-  is_sharing: boolean;
+  location_sharing_enabled: boolean;
   duration_minutes?: number;
+  latitude?: number;
+  longitude?: number;
 }) => {
-  const response = await axiosIstanceAuthenticated.post(
-    "/users/security/location-sharing",
+  const response = await axiosIstanceAuthenticated.patch(
+    "/users/security/update-location",
     payload
   );
   return response.data;

@@ -2,16 +2,51 @@
 
 // import { ArrowLeft } from "lucide-react";
 // import Image from "next/image";
+// import { useAuthStore } from "@/store/userStore";
+// import {
+//   useToggleLiveLocationSharing,
+// } from "@/services/privacy/usePrivacyService";
+// import { useQueryClient } from "@tanstack/react-query";
+// import { useRouter } from "next/navigation";
 
 // interface LiveLocationSharingPageProps {
 //   onBack: () => void;
-//   onStopSharing: () => void;
 // }
 
 // export default function LiveLocationSharingPage({
 //   onBack,
-//   onStopSharing,
 // }: LiveLocationSharingPageProps) {
+//   const user = useAuthStore((state) => state.user);
+//   const { mutate: toggleSharing, isPending } = useToggleLiveLocationSharing();
+//   const queryClient = useQueryClient();
+//   const router = useRouter();
+
+// const handleStopSharing = () => {
+//   toggleSharing(
+//     { location_sharing_enabled: false },
+//     {
+//       onSuccess: () => {
+//         queryClient.invalidateQueries({ queryKey: ["live-location-sharing"] });
+//         router.push("/settings?view=privacy");
+//       },
+//     }
+//   );
+// };
+
+ 
+//   const getTimeLeft = () => {
+//     if (locationData?.data?.expires_at) {
+//       const expiresAt = new Date(locationData.data.expires_at);
+//       const now = new Date();
+//       const diffMs = expiresAt.getTime() - now.getTime();
+//       const diffMins = Math.floor(diffMs / 60000);
+//       const hours = Math.floor(diffMins / 60);
+//       const mins = diffMins % 60;
+//       return `${hours} hour ${mins} min left`;
+//     }
+//     return "1 hour 0 min left";
+//   };
+
 //   return (
 //     <div className="flex ml-3 justify-center sm:justify-start w-full">
 //       <div className="w-full max-w-[530px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-200 scrollbar-hover:scrollbar-thumb-gray-500">
@@ -31,16 +66,18 @@
 //           <div className="flex items-center gap-4">
 //             <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
 //               <Image
-//                 src="/profilepic.jpg"
-//                 alt="Cameron Williamson"
+//                 src={user?.user?.profile_photo || "/profilepic.jpg"}
+//                 alt={user?.user?.username || "User"}
 //                 width={64}
 //                 height={64}
 //                 className="object-cover w-full h-full"
 //               />
 //             </div>
 //             <div>
-//               <p className="text-[16px] text-black">@Cameron_Williamson</p>
-//               <p className="text-[14px] text-gray-500">1 hour 0 min left</p>
+//               <p className="text-[16px] text-black">
+//                 @{user?.user?.username || "User"}
+//               </p>
+//               <p className="text-[14px] text-gray-500">{getTimeLeft()}</p>
 //             </div>
 //           </div>
 
@@ -49,10 +86,11 @@
 //             your device settings.
 //           </p>
 //           <button
-//             onClick={onStopSharing}
-//             className="w-full mt-120 bg-red-500 text-white py-2 rounded-full"
+//             onClick={handleStopSharing}
+//             disabled={isPending}
+//             className="w-full mt-120 bg-red-500 text-white py-2 rounded-full disabled:opacity-50"
 //           >
-//             Stop Sharing
+//             {isPending ? "Stopping..." : "Stop Sharing"}
 //           </button>
 //         </div>
 //       </div>
@@ -87,18 +125,16 @@ export default function LiveLocationSharingPage({
 
   const handleStopSharing = () => {
     toggleSharing(
-      { is_sharing: false },
+      { location_sharing_enabled: false },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["live-location-sharing"] });
-          // Navigate back to privacy page
           router.push("/settings?view=privacy");
         },
       }
     );
   };
 
-  // Calculate time left if available
   const getTimeLeft = () => {
     if (locationData?.data?.expires_at) {
       const expiresAt = new Date(locationData.data.expires_at);

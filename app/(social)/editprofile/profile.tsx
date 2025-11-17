@@ -17,7 +17,6 @@ import {
   useGetCurrentUserProfile,
   useUpdateProfilePhoto,
   useUpdateCoverPhoto,
-  useGetLiveLocation,
 } from "@/services/profile/useProfileService";
 
 interface ProfilePageProps {
@@ -43,7 +42,6 @@ export default function ProfilePage({
   const coverPhotoInputRef = useRef<HTMLInputElement>(null);
   const updateProfilePhotoMutation = useUpdateProfilePhoto();
   const updateCoverPhotoMutation = useUpdateCoverPhoto();
-  const { data: locationData } = useGetLiveLocation(userData?.id || "");
 
   const handleProfilePhotoClick = () => profilePhotoInputRef.current?.click();
   const handleCoverPhotoClick = () => coverPhotoInputRef.current?.click();
@@ -66,10 +64,9 @@ export default function ProfilePage({
     bio: userData?.profile?.about_me || "No bio yet",
     website: userData?.external_links?.[0]?.url || "No website",
     location:
-      locationData?.address ||
-      (userData?.state && userData?.country
+      userData?.state && userData?.country
         ? `${userData.state}, ${userData.country}`
-        : "Not set"),
+        : "Not set",
     joinDate: new Date(userData?.date_joined || Date.now()).toLocaleDateString(
       "en-US",
       {

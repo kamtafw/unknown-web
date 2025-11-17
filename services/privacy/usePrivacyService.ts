@@ -11,8 +11,8 @@ import {
   getBlockedUsers,
   unblockUser,
   unblockUsers,
-  getLiveLocationSharing,
   toggleLiveLocationSharing,
+  getUserLiveLocation,
 } from "./privacyQueries";
 import { usePrivacyStore } from "@/store/privacyStore";
 
@@ -263,19 +263,16 @@ export const useUnblockUsers = () => {
   });
 };
 
-// Get Live Location Sharing Status
-export const useGetLiveLocationSharing = () => {
-  return useQuery({
-    queryKey: ["live-location-sharing"],
-    queryFn: getLiveLocationSharing,
-    retry: 1,
-  });
-};
 
 // Toggle Live Location Sharing (Start/Stop)
 export const useToggleLiveLocationSharing = () => {
   return useMutation({
-    mutationFn: (payload: { is_sharing: boolean; duration_minutes?: number }) =>
+    mutationFn: (payload: { 
+      location_sharing_enabled: boolean; 
+      duration_minutes?: number;
+      latitude?: number;
+      longitude?: number;
+    }) =>
       toggleLiveLocationSharing(payload),
     onSuccess: (data) => {
       if (data?.status_code === 200) {
@@ -291,5 +288,14 @@ export const useToggleLiveLocationSharing = () => {
         style: { background: "red", color: "white" },
       });
     },
+  });
+};
+
+// Get Live Location Sharing Status
+export const useGetLiveLocationSharing = () => {
+  return useQuery({
+    queryKey: ["live-location-sharing"],
+    queryFn: getUserLiveLocation,
+    retry: 1,
   });
 };
