@@ -19,6 +19,7 @@ import {
   getConnections,
   getFollowing,
   getFollowers,
+  getMutualFollows,
 } from "./profileQueries";
 
 interface ApiResponse<T> {
@@ -72,8 +73,10 @@ interface FollowerUser {
   last_name: string;
   profile_photo: string;
   is_following?: boolean;
+  is_friends?: boolean;
   follows_you?: boolean;
 }
+
 interface PaginatedResponse {
   count: number;
   total_pages: number;
@@ -362,21 +365,6 @@ export const useUpdateDobVisibility = () => {
   });
 };
 
-// Get Live Location
-// export const useGetLiveLocation = (userId: string) => {
-//   return useQuery<
-//     ApiResponse<{ latitude: number; longitude: number; address?: string }>,
-//     Error,
-//     { latitude: number; longitude: number; address?: string }
-//   >({
-//     queryKey: ["liveLocation", userId],
-//     queryFn: () => getLiveLocation(userId),
-//     staleTime: 1000 * 60 * 5,
-//     select: (data) => data?.data,
-//     enabled: !!userId,
-//   });
-// };
-
 // Update Location
 export const useUpdateLocation = () => {
   const queryClient = useQueryClient();
@@ -565,6 +553,16 @@ export const useGetConnections = (page = 1, limit = 30) => {
   return useQuery<ApiResponse<PaginatedResponse>, Error, FollowerUser[]>({
     queryKey: ["connections", page, limit],
     queryFn: () => getConnections(page, limit),
+    staleTime: 1000 * 60 * 5,
+    select: (data) => data?.data?.results || [],
+  });
+};
+
+// Get Mutual Follows
+export const useGetMutualFollows = (page = 1, limit = 30) => {
+  return useQuery<ApiResponse<PaginatedResponse>, Error, FollowerUser[]>({
+    queryKey: ["mutualFollows", page, limit],
+    queryFn: () => getMutualFollows(page, limit),
     staleTime: 1000 * 60 * 5,
     select: (data) => data?.data?.results || [],
   });

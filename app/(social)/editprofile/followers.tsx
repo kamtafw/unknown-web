@@ -12,6 +12,7 @@ interface FollowersPageProps {
 export default function FollowersPage({}: FollowersPageProps) {
   const { data: followers, isLoading } = useGetFollowers();
   const followMutation = useFollowAUserAction();
+  console.log("Followers data:", followers);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -38,6 +39,7 @@ export default function FollowersPage({}: FollowersPageProps) {
                 username: string;
                 profile_photo: string;
                 is_following?: boolean;
+                is_friends?: boolean;
               }) => (
                 <div
                   key={follower.id}
@@ -67,7 +69,11 @@ export default function FollowersPage({}: FollowersPageProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2">
-                    {!follower.is_following ? (
+                    {follower.is_friends ? (
+                      <button className="bg-transparent text-[#6A88D1] px-4 py-1 rounded-full text-xs font-bold border border-blue-500 sm:px-8 sm:py-1.5 sm:text-sm">
+                        Friends
+                      </button>
+                    ) : (
                       <button
                         onClick={() =>
                           followMutation.mutate({
@@ -78,10 +84,6 @@ export default function FollowersPage({}: FollowersPageProps) {
                         className="bg-[#6A88D1] hover:bg-[#425483] text-white px-3 py-1 rounded-full text-xs font-bold sm:px-4 sm:py-1.5 sm:text-sm disabled:opacity-50"
                       >
                         Follow back
-                      </button>
-                    ) : (
-                      <button className="bg-transparent text-[#6A88D1] px-4 py-1 rounded-full text-xs font-bold border border-blue-500 sm:px-8 sm:py-1.5 sm:text-sm">
-                        Following
                       </button>
                     )}
                     <button

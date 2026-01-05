@@ -17,6 +17,7 @@ import {
   useGetCurrentUserProfile,
   useUpdateProfilePhoto,
   useUpdateCoverPhoto,
+  useGetMutualFollows,
 } from "@/services/profile/useProfileService";
 
 interface ProfilePageProps {
@@ -38,6 +39,7 @@ export default function ProfilePage({
   const router = useRouter();
 
   const { data: userData } = useGetCurrentUserProfile();
+  const { data: mutualFollows } = useGetMutualFollows(1, 3);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const coverPhotoInputRef = useRef<HTMLInputElement>(null);
   const updateProfilePhotoMutation = useUpdateProfilePhoto();
@@ -281,48 +283,53 @@ export default function ProfilePage({
               </div>
             </div>
           </div>
-          <div className="mt-5 flex items-center gap-2 cursor-pointer mb-5">
-            <div className="flex items-center">
-              <div className="w-4 h-4 sm:w-10 sm:h-10 rounded-full border border-white overflow-hidden">
-                <Image
-                  src="/friend.png"
-                  alt="Profile 1"
-                  width={20}
-                  height={20}
-                  className="w-full h-full object-cover"
-                />
+          {mutualFollows && mutualFollows.length > 0 && (
+            <div className="mt-5 flex items-center gap-2 cursor-pointer mb-5">
+              <div className="flex items-center">
+                {mutualFollows.slice(0, 3).map((mutual, index) => (
+                  <div
+                    key={mutual.id}
+                    className={`w-4 h-4 sm:w-10 sm:h-10 rounded-full border border-white overflow-hidden ${
+                      index > 0 ? "-ml-3 sm:-ml-6" : ""
+                    }`}
+                  >
+                    <Image
+                      src={
+                        mutual.profile_photo?.startsWith("http")
+                          ? mutual.profile_photo
+                          : `https://appscombo.s3.amazonaws.com${mutual.profile_photo}`
+                      }
+                      alt={`${mutual.first_name} ${mutual.last_name}`}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+                {mutualFollows.length > 3 && (
+                  <div className="w-4 h-4 text-sm sm:w-10 sm:h-10 rounded-full bg-blue-500 border border-white text-white text-[10px] sm:text-[11px] font-semibold flex items-center justify-center -ml-3 sm:-ml-6">
+                    {mutualFollows.length - 3}+
+                  </div>
+                )}
               </div>
-              <div className="w-4 h-4 sm:w-10 sm:h-10 rounded-full border border-white overflow-hidden -ml-3 sm:-ml-6">
-                <Image
-                  src="/Rectangle 2.png"
-                  alt="Profile 2"
-                  width={20}
-                  height={20}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="w-4 h-4 sm:w-10 sm:h-10 rounded-full border border-white overflow-hidden -ml-3 sm:-ml-6">
-                <Image
-                  src="/Rectangle 4.png"
-                  alt="Profile 3"
-                  width={20}
-                  height={20}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div
-                className="w-4 h-4 text-sm sm:w-10 sm:h-10 rounded-full bg-blue-500 border border-white text-white text-[10px] sm:text-[11px] font-semibold flex items-center justify-center -ml-3 sm:-ml-6
-"
-              >
-                41+
-              </div>
-            </div>
 
-            <span className="text-xs sm:text-sm">
-              Followed by {profile.followedBy[0]}, {profile.followedBy[1]}, and{" "}
-              {profile.followedBy[2]}
-            </span>
-          </div>
+              <span className="text-xs sm:text-sm">
+                Followed by{" "}
+                {mutualFollows.slice(0, 2).map((mutual, index) => (
+                  <span key={mutual.id}>
+                    {mutual.first_name} {mutual.last_name}
+                    {index === 0 && mutualFollows.length > 1 && ", "}
+                  </span>
+                ))}
+                {mutualFollows.length > 2 && (
+                  <span>
+                    , and {mutualFollows.length - 2} other
+                    {mutualFollows.length - 2 > 1 ? "s" : ""} you follow
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

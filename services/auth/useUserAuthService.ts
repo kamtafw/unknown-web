@@ -368,57 +368,6 @@ export const useVerifyOtp = () => {
 };
 
 // Verify OTP for password reset
-// export const useVerifyResetOtp = () => {
-//   const router = useRouter();
-//   const setUser = useAuthStore((state) => state.setUser);
-
-//   return useMutation({
-//     mutationFn: (payload: { email: string; otp: string }) =>
-//       verifyOtp({
-//         ...payload,
-//         need_tokens: false,
-//         need_otp_token: true,
-//         verification_type: "email",
-//       }),
-// export const useVerifyResetOtp = () => {
-//   const router = useRouter();
-//   const setUser = useAuthStore((state) => state.setUser);
-
-//   return useMutation({
-//     mutationFn: (payload: { email: string; otp: string }) =>
-//       verifyOtp({
-//         email: payload.email,
-//         otp: payload.otp,
-//         need_tokens: false,
-//         need_otp_token: true,
-//       }),
-//     onSuccess: (data: any, variables: { email: string; otp: string }) => {
-//       if (data?.status_code === 200) {
-//         const currentUser = useAuthStore.getState().user;
-//         setUser({
-//           ...currentUser,
-//           email: variables.email,
-//           otp_token: data?.data?.otp_token || data?.otp_token,
-//         });
-//         toast.success("Code verified successfully", {
-//           style: { background: "green", color: "white" },
-//         });
-//         setTimeout(() => {
-//           router.push("/create-password");
-//           router.refresh();
-//         }, 100);
-//       }
-//     },
-//     onError: (error: any) => {
-//       const errorMessage = error?.response?.data?.message || "Invalid code";
-//       toast.error(errorMessage, {
-//         style: { background: "red", color: "white" },
-//       });
-//     },
-//   });
-// };
-
-// Verify OTP for password reset
 export const useVerifyResetOtp = () => {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
@@ -524,35 +473,6 @@ export const useSubmitProfile = () => {
     },
   });
 };
-
-// Forgot Password
-// export const useForgotPassword = () => {
-//   const router = useRouter();
-
-//   return useMutation({
-//     mutationFn: (email: string) => forgotPassword(email),
-//     onSuccess: (data: any) => {
-//       if (data?.status_code === 200) {
-//         toast.success("Reset code sent to your email", {
-//           style: { background: "green", color: "white" },
-//         });
-//         document.cookie = `resetFlow=true; path=/; max-age=600; SameSite=Strict; Secure`;
-//         setTimeout(() => {
-//           router.push("/verify-code");
-//           router.refresh();
-//         }, 100);
-//       }
-//     },
-//     onError: (error: any) => {
-//       const errorMessage =
-//         error?.response?.data?.message ||
-//         "Email does not exist in our database.";
-//       toast.error(errorMessage, {
-//         style: { background: "red", color: "white" },
-//       });
-//     },
-//   });
-// };
 
 // Forgot Password
 export const useForgotPassword = () => {

@@ -173,3 +173,11 @@ export const getConnections = async (page = 1, limit = 30) => {
   );
   return response.data;
 };
+
+// Get Mutual Follows
+export const getMutualFollows = async (page = 1, limit = 30) => {
+  const response = await axiosInstanceAuthenticated.get(
+    `/users/mutual-follows?page=${page}&limit=${limit}`
+  );
+  return response.data;
+};
