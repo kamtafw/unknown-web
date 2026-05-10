@@ -3,16 +3,23 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useChangePhoneNumber } from "@/services/account/useAccountService";
+import { useAuthStore } from "@/store/userStore";
 
 interface ChangeNumberPage4Props {
   onBack: () => void;
   onNext: () => void;
+  oldNumber: string;
+  newNumber: string;
 }
 
-export default function ChangeNumberPage4({ onBack, onNext }: ChangeNumberPage4Props) {
+export default function ChangeNumberPage4({ onBack, onNext, oldNumber, newNumber }: ChangeNumberPage4Props) {
   const [code, setCode] = useState(["", "", "", ""]);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  const updatePhoneNumber = useAuthStore((state) => state.updatePhoneNumber);
+  const { mutate: changePhoneNumber, isPending } = useChangePhoneNumber();
 
   const handleChange = (index: number, value: string) => {
     if (/^\d$/.test(value) || value === "") {
@@ -36,6 +43,39 @@ export default function ChangeNumberPage4({ onBack, onNext }: ChangeNumberPage4P
     }
   };
 
+  // const handleContinue = () => {
+  //   const otp = code.join("");
+  //   changePhoneNumber(
+  //     { 
+  //       old_number: oldNumber, 
+  //       new_number: newNumber,
+  //       otp: otp
+  //     },
+  //     {
+  //       onSuccess: () => {
+  //         updatePhoneNumber(newNumber);
+  //         onNext();
+  //       },
+  //     }
+  //   );
+  // };
+const handleContinue = () => {
+    // Using hardcoded dummy OTP since backend hasn't implemented real OTP yet
+    // Try these values in order: "1234", "123456", "0000", or ask backend team
+    changePhoneNumber(
+      { 
+        old_number: oldNumber, 
+        new_number: newNumber,
+        otp: "1234"  // Change this value based on what your backend accepts
+      },
+      {
+        onSuccess: () => {
+          updatePhoneNumber(newNumber);
+          onNext();
+        },
+      }
+    );
+  };
   const isComplete = code.every((digit) => digit !== "");
 
   return (
@@ -77,11 +117,11 @@ export default function ChangeNumberPage4({ onBack, onNext }: ChangeNumberPage4P
             ))}
           </div>
           <Button
-            onClick={onNext}
-            disabled={!isComplete}
+            onClick={handleContinue}
+            disabled={!isComplete || isPending}
             className="mt-120 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Continue
+            {isPending ? "Verifying..." : "Continue"}
           </Button>
         </div>
       </div>

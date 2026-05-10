@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useUpdateBio } from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
 
 interface EditBioPageProps {
   onBack: () => void;
 }
 
 export default function EditBioPage({ onBack }: EditBioPageProps) {
-  const [bio, setBio] = useState("");
+  const user = useAuthStore((state) => state.user?.user);
+  const [bio, setBio] = useState(user?.profile?.about_me || "");
+  const updateBioMutation = useUpdateBio();
 
   return (
     <div className="w-full max-w-[530px] min-h-[auto] bg-white text-black overflow-auto shadow-md lg:w-[546px] lg:h-[796px]">
@@ -33,14 +37,22 @@ export default function EditBioPage({ onBack }: EditBioPageProps) {
               maxLength={200}
               aria-label="Bio"
             />
-            <span className="text-gray-500 text-xs sm:text-sm">{bio.length}/200</span>
+            <span className="text-gray-500 text-xs sm:text-sm">
+              {bio.length}/200
+            </span>
           </div>
         </div>
         <div className="pt-10 sm:pt-[510px] items-center">
           <button
             type="button"
             className="w-full max-w-[498px] bg-[#6A88D1] hover:bg-[#425483] text-white px-6 py-2 rounded-full font-bold text-base transition-colors sm:px-38 sm:py-3 sm:text-lg"
-            onClick={() => console.log()}
+            onClick={() => {
+              updateBioMutation.mutate(
+                { about_me: bio },
+                { onSuccess: () => onBack() }
+              );
+            }}
+            disabled={updateBioMutation.isPending}
           >
             Save
           </button>

@@ -2,16 +2,73 @@
 
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
+import { useToggleLiveLocationSharing } from "@/services/privacy/usePrivacyService";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface LiveLocationPageProps {
   onBack: () => void;
   onNavigate: (view: string) => void;
+  onStartSharing: () => void;
 }
 
 export default function LiveLocationPage({
   onBack,
   onNavigate,
 }: LiveLocationPageProps) {
+  const { mutate: toggleSharing, isPending } = useToggleLiveLocationSharing();
+  const queryClient = useQueryClient();
+
+  const handleStartSharing = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          toggleSharing(
+            {
+              location_sharing_enabled: true,
+              duration_minutes: 60,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+            {
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ["live-location-sharing"] });
+                onNavigate("liveLocationSharing");
+              },
+            }
+          );
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toggleSharing(
+            {
+              location_sharing_enabled: true,
+              duration_minutes: 60,
+            },
+            {
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ["live-location-sharing"] });
+                onNavigate("liveLocationSharing");
+              },
+            }
+          );
+        }
+      );
+    } else {
+      toggleSharing(
+        {
+          location_sharing_enabled: true,
+          duration_minutes: 60,
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["live-location-sharing"] });
+            onNavigate("liveLocationSharing");
+          },
+        }
+      );
+    }
+  };
+
   return (
     <div className="flex ml-3 justify-center sm:justify-start w-full">
       <div className="w-full max-w-[530px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-200 scrollbar-hover:scrollbar-thumb-gray-500">
@@ -47,10 +104,11 @@ export default function LiveLocationPage({
             </p>
           </div>
           <button
-            onClick={() => onNavigate("liveLocationSharing")}
-            className="w-full mt-95 bg-blue-500 text-white py-2 rounded-full"
+            onClick={handleStartSharing}
+            disabled={isPending}
+            className="w-full mt-95 bg-blue-500 text-white py-2 rounded-full disabled:opacity-50"
           >
-            Start Sharing
+            {isPending ? "Starting..." : "Start Sharing"}
           </button>
         </div>
       </div>

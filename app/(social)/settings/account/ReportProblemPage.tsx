@@ -5,6 +5,8 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@radix-ui/react-radio-group";
 import { Label } from "@radix-ui/react-label";
 import { Button } from "@/components/ui/button";
+import { useReportProblem } from "@/services/account/useAccountService";
+import { toast } from "sonner";
 
 interface ReportProblemPageProps {
   onBack: () => void;
@@ -13,20 +15,47 @@ interface ReportProblemPageProps {
 export default function ReportProblemPage({ onBack }: ReportProblemPageProps) {
   const [selectedProblem, setSelectedProblem] = useState("");
   const [feedback, setFeedback] = useState("");
+  const { mutate: reportProblem, isPending } = useReportProblem();
 
-  const problems = [
-    "Lorem ipsum dolor sit amet",
-    "Consectetur adipiscing elit",
-    "Sed do eiusmod tempor",
-    "Incididunt ut labore",
-    "Others",
-  ];
+  const problems = ["Bug", "Performance", "Crash", "Login", "Payment", "Other"];
 
   const handleFeedbackChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     if (text.length <= 200) {
       setFeedback(text);
     }
+  };
+
+  const handleSubmit = () => {
+    if (!selectedProblem) {
+      toast.error("Please select a problem type", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+
+    const payload: { problem_type: string; feedback?: string } = {
+      problem_type: selectedProblem.toLowerCase(),
+    };
+
+    if (feedback.trim()) {
+      payload.feedback = feedback.trim();
+    }
+
+    reportProblem(payload, {
+      onSuccess: () => {
+        setSelectedProblem("");
+        setFeedback("");
+
+        toast.success("Thank you. Your problem report has been submitted.", {
+          style: { background: "green", color: "white" },
+        });
+
+        setTimeout(() => {
+          onBack();
+        }, 1500);
+      },
+    });
   };
 
   return (
@@ -41,7 +70,7 @@ export default function ReportProblemPage({ onBack }: ReportProblemPageProps) {
             >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-xl font-bold">Report Problem</h1>
+            <h1 className="text-xl font-bold">Report a Problem</h1>
           </div>
         </div>
         <div className="px-2 sm:px-4 py-3">
@@ -78,11 +107,15 @@ export default function ReportProblemPage({ onBack }: ReportProblemPageProps) {
               {feedback.length}/200
             </span>
           </div>
-          <Button className="w-full h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483] mt-4">
-            Submit
+          <Button
+            className="w-full h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483] mt-4 disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={isPending || !selectedProblem}
+          >
+            {isPending ? "Submitting..." : "Submit"}
           </Button>
         </div>
       </div>
     </div>
-    );
-  }
+  );
+}

@@ -6,15 +6,9 @@ interface UnblockContactPopupProps {
   onCancel: () => void;
   onUnblock: () => void;
   selectedCount: number;
-  setBlockedCount: (count: number) => void;
-  blockedCount: number;
 }
 
-export default function UnblockContactPopup({ onCancel, onUnblock, selectedCount, setBlockedCount, blockedCount }: UnblockContactPopupProps) {
-  const handleUnblock = () => {
-    setBlockedCount(blockedCount - selectedCount);
-    onUnblock();
-  };
+export default function UnblockContactPopup({ onCancel, onUnblock, selectedCount}: UnblockContactPopupProps) {
 
   return (
     <Dialog.Root open={true}>
@@ -39,7 +33,7 @@ export default function UnblockContactPopup({ onCancel, onUnblock, selectedCount
             </Dialog.Close>
             <Dialog.Close asChild>
               <button
-                onClick={handleUnblock}
+                onClick={onUnblock}
                 className="px-4 py-2 text-blue-400 rounded-full hover:text-blue-600"
                 aria-label="Unblock"
               >

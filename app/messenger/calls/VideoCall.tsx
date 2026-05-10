@@ -1,22 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BsArrowsAngleExpand, BsArrowsAngleContract } from "react-icons/bs";
 import { MdOutlinePersonAddAlt } from "react-icons/md";
 import { LuVolumeOff, LuVolume2 } from "react-icons/lu";
 import { BsCameraVideo, BsCameraVideoOff } from "react-icons/bs";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { MdCallEnd } from "react-icons/md";
-import Image from "next/image";
+// import Image from "next/image";
 import { ContactPopup } from "./ContactPopup";
+import { webrtcService } from "../../../services/calls/webrtcService";
 
 interface Participant {
-  id: number;
+  id: string;
+  name: string;
   avatar: string;
 }
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   avatar: string;
@@ -41,58 +43,40 @@ export function VideoCall({
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isVolumeOn, setIsVolumeOn] = useState(true);
   const [showContactPopup, setShowContactPopup] = useState(false);
+  // const displayedParticipants = participants.length > 0 ? participants : [];
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const mockParticipants: Participant[] = [
-    {
-      id: 1,
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 2,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 3,
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 4,
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 5,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 6,
-      avatar: "/Rectangle 1.png",
-    },
-    {
-      id: 7,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 8,
-      avatar: "/Rectangle 3.png",
-    },
-    {
-      id: 9,
-      avatar: "/Rectangle 4.png",
-    },
-    {
-      id: 10,
-      avatar: "/Rectangle 2.png",
-    },
-    {
-      id: 11,
-      avatar: "/Rectangle 1.png",
-    },
-  ];
+  useEffect(() => {
+    if (isOpen && localVideoRef.current && remoteVideoRef.current) {
+      // Start the video call with actual streams
+      const roomId = "generated-room-id"; // Get from your call state
+      webrtcService.startCall(
+        localVideoRef.current,
+        remoteVideoRef.current,
+        roomId
+      );
+    }
 
-  const displayedParticipants =
-    participants.length > 0 ? participants : mockParticipants;
+    return () => {
+      if (!isOpen) {
+        webrtcService.endCall();
+      }
+    };
+  }, [isOpen]);
+
+  // const getGridLayout = (count: number) => {
+  //   if (count === 1) return { cols: 1, size: "w-80 h-80 sm:w-96 sm:h-96" };
+  //   if (count === 2) return { cols: 2, size: "w-64 h-64 sm:w-80 sm:h-80" };
+  //   if (count === 3) return { cols: 3, size: "w-48 h-48 sm:w-56 sm:h-56" };
+  //   if (count === 4) return { cols: 2, size: "w-56 h-56 sm:w-64 sm:h-64" };
+  //   if (count <= 6) return { cols: 3, size: "w-40 h-40 sm:w-48 sm:h-48" };
+  //   if (count <= 9) return { cols: 3, size: "w-36 h-36 sm:w-40 sm:h-40" };
+  //   return { cols: 4, size: "w-32 h-32 sm:w-36 sm:h-36" };
+  // };
 
   const handleEndCall = () => {
+    webrtcService.endCall();
     setIsVideoOn(true);
     setIsVolumeOn(true);
     setIsExpanded(false);
@@ -112,68 +96,132 @@ export function VideoCall({
   };
 
   const handleContactSelect = (selectedContacts: Contact[]) => {
-    const newParticipants = selectedContacts.map(contact => ({
+    const newParticipants = selectedContacts.map((contact) => ({
       id: contact.id,
+      name: contact.name,
       avatar: contact.avatar,
     }));
-    
+
     console.log("Adding participants:", newParticipants);
 
     setShowContactPopup(false);
   };
 
-  const chunkParticipants = (participants: Participant[], chunkSize: number) => {
-    const chunks = [];
-    for (let i = 0; i < participants.length; i += chunkSize) {
-      chunks.push(participants.slice(i, i + chunkSize));
-    }
-    return chunks;
-  };
-
   if (!isOpen) return null;
-
-  const participantRows = chunkParticipants(displayedParticipants, 5);
 
   return (
     <>
       <div className="fixed inset-0 bg-black/70 z-[50] flex items-center justify-center">
         <div
-          className={`bg-[#111827] rounded-xl shadow-2xl transition-all duration-300 p-6 border-none ${
-            isExpanded ? "w-full h-full rounded-none" : "w-[700px] h-[500px]"
+          className={`bg-[#111827] rounded-xl shadow-2xl transition-all duration-300 p-3 sm:p-4 lg:p-6 border-none ${
+            isExpanded
+              ? "w-full h-full rounded-none"
+              : "w-[90%] h-[85%] sm:w-[90%] sm:h-[90%] lg:w-[800px] lg:h-[600px] sm:rounded-xl"
           } relative flex flex-col`}
         >
           {/* Header with Group Name */}
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-3 sm:mb-4 lg:mb-6">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-lg sm:text-xl font-semibold text-white">
                 {groupName}
               </h2>
-              <p className="text-sm text-gray-400">Video call</p>
+              <p className="text-xs sm:text-sm text-gray-400">Video call</p>
             </div>
           </div>
 
-          {/* Video Grid */}
-          <div className="flex-1 mb-6 overflow-y-auto">
-            {participantRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-5 gap-3 mb-4">
-                {row.map((participant) => (
-                  <div key={participant.id} className="relative">
-                    <div className="relative overflow-hidden rounded-lg min-h-[120px]">
-                      <Image
-                        src={participant.avatar}
-                        alt={`Participant ${participant.id}`}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                ))}
+          {/* Video Grid - Mobile Layout */}
+          {/* Video Streams */}
+          <div className="flex-1 mb-3 sm:mb-4 lg:mb-6 relative overflow-hidden">
+            {/* Your Camera (Large) */}
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-lg bg-gray-900"
+            />
+            <div className="absolute bottom-4 left-4 text-white bg-black/50 px-3 py-1 rounded-lg">
+              You
+            </div>
+
+            {/* Remote Camera (Picture-in-Picture) */}
+            <div className="absolute top-4 right-4 w-32 h-32 sm:w-48 sm:h-48 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover bg-gray-800"
+              />
+              <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+                {participants[0]?.name || "Connecting..."}
               </div>
-            ))}
+            </div>
+          </div>
+          {/* Video Grid - Desktop Layout */}
+          <div className="flex justify-center space-x-2 sm:space-x-3 lg:hidden">
+            {/* End call - Always visible */}
+            <button
+              onClick={handleEndCall}
+              className="w-10 h-10 sm:w-12 sm:h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+              title="End call"
+            >
+              <MdCallEnd className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            </button>
+
+            {/* Video toggle */}
+            <button
+              onClick={toggleVideo}
+              className={`w-10 h-10 sm:w-12 sm:h-12 bg-[#292F3D] rounded-full flex items-center justify-center transition-colors ${
+                isVideoOn
+                  ? "text-gray-600 hover:text-gray-300"
+                  : "bg-blue-500 hover:bg-blue-600"
+              }`}
+              title={isVideoOn ? "Turn off video" : "Turn on video"}
+            >
+              {isVideoOn ? (
+                <BsCameraVideo className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+              ) : (
+                <BsCameraVideoOff className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+              )}
+            </button>
+
+            {/* Volume toggle */}
+            <button
+              onClick={toggleVolume}
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${
+                isVolumeOn
+                  ? "bg-[#292F3D] hover:bg-gray-300"
+                  : "bg-red-500 hover:bg-red-600"
+              }`}
+              title={isVolumeOn ? "Mute" : "Unmute"}
+            >
+              {isVolumeOn ? (
+                <LuVolume2 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+              ) : (
+                <LuVolumeOff className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+              )}
+            </button>
+
+            {/* Add participant */}
+            <button
+              onClick={handleAddParticipant}
+              className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
+              title="Add person"
+            >
+              <MdOutlinePersonAddAlt className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            </button>
+
+            {/* More options */}
+            <button
+              className="w-10 h-10 sm:w-12 sm:h-12 bg-[#292F3D] hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+              aria-label="More options"
+            >
+              <HiDotsHorizontal className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+            </button>
           </div>
 
-          {/* Control Buttons */}
-          <div className="flex justify-center space-x-4">
+          {/* Control Buttons - Desktop Layout (unchanged) */}
+          <div className="hidden lg:flex justify-center space-x-4">
             {/* More options */}
             <button
               className="w-12 h-12 bg-[#292F3D] hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"

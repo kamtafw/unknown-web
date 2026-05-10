@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { FaMicrophoneAlt, FaShareAlt } from "react-icons/fa";
+import { FaShareAlt } from "react-icons/fa";
 import { RiEmojiStickerFill } from "react-icons/ri";
 import { HostListenersTab } from "./HostListnersTab";
 import { HostComments } from "./HostComments";
 import { HostRequests } from "./HostRequests";
 import { SharePopup } from "../listeners/SharePopup";
 import { ForwardPopup } from "../listeners/ForwardPopup";
-import { EmojiPopup } from "../listeners/EmojiPop";
 import { HostGuestsPopup } from "./HostGuestsPopup";
+import { EmojiPopup } from "@/components/ui/EmojiPicker";
 import {
   Popover,
   PopoverTrigger,
@@ -19,6 +19,7 @@ import {
 import { HiDotsHorizontal } from "react-icons/hi";
 import { FaUserGroup } from "react-icons/fa6";
 import { MdChat } from "react-icons/md";
+import { IoSend } from "react-icons/io5";
 
 interface HostListenersProps {
   sessionData: {
@@ -30,9 +31,9 @@ interface HostListenersProps {
 }
 
 export function HostListeners({ sessionData, onLeave }: HostListenersProps) {
-  const [activeTab, setActiveTab] = useState<"listeners" | "comments" | "requests">(
-    "listeners"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "listeners" | "comments" | "requests"
+  >("listeners");
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
   const [showForwardPopup, setShowForwardPopup] = useState(false);
@@ -71,7 +72,10 @@ export function HostListeners({ sessionData, onLeave }: HostListenersProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Popover open={showHeaderPopup && !showForwardPopup} onOpenChange={setShowHeaderPopup}>
+            <Popover
+              open={showHeaderPopup && !showForwardPopup}
+              onOpenChange={setShowHeaderPopup}
+            >
               <PopoverTrigger asChild>
                 <button
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -155,44 +159,47 @@ export function HostListeners({ sessionData, onLeave }: HostListenersProps) {
       </div>
 
       {/* Bottom Message Bar */}
-      <div className="p-4 bg-white">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 relative">
+      <div className="p-4 sm:p-3 bg-white">
+        <div className="flex items-center gap-3 sm:gap-1.5">
+          <div className="flex-1 relative min-w-0">
             <input
               type="text"
               placeholder="Type a message here"
-              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 sm:px-2.5 sm:py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
           <button
-            className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+            className=" p-1 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-full transition-colors"
             aria-label="Send message"
           >
-            <FaMicrophoneAlt className="text-gray-600 text-xl" />
+            <IoSend className="text-white w-4 h-4 lg:w-5 lg:h-5" />
           </button>
 
           <Popover open={showEmojiPopup} onOpenChange={setShowEmojiPopup}>
             <PopoverTrigger asChild>
               <button
-                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Emoji picker"
               >
-                <RiEmojiStickerFill className="text-gray-600 text-xl" />
+                <RiEmojiStickerFill className="text-gray-600 text-lg sm:text-base" />
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-100 p-2">
+            <PopoverContent className="w-270 p-2 rounded-lg">
               <EmojiPopup onSelect={(emoji) => console.log(emoji)} />
             </PopoverContent>
           </Popover>
 
-          <Popover open={showSharePopup && !showForwardPopup} onOpenChange={setShowSharePopup}>
+          <Popover
+            open={showSharePopup && !showForwardPopup}
+            onOpenChange={setShowSharePopup}
+          >
             <PopoverTrigger asChild>
               <button
-                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                 className="p-1 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Share"
               >
-                <FaShareAlt className="text-gray-600 text-xl" />
+                <FaShareAlt className="text-gray-600 text-lg sm:text-base" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2">
@@ -202,17 +209,17 @@ export function HostListeners({ sessionData, onLeave }: HostListenersProps) {
 
           <button
             onClick={() => setShowGuestsPopup(true)}
-            className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+             className="p-1 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Group"
           >
-            <FaUserGroup className="text-gray-600 text-xl" />
+            <FaUserGroup className="text-gray-600 text-lg sm:text-base" />
           </button>
 
           <button
-            className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+             className="p-1 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Chat"
           >
-            <MdChat className="text-gray-600 text-xl" />
+            <MdChat className="text-gray-600 text-lg sm:text-base" />
           </button>
         </div>
       </div>

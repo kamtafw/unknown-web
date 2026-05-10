@@ -1,8 +1,10 @@
 "use client";
 
 import { ArrowLeft, Search, Menu } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
+import { usePrivacyStore } from "@/store/privacyStore";
+import { useGetContacts } from "@/services/privacy/usePrivacyService";
 
 interface MyContactExceptStatusPageProps {
   onBack: () => void;
@@ -17,66 +19,24 @@ export default function MyContactExceptStatusPage({
   initialCount,
   setExcludedCount,
 }: MyContactExceptStatusPageProps) {
-  const contacts = [
-    {
-      id: 1,
-      username: "@Cameron_Williamson",
-      phone: "+234 8123456789",
-      image: "profilepic.jpg",
-    },
-    {
-      id: 2,
-      username: "@Lucas_jigsu",
-      phone: "+234 8181956789",
-      image: "friend.png",
-    },
-    {
-      id: 3,
-      username: "@John_Doe",
-      phone: "+234 8134567890",
-      image: "Rectangle 3.png",
-    },
-    {
-      id: 4,
-      username: "@Jane_Smith",
-      phone: "+234 8145678901",
-      image: "Rectangle 4.png",
-    },
-    {
-      id: 5,
-      username: "@Mike_Johnson",
-      phone: "+234 8156789012",
-      image: "Rectangle 2.png",
-    },
-    {
-      id: 6,
-      username: "@Sarah_Brown",
-      phone: "+234 8167890123",
-      image: "friend.png",
-    },
-    {
-      id: 7,
-      username: "@David_Wilson",
-      phone: "+234 8178901234",
-      image: "Rectangle 1.png",
-    },
-    {
-      id: 8,
-      username: "@Emily_Davis",
-      phone: "+234 8189012345",
-      image: "profilepic.jpg",
-    },
-    {
-      id: 9,
-      username: "@Chris_Lee",
-      phone: "+234 8190123456",
-      image: "profilepic.jpg",
-    },
-  ];
-
-  const [selectedContacts, setSelectedContacts] = useState<number[]>(
-    initialCount > 0 ? contacts.slice(0, initialCount).map(c => c.id) : []
+  useGetContacts();
+  const storeContacts = usePrivacyStore((state) => state.contacts);
+  const setExcludedContactIds = usePrivacyStore(
+    (state) => state.setExcludedContactIds
   );
+
+  // const contacts = storeContacts.length > 0 ? storeContacts : [];
+  const contacts = useMemo(
+    () => (storeContacts.length > 0 ? storeContacts : []),
+    [storeContacts]
+  );
+  const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (initialCount > 0 && contacts.length > 0) {
+      setSelectedContacts(contacts.slice(0, initialCount).map((c) => c.pkid));
+    }
+  }, [contacts, initialCount]);
 
   const handleToggleSelect = (id: number) => {
     setSelectedContacts((prev) =>
@@ -90,13 +50,14 @@ export default function MyContactExceptStatusPage({
     setSelectedContacts(
       selectedContacts.length === contacts.length
         ? []
-        : contacts.map((c) => c.id)
+        : contacts.map((c) => c.pkid)
     );
   };
 
   const handleSave = () => {
     const count = selectedContacts.length;
     setExcludedCount(count);
+    setExcludedContactIds(selectedContacts);
     onUpdateText(count);
     onBack();
   };
@@ -136,17 +97,17 @@ export default function MyContactExceptStatusPage({
         </div>
         <div className="px-4 py-6 lg:py-2 space-y-5 lg:space-y-3">
           {contacts.map((contact) => {
-            const checkboxId = `contact-checkbox-${contact.id}`;
+            const checkboxId = `contact-checkbox-${contact.pkid}`;
             return (
               <div
-                key={contact.id}
+                key={contact.pkid}
                 className="flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
                   <div>
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
                       <Image
-                        src={`/${contact.image}`}
+                        src={contact.profile_picture || `/${contact.image}`}
                         alt={contact.username}
                         width={40}
                         height={40}
@@ -156,7 +117,9 @@ export default function MyContactExceptStatusPage({
                   </div>
                   <div>
                     <p className="text-[16px] text-black">{contact.username}</p>
-                    <p className="text-[14px] text-gray-500">{contact.phone}</p>
+                    <p className="text-[14px] text-gray-500">
+                      {contact.phone_number || contact.phone}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -166,8 +129,8 @@ export default function MyContactExceptStatusPage({
                   <input
                     id={checkboxId}
                     type="checkbox"
-                    checked={selectedContacts.includes(contact.id)}
-                    onChange={() => handleToggleSelect(contact.id)}
+                    checked={selectedContacts.includes(contact.pkid)}
+                    onChange={() => handleToggleSelect(contact.pkid)}
                     className="w-5 h-5"
                     title={`Select ${contact.username}`}
                   />

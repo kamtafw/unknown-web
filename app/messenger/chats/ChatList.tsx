@@ -388,7 +388,7 @@ export function ChatList({
             e.stopPropagation();
             setShowCopyPopup(true);
           }}
-          className="fixed bottom-6 right-6 lg:left-160 md:left-40 h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
+          className="fixed bottom-6 right-6 lg:left-[calc(33.333%+1.5rem)] h-14 w-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg z-50"
         >
           <TbCopyPlusFilled className="h-8 w-8 text-white" />
         </button>

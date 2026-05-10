@@ -7,7 +7,7 @@ export default function PasswordResetSuccessPage() {
   const router = useRouter();
 
   const handleProceedToLogin = () => {
-    router.push('/login');
+    router.push('/');
   };
 
   return (

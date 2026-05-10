@@ -1,33 +1,38 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { FaArrowRight } from "react-icons/fa6";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 export default function GoogleAuthVerificationPage() {
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleBack = () => {
-    router.push('/forgot-password');
+    router.push("/home");
   };
 
   const handleVerifyCode = async () => {
     if (code.length !== 6) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Navigate to create new password page
-      router.push('/forgot-password/create-password');
+      router.push("/forgot-password/create-password");
     } catch (error) {
-      console.error('Error verifying Google Auth code:', error);
+      console.error("Error verifying Google Auth code:", error);
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +50,9 @@ export default function GoogleAuthVerificationPage() {
         </button>
 
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-gray-900">Security Verification</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Security Verification
+          </h1>
           <div className="space-y-1">
             <p className="text-gray-600">
               Enter the 6 digit code we sent to your google authenticator app
@@ -55,11 +62,7 @@ export default function GoogleAuthVerificationPage() {
 
         <div className="space-y-6">
           <div className="flex justify-center">
-            <InputOTP
-              value={code}
-              onChange={setCode}
-              maxLength={6}
-            >
+            <InputOTP value={code} onChange={setCode} maxLength={6}>
               <InputOTPGroup className="gap-3">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <InputOTPSlot
@@ -77,21 +80,37 @@ export default function GoogleAuthVerificationPage() {
             disabled={code.length !== 6 || isLoading}
             className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Verifying...' : 'Verify Code'}
+            {isLoading ? "Verifying..." : "Verify Code"}
           </Button>
 
           <div className="text-center">
             <p className="text-gray-600">
-              I didn&apos;t receive any code{' '}
+              I didn&apos;t receive any code{" "}
               <button
                 onClick={() => {
-                  alert('Please check your Google Authenticator app for the current 6-digit code');
+                  alert(
+                    "Please check your Google Authenticator app for the current 6-digit code"
+                  );
                 }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Resend
               </button>
             </p>
+            <div className="mt-6 space-y-3">
+              <button className="w-full h-12 flex items-center justify-between px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                <span className="text-gray-700 font-medium">
+                  Use OTP Instead
+                </span>
+                <FaArrowRight className="text-gray-700" />
+              </button>
+              <button className="w-full h-12 flex items-center justify-between px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                <span className="text-gray-700 font-medium">
+                  Use Pin Instead
+                </span>
+                <FaArrowRight className="text-gray-700" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -2,20 +2,36 @@
 
 import { X } from "lucide-react";
 import { useState } from "react";
+import {
+  useUpdateExternalLink,
+  useDeleteExternalLink,
+} from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
 
 interface EditLinkPageProps {
   linkType: "portfolio" | "shoppingList";
   onClose: () => void;
 }
 
+interface ExternalLink {
+  id: number;
+  url: string;
+  label: string;
+}
+
 export default function EditLinkPage({ linkType, onClose }: EditLinkPageProps) {
-  const defaultTitle = linkType === "portfolio" ? "My Portfolio" : "My Shopping List";
-  const defaultUrl =
+  const user = useAuthStore((state) => state.user?.user);
+  const updateLinkMutation = useUpdateExternalLink();
+  const deleteLinkMutation = useDeleteExternalLink();
+
+  const existingLink = user?.external_links?.find((link: ExternalLink) =>
     linkType === "portfolio"
-      ? "https://www.behance.net/stanleyoffiah"
-      : "https://example.com/shopping-list";
-  const [title, setTitle] = useState(defaultTitle);
-  const [url, setUrl] = useState(defaultUrl);
+      ? link.label.includes("Portfolio")
+      : link.label.includes("Shopping")
+  );
+
+  const [title, setTitle] = useState(existingLink?.label || "");
+  const [url, setUrl] = useState(existingLink?.url || "https://");
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -57,18 +73,33 @@ export default function EditLinkPage({ linkType, onClose }: EditLinkPageProps) {
           </div>
         </div>
         <button
-          
-          className="mt-4 w-full py-2 text-red-500 hover:text-red-600 text-sm"
+          onClick={() => {
+            if (existingLink?.id) {
+              deleteLinkMutation.mutate(existingLink.id, {
+                onSuccess: () => onClose(),
+              });
+            }
+          }}
+          disabled={deleteLinkMutation.isPending}
+          className="mt-4 w-full py-2 text-red-500 hover:text-red-600 text-sm disabled:opacity-50"
         >
-          Remove Link
+          {deleteLinkMutation.isPending ? "Removing..." : "Remove Link"}
         </button>
-         <button
-            type="button"
-            className=" mt-15 w-full py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base"
-            onClick={onClose}
-          >
-            Save
-          </button>
+        <button
+          type="button"
+          className=" mt-15 w-full py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base disabled:opacity-50"
+          onClick={() => {
+            if (existingLink?.id) {
+              updateLinkMutation.mutate(
+                { linkId: existingLink.id, payload: { url, label: title } },
+                { onSuccess: () => onClose() }
+              );
+            }
+          }}
+          disabled={updateLinkMutation.isPending}
+        >
+          {updateLinkMutation.isPending ? "Saving..." : "Save"}
+        </button>
       </div>
     </div>
   );

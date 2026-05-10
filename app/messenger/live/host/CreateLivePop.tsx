@@ -116,9 +116,9 @@ function CoHostSelectionPopup({
   };
 
   return (
-    <div className="bg-white rounded-lg w-[450px] max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-lg w-full mx-4 sm:w-[450px] sm:mx-0 max-h-[90vh] overflow-y-auto">
       {/* Header */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -135,12 +135,12 @@ function CoHostSelectionPopup({
       </div>
 
       {/* Co-host List */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div className="space-y-3 mb-6">
           {coHosts.map((host) => (
             <div key={host.id} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-300 rounded-full overflow-hidden">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-300 rounded-full overflow-hidden">
                   <Image
                     src={host.avatar}
                     alt={host.name}
@@ -150,8 +150,8 @@ function CoHostSelectionPopup({
                   />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{host.name}</p>
-                  <p className="text-sm text-gray-500">{host.phone}</p>
+                  <p className="font-medium text-gray-900 text-sm sm:text-base">{host.name}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">{host.phone}</p>
                 </div>
               </div>
               <button
@@ -182,7 +182,7 @@ function CoHostSelectionPopup({
       </div>
 
       {/* Footer */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <button
           onClick={handleSelect}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full font-medium transition-colors"
@@ -248,7 +248,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
 
   if (showCoHostSelection) {
     return (
-      <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <CoHostSelectionPopup
           onBack={() => setShowCoHostSelection(false)}
           onSelect={handleCoHostSelect}
@@ -259,10 +259,10 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-[450px] max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-[450px] sm:w-[450px] max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <div className="flex items-center gap-3 mb-2">
             <button
               type="button"
@@ -272,8 +272,8 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
             >
               <X size={24} />
             </button>
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-semibold">Go live!</h2>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <h2 className="text-lg sm:text-xl font-semibold">Go live!</h2>
               <Image
                 src="/live.png"
                 alt="Live"
@@ -285,16 +285,16 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
           </div>
         </div>
 
-        <div className="p-5 space-y-6">
+        <div className="p-4 sm:p-5 space-y-4 sm:space-y-6">
           {/* Visibility Section */}
           <div>
-            <p className="text-gray-700 mb-3">Who can see my live!</p>
+            <p className="text-gray-700 mb-3 text-sm sm:text-base">Who can see my live!</p>
             <div className="relative">
               <button
                 onClick={() => setShowVisibilityPopover(!showVisibilityPopover)}
                 className="w-full border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
               >
-                <span>{visibility}</span>
+                <span className="text-sm sm:text-base">{visibility}</span>
                 <ChevronRight size={20} className="text-gray-400" />
               </button>
               {showVisibilityPopover && (
@@ -308,7 +308,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
                           setVisibility(option);
                           setShowVisibilityPopover(false);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm sm:text-base"
                       >
                         {option}
                       </button>
@@ -321,13 +321,13 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
 
           {/* Description Section */}
           <div>
-            <p className="text-blue-700 mb-1">What do you want to talk about</p>
+            <p className="text-blue-700 mb-1 text-sm sm:text-base">What do you want to talk about</p>
             <div className="border rounded-lg p-3">
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full resize-none border-none outline-none mb-2"
-                rows={2}
+                className="w-full resize-none border-none outline-none mb-2 text-sm sm:text-base"
+                rows={3}
                 placeholder="What do you want to talk about"
                 aria-label="Live session description"
               />
@@ -340,7 +340,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
                 >
                   <Smile size={20} />
                 </button>
-                <span className="text-gray-400 text-sm">
+                <span className="text-gray-400 text-xs sm:text-sm">
                   {description.length}/100
                 </span>
               </div>
@@ -352,7 +352,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
                         type="button"
                         key={index}
                         onClick={() => addEmoji(emoji)}
-                        className="text-xl hover:bg-gray-100 p-2 rounded"
+                        className="text-lg sm:text-xl hover:bg-gray-100 p-1 sm:p-2 rounded"
                         aria-label={`Add ${emoji} emoji`}
                       >
                         {emoji}
@@ -366,11 +366,11 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
 
           {/* Add Co-host Section */}
           <div>
-            <p className="text-gray-700 mb-3">Add Co host</p>
-            <div className="flex items-center gap-4 flex-wrap">
+            <p className="text-gray-700 mb-3 text-sm sm:text-base">Add Co host</p>
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               {selectedCoHosts.map((host) => (
                 <div key={host.id} className="relative">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full overflow-hidden">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-300 rounded-full overflow-hidden">
                     <Image
                       src={host.avatar}
                       alt={host.name}
@@ -382,17 +382,17 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
                   <button
                     type="button"
                     onClick={() => removeCoHost(host.id)}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center"
                     aria-label={`Remove ${host.name}`}
                   >
-                    <X className="text-white" size={12} />
+                    <X className="text-white" size={10} />
                   </button>
                 </div>
               ))}
               <button
                 type="button"
                 onClick={() => setShowCoHostSelection(true)}
-                className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-lg sm:text-xl"
                 aria-label="Add co-host"
               >
                 +
@@ -405,7 +405,7 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
           {/* Schedule Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-700">Schedule your live</p>
+              <p className="text-gray-700 text-sm sm:text-base">Schedule your live</p>
               <button
                 type="button"
                 onClick={() => setIsScheduled(!isScheduled)}
@@ -423,8 +423,8 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
             </div>
 
             {isScheduled && (
-              <div className="flex gap-4 justify-between">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex-1">
                   <input
                     type="date"
                     value={
@@ -433,16 +433,16 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
                     onChange={(e) =>
                       setScheduledDate(e.target.value || "DD - MM - YYYY")
                     }
-                    className="w-full border rounded-full px-4 py-2 bg-gray-100"
+                    className="w-full border rounded-full px-4 py-2 bg-gray-100 text-sm sm:text-base"
                     aria-label="Select date"
                   />
                 </div>
-                <div className="relative">
+                <div className="flex-1">
                   <input
                     type="time"
                     value={scheduledTime === "8:00" ? "" : scheduledTime}
                     onChange={(e) => setScheduledTime(e.target.value || "8:00")}
-                    className="w-full border rounded-full px-4 py-2 bg-gray-100"
+                    className="w-full border rounded-full px-4 py-2 bg-gray-100 text-sm sm:text-base"
                     aria-label="Select time"
                   />
                 </div>
@@ -452,11 +452,11 @@ export function CreateLivePopup({ onClose, onGoLive }: CreateLivePopupProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t">
+        <div className="p-4 sm:p-6 border-t">
           <button
             type="button"
             onClick={handleGoLive}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full font-medium transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-full font-medium transition-colors text-sm sm:text-base"
           >
             Go live
           </button>

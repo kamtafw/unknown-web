@@ -3,17 +3,61 @@
 import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  useConfirmPassword,
+  useGenerateTotp,
+} from "@/services/auth/useUserAuthService";
+import { useAuthStore } from "@/store/userStore";
+import { toast } from "sonner";
 
 interface GoogleAuthenticatorPageProps {
   onBack: () => void;
-  onNext: () => void;
+  onNext: (secret: string, otpAuthUrl: string) => void;
 }
 
-export default function GoogleAuthenticatorPage({ onBack, onNext }: GoogleAuthenticatorPageProps) {
+export default function GoogleAuthenticatorPage({
+  onBack,
+  onNext,
+}: GoogleAuthenticatorPageProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const confirmPasswordMutation = useConfirmPassword();
+  const generateTotpMutation = useGenerateTotp();
+  const user = useAuthStore((state) => state.user);
+  const userEmail = user?.user?.email || user?.email;
 
-   return (
+  const handleContinue = () => {
+    if (!password) {
+      toast.error("Please enter your password", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+
+    if (!userEmail) {
+      toast.error("User email not found", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+
+    confirmPasswordMutation.mutate(
+      { password },
+      {
+        onSuccess: () => {
+          generateTotpMutation.mutate(userEmail, {
+            onSuccess: (data) => {
+              if (data?.data?.secret && data?.data?.otp_auth_url) {
+                onNext(data.data.secret, data.data.otp_auth_url);
+              }
+            },
+          });
+        },
+      }
+    );
+  };
+
+  return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
       <div className="w-full max-w-[546px] h-[796px] max-h-[100vh] bg-white text-black overflow-auto shadow-md rounded-lg border border-gray-200">
         <div className="sticky top-0 bg-white/80 backdrop-blur-sm z-10">
@@ -29,12 +73,18 @@ export default function GoogleAuthenticatorPage({ onBack, onNext }: GoogleAuthen
           </div>
         </div>
         <div className="px-2 sm:px-4 py-3 flex flex-col">
-          <h2 className="mt-4 text-lg font-semibold text-[16px]">Enter your password</h2>
+          <h2 className="mt-4 text-lg font-semibold text-[16px]">
+            Enter your password
+          </h2>
           <p className="mt-2 text-sm text-gray-500 text-[14px]">
-            To get started, first enter you Appscombo password to confirm its really you.
+            To get started, first enter you Appscombo password to confirm its
+            really you.
           </p>
           <div className="mt-4 relative">
-            <Lock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            <Lock
+              size={20}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            />
             <input
               type={showPassword ? "text" : "password"}
               value={password}
@@ -48,15 +98,25 @@ export default function GoogleAuthenticatorPage({ onBack, onNext }: GoogleAuthen
               type="button"
               tabIndex={-1}
             >
-              {showPassword ? <EyeOff size={20} className="text-gray-500" /> : <Eye size={20} className="text-gray-500" />}
+              {showPassword ? (
+                <EyeOff size={20} className="text-gray-500" />
+              ) : (
+                <Eye size={20} className="text-gray-500" />
+              )}
             </button>
           </div>
           <Button
-            onClick={onNext}
-            disabled={!password}
+            onClick={handleContinue}
+            disabled={
+              !password ||
+              confirmPasswordMutation.isPending ||
+              generateTotpMutation.isPending
+            }
             className="mt-120 mb-4 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Continue
+            {confirmPasswordMutation.isPending || generateTotpMutation.isPending
+              ? "Loading..."
+              : "Continue"}
           </Button>
         </div>
       </div>

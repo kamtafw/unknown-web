@@ -3,6 +3,7 @@
 import { ArrowLeft, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useConfirmPassword } from "@/services/account/useAccountService";
 
 interface ChangeNumberPage2Props {
   onBack: () => void;
@@ -12,6 +13,19 @@ interface ChangeNumberPage2Props {
 export default function ChangeNumberPage2({ onBack, onNext }: ChangeNumberPage2Props) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
+  const { mutate: confirmPassword, isPending } = useConfirmPassword();
+
+  const handleContinue = () => {
+    confirmPassword(
+      { password },
+      {
+        onSuccess: () => {
+          onNext();
+        },
+      }
+    );
+  };
 
   return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
@@ -39,6 +53,11 @@ export default function ChangeNumberPage2({ onBack, onNext }: ChangeNumberPage2P
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
               className="w-full pl-10 pr-10 py-4 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && password) {
+                  handleContinue();
+                }
+              }}
             />
             <button
               onClick={() => setShowPassword(!showPassword)}
@@ -50,11 +69,11 @@ export default function ChangeNumberPage2({ onBack, onNext }: ChangeNumberPage2P
             </button>
           </div>
           <Button
-            onClick={onNext}
-            disabled={!password}
+            onClick={handleContinue}
+            disabled={!password || isPending}
             className="mt-125 sm:mt-125 mb-4 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >
-            Continue
+            {isPending ? "Verifying..." : "Continue"}
           </Button>
         </div>
       </div>

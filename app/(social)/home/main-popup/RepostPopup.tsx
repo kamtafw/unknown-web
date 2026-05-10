@@ -11,11 +11,11 @@ import {
   Hash,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import TagPopup from "../../create-post/TagPopup";
 
 interface RepostPopupProps {
   onClose: () => void;
+  onRepost: (postId: number) => void;
   post: {
     id: number;
     name: string;
@@ -23,31 +23,33 @@ interface RepostPopupProps {
     time: string;
     location: string;
     content: string;
-    image: string;
+    media: string[];
     profilePic: string;
   };
 }
 
-export default function RepostPopup({ onClose, post }: RepostPopupProps) {
-  const router = useRouter();
+export default function RepostPopup({
+  onClose,
+  onRepost,
+  post,
+}: RepostPopupProps) {
   const [showQuotePopup, setShowQuotePopup] = useState(false);
   const [showTagPopup, setShowTagPopup] = useState(false);
 
   const handleRepost = () => {
-    window.dispatchEvent(
-      new CustomEvent("repost", { detail: { postId: post.id } })
-    );
+    onRepost(post.id);
     onClose();
-    router.push("/home");
   };
 
   if (showTagPopup) {
-    return <TagPopup 
-  onClose={() => setShowTagPopup(false)} 
-  onTagSelect={(tag) => {
-    console.log('Selected tag:', tag);
-  }}
-/>;
+    return (
+      <TagPopup
+        onClose={() => setShowTagPopup(false)}
+        onTagSelect={(tag) => {
+          console.log("Selected tag:", tag);
+        }}
+      />
+    );
   }
 
   if (showQuotePopup) {

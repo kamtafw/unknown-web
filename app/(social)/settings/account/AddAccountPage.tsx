@@ -11,25 +11,20 @@ interface AddAccountPageProps {
 }
 
 export default function AddAccountPage({ onBack }: AddAccountPageProps) {
-  const [selectedAccount, ] = useState("");
+  const [selectedAccount] = useState("");
   const [showUnlinkPopup, setShowUnlinkPopup] = useState(false);
-  const [unlinkAccount, setUnlinkAccount] = useState<{ id: string; username: string } | null>(null);
+  const [unlinkAccount, setUnlinkAccount] = useState<{
+    id: string;
+    username: string;
+  } | null>(null);
   const router = useRouter();
 
-  const accounts = [
-    {
-      id: "1",
-      username: "@Cameron_Williamson",
-      phone: "+234 123456789",
-      profilePic: "/placeholder-profile.png",
-    },
-    {
-      id: "2",
-      username: "@Jane_Doe",
-      phone: "+234 987654321",
-      profilePic: "/placeholder-profile.png",
-    },
-  ];
+  const accounts: {
+    id: string;
+    username: string;
+    phone: string;
+    profilePic: string;
+  }[] = [];
 
   const handleBack = () => {
     if (onBack) {
@@ -40,7 +35,7 @@ export default function AddAccountPage({ onBack }: AddAccountPageProps) {
   };
 
   const handleAddAnother = () => {
-    router.push("/login");
+    router.push("/");
   };
 
   const handleContinue = () => {
@@ -80,8 +75,12 @@ export default function AddAccountPage({ onBack }: AddAccountPageProps) {
             <div key={account.id} className="flex items-center gap-3 py-2">
               <div className="w-[40px] h-[40px] bg-gray-200 rounded-full overflow-hidden"></div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[16px]">{account.username}</p>
-                <p className="text-sm text-gray-500 text-[14px]">{account.phone}</p>
+                <p className="text-sm font-semibold text-[16px]">
+                  {account.username}
+                </p>
+                <p className="text-sm text-gray-500 text-[14px]">
+                  {account.phone}
+                </p>
               </div>
               <button
                 onClick={() => handleUnlinkClick(account)}

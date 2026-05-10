@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLogout } from "@/services/auth/useUserAuthService";
 import SettingsMainPage from "./SettingsMainPage";
 import AccountPage from "./account/AccountPage";
 import SecurityNotificationPage from "./account/SecurityNotificationPage";
@@ -50,6 +51,8 @@ import LiveLocationSharingPage from "./privacy/LiveLocationSharing";
 import ChatLockPage from "./privacy/ChatLock";
 import BlockedContactsPage from "./privacy/BlockedContact";
 import UnblockContactPopup from "./privacy/UnblockContactPopup";
+import { usePrivacyStore } from "@/store/privacyStore";
+import { useGetStatusVisibility } from "@/services/privacy/usePrivacyService";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -58,31 +61,19 @@ function SettingsContent() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
-  const [lastSeenText, setLastSeenText] = useState("Nobody, Same as last seen");
-  const [statusText, setStatusText] = useState("My contacts");
+  const { mutate: logout } = useLogout();
+  useGetStatusVisibility();
+  const [statusText, setStatusText] = useState("");
   const [groupText, setGroupText] = useState("Everyone");
-  const [blockedCount, setBlockedCount] = useState(9);
   const [selectedCount, setSelectedCount] = useState(0);
-  const [lastSeenPersonalInfo, setLastSeenPersonalInfo] = useState("");
-  const [lastSeenOnlineStatus] = useState("");
-  const [lastSeenExcludedCount, setLastSeenExcludedCount] =
-    useState<number>(47);
-  const [statusOption, setStatusOption] = useState("");
+  const [, setLastSeenExcludedCount] = useState<number>(47);
   const [statusExcludedCount, setStatusExcludedCount] = useState(47);
   const [statusIncludedCount, setStatusIncludedCount] = useState(47);
   const [groupOption, setGroupOption] = useState("");
   const [groupExcludedCount, setGroupExcludedCount] = useState<number>(47);
-
-  useEffect(() => {
-    console.log(
-      "Current activeView:",
-      activeView,
-      "Selected Index:",
-      selectedImageIndex,
-      "Blocked Count:",
-      blockedCount
-    );
-  }, [activeView, selectedImageIndex, blockedCount]);
+  const [createdPin, setCreatedPin] = useState<string>("");
+  const [totpSecret, setTotpSecret] = useState<string>("");
+  const [totpAuthUrl, setTotpAuthUrl] = useState<string>("");
 
   const handleViewChange = (
     view: string,
@@ -99,6 +90,10 @@ function SettingsContent() {
       setSelectedCount(count);
     }
   };
+
+  const statusVisibilityData = usePrivacyStore(
+    (state) => state.statusVisibilityData
+  );
 
   const handleBackToSettingsMain = () => {
     setActiveView("settingsMain");
@@ -180,12 +175,30 @@ function SettingsContent() {
     textUpdate: { type?: string; text?: string } = {}
   ) => {
     if (textUpdate.type && textUpdate.text) {
-      if (textUpdate.type === "lastSeen") setLastSeenText(textUpdate.text);
       if (textUpdate.type === "status") setStatusText(textUpdate.text);
       if (textUpdate.type === "group") setGroupText(textUpdate.text);
     }
     setActiveView("privacy");
   };
+
+  useEffect(() => {
+    if (statusVisibilityData) {
+      const visibility = statusVisibilityData.status_visibility;
+      const excludedCount = statusVisibilityData.except_users?.length || 0;
+      const includedCount =
+        statusVisibilityData.only_share_with_users?.length || 0;
+
+      if (visibility === "everyone") {
+        setStatusText("Everyone");
+      } else if (visibility === "my_contacts_except") {
+        setStatusText(`My contact except, ${excludedCount} excluded`);
+      } else if (visibility === "only_share_with") {
+        setStatusText(`Only share with, ${includedCount} included`);
+      } else if (visibility === "nobody") {
+        setStatusText("Nobody");
+      }
+    }
+  }, [statusVisibilityData]);
 
   return (
     <div className="flex flex-col md:flex-row justify-start mb-14">
@@ -202,7 +215,9 @@ function SettingsContent() {
           onProfileClick={() => handleViewChange("profile")}
         />
       )}
-      {activeView === "verification" && <VerificationPage onBack={handleBackToSettingsMain} />}
+      {activeView === "verification" && (
+        <VerificationPage onBack={handleBackToSettingsMain} />
+      )}
       {activeView === "account" && (
         <AccountPage
           onSecurityClick={() => handleViewChange("securityNotification")}
@@ -214,8 +229,8 @@ function SettingsContent() {
           onAddAccountClick={() => handleViewChange("addAccount")}
           onDeleteAccountClick={() => handleViewChange("deleteAccount")}
           onTimeZoneClick={() => handleViewChange("timeZone")}
-          onLogoutClick={() => handleViewChange("logout")}
-          onBack={handleBackToSettingsMain} // ADD this line
+          onLogoutClick={logout}
+          onBack={handleBackToSettingsMain}
         />
       )}
       {activeView === "alert" && (
@@ -239,31 +254,41 @@ function SettingsContent() {
       {activeView === "createPin" && (
         <CreatePinPage
           onBack={handleBackToTwoStepVerification}
-          onNext={() => handleViewChange("confirmPin")}
+          onNext={(pin: string) => {
+            setCreatedPin(pin);
+            handleViewChange("confirmPin");
+          }}
         />
       )}
       {activeView === "confirmPin" && (
         <ConfirmPinPage
           onBack={() => handleViewChange("createPin")}
-          onNext={handleBackToAccount}
+          onNext={handleBackToTwoStepVerification}
+          createdPin={createdPin}
         />
       )}
       {activeView === "googleAuthenticator" && (
         <GoogleAuthenticatorPage
           onBack={handleBackToTwoStepVerification}
-          onNext={() => handleViewChange("googleAuthenticator2")}
+          onNext={(secret: string, otpAuthUrl: string) => {
+            setTotpSecret(secret);
+            setTotpAuthUrl(otpAuthUrl);
+            handleViewChange("googleAuthenticator2");
+          }}
         />
       )}
       {activeView === "googleAuthenticator2" && (
         <GoogleAuthenticatorPage2
           onBack={handleBackToGoogleAuthenticator}
           onNext={() => handleViewChange("googleAuthenticator3")}
+          secret={totpSecret}
+          otpAuthUrl={totpAuthUrl}
         />
       )}
       {activeView === "googleAuthenticator3" && (
         <GoogleAuthenticatorPage3
           onBack={handleBackToGoogleAuthenticator2}
-          onNext={handleBackToAccount}
+          onNext={handleBackToTwoStepVerification}
         />
       )}
       {activeView === "changeNumber" && (
@@ -288,6 +313,8 @@ function SettingsContent() {
         <ChangeNumberPage4
           onBack={handleBackToChangeNumber3}
           onNext={handleBackToAccount}
+          oldNumber=""
+          newNumber=""
         />
       )}
       {activeView === "addAccount" && (
@@ -351,23 +378,19 @@ function SettingsContent() {
         <PrivacyPage
           onBack={handleBackToSettingsMain}
           onNavigate={handleViewChange}
-          lastSeenText={lastSeenText}
           statusText={statusText}
           groupText={groupText}
-          blockedCount={blockedCount}
         />
       )}
       {activeView === "liveLocation" && (
         <LiveLocationPage
           onBack={handleBackToPrivacy}
           onNavigate={handleViewChange}
+          onStartSharing={() => handleViewChange("liveLocationSharing")}
         />
       )}
       {activeView === "liveLocationSharing" && (
-        <LiveLocationSharingPage
-          onBack={handleBackToLiveLocation}
-          onStopSharing={handleBackToPrivacy}
-        />
+        <LiveLocationSharingPage onBack={handleBackToLiveLocation} />
       )}
       {activeView === "chatLock" && (
         <ChatLockPage onBack={handleBackToPrivacy} />
@@ -375,9 +398,9 @@ function SettingsContent() {
       {activeView === "blockedContacts" && (
         <BlockedContactsPage
           onBack={handleBackToPrivacy}
-          onNavigate={handleViewChange}
-          setBlockedCount={setBlockedCount}
-          blockedCount={blockedCount}
+          onNavigate={(view: string, selectedCount?: number) => {
+            handleViewChange(view, null, selectedCount);
+          }}
         />
       )}
       {activeView === "unblockContactPopup" && (
@@ -385,33 +408,18 @@ function SettingsContent() {
           onCancel={handleBackToPrivacy}
           onUnblock={handleBackToPrivacy}
           selectedCount={selectedCount}
-          setBlockedCount={setBlockedCount}
-          blockedCount={blockedCount}
         />
       )}
       {activeView === "lastSeen" && (
         <LastSeenOnlinePage
-          onBack={() =>
-            handleBackFromSubPage({ type: "lastSeen", text: lastSeenText })
-          }
+          onBack={handleBackToPrivacy}
           onNavigate={handleViewChange}
-          onUpdateText={(text) => setLastSeenText(text)}
-          initialPersonalInfo={lastSeenPersonalInfo}
-          initialOnlineStatus={lastSeenOnlineStatus}
-          initialExcludedCount={lastSeenExcludedCount}
         />
       )}
       {activeView === "myContactExcept" && (
         <MyContactExceptPage
           onBack={handleBackToLastSeen}
-          onUpdateText={(count) => {
-            setLastSeenText(
-              `My contact except, ${count} excluded, ${lastSeenOnlineStatus}`
-            );
-            setLastSeenPersonalInfo("My contact except");
-            setLastSeenExcludedCount(Number(count));
-          }}
-          initialCount={lastSeenExcludedCount}
+          onUpdateText={() => handleBackToLastSeen()}
           setExcludedCount={setLastSeenExcludedCount}
         />
       )}
@@ -423,9 +431,6 @@ function SettingsContent() {
           }
           onNavigate={handleViewChange}
           onUpdateText={(text) => setStatusText(text)}
-          initialOption={statusOption}
-          initialExcludedCount={statusExcludedCount}
-          initialIncludedCount={statusIncludedCount}
         />
       )}
       {activeView === "myContactExceptStatus" && (
@@ -435,7 +440,6 @@ function SettingsContent() {
           }
           onUpdateText={(count) => {
             setStatusText(`My contact except, ${count} excluded`);
-            setStatusOption("My contact except");
             setStatusExcludedCount(count);
           }}
           initialCount={statusExcludedCount}
@@ -449,7 +453,6 @@ function SettingsContent() {
           }
           onUpdateText={(count) => {
             setStatusText(`Only share with, ${count} included`);
-            setStatusOption("Only share with");
             setStatusIncludedCount(count);
           }}
           initialCount={statusIncludedCount}

@@ -3,6 +3,7 @@ import { Work_Sans } from "next/font/google";
 import "@/styles/globals.css";
 import ReactQueryProvider from "@/lib/react-query-provider";
 
+
 const workSans = Work_Sans({
   subsets: ["latin"],
   display: "swap",

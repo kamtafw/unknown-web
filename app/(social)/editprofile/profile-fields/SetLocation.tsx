@@ -1,24 +1,23 @@
 "use client";
 
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { useUpdateLocation } from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
 
 interface SetLocationPageProps {
   onBack: () => void;
   onSave: () => void;
 }
 
-export default function SetLocationPage({ onBack, onSave }: SetLocationPageProps) {
-  const [country, setCountry] = useState("Nigeria");
-  const [state, setState] = useState("Lagos");
-
-
-  const countries = ["Nigeria", "United States", "United Kingdom"];
-  const states: { [key: string]: string[] } = {
-    Nigeria: ["Lagos", "Abuja", "Rivers"],
-    "United States": ["California", "New York", "Texas"],
-    "United Kingdom": ["London", "Manchester", "Birmingham"],
-  };
+export default function SetLocationPage({
+  onBack,
+  onSave,
+}: SetLocationPageProps) {
+  const user = useAuthStore((state) => state.user?.user);
+  const [country, setCountry] = useState(user?.country || "Nigeria");
+  const [state, setState] = useState(user?.state || "Lagos");
+  const updateLocationMutation = useUpdateLocation();
 
   return (
     <div className="flex justify-center  mb-4 lg:ml-3  lg:mb-14">
@@ -36,59 +35,46 @@ export default function SetLocationPage({ onBack, onSave }: SetLocationPageProps
         <div className=" mt-7 px-3 py-3 sm:px-4 sm:py-4">
           <div className="mb-4">
             <label
-              htmlFor="country-select"
+              htmlFor="country-input"
               className="block text-gray-900 text-sm sm:text-base font-semibold mb-2"
             >
               Country
             </label>
-            <div className="relative">
-              <select
-                id="country-select"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base appearance-none bg-white"
-              >
-                {countries.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-            </div>
+            <input
+              id="country-input"
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Enter your country"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#6A88D1]"
+            />
+
             <label
-              htmlFor="state-select"
+              htmlFor="state-input"
               className="block text-gray-900 text-sm sm:text-base font-semibold mb-2 mt-4"
             >
               State
             </label>
-            <div className="relative">
-              <select
-                id="state-select"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base appearance-none bg-white"
-              >
-                {states[country]?.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-            </div>
+            <input
+              id="state-input"
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="Enter your state"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#6A88D1]"
+            />
           </div>
           <button
-            onClick={onSave}
-            className=" mt-160 md:mt-170 w-full h-[30px] py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base"
+            onClick={() => {
+              updateLocationMutation.mutate(
+                { country, state },
+                { onSuccess: () => onSave() }
+              );
+            }}
+            disabled={updateLocationMutation.isPending}
+            className=" mt-160 md:mt-170 w-full h-[30px] py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm sm:text-base disabled:opacity-50"
           >
-            Save
+            {updateLocationMutation.isPending ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

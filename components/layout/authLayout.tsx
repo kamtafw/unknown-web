@@ -7,9 +7,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className={`flex flex-col min-h-screen mx-auto`}>
+    <main className={`flex flex-col mx-auto`}>
       <AuthScreenHeader />
-      <section className="mx-auto flex items-center justify-center w-full flex-1 px-[24px]">
+      <section className="mx-auto flex items-center justify-center w-full mt-5 px-[4px]">
         {children}
       </section>
     </main>

@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { ArrowLeft, User } from "lucide-react";
+import { useUpdateName } from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
 
 interface EditNamePageProps {
   onBack: () => void;
 }
 
 export default function EditNamePage({ onBack }: EditNamePageProps) {
-  const [firstName, setFirstName] = useState("Cameron");
-  const [lastName, setLastName] = useState("Williamson");
+  const user = useAuthStore((state) => state.user?.user);
+  const [firstName, setFirstName] = useState(user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.last_name || "");
+  const updateNameMutation = useUpdateName();
 
   return (
     <div className="w-full max-w-[530px] min-h-[auto] bg-white text-[#111827] overflow-auto shadow-md lg:w-[546px] lg:h-[796px]">
@@ -23,7 +27,10 @@ export default function EditNamePage({ onBack }: EditNamePageProps) {
           <h2 className="text-base font-bold sm:text-lg">Change name</h2>
         </div>
         <div className="mb-4 mt-4 sm:mt-5">
-          <label htmlFor="first-name" className="block mb-2 text-sm sm:text-base">
+          <label
+            htmlFor="first-name"
+            className="block mb-2 text-sm sm:text-base"
+          >
             First name
           </label>
           <div className="flex items-center border border-gray-300 rounded-md px-2 py-1 sm:px-3 sm:py-2">
@@ -37,11 +44,16 @@ export default function EditNamePage({ onBack }: EditNamePageProps) {
               maxLength={20}
               aria-label="First name"
             />
-            <span className="text-[#6B7280] text-xs sm:text-sm">{firstName.length}/20</span>
+            <span className="text-[#6B7280] text-xs sm:text-sm">
+              {firstName.length}/20
+            </span>
           </div>
         </div>
         <div className="mb-4">
-          <label htmlFor="last-name" className="block mb-2 text-sm sm:text-base">
+          <label
+            htmlFor="last-name"
+            className="block mb-2 text-sm sm:text-base"
+          >
             Last name
           </label>
           <div className="flex items-center border border-gray-300 rounded-md px-2 py-1 sm:px-3 sm:py-2">
@@ -55,7 +67,9 @@ export default function EditNamePage({ onBack }: EditNamePageProps) {
               maxLength={20}
               aria-label="Last name"
             />
-            <span className="text-[#6B7280] text-xs sm:text-sm">{lastName.length}/20</span>
+            <span className="text-[#6B7280] text-xs sm:text-sm">
+              {lastName.length}/20
+            </span>
           </div>
         </div>
         <p className="text-[#6B7280] text-xs mb-4 mt-4 sm:text-sm sm:mt-5">
@@ -65,7 +79,13 @@ export default function EditNamePage({ onBack }: EditNamePageProps) {
           <button
             type="button"
             className="w-full max-w-[498px] bg-[#6A88D1] hover:bg-[#425483] text-white px-6 py-2 rounded-full font-bold text-base transition-colors sm:px-38 sm:py-3 sm:text-lg"
-            onClick={() => console.log()}
+            onClick={() => {
+              updateNameMutation.mutate(
+                { first_name: firstName, last_name: lastName },
+                { onSuccess: () => onBack() }
+              );
+            }}
+            disabled={updateNameMutation.isPending}
           >
             Save
           </button>

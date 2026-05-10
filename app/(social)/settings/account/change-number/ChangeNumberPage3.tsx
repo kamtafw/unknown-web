@@ -3,15 +3,34 @@
 import { ArrowLeft, Phone } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface ChangeNumberPage3Props {
   onBack: () => void;
-  onNext: () => void;
+  onNext: (oldNumber: string, newNumber: string) => void;
 }
 
 export default function ChangeNumberPage3({ onBack, onNext }: ChangeNumberPage3Props) {
   const [oldNumber, setOldNumber] = useState("");
   const [newNumber, setNewNumber] = useState("");
+
+  const handleContinue = () => {
+    if (!oldNumber.trim() || !newNumber.trim()) {
+      toast.error("Both phone numbers are required", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+
+    if (oldNumber === newNumber) {
+      toast.error("New number must be different from old number", {
+        style: { background: "red", color: "white" },
+      });
+      return;
+    }
+
+    onNext(oldNumber, newNumber);
+  };
 
   return (
     <div className="flex md:ml-3 justify-center sm:justify-start w-full">
@@ -35,8 +54,11 @@ export default function ChangeNumberPage3({ onBack, onNext }: ChangeNumberPage3P
             <input
               type="tel"
               value={oldNumber}
-              onChange={(e) => setOldNumber(e.target.value)}
-              placeholder="Enter old phone number"
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d+]/g, '');
+                setOldNumber(value);
+              }}
+              placeholder="e.g., +1234567890"
               className="w-full pl-10 py-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -46,13 +68,16 @@ export default function ChangeNumberPage3({ onBack, onNext }: ChangeNumberPage3P
             <input
               type="tel"
               value={newNumber}
-              onChange={(e) => setNewNumber(e.target.value)}
-              placeholder="Enter new phone number"
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d+]/g, '');
+                setNewNumber(value);
+              }}
+              placeholder="e.g., +1234567890"
               className="w-full pl-10 py-4 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <Button
-            onClick={onNext}
+            onClick={handleContinue}
             disabled={!oldNumber || !newNumber}
             className="mt-115 sm:mt-110 w-full max-w-[518px] h-[40px] rounded-md rounded-l-full rounded-r-full bg-[#6A88D1] hover:bg-[#425483]"
           >

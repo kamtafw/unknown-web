@@ -2,15 +2,32 @@
 
 import { X } from "lucide-react";
 import { useState } from "react";
+import { useUpdateDob } from "@/services/profile/useProfileService";
+import { useAuthStore } from "@/store/userStore";
+import { toast } from "sonner";
 
 interface SetDateOfBirthPopupProps {
   onClose: () => void;
 }
 
-export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProps) {
-  const [month, setMonth] = useState("Jan");
-  const [day, setDay] = useState("01");
-  const [year, setYear] = useState("2000");
+export default function SetDateOfBirthPopup({
+  onClose,
+}: SetDateOfBirthPopupProps) {
+  const user = useAuthStore((state) => state.user?.user);
+  const updateDobMutation = useUpdateDob();
+
+  const existingDob = user?.dob ? new Date(user.dob) : null;
+  const [month, setMonth] = useState(
+    existingDob
+      ? existingDob.toLocaleString("en-US", { month: "short" })
+      : "Jan"
+  );
+  const [day, setDay] = useState(
+    existingDob ? existingDob.getDate().toString().padStart(2, "0") : "01"
+  );
+  const [year, setYear] = useState(
+    existingDob ? existingDob.getFullYear().toString() : "2000"
+  );
 
   const months = [
     "Jan",
@@ -26,7 +43,9 @@ export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProp
     "Nov",
     "Dec",
   ];
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, "0"));
+  const days = Array.from({ length: 31 }, (_, i) =>
+    (i + 1).toString().padStart(2, "0")
+  );
   const years = Array.from({ length: 100 }, (_, i) => (2025 - i).toString());
 
   return (
@@ -44,7 +63,10 @@ export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProp
         </div>
         <div className="mt-4 flex gap-2">
           <div className="flex-1">
-            <label htmlFor="month-select" className="block text-sm font-semibold text-gray-900 mb-2">
+            <label
+              htmlFor="month-select"
+              className="block text-sm font-semibold text-gray-900 mb-2"
+            >
               Month
             </label>
             <select
@@ -61,7 +83,10 @@ export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProp
             </select>
           </div>
           <div className="flex-1">
-            <label htmlFor="day-select" className="block text-sm font-semibold text-gray-900 mb-2">
+            <label
+              htmlFor="day-select"
+              className="block text-sm font-semibold text-gray-900 mb-2"
+            >
               Day
             </label>
             <select
@@ -78,7 +103,10 @@ export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProp
             </select>
           </div>
           <div className="flex-1">
-            <label htmlFor="year-select" className="block text-sm font-semibold text-gray-900 mb-2">
+            <label
+              htmlFor="year-select"
+              className="block text-sm font-semibold text-gray-900 mb-2"
+            >
               Year
             </label>
             <select
@@ -95,11 +123,55 @@ export default function SetDateOfBirthPopup({ onClose }: SetDateOfBirthPopupProp
             </select>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="mt-4 w-full py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm"
+        {/* <button
+          onClick={() => {
+            const monthIndex = months.indexOf(month) + 1;
+            const dob = `${year}-${monthIndex
+              .toString()
+              .padStart(2, "0")}-${day}`;
+            updateDobMutation.mutate({ dob }, { onSuccess: () => onClose() });
+          }}
+          disabled={updateDobMutation.isPending}
+          className="mt-4 w-full py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm disabled:opacity-50"
         >
-          Save
+          {updateDobMutation.isPending ? "Saving..." : "Save"}
+        </button> */}
+        <button
+          onClick={() => {
+            const monthIndex = months.indexOf(month) + 1;
+            const dob = `${year}-${monthIndex
+              .toString()
+              .padStart(2, "0")}-${day}`;
+            const selectedDate = new Date(dob);
+            const today = new Date();
+            const age = today.getFullYear() - selectedDate.getFullYear();
+            const monthDiff = today.getMonth() - selectedDate.getMonth();
+            const dayDiff = today.getDate() - selectedDate.getDate();
+
+            // Check if date is in the future
+            if (selectedDate > today) {
+              toast.error("Date of birth cannot be in the future.", {
+                style: { background: "red", color: "white" },
+              });
+              return;
+            }
+
+            // Check if user is at least 13 years old
+            const actualAge =
+              age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
+            if (actualAge < 13) {
+              toast.error("You must be at least 13 years old.", {
+                style: { background: "red", color: "white" },
+              });
+              return;
+            }
+
+            updateDobMutation.mutate({ dob }, { onSuccess: () => onClose() });
+          }}
+          disabled={updateDobMutation.isPending}
+          className="mt-4 w-full py-2 bg-[#6A88D1] text-white rounded-full hover:bg-[#425483] text-sm disabled:opacity-50"
+        >
+          {updateDobMutation.isPending ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

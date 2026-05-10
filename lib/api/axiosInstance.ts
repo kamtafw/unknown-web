@@ -1,47 +1,59 @@
-import { useAuthStore } from '@/store/userStore';
-import axios from 'axios';
+import { useAuthStore } from "@/store/userStore";
+import axios from "axios";
 
 const apiUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
 export const axiosIsntanceAuth = axios.create({
   baseURL: apiUrl,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  //   withCredentials: true,
 });
 
 const axiosIstanceAuthenticated = axios.create({
   baseURL: apiUrl,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// axiosIstanceAuthenticated.interceptors.request.use((config) => {
-//     const user = useAuthStore.getState().user
-//       console.log('user state', user);
+axiosIstanceAuthenticated.interceptors.request.use(
+  (config) => {
+    const { accessToken } = useAuthStore.getState();
 
-//   if (user?.data) {
-//     config.headers.Authorization = `Bearer ${user?.data?.access_token}`;
-//   }
-//   return config;
-// });
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
 
-// export default axiosIstanceAuthenticated
-
-axiosIstanceAuthenticated.interceptors.request.use((config) => {
-  const { user } = useAuthStore.getState();
-
-  console.log('user state', user);
-
-  const token = user?.data?.access_token;
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  return config;
-});
+axiosIstanceAuthenticated.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const errorMessage = error.response?.data?.message || "";
+      
+      if (
+        errorMessage.includes("token not valid") ||
+        errorMessage.includes("Authentication credentials were not provided")
+      ) {
+        console.warn("⚠️ Token invalid - logging out");
+        
+        useAuthStore.getState().logout();
+        
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export default axiosIstanceAuthenticated;

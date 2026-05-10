@@ -76,7 +76,10 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen">
-      <div className="w-[480px] border-r bg-white overflow-hidden mr-6">
+      {/* Left Panel - Hidden on mobile when in active session */}
+      <div className={`w-full lg:w-[480px] lg:border-r bg-white overflow-hidden lg:mr-6 ${
+        (isListening || isHostingActive) ? 'hidden lg:block' : 'block'
+      }`}>
         {isHosting ? (
           <HostLive
             onStartHosting={handleStartHosting}
@@ -89,19 +92,19 @@ export default function Home() {
           />
         )}
       </div>
-      <div
-        className={`w-2/3 ${
-          isListening || isHostingActive
-            ? ""
-            : " flex flex-col items-center justify-center"
-        }`}
-      >
+
+      {/* Right Panel - Full width on mobile when active, hidden otherwise */}
+      <div className={`w-full lg:w-2/3 ${
+        isListening || isHostingActive
+          ? "block"
+          : "hidden lg:flex lg:flex-col lg:items-center lg:justify-center"
+      }`}>
         {isListening && sessionData ? (
           <LiveListening sessionData={sessionData} onLeave={handleLeave} />
         ) : isHostingActive && sessionData ? (
           <HostListeners sessionData={sessionData} onLeave={handleEndHosting} />
         ) : (
-          <>
+          <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center">
             <Image
               src="/appcombo.svg"
               alt="Logo"
@@ -112,7 +115,7 @@ export default function Home() {
             <p className="text-lg text-gray-600">
               You have not joined any live yet
             </p>
-          </>
+          </div>
         )}
       </div>
     </div>

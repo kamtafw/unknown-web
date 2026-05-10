@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useAddExternalLink } from "@/services/profile/useProfileService";
 
 interface AddLinkPageProps {
   onBack: () => void;
@@ -10,6 +11,7 @@ interface AddLinkPageProps {
 export default function AddLinkPage({ onBack }: AddLinkPageProps) {
   const [title, setTitle] = useState("My Portfolio");
   const [url, setUrl] = useState("https://");
+  const addLinkMutation = useAddExternalLink();
 
   return (
     <div className="w-full max-w-[530px] min-h-[auto] bg-white text-black overflow-auto shadow-md lg:w-[546px] lg:h-[796px]">
@@ -60,8 +62,14 @@ export default function AddLinkPage({ onBack }: AddLinkPageProps) {
         <div className="pt-10 sm:pt-[440px] items-center">
           <button
             type="button"
-            className="w-full max-w-[498px] bg-[#6A88D1] hover:bg-[#425483] text-white px-6 py-2 rounded-full font-bold text-base transition-colors sm:px-38 sm:py-3 sm:text-lg"
-            onClick={() => console.log()}
+            className="w-full max-w-[498px] bg-[#6A88D1] hover:bg-[#425483] text-white px-6 py-2 rounded-full font-bold text-base transition-colors sm:px-38 sm:py-3 sm:text-lg disabled:opacity-50"
+            onClick={() => {
+              addLinkMutation.mutate(
+                { url, label: title },
+                { onSuccess: () => onBack() }
+              );
+            }}
+            disabled={addLinkMutation.isPending}
           >
             Save
           </button>
