@@ -1,17 +1,41 @@
-appCombo/
+```text
+appscombo/
+├── lib/
+│   └── schemas.ts            # Zod schemas
 │
 ├── app/                      # App Router based routing
 │   ├── (auth)/               # Route groups for authentication pages
-│   │   └── login/page.tsx
+│   │   ├── login(sign-in)/page.tsx
+│   │   ├── sign-up/page.tsx
+│   │   ├── forgot-password/page.tsx
+│   │   └── create-new-password/page.tsx
+│   ├── (onboarding)/
+│   │   ├── verify/page.tsx
+│   │   ├── security-verification/page.tsx
+│   │   ├── complete-profile/page.tsx
+│   │   ├── interests/page.tsx
+│   │   └── friends-suggestion/page.tsx
 │   ├── dashboard/            # Protected routes
 │   │   └── page.tsx
 │   └── layout.tsx            # Root layout
 │
-├── components/              # Reusable components
+├── components/
 │   ├── ui/                  # Shadcn-generated components
 │   ├── layout/              # Layout-related components
 │   ├── shared/              # Common UI: buttons, cards, etc.
-│   └── auth/                # Auth-specific UI like LoginForm
+│   ├── auth/
+│   │   ├── sign-in.tsx
+│   │   ├── sign-up.tsx
+│   │   ├── forgot-password.tsx
+│   │   ├── create-new-password.tsx
+│   │   ├── terms-dialog.tsx
+│   │   └── success-dialog.tsx
+│   └── onboarding/
+│       ├── otp-verification.tsx
+│       ├── security-verification.tsx
+│       ├── complete-profile.tsx
+│       ├── choose-interests.tsx
+│       └── friends-suggestion.tsx
 │
 ├── hooks/                   # Reusable hooks
 │   ├── useAuth.ts           # Auth context hook (Lucia)
@@ -36,4 +60,4 @@ appCombo/
 ├── tailwind.config.ts
 ├── tsconfig.json
 └── next.config.js
-
+```

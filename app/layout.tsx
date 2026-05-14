@@ -1,6 +1,7 @@
+import "@/styles/globals.css";
+
 import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
-import "@/styles/globals.css";
 import ReactQueryProvider from "@/lib/react-query-provider";
 
 
@@ -13,7 +14,7 @@ const workSans = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "AppCombo",
+  title: "AppsCombo",
   description: "Social media network",
 };
 
