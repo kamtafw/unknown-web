@@ -1,26 +1,50 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { FormEvent, useState } from "react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
-import { signInSchema, SignUpValues, type SignInValues } from "@/lib/schemas"
+import { signUpSchema, SignUpValues } from "@/lib/schemas"
 import { EmailIcon, PadlockIcon } from "../shared/Icons"
 import { TermsDialog } from "./terms-dialog"
 import { SuccessDialog } from "./success-dialog"
 
-interface SignUpProps {
-	onSignIn?: () => void
-	onSuccess?: () => void
+export interface SignUpFormData {
+	email: string
+	phone: string
+	password: string
 }
 
-export function SignUp({ onSignIn, onSuccess }: SignUpProps) {
-	const [pending, setPending] = useState<SignUpValues | null>(null)
+interface SignUpProps {
+	onSuccess: (data: SignUpFormData) => void
+	isPending: boolean
+	onSignIn: () => void
+}
+
+export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) {
+	const [pendingData, setPendingData] = useState<SignUpFormData | null>(null)
+	const [showTerms, setShowTerms] = useState(false)
 	const [showSuccess, setShowSuccess] = useState(false)
 
-	const handleContinue = async () => {
-		// TODO: call API
-		setPending(null)
-		setShowSuccess(true)
+	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = signUpSchema.safeParse(raw)
+
+		if (!result.success) return
+
+		setPendingData({
+			email: result.data.email,
+			phone: result.data.phone,
+			password: result.data.password,
+		})
+		setShowTerms(true)
+	}
+
+	const handleTermsAccepted = () => {
+		setShowTerms(false)
+		if (pendingData) {
+			onSuccess(pendingData)
+		}
 	}
 
 	return (
@@ -31,7 +55,7 @@ export function SignUp({ onSignIn, onSuccess }: SignUpProps) {
 						Sign up to Appscombo
 					</h1>
 
-					<Form.Root className="flex flex-col gap-4">
+					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
 						{/* Email */}
 						<Form.Field name="email" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">Email Address</Form.Label>
@@ -130,8 +154,11 @@ export function SignUp({ onSignIn, onSuccess }: SignUpProps) {
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2">
-								Sign up
+							<button
+								disabled={isPending}
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2"
+							>
+								{isPending ? "Signing up..." : "Sign Up"}
 							</button>
 						</Form.Submit>
 
@@ -150,12 +177,12 @@ export function SignUp({ onSignIn, onSuccess }: SignUpProps) {
 			</div>
 
 			<TermsDialog
-				open={!!pending}
-				onOpenChange={(open) => !open && setPending(null)}
-				onContinue={handleContinue}
+				open={showTerms}
+				onOpenChange={(open) => !open && setShowTerms(false)}
+				onContinue={handleTermsAccepted}
 			/>
 
-			<SuccessDialog
+			{/* <SuccessDialog
 				open={showSuccess}
 				onOpenChange={setShowSuccess}
 				title="Sign up successful"
@@ -165,7 +192,7 @@ export function SignUp({ onSignIn, onSuccess }: SignUpProps) {
 					setShowSuccess(false)
 					onSuccess?.()
 				}}
-			/>
+			/> */}
 		</>
 	)
 }

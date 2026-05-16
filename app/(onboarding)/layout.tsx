@@ -11,6 +11,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
 						width={180}
 						height={35}
 						className="mr-2 object-contain"
+						priority
 					/>
 				</div>
 			</header>

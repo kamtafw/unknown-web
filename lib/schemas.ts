@@ -15,7 +15,7 @@ export const signInSchema = z.object({
 
 export const signUpSchema = z.object({
 	email: z.string().min(1, "Email is required").email("Enter a valid email address"),
-	phone_number: z
+	phone: z
 		.string()
 		.min(10, "Phone number is required")
 		.regex(/^\+?[\d\s\-().]+$/, "Enter a valid phone number"),

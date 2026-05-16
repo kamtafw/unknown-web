@@ -1,18 +1,33 @@
 "use client"
 
-import React from "react"
+import React, { FormEvent } from "react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
 import { EmailIcon, PadlockIcon } from "../shared/Icons"
-import type { SignInValues } from "@/lib/schemas"
+import { signInSchema, type SignInValues } from "@/lib/schemas"
 
 interface SignInProps {
-	onSignIn?: (data: SignInValues) => void
-	onForgotPassword?: () => void
-	onSignUp?: () => void
+	onSignIn: (data: SignInValues) => void
+	isPending: boolean
+	error?: string
+	onForgotPassword: () => void
+	onSignUp: () => void
 }
 
-export function SignIn({ onSignIn, onForgotPassword, onSignUp }: SignInProps) {
+export function SignIn({
+	onSignIn,
+	isPending = false,
+	error,
+	onForgotPassword,
+	onSignUp,
+}: SignInProps) {
+	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = signInSchema.safeParse(raw)
+		if (result.success) onSignIn(result.data)
+	}
+
 	return (
 		<div className="flex justify-center pt-20 px-4">
 			<div className="w-full max-w-110">
@@ -20,7 +35,7 @@ export function SignIn({ onSignIn, onForgotPassword, onSignUp }: SignInProps) {
 					Sign in to Appscombo
 				</h1>
 
-				<Form.Root className="flex flex-col gap-4">
+				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<Form.Field name="identifier" className="flex flex-col gap-1.5">
 						<Form.Label className="text-sm font-medium text-gray-800">Email or Phone</Form.Label>
 
@@ -86,9 +101,14 @@ export function SignIn({ onSignIn, onForgotPassword, onSignUp }: SignInProps) {
 						</button>
 					</div>
 
+					{error && <p className="text-xs text-destructive -mt-2">{error}</p>}
+
 					<Form.Submit asChild>
-						<button className="w-full h-12.5 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2">
-							Sign in
+						<button
+							disabled={isPending}
+							className="w-full h-12.5 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2"
+						>
+							{isPending ? "Signing in..." : "Sign in"}
 						</button>
 					</Form.Submit>
 

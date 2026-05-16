@@ -30,10 +30,21 @@ export function TermsDialog({ open, onOpenChange, onContinue }: TermsDialogProps
 					</Dialog.Close>
 
 					<div className="flex items-center justify-center mb-6">
-						<Image src="/logo.svg" alt="Appscombo logo" width={160} height={50} />
+						<Image
+							src="/logo.svg"
+							alt="Appscombo logo"
+							width={160}
+							height={50}
+							className="object-contain"
+							priority
+						/>
 					</div>
 
 					<Dialog.Title className="sr-only">Terms and Agreement</Dialog.Title>
+					<Dialog.Description className="sr-only">
+						Terms and agreement, with Privacy Policy
+					</Dialog.Description>
+
 					<p className="text-sm text-gray-700 text-center leading-relaxed mb-6">
 						By signing up with Appscombo, you have agreed to our{" "}
 						<a href="#" className="text-primary hover:underline font-medium">

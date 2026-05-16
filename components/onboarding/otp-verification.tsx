@@ -8,14 +8,16 @@ import { otpSchema } from "@/lib/schemas"
 const CODE_LENGTH = 6
 
 interface OTPVerificationProps {
-	email?: string
-	onVerify?: (code: string) => void
-	onResend?: () => void
-	onBack?: () => void
+	email: string
+	isPending: boolean
+	onVerify: (code: string) => void
+	onResend: () => void
+	onBack: () => void
 }
 
 export function OTPVerification({
-	email = "chiomachukwu@gmail.com",
+	email,
+	isPending,
 	onVerify,
 	onResend,
 	onBack,
@@ -24,7 +26,7 @@ export function OTPVerification({
 		e.preventDefault()
 		const raw = Object.fromEntries(new FormData(e.currentTarget))
 		const result = otpSchema.safeParse(raw)
-		if (result.success) onVerify?.(result.data.otp)
+		if (result.success) onVerify(result.data.otp)
 	}
 
 	return (
@@ -87,8 +89,11 @@ export function OTPVerification({
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-[#8892C4] hover:bg-[#7580B8] active:scale-[0.99]">
-								Verify Code
+							<button
+								disabled={isPending}
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-[#8892C4] hover:bg-[#7580B8] active:scale-[0.99]"
+							>
+								{isPending ? "Verifying" : "Verify Code"}
 							</button>
 						</Form.Submit>
 
