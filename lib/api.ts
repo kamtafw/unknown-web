@@ -1,9 +1,11 @@
 import {
 	ApiResponse,
+	FeedResponse,
 	FullUser,
 	LoginPayload,
 	LoginResponseData,
 	SignupPayload,
+	UsersListResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 } from "@/types/api"
@@ -37,4 +39,19 @@ export const userApi = {
 			if (!user) throw new Error("getMe returned empty data")
 			return user
 		}),
+
+	getUsersList: async (): Promise<UsersListResponse> =>
+		await apiClient.get<UsersListResponse>("/api/users/list").then((r) => r.data),
+}
+
+export const socialApi = {
+	getForYouFeed: async (page = 1): Promise<FeedResponse> =>
+		await apiClient.get<FeedResponse>(`/api/socials/for-you-feed?page=${page}`).then((r) => r.data),
+
+	getFollowingFeed: async (page = 1): Promise<FeedResponse> =>
+		await apiClient
+			.get<FeedResponse>(`/api/socials/following-feed?page=${page}`)
+			.then((r) => r.data),
+
+	getFeedByPath: (path: string) => apiClient.get<FeedResponse>(path).then((r) => r.data),
 }

@@ -1,0 +1,105 @@
+"use client"
+
+import { useUsersList } from "@/hooks/use-users"
+import { SuggestionUser } from "@/types/api"
+import { useState } from "react"
+import { Avatar, ScrollArea } from "radix-ui"
+
+function getInitials(firstName: string, lastName: string) {
+	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+}
+
+const AVATAR_COLORS = [
+	"bg-violet-200 text-violet-700",
+	"bg-blue-200 text-blue-700",
+	"bg-amber-200 text-amber-700",
+	"bg-green-200 text-green-700",
+	"bg-pink-200 text-pink-700",
+	"bg-teal-200 text-teal-700",
+	"bg-orange-200 text-orange-700",
+	"bg-indigo-200 text-indigo-700",
+]
+
+function Row({ user, index }: { user: SuggestionUser; index: number }) {
+	const [following, setFollowing] = useState(user.youFollowThisUser)
+	const colorCls = AVATAR_COLORS[index % AVATAR_COLORS.length]
+
+	return (
+		<div className="flex items-center gap-3 py-2.5">
+			<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
+				<Avatar.Image
+					src={user?.profile_photo}
+					alt={user ? `${user.first_name} ${user.last_name}` : ""}
+					className="w-full h-full object-cover"
+				/>
+				<Avatar.Fallback
+					className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
+				>
+					{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
+				</Avatar.Fallback>
+			</Avatar.Root>
+
+			<div className="flex-1 min-w-0">
+				<p className="text-sm font-semibold text-gray-900 truncate leading-tight">
+					{user.first_name && user.last_name
+						? `${user.first_name} ${user.last_name}`
+						: user.username}
+				</p>
+				<p className="text-xs text-gray-500 truncate">@{user.username}</p>
+			</div>
+
+			<button
+				className={
+					following
+						? "text-xs font-semibold px-4 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-red-300 hover:text-red-500 transition-colors disabled:opacity-50 whitespace-nowrap"
+						: "text-xs font-semibold px-4 py-1.5 rounded-full bg-[#8892C4] text-white hover:bg-[#7780b8] transition-colors disabled:opacity-50 whitespace-nowrap"
+				}
+			>
+				{following ? "Following" : "Follow"}
+			</button>
+		</div>
+	)
+}
+
+function SkeletonRow() {
+	return (
+		<div className="flex items-center gap-3 py-2.5 animate-pulse">
+			<div className="w-9 h-9 rounded-full bg-gray-200 shrink-0" />
+			<div className="flex-1 space-y-1.5">
+				<div className="h-3 bg-gray-200 rounded-full w-3/4" />
+				<div className="h-3 bg-gray-200 rounded-full w-1/2" />
+			</div>
+			<div className="w-16 h-7 bg-gray-200 rounded-full" />
+		</div>
+	)
+}
+
+export function FriendsSuggestion() {
+	const { data, isLoading } = useUsersList()
+	const users = data?.data.results ?? []
+
+	return (
+		<aside className="w-md shrink-0 flex flex-col bg-white rounded-t-2xl overflow-hidden">
+			<div className="px-4 pt-4 pb-3 shrink-0">
+				<h2 className="font-bold text-gray-900 text-sm">Friends suggestion</h2>
+			</div>
+
+			<div className="mx-4 border-t border-gray-100 shrink-0" />
+
+			<ScrollArea.Root className="flex-1 min-h-0 overflow-hidden">
+				<ScrollArea.Viewport className="w-full h-full">
+					<div className="flex flex-col px-3 py-1 divide-y divide-gray-50">
+						{isLoading ? (
+							[0, 1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)
+						) : users.length === 0 ? (
+							<p className="text-sm text-gray-500 py-4 px-1">No suggestions right now.</p>
+						) : (
+							users.map((u, i) => <Row key={u.id} user={u} index={i} />)
+						)}
+					</div>
+				</ScrollArea.Viewport>
+				<ScrollArea.Scrollbar orientation="vertical" className="hidden" />
+			</ScrollArea.Root>
+		</aside>
+	)
+}

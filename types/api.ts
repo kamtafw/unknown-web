@@ -5,7 +5,16 @@ export interface ApiResponse<T> {
 	data: T
 }
 
-// auth
+export interface PaginatedResponse<T> {
+	count: number
+	total_pages: number
+	limit: number
+	current: number
+	previous: string | null
+	next: string | null
+	results: T[]
+}
+
 export type OtpDefault = "email" | "pin" | "2fa"
 
 /** minimal user shape returned by login — enough to drive routing */
@@ -102,4 +111,139 @@ export interface VerifyOtpPayload {
 	otp: string
 	need_tokens?: boolean
 	need_otp_token?: boolean
+}
+
+export interface PostUser {
+	pkid: number
+	id: string
+	first_name: string
+	last_name: string
+	email: string
+	username: string
+	phone_number: string
+	profile_photo: string | null
+}
+
+export interface PostLocation {
+	pkid: number
+	id: string
+	longitude: string
+	latitude: string
+	address: string
+	created_at: string
+}
+
+export interface PostMedia {
+	external_url: string
+}
+
+/** original post (inside a repost)
+ * can be a Post or Comment depending on reposted_object_type
+ */
+export interface OriginalPost {
+	id: string
+	pkid: number | string
+	// post fields
+	content_text?: string | null
+	// comment fields
+	message?: string | null
+	uploaded_media?: string[]
+	comment_location?: {
+		latitude: number
+		longitude: number
+		address: string
+	}
+	comment_hashtagged?: string[]
+	replies?: unknown[]
+	user: PostUser
+	post_location: PostLocation[]
+	post_media: PostMedia[]
+	post_hashtagged: string[]
+	created_at: string
+}
+
+export type WhoCanSee = "EVERYONE" | "ONLY_FOLLOWERS"
+
+export type WhoCanReply =
+	| "EVERYONE"
+	| "ONLY_FOLLOWERS"
+	| "ACCOUNTS_YOU_FOLLOW"
+	| "VERIFIED_ACCOUNTS"
+	| "ONLY_ACCOUNTS_YOU_MENTION"
+
+export interface Post {
+	pkid: number
+	id: string
+	user: PostUser
+	content_text: string
+	is_shared: boolean | null
+	is_repost: boolean
+	is_pinned: boolean | null
+	reposted_object_type: "Comment" | "Post" | null
+	original_post: OriginalPost | null
+	bookmarked_by_me: boolean
+	liked_by_me: boolean
+	reposted_by_me: boolean
+	who_can_see: WhoCanSee
+	who_can_reply: WhoCanReply
+	created_at: string
+	updated_at: string
+	post_location: PostLocation[]
+	post_media: PostMedia[]
+	post_like_count: number
+	post_comment_count: number
+	repost_count: number
+	post_reaction: unknown[]
+	post_hashtagged: string[]
+	post_bookmarked: unknown[]
+	post_comment: unknown[]
+	post_liked: unknown[]
+	reposts: unknown[]
+}
+
+export interface PaginatedFeed {
+	count: number
+	total_pages: number
+	limit: number
+	current: number
+	previous: string | null
+	next: string | null
+	results: Post[]
+}
+
+export interface FeedResponse1 {
+	success: boolean
+	status_code: number
+	message: string
+	data: PaginatedFeed
+}
+
+export type FeedResponse = ApiResponse<PaginatedResponse<Post>>
+
+export interface SuggestionUser {
+	pkid: number
+	id: string
+	username: string
+	first_name: string
+	last_name: string
+	email: string
+	profile_photo: string
+	cover_photo: string
+	phone_number: string
+	youFollowThisUser: boolean
+	followsYou: boolean
+}
+
+export interface UsersListData {
+	count: number
+	next: string | null
+	previous: string | null
+	results: SuggestionUser[]
+}
+
+export interface UsersListResponse {
+	success: boolean
+	status_code: number
+	message: string | null
+	data: UsersListData
 }

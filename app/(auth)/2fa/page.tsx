@@ -37,7 +37,12 @@ const TwoFAPage = () => {
 			onVerify={(_method, code) => {
 				// TODO: all verification funnels through verify-otp for now
 				// when dedicated 2FA/PIN endpoints are added, branch on _method here
-				verifyOtp.mutate({ email: pendingAuth.email, otp: code })
+				verifyOtp.mutate({
+					email: pendingAuth.email,
+					otp: code,
+					need_tokens: true,
+					need_otp_token: true,
+				})
 			}}
 			onResend={(method) => {
 				if (method === "otp") {
