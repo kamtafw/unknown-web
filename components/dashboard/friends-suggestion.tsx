@@ -51,8 +51,8 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 			<button
 				className={
 					following
-						? "text-xs font-semibold px-4 py-1.5 rounded-full border border-gray-300 text-gray-600 hover:border-red-300 hover:text-red-500 transition-colors disabled:opacity-50 whitespace-nowrap"
-						: "text-xs font-semibold px-4 py-1.5 rounded-full bg-[#8892C4] text-white hover:bg-[#7780b8] transition-colors disabled:opacity-50 whitespace-nowrap"
+						? "text-xs font-semibold px-4 py-1.5 rounded-full border border-primary text-gray-600 hover:border-primary hover:text-primary transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
+						: "text-xs font-semibold px-4 py-1.5 rounded-full bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
 				}
 			>
 				{following ? "Following" : "Follow"}

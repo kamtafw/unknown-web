@@ -53,7 +53,7 @@ export function TopBar() {
 					<button
 						key={label}
 						title={label}
-						className="w-11.5 h-11.5 rounded-full flex items-center justify-center text-gray-500 border-[1.5px] border-gray-100 hover:bg-gray-100 hover:text-[#8892C4] transition-colors"
+						className="w-11.5 h-11.5 rounded-full flex items-center justify-center text-gray-500 border-[1.5px] border-gray-100 hover:bg-gray-100 hover:text-primary transition-colors"
 					>
 						<Icon />
 					</button>
@@ -76,7 +76,7 @@ export function TopBar() {
 							alt={user ? `${user.first_name} ${user.last_name}` : ""}
 							className="w-full h-full object-cover"
 						/>
-						<Avatar.Fallback className="w-full h-full bg-[#8892C4] text-white text-xs font-semibold flex items-center justify-center">
+						<Avatar.Fallback className="w-full h-full bg-primary text-white text-xs font-semibold flex items-center justify-center">
 							{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
 						</Avatar.Fallback>
 					</Avatar.Root>

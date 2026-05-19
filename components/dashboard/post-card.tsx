@@ -49,7 +49,7 @@ function getInitials(first: string, last: string) {
 function renderText(text: string) {
 	return text.split(/([@#]\w+)/g).map((part, i) =>
 		/^[@#]/.test(part) ? (
-			<span key={i} className="text-[#8892C4] cursor-pointer hover:underline">
+			<span key={i} className="text-primary cursor-pointer hover:underline">
 				{part}
 			</span>
 		) : (
@@ -97,7 +97,7 @@ function UserAvatar({
 		<Avatar.Root className={`${dim} rounded-full overflow-hidden shrink-0`}>
 			<Avatar.Image src={src} alt={`${first} ${last}`} className="w-full h-full object-cover" />
 			<Avatar.Fallback
-				className={`w-full h-full bg-[#8892C4] text-white ${txt} font-semibold flex items-center justify-center`}
+				className={`w-full h-full bg-primary/45 text-accent ${txt} font-semibold flex items-center justify-center`}
 			>
 				{getInitials(first, last)}
 			</Avatar.Fallback>
@@ -150,7 +150,7 @@ function MediaGrid({ urls }: { urls: string[] }) {
 						)}
 						{isLast && (
 							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-								<span className="text-white text-2xl font-semibold">+{overflow}</span>
+								<span className="text-accent text-2xl font-semibold">+{overflow}</span>
 							</div>
 						)}
 					</div>
@@ -264,7 +264,7 @@ function ActionBar({
 					<span className="text-sm tabular-nums font-medium">{fmtCount(likes)}</span>
 				</button>
 
-				<button className="flex flex-1 flex-row items-center gap-1.5 hover:text-[#8892C4] transition-colors">
+				<button className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors">
 					<Comment />
 					<span className="text-sm tabular-nums">{fmtCount(comments)}</span>
 				</button>
@@ -276,11 +276,11 @@ function ActionBar({
 					}}
 					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
 				>
-					<Repost color={reposted ? "#8892C4" : undefined} />
+					<Repost color={reposted ? "#6A88D1" : undefined} />
 					<span className="text-sm tabular-nums">{fmtCount(reposts)}</span>
 				</button>
 
-				<button className="flex flex-1 flex-row items-center hover:text-[#8892C4] transition-colors">
+				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
 					<Share />
 				</button>
 			</div>
@@ -288,12 +288,12 @@ function ActionBar({
 			<div className="flex flex-row items-center gap-4 ml-auto">
 				<button
 					onClick={() => setBookmarked((v) => !v)}
-					className="flex items-center ml-auto transition-colors hover:text-[#8892C4]"
+					className="flex items-center ml-auto transition-colors hover:text-primary"
 				>
-					<Bookmark2 color={bookmarked ? "#8892C4" : undefined} bookmarked={bookmarked} />
+					<Bookmark2 color={bookmarked ? "#6A88D1" : undefined} bookmarked={bookmarked} />
 				</button>
 
-				<button className="flex flex-1 flex-row items-center hover:text-[#8892C4] transition-colors">
+				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
 					<Stats />
 				</button>
 			</div>
@@ -333,7 +333,7 @@ export function PostCard({ post }: { post: Post }) {
 	return (
 		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
 			{unquotedRepost && (
-				<div className="flex items-center gap-1.5 mb-3 text-[12px] text-gray-400 font-medium">
+				<div className="flex items-center gap-1.5 mb-3 text-xs text-gray-400 font-medium">
 					<Repost size={13} />
 					{isMyRepost ? "You" : repostName} reposted
 				</div>
@@ -346,7 +346,7 @@ export function PostCard({ post }: { post: Post }) {
 					last={displayPost.user.last_name}
 				/>
 				<div className="flex-1 min-w-0">
-					<span className="font-semibold text-[14px] text-gray-900">{fullname}</span>{" "}
+					<span className="font-semibold text-sm text-gray-900">{fullname}</span>{" "}
 					<span className="text-gray-500 text-[13.5px]">@{displayPost.user.username}</span>
 					<div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 overflow-hidden whitespace-nowrap">
 						<span className="shrink-0">{timeAgo}</span>

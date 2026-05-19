@@ -39,7 +39,7 @@ export function SignIn({
 					<Form.Field name="identifier" className="flex flex-col gap-1.5">
 						<Form.Label className="text-sm font-medium text-gray-800">Email or Phone</Form.Label>
 
-						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-[#8892C4] transition-colors data-invalid:border-red-400 data-invalid:border-2">
+						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-red-400 data-invalid:border-2">
 							<EmailIcon />
 							<Form.Control asChild>
 								<input
@@ -69,7 +69,7 @@ export function SignIn({
 					<Form.Field name="password" className="flex flex-col gap-1.5">
 						<Form.Label className="text-sm font-medium text-gray-800">Password</Form.Label>
 
-						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-[#8892C4] transition-colors">
+						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors">
 							<PasswordToggleField.Root>
 								<PadlockIcon />
 								<Form.Control asChild>
@@ -106,7 +106,7 @@ export function SignIn({
 					<Form.Submit asChild>
 						<button
 							disabled={isPending}
-							className="w-full h-12.5 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2"
+							className="w-full h-12.5 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2"
 						>
 							{isPending ? "Signing in..." : "Sign in"}
 						</button>

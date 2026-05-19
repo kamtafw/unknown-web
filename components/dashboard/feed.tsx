@@ -78,7 +78,7 @@ function FeedPanel({ feedType }: { feedType: "for-you" | "following" }) {
 			<div ref={sentinel} className="h-1" />
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-8">
-					<Loader2 size={20} className="animate-spin text-[#8892C4]" />
+					<Loader2 size={20} className="animate-spin text-primary" />
 				</div>
 			)}
 			{!hasNextPage && posts.length > 0 && (
@@ -111,7 +111,7 @@ export function Feed() {
 							<span
 								className="
                 absolute bottom-0 left-1/2 -translate-x-1/2
-                h-[2.5px] w-14 rounded-full bg-[#8892C4]
+                h-[2.5px] w-14 rounded-full bg-primary
                 scale-x-0 transition-transform duration-200
                 group-data-[state=active]:scale-x-100
               "

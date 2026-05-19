@@ -1,9 +1,8 @@
 "use client"
 
-import { apiClient } from "@/lib/axios"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Add, AI, Bookmark, Home, Invite, Logout, Settings } from "./icons"
 import { useLogout } from "@/hooks/use-auth"
 
@@ -32,7 +31,7 @@ export function Sidebar() {
 							className={cn(
 								"flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-150",
 								active
-									? "bg-[#8892C4] text-white shadow-sm shadow-[#8892C4]/25"
+									? "bg-primary text-white shadow-sm shadow-primary/25"
 									: "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
 							)}
 						>
