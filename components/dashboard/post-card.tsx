@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Repeat2, MoreHorizontal, MapPin } from "lucide-react"
+import { MoreHorizontal, MapPin } from "lucide-react"
 import { Avatar } from "radix-ui"
-import type { Post, OriginalPost } from "@/types/api"
+import type { Post, OriginalPost, OriginalComment } from "@/types/api"
 import { Like, Comment, Repost, Share, Bookmark2, Stats } from "./icons"
 import { useAuthStore } from "@/stores/auth-store"
+import { useTimeAgo } from "@/hooks/use-time-ago"
 
 function timeAgo(dateStr: string) {
 	const diff = Date.now() - new Date(dateStr).getTime()
@@ -57,6 +58,28 @@ function renderText(text: string) {
 	)
 }
 
+function isOriginalComment(
+	obj: OriginalPost | OriginalComment | null | undefined,
+): obj is OriginalComment {
+	return !!obj && "message" in obj
+}
+
+function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
+	if (isOriginalComment(original)) {
+		return {
+			message: original.message,
+			mediaUrls: original.uploaded_media,
+			replyCount: original.replies.length,
+		}
+	}
+
+	return {
+		message: original.content_text,
+		mediaUrls: original.post_media?.map((m) => m.external_url) ?? [],
+		replyCount: 0,
+	}
+}
+
 function UserAvatar({
 	src,
 	first,
@@ -82,22 +105,22 @@ function UserAvatar({
 	)
 }
 
-function MediaGrid({ media }: { media: { external_url: string }[] }) {
-	if (!media.length) return null
+function MediaGrid({ urls }: { urls: string[] }) {
+	if (!urls.length) return null
 
-	const types = media.map((m) => mediaType(m.external_url))
+	const types = urls.map((url) => mediaType(url))
 	if (types.every((t) => t === "audio")) {
 		return (
 			<div className="mt-3 flex flex-col gap-2">
-				{media.map((m, i) => (
-					<audio key={i} controls src={m.external_url} className="w-full" />
+				{urls.map((url, i) => (
+					<audio key={i} controls src={url} className="w-full" />
 				))}
 			</div>
 		)
 	}
 
-	const visible = media.slice(0, 4)
-	const overflow = media.length - 4
+	const visible = urls.slice(0, 4)
+	const overflow = urls.length - 4
 	const count = visible.length
 
 	return (
@@ -106,8 +129,8 @@ function MediaGrid({ media }: { media: { external_url: string }[] }) {
 				count === 1 ? "grid-cols-1" : count === 2 ? "grid-cols-2" : "grid-cols-2"
 			}`}
 		>
-			{visible.map((m, i) => {
-				const type = mediaType(m.external_url)
+			{visible.map((url, i) => {
+				const type = mediaType(url)
 				const isLast = i === count - 1 && overflow > 0
 				const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
 				const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
@@ -117,13 +140,13 @@ function MediaGrid({ media }: { media: { external_url: string }[] }) {
 						className={`relative overflow-hidden bg-gray-200 ${spanClass} ${aspectClass}`}
 					>
 						{type === "video" ? (
-							<video src={m.external_url} controls className="w-full h-full object-cover" />
+							<video src={url} controls className="w-full h-full object-cover" />
 						) : type === "audio" ? (
 							<div className="flex items-center justify-center h-full">
-								<audio controls src={m.external_url} className="w-5/6" />
+								<audio controls src={url} className="w-5/6" />
 							</div>
 						) : (
-							<img src={m.external_url} alt="" className="w-full h-full object-cover" />
+							<img src={url} alt="" className="w-full h-full object-cover" />
 						)}
 						{isLast && (
 							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -137,13 +160,49 @@ function MediaGrid({ media }: { media: { external_url: string }[] }) {
 	)
 }
 
-// ─── Quoted / original post card ─────────────────────────────────────────────
+function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
+	const { message, mediaUrls } = normaliseCommentOriginal(comment)
+	const timeAgo = useTimeAgo(comment.created_at)
+	const fullname =
+		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
+		comment.user.username
 
-function QuotedPost({ post }: { post: OriginalPost }) {
-	const text = post.content_text ?? post.message ?? ""
-	const loc = post.post_location?.[0]
 	return (
-		<div className="mt-3 border border-gray-200 rounded-xl p-3.5 bg-gray-50/60">
+		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+			<div className="flex items-center gap-2 mb-2">
+				<UserAvatar
+					src={comment.user.profile_photo ?? undefined}
+					first={comment.user.first_name}
+					last={comment.user.last_name}
+					size="sm"
+				/>
+				<div className="flex min-w-0 items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+					<span className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
+						{fullname}
+					</span>
+					<span className="text-gray-500">@{comment.user.username}</span>
+					<span>•</span>
+					<span>{timeAgo}</span>
+				</div>
+			</div>
+
+			{!!message && (
+				<p className="text-[13px] text-gray-700 leading-relaxed">{renderText(message)}</p>
+			)}
+
+			<MediaGrid urls={mediaUrls} />
+		</div>
+	)
+}
+
+function QuotedPostCard({ post }: { post: OriginalPost }) {
+	const timeAgo = useTimeAgo(post.created_at)
+	const mediaUrls = post.post_media?.map((m) => m.external_url) ?? []
+	const fullname =
+		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
+
+	return (
+		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={post.user.profile_photo ?? undefined}
@@ -151,26 +210,24 @@ function QuotedPost({ post }: { post: OriginalPost }) {
 					last={post.user.last_name}
 					size="sm"
 				/>
-				<div className="min-w-0">
-					<p className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
-						{post.user.first_name} {post.user.last_name}
-					</p>
-					<p className="text-[11px] text-gray-500">@{post.user.username}</p>
+				<div className="flex min-w-0 items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+					<span className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
+						{fullname}
+					</span>
+					<span className="text-gray-500">@{post.user.username}</span>
+					<span>•</span>
+					<span>{timeAgo}</span>
 				</div>
 			</div>
-			{text && <p className="text-[13px] text-gray-700 leading-relaxed">{renderText(text)}</p>}
-			{loc && (
-				<p className="flex items-center gap-1 text-[11px] text-gray-400 mt-1">
-					<MapPin size={11} />
-					{shortAddress(loc.address)}
-				</p>
+
+			{!!post.content_text && (
+				<p className="text-[13px] text-gray-700 leading-relaxed">{renderText(post.content_text)}</p>
 			)}
-			{/* <MediaGrid media={post.post_media} /> */}
+
+			<MediaGrid urls={mediaUrls} />
 		</div>
 	)
 }
-
-// ─── Action bar ──────────────────────────────────────────────────────────────
 
 function ActionBar({
 	likes: initLikes,
@@ -245,19 +302,33 @@ function ActionBar({
 }
 
 export function PostCard({ post }: { post: Post }) {
-	const loc = post.post_location?.[0]
 	const user = useAuthStore((s) => s.user)
 
+	const isCommentRepost = post.reposted_object_type === "Comment"
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
 	const isMyRepost = post.user.pkid === user?.pkid
 
 	const displayPost = unquotedRepost ? (post.original_post as OriginalPost)! : post
+
+	const normalisedComment =
+		isCommentRepost && post.original_post ? normaliseCommentOriginal(post.original_post) : null
+	const displayText =
+		unquotedRepost && isCommentRepost
+			? (normalisedComment?.message ?? null)
+			: (displayPost.content_text ?? null)
+	const mediaUrls =
+		normalisedComment && unquotedRepost
+			? normalisedComment.mediaUrls
+			: ((displayPost as Post).post_media.map((m) => m.external_url) ?? [])
 
 	const fullname =
 		[displayPost.user.first_name, displayPost.user.last_name].filter(Boolean).join(" ") ||
 		displayPost.user.username
 	const repostName =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
+
+	const timeAgo = useTimeAgo(displayPost.created_at)
+	const address = !isCommentRepost ? (displayPost.post_location?.[0]?.address ?? "") : ""
 
 	return (
 		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
@@ -270,24 +341,19 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div className="flex items-start gap-3">
 				<UserAvatar
-					src={post.user.profile_photo ?? undefined}
-					first={post.user.first_name}
-					last={post.user.last_name}
+					src={displayPost.user.profile_photo ?? undefined}
+					first={displayPost.user.first_name}
+					last={displayPost.user.last_name}
 				/>
 				<div className="flex-1 min-w-0">
-					<span className="font-semibold text-[14px] text-gray-900">
-						{post.user.first_name} {post.user.last_name}
-					</span>{" "}
-					<span className="text-gray-500 text-[13.5px]">@{post.user.username}</span>
-					<div className="flex items-center gap-2 mt-0.5 text-[12px] text-gray-400 flex-wrap">
-						<span>{timeAgo(post.created_at)}</span>
-						{loc && (
+					<span className="font-semibold text-[14px] text-gray-900">{fullname}</span>{" "}
+					<span className="text-gray-500 text-[13.5px]">@{displayPost.user.username}</span>
+					<div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 overflow-hidden whitespace-nowrap">
+						<span className="shrink-0">{timeAgo}</span>
+						{address && (
 							<>
-								<span>•</span>
-								<span className="flex items-center gap-0.5">
-									<MapPin size={11} />
-									{shortAddress(loc.address)}
-								</span>
+								<span className="shrink-0">•</span>
+								<span className="truncate">{address}</span>
 							</>
 						)}
 					</div>
@@ -298,15 +364,21 @@ export function PostCard({ post }: { post: Post }) {
 			</div>
 
 			<div className="mt-2.5">
-				{post.content_text && (
-					<p className="text-[13.5px] text-gray-800 leading-relaxed">
-						{renderText(post.content_text)}
-					</p>
+				{!!displayText && (
+					<p className="text-[13.5px] text-gray-800 leading-relaxed">{renderText(displayText)}</p>
 				)}
 
-				{post.is_repost && post.original_post && <QuotedPost post={post.original_post} />}
+				{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
 
-				{!post.is_repost && <MediaGrid media={post.post_media} />}
+				{!unquotedRepost && post.original_post && (
+					<div>
+						{isOriginalComment(post.original_post) ? (
+							<QuotedCommentCard comment={post.original_post} />
+						) : (
+							<QuotedPostCard post={post.original_post} />
+						)}
+					</div>
+				)}
 
 				<ActionBar
 					likes={post.post_like_count}

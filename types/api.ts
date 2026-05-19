@@ -143,23 +143,26 @@ export interface PostMedia {
 export interface OriginalPost {
 	id: string
 	pkid: number | string
-	// post fields
-	content_text?: string | null
-	// comment fields
-	message?: string | null
-	uploaded_media?: string[]
-	comment_location?: {
-		latitude: number
-		longitude: number
-		address: string
-	}
-	comment_hashtagged?: string[]
-	replies?: unknown[]
+	content_text: string | null
 	user: PostUser
 	post_location: PostLocation[]
 	post_media: PostMedia[]
 	post_hashtagged: string[]
 	created_at: string
+}
+
+export interface OriginalComment {
+	id: string
+	pkid: number
+	user: PostUser
+	post: number /** pkid of the parent Post this comment belongs to */
+	message: string | null
+	uploaded_media: string[]
+	comment_location: PostLocation | null
+	comment_hashtagged: string[]
+	replies: OriginalComment[] /** The API embeds replies in full on this shape */
+	created_at: string
+	updated_at: string
 }
 
 export type WhoCanSee = "EVERYONE" | "ONLY_FOLLOWERS"
@@ -180,7 +183,7 @@ export interface Post {
 	is_repost: boolean
 	is_pinned: boolean | null
 	reposted_object_type: "Comment" | "Post" | null
-	original_post: OriginalPost | null
+	original_post: OriginalPost | OriginalComment | null
 	bookmarked_by_me: boolean
 	liked_by_me: boolean
 	reposted_by_me: boolean

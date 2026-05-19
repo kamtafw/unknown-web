@@ -159,7 +159,7 @@ export function Settings({ size = 24, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function Bookmark({ size= 24, color = "#111827" }: IconsProps) {
+export function Bookmark({ size = 24, color = "#111827" }: IconsProps) {
 	return (
 		<svg
 			width={size}
@@ -337,7 +337,7 @@ export function Comment({ size = 24 }: IconsProps) {
 	)
 }
 
-export function Repost({ size= 24, color }: IconsProps) {
+export function Repost({ size = 24, color }: IconsProps) {
 	return (
 		<svg
 			width={size}
@@ -426,11 +426,7 @@ export function Share({ size = 24 }: IconsProps) {
 	)
 }
 
-export function Bookmark2({
-	size= 24,
-	color,
-	bookmarked,
-}: IconsProps & { bookmarked: boolean }) {
+export function Bookmark2({ size = 24, color, bookmarked }: IconsProps & { bookmarked: boolean }) {
 	return (
 		<svg
 			width={size}
@@ -462,6 +458,27 @@ export function Stats({ size = 24 }: IconsProps) {
 				d="M21 22V14.5C21 14.1022 20.842 13.7206 20.5607 13.4393C20.2794 13.158 19.8978 13 19.5 13H16.5C16.1022 13 15.7206 13.158 15.4393 13.4393C15.158 13.7206 15 14.1022 15 14.5V22V5C15 3.586 15 2.879 14.56 2.44C14.122 2 13.415 2 12 2C10.585 2 9.879 2 9.44 2.44C9 2.878 9 3.585 9 5V22V9.5C9 9.10218 8.84196 8.72064 8.56066 8.43934C8.27936 8.15804 7.89782 8 7.5 8H4.5C4.10218 8 3.72064 8.15804 3.43934 8.43934C3.15804 8.72064 3 9.10218 3 9.5V22"
 				stroke="#6A7282"
 				strokeWidth="1.5"
+			/>
+		</svg>
+	)
+}
+
+export function Bell({ size = 25, color }: IconsProps) {
+	return (
+		<svg
+			width={size * 0.85}
+			height={size}
+			viewBox="0 0 21 25"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<path
+				d="M18.1134 8.05032V8.85995C18.1134 9.83174 18.3894 10.7817 18.9092 11.5902L20.1835 13.5717C21.3462 15.3819 20.4583 17.8418 18.4354 18.4134C13.1495 19.9107 7.55159 19.9107 2.26567 18.4134C0.242732 17.8418 -0.645108 15.3819 0.517595 13.5717L1.79185 11.5902C2.31349 10.7752 2.59011 9.82757 2.58884 8.85995V8.05032C2.58884 3.60424 6.06429 0 10.3505 0C14.6368 0 18.1134 3.60424 18.1134 8.05032Z"
+				fill={color ?? "#313131"}
+			/>
+			<path
+				d="M4.87891 21.0273C5.25468 22.1821 5.98627 23.1884 6.96889 23.9019C7.95151 24.6155 9.13474 24.9998 10.3491 24.9998C11.5635 24.9998 12.7467 24.6155 13.7294 23.9019C14.712 23.1884 15.4436 22.1821 15.8193 21.0273C12.2024 21.7059 8.49697 21.7059 4.87891 21.0273Z"
+				fill={color ?? "#313131"}
 			/>
 		</svg>
 	)

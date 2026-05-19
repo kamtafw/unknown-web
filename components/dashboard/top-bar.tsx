@@ -1,10 +1,10 @@
 "use client"
 
 import { useAuthStore } from "@/stores/auth-store"
-import { Bell, ChevronRight, Search } from "lucide-react"
+import { ChevronRight, Search } from "lucide-react"
 import { Avatar } from "radix-ui"
 import Image from "next/image"
-import { Event, Marketplace, Message, Social } from "./icons"
+import { Bell, Event, Marketplace, Message, Social } from "./icons"
 
 const CATEGORY_ICONS = [
 	{ label: "Social", icon: Social },
@@ -63,7 +63,7 @@ export function TopBar() {
 			{/* User info */}
 			<div className="flex items-center gap-2 shrink-0">
 				<button className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-					<Bell size={22} strokeWidth={1.75} />
+					<Bell />
 					<span className="absolute top-1.5 right-1.5 w-4.5 h-4.5 bg-destructive text-white text-[9px] font-bold rounded-full flex items-center justify-center">
 						2
 					</span>
