@@ -83,7 +83,7 @@ export async function middleware(req: NextRequest) {
 
 		// refresh succeeded — forward the new Set-Cookie headers
 		const res = isPublic
-			? NextResponse.redirect(new URL("/dashboard", req.url))
+			? NextResponse.redirect(new URL("/home", req.url))
 			: NextResponse.next()
 
 		refreshRes.headers.getSetCookie().forEach((cookie) => {
@@ -95,7 +95,7 @@ export async function middleware(req: NextRequest) {
 
 	// case 3: valid token, visiting a public/auth route
 	if (accessToken && !isTokenExpired(accessToken) && isPublic) {
-		return NextResponse.redirect(new URL("/dashboard", req.url))
+		return NextResponse.redirect(new URL("/home", req.url))
 	}
 
 	// case 4: role-based access for admin routes
@@ -104,7 +104,7 @@ export async function middleware(req: NextRequest) {
 		const isAdministrator = payload?.is_administrator === true
 
 		if (!isAdministrator) {
-			return NextResponse.redirect(new URL("/dashboard", req.url))
+			return NextResponse.redirect(new URL("/home", req.url))
 		}
 	}
 

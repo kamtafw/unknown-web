@@ -5,11 +5,13 @@ import { useInfiniteQuery } from "@tanstack/react-query"
 export const feedKeys = {
 	forYou: ["feed", "for-you"] as const,
 	following: ["feed", "following"] as const,
+	bookmarks: ["feed", "bookmarks"] as const,
 }
 
 const feedBase = {
 	forYou: "/api/socials/for-you-feed" as const,
 	following: "/api/socials/following-feed" as const,
+	bookmarks: "/api/socials/bookmarks" as const,
 }
 
 function toPath(basePath: string, fullUrl: string): string {
@@ -49,6 +51,17 @@ export function useFollowingFeed(enabled = true) {
 			last.nextPage ? toPath(feedBase.following, last.nextPage) : undefined,
 		placeholderData: (prev) => prev,
 		enabled,
+	})
+}
+
+export function useBookmarks() {
+	return useInfiniteQuery({
+		queryKey: feedKeys.bookmarks,
+		queryFn: ({ pageParam }) => fetchFeed(pageParam as string),
+		initialPageParam: feedBase.bookmarks as string,
+		getNextPageParam: (last) =>
+			last.nextPage ? toPath(feedBase.bookmarks, last.nextPage) : undefined,
+		placeholderData: (prev) => prev,
 	})
 }
 

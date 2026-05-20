@@ -1,11 +1,11 @@
-interface IconsProps {
+interface IconProps {
 	height?: number
 	width?: number
 	size?: number
 	color?: string
 }
 
-export function Social({ size = 24, color = "#101828" }: IconsProps) {
+export function Social({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -26,7 +26,7 @@ export function Social({ size = 24, color = "#101828" }: IconsProps) {
 	)
 }
 
-export function Message({ height = 25, width = 29, color = "#101828" }: IconsProps) {
+export function Message({ height = 25, width = 29, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={width}
@@ -47,7 +47,7 @@ export function Message({ height = 25, width = 29, color = "#101828" }: IconsPro
 	)
 }
 
-export function Event({ size = 25, color = "#101828" }: IconsProps) {
+export function Event({ size = 25, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -64,7 +64,7 @@ export function Event({ size = 25, color = "#101828" }: IconsProps) {
 	)
 }
 
-export function Marketplace({ size = 25, color = "#101828" }: IconsProps) {
+export function Marketplace({ size = 25, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -113,7 +113,7 @@ export function Marketplace({ size = 25, color = "#101828" }: IconsProps) {
 	)
 }
 
-export function Home({ size = 24, color = "white" }: IconsProps) {
+export function Home({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -135,7 +135,7 @@ export function Home({ size = 24, color = "white" }: IconsProps) {
 	)
 }
 
-export function Settings({ size = 24, color = "#111827" }: IconsProps) {
+export function Settings({ size = 24, color = "#111827" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -159,7 +159,7 @@ export function Settings({ size = 24, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function Bookmark({ size = 24, color = "#111827" }: IconsProps) {
+export function Bookmark({ size = 24, color = "#111827" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -181,7 +181,7 @@ export function Bookmark({ size = 24, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function AI({ size = 24, color = "#111827" }: IconsProps) {
+export function AI({ size = 24, color = "#111827" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -221,7 +221,7 @@ export function AI({ size = 24, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function Invite({ size = 24, color = "#111827" }: IconsProps) {
+export function Invite({ size = 24, color = "#111827" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -252,7 +252,7 @@ export function Invite({ size = 24, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function Add({ size = 20, color = "#111827" }: IconsProps) {
+export function Add({ size = 20, color = "#111827" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -273,7 +273,7 @@ export function Add({ size = 20, color = "#111827" }: IconsProps) {
 	)
 }
 
-export function Logout({ size = 24, color = "#EA5757" }: IconsProps) {
+export function Logout({ size = 24, color = "#EA5757" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -297,7 +297,7 @@ export function Logout({ size = 24, color = "#EA5757" }: IconsProps) {
 	)
 }
 
-export function Like({ size = 24, color }: IconsProps) {
+export function Like({ size = 24, color }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -317,7 +317,7 @@ export function Like({ size = 24, color }: IconsProps) {
 	)
 }
 
-export function Comment({ size = 24 }: IconsProps) {
+export function Comment({ size = 24 }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -337,13 +337,13 @@ export function Comment({ size = 24 }: IconsProps) {
 	)
 }
 
-export function Repost({ size = 24, color }: IconsProps) {
+export function Repost({ size = 24, color }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
-			fill={color ?? "none"}
+			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -378,7 +378,7 @@ export function Repost({ size = 24, color }: IconsProps) {
 	)
 }
 
-export function Share({ size = 24 }: IconsProps) {
+export function Share({ size = 24 }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -426,7 +426,7 @@ export function Share({ size = 24 }: IconsProps) {
 	)
 }
 
-export function Bookmark2({ size = 24, color, bookmarked }: IconsProps & { bookmarked: boolean }) {
+export function Bookmark2({ size = 24, color, bookmarked }: IconProps & { bookmarked: boolean }) {
 	return (
 		<svg
 			width={size}
@@ -450,7 +450,7 @@ export function Bookmark2({ size = 24, color, bookmarked }: IconsProps & { bookm
 	)
 }
 
-export function Stats({ size = 24 }: IconsProps) {
+export function Stats({ size = 24 }: IconProps) {
 	return (
 		<svg width={size} height={size} viewBox="0 0 24 24" fill="none">
 			<path d="M22 22H2" stroke="#6A7282" strokeWidth="1.5" strokeLinecap="round" />
@@ -463,7 +463,7 @@ export function Stats({ size = 24 }: IconsProps) {
 	)
 }
 
-export function Bell({ size = 25, color }: IconsProps) {
+export function Bell({ size = 25, color }: IconProps) {
 	return (
 		<svg
 			width={size * 0.85}

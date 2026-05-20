@@ -6,8 +6,6 @@ import { Tabs } from "radix-ui"
 import { useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
 
-type Tab = "for-you" | "following"
-
 function PostSkeleton() {
 	return (
 		<div className="px-5 py-5 border-b border-gray-100 animate-pulse">
@@ -82,19 +80,21 @@ function FeedPanel({ feedType }: { feedType: "for-you" | "following" }) {
 				</div>
 			)}
 			{!hasNextPage && posts.length > 0 && (
-				<p className="text-center text-[11px] text-gray-400 py-8">You&rsquo;re all caught up 🎉</p>
+				<p className="text-center text-[11px] text-gray-400 py-8">•</p>
 			)}
 		</>
 	)
 }
 
 export function Feed() {
+	useForYouFeed()
+
 	return (
 		<Tabs.Root
 			defaultValue="for-you"
 			className="flex-1 min-w-0 flex flex-col bg-white rounded-t-2xl border border-gray-100 min-h-0 overflow-hidden pb-0"
 		>
-			<div className="bg-white rounded-t-2xl border-b border-gray-100 shrink-0">
+			<div className="bg-white px-2 rounded-t-2xl border-b border-gray-100 shrink-0">
 				<Tabs.List className="flex">
 					{(["for-you", "following"] as const).map((tab) => (
 						<Tabs.Trigger
@@ -121,7 +121,10 @@ export function Feed() {
 				</Tabs.List>
 			</div>
 
-			<div id="feed-scroll" className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
+			<div
+				id="feed-scroll"
+				className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none"
+			>
 				<Tabs.Content value="for-you" className="focus:outline-none">
 					<FeedPanel feedType="for-you" />
 				</Tabs.Content>

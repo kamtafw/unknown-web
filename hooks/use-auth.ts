@@ -106,7 +106,7 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			if (flow === "signup") {
 				router.push("/complete-profile")
 			} else {
-				router.push("/dashboard")
+				router.push("/home")
 			}
 		},
 	})

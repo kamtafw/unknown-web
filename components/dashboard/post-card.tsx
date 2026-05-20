@@ -7,23 +7,12 @@ import type { Post, OriginalPost, OriginalComment } from "@/types/api"
 import { Like, Comment, Repost, Share, Bookmark2, Stats } from "./icons"
 import { useAuthStore } from "@/stores/auth-store"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 
-function timeAgo(dateStr: string) {
-	const diff = Date.now() - new Date(dateStr).getTime()
-	const m = Math.floor(diff / 60_000)
-	const h = Math.floor(diff / 3_600_000)
-	const d = Math.floor(diff / 86_400_000)
-	if (m < 1) return "just now"
-	if (m < 60) return `${m} ${m === 1 ? "Minute" : "Minutes"} ago`
-	if (h < 24) return `${h} ${h === 1 ? "Hour" : "Hours"} ago`
-	if (d < 7) return `${d}d ago`
-	return new Date(dateStr).toLocaleDateString()
-}
-
-function fmtCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
-	return String(n)
+function formatCount(count: number) {
+	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
+	if (count >= 1_000) return `${(count / 1_000).toFixed(0)}k`
+	return String(count)
 }
 
 function shortAddress(address: string) {
@@ -86,7 +75,7 @@ function UserAvatar({
 	last,
 	size = "md",
 }: {
-	src?: string
+	src?: string | null
 	first: string
 	last: string
 	size?: "sm" | "md"
@@ -95,11 +84,15 @@ function UserAvatar({
 	const txt = size === "sm" ? "text-[11px]" : "text-sm"
 	return (
 		<Avatar.Root className={`${dim} rounded-full overflow-hidden shrink-0`}>
-			<Avatar.Image src={src} alt={`${first} ${last}`} className="w-full h-full object-cover" />
+			<Avatar.Image
+				src={src ?? undefined}
+				alt={`${first} ${last}`}
+				className="w-full h-full object-cover"
+			/>
 			<Avatar.Fallback
 				className={`w-full h-full bg-primary/45 text-accent ${txt} font-semibold flex items-center justify-center`}
 			>
-				{getInitials(first, last)}
+				{getInitials(first ?? "John", last ?? "Doe")}
 			</Avatar.Fallback>
 		</Avatar.Root>
 	)
@@ -171,7 +164,7 @@ function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
-					src={comment.user.profile_photo ?? undefined}
+					src={comment.user.profile_photo}
 					first={comment.user.first_name}
 					last={comment.user.last_name}
 					size="sm"
@@ -205,7 +198,7 @@ function QuotedPostCard({ post }: { post: OriginalPost }) {
 		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
-					src={post.user.profile_photo ?? undefined}
+					src={post.user.profile_photo}
 					first={post.user.first_name}
 					last={post.user.last_name}
 					size="sm"
@@ -230,6 +223,7 @@ function QuotedPostCard({ post }: { post: OriginalPost }) {
 }
 
 function ActionBar({
+	post,
 	likes: initLikes,
 	comments,
 	reposts: initReposts,
@@ -237,6 +231,7 @@ function ActionBar({
 	bookmarkedByMe,
 	repostedByMe,
 }: {
+	post: Post
 	likes: number
 	comments: number
 	reposts: number
@@ -244,29 +239,31 @@ function ActionBar({
 	bookmarkedByMe: boolean
 	repostedByMe: boolean
 }) {
-	const [liked, setLiked] = useState(likedByMe)
+	const user = useAuthStore((s) => s.user)
+	const likePost = useLikePost()
+	const bookmarkPost = useBookmarkPost()
+
 	const [bookmarked, setBookmarked] = useState(bookmarkedByMe)
 	const [reposted, setReposted] = useState(repostedByMe)
-	const [likes, setLikes] = useState(initLikes)
 	const [reposts, setReposts] = useState(initReposts)
 
 	return (
 		<div className="flex items-center mt-4 text-gray-400">
 			<div className="flex flex-1 flex-row items-center gap-5">
 				<button
-					onClick={() => {
-						setLiked((v) => !v)
-						setLikes((n) => (liked ? n - 1 : n + 1))
-					}}
+					onClick={() => likePost.mutate(post.id)}
+					disabled={likePost.isPending}
 					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary"
 				>
-					<Like color={liked ? "#8892C4" : undefined} />
-					<span className="text-sm tabular-nums font-medium">{fmtCount(likes)}</span>
+					<Like color={post.liked_by_me ? "#6A88D1" : undefined} />
+					<span className="text-sm tabular-nums font-medium">
+						{formatCount(post.post_like_count)}
+					</span>
 				</button>
 
 				<button className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors">
 					<Comment />
-					<span className="text-sm tabular-nums">{fmtCount(comments)}</span>
+					<span className="text-sm tabular-nums">{formatCount(comments)}</span>
 				</button>
 
 				<button
@@ -277,7 +274,7 @@ function ActionBar({
 					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
 				>
 					<Repost color={reposted ? "#6A88D1" : undefined} />
-					<span className="text-sm tabular-nums">{fmtCount(reposts)}</span>
+					<span className="text-sm tabular-nums">{formatCount(reposts)}</span>
 				</button>
 
 				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
@@ -287,10 +284,14 @@ function ActionBar({
 
 			<div className="flex flex-row items-center gap-4 ml-auto">
 				<button
-					onClick={() => setBookmarked((v) => !v)}
+					onClick={() => bookmarkPost.mutate(post.id)}
+					disabled={bookmarkPost.isPending}
 					className="flex items-center ml-auto transition-colors hover:text-primary"
 				>
-					<Bookmark2 color={bookmarked ? "#6A88D1" : undefined} bookmarked={bookmarked} />
+					<Bookmark2
+						color={post.bookmarked_by_me ? "#6A88D1" : undefined}
+						bookmarked={post.bookmarked_by_me}
+					/>
 				</button>
 
 				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
@@ -341,7 +342,7 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div className="flex items-start gap-3">
 				<UserAvatar
-					src={displayPost.user.profile_photo ?? undefined}
+					src={displayPost.user.profile_photo}
 					first={displayPost.user.first_name}
 					last={displayPost.user.last_name}
 				/>
@@ -381,6 +382,7 @@ export function PostCard({ post }: { post: Post }) {
 				)}
 
 				<ActionBar
+					post={post}
 					likes={post.post_like_count}
 					comments={post.post_comment_count}
 					reposts={post.repost_count}

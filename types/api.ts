@@ -214,13 +214,6 @@ export interface PaginatedFeed {
 	results: Post[]
 }
 
-export interface FeedResponse1 {
-	success: boolean
-	status_code: number
-	message: string
-	data: PaginatedFeed
-}
-
 export type FeedResponse = ApiResponse<PaginatedResponse<Post>>
 
 export interface SuggestionUser {
@@ -250,3 +243,6 @@ export interface UsersListResponse {
 	message: string | null
 	data: UsersListData
 }
+
+export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
+export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>

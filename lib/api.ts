@@ -1,7 +1,9 @@
 import {
 	ApiResponse,
+	BookmarkResponse,
 	FeedResponse,
 	FullUser,
+	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
 	SignupPayload,
@@ -54,4 +56,10 @@ export const socialApi = {
 			.then((r) => r.data),
 
 	getFeedByPath: (path: string) => apiClient.get<FeedResponse>(path).then((r) => r.data),
+
+	likePost: (payload: { post: string }) =>
+		apiClient.post<LikeResponse>("/api/socials/like-post", payload).then((r) => r.data),
+
+	bookmarkPost: (payload: { post: string }) =>
+		apiClient.post<BookmarkResponse>("/api/socials/bookmark-post", payload).then((r) => r.data),
 }

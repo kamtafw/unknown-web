@@ -7,7 +7,7 @@ import { Add, AI, Bookmark, Home, Invite, Logout, Settings } from "./icons"
 import { useLogout } from "@/hooks/use-auth"
 
 const NAV_ITEMS = [
-	{ label: "Home", icon: Home, href: "/dashboard" },
+	{ label: "Home", icon: Home, href: "/home" },
 	{ label: "Settings", icon: Settings, href: "/settings" },
 	{ label: "Bookmarks", icon: Bookmark, href: "/bookmarks" },
 	{ label: "AppsCombo AI", icon: AI, href: "/ai" },
