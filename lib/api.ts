@@ -9,6 +9,8 @@ import {
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
+	PostStats,
+	PostStatsResponse,
 	SignupPayload,
 	UsersListResponse,
 	VerifyOtpPayload,
@@ -79,4 +81,9 @@ export const socialApi = {
 
 	bookmarkPost: (payload: { post: string }) =>
 		apiClient.post<BookmarkResponse>("/api/socials/bookmark-post", payload).then((r) => r.data),
+
+	getPostStats: async (postId: string) =>
+		await apiClient
+			.get<PostStatsResponse>(`/api/socials/post-stats?id=${postId}`)
+			.then((r) => r.data.data),
 }

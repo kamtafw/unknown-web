@@ -6,7 +6,7 @@ import { ReactNode, useState } from "react"
 export interface ActionDropdownItem {
 	label: string
 	icon: ReactNode
-	onSelect: () => void
+	onSelect?: () => void
 	destructive?: boolean
 }
 

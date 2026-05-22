@@ -22,6 +22,7 @@ import {
 	Trash,
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
+import { usePostStats } from "@/hooks/use-post-stats"
 
 function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -298,9 +299,7 @@ function ActionBar({
 					/>
 				</button>
 
-				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
-					<Stats />
-				</button>
+				<StatsButton postId={post.id} />
 			</div>
 		</div>
 	)
@@ -364,21 +363,71 @@ function ShareButton({ postId }: { postId: string }) {
 }
 
 function StatsButton({ postId }: { postId: string }) {
+	const { data, isLoading } = usePostStats(postId)
+
+	const statItems: ActionDropdownItem[] = [
+		{
+			label: "Views",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_views : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Watch time",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.watch_time : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Reactions",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_reactions : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Comments",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_comments : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Reposts",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_reposts : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Shares",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_shares : "?"}
+				</span>
+			),
+		},
+		{
+			label: "Bookmarks",
+			icon: (
+				<span className="text-sm font-semibold text-gray-900">
+					{data && !isLoading ? data.total_bookmarks : "?"}
+				</span>
+			),
+		},
+	]
+
 	return (
 		<ActionDropdown
 			trigger={<Stats />}
-			items={[
-				{
-					label: "Share to messenger",
-					icon: <ColorMessage size={23} />,
-					onSelect: () => console.log("TODO: share to messenger", postId),
-				},
-				{
-					label: "Share to followers",
-					icon: <Users size={18} color="#6A7282" className="shrink-0" />,
-					onSelect: () => console.log("TODO: share to followers", postId),
-				},
-			]}
+			items={statItems}
 			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
 		/>
 	)
@@ -463,12 +512,9 @@ function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: 
 
 	return (
 		<ActionDropdown
-			trigger={
-				<button className="text-gray-400 hover:text-gray-600 shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none">
-					<MoreHorizontal size={18} />
-				</button>
-			}
+			trigger={<MoreHorizontal size={18} />}
 			items={isOwn ? ownItems : otherItems}
+			clsName="text-gray-400 hover:text-gray-600 shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
 		/>
 	)
 }

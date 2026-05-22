@@ -204,6 +204,16 @@ export interface Post {
 	reposts: unknown[]
 }
 
+export interface PostStats {
+	total_views: number
+	total_reactions: number
+	total_comments: number
+	total_reposts: number
+	total_shares: number
+	total_bookmarks: number
+	watch_time: string
+}
+
 export type FeedResponse = ApiResponse<PaginatedResponse<Post>>
 
 export interface SuggestionUser {
@@ -258,3 +268,4 @@ export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
 export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
 export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
 export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>
+export type PostStatsResponse = ApiResponse<PostStats>

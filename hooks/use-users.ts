@@ -10,21 +10,21 @@ export const usersKeys = {
 export function useFollowers() {
 	return useQuery({
 		queryKey: usersKeys.followers,
-		queryFn: () => userApi.getFollowers(),
+		queryFn: userApi.getFollowers,
 	})
 }
 
 export function useFollowings() {
 	return useQuery({
 		queryKey: usersKeys.followers,
-		queryFn: () => userApi.getFollowings(),
+		queryFn: userApi.getFollowings,
 	})
 }
 
 export function useFriendSuggestions() {
 	return useQuery({
 		queryKey: usersKeys.friendSuggestions,
-		queryFn: () => userApi.getFriendSuggestions(),
+		queryFn: userApi.getFriendSuggestions,
 		staleTime: 1000 * 60 * 5, // 5 min
 	})
 }
