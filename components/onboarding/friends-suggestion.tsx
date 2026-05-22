@@ -58,19 +58,19 @@ const DEFAULT_USERS: SuggestedUser[] = [
 	},
 ]
 
-interface FriendsSuggestionProps {
+interface FriendSuggestionsProps {
 	open?: boolean
 	onOpenChange?: (open: boolean) => void
 	users?: SuggestedUser[]
 	onContinue?: (followedIds: string[]) => void
 }
 
-export function FriendsSuggestion({
+export function FriendSuggestions({
 	open = true,
 	onOpenChange,
 	users = DEFAULT_USERS,
 	onContinue,
-}: FriendsSuggestionProps) {
+}: FriendSuggestionsProps) {
 	const [followState, setFollowState] = useState<Record<string, boolean>>(() =>
 		Object.fromEntries(users.map((u) => [u.id, u.following ?? false])),
 	)

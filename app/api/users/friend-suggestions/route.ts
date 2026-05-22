@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO}/users/list`, {
+	const upstream = await fetch(`${DJANGO}/users/friend-suggestions`, {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",

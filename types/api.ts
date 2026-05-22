@@ -204,16 +204,6 @@ export interface Post {
 	reposts: unknown[]
 }
 
-export interface PaginatedFeed {
-	count: number
-	total_pages: number
-	limit: number
-	current: number
-	previous: string | null
-	next: string | null
-	results: Post[]
-}
-
 export type FeedResponse = ApiResponse<PaginatedResponse<Post>>
 
 export interface SuggestionUser {
@@ -224,10 +214,28 @@ export interface SuggestionUser {
 	last_name: string
 	email: string
 	profile_photo: string
-	cover_photo: string
-	phone_number: string
 	youFollowThisUser: boolean
 	followsYou: boolean
+}
+
+export interface FollowerUser {
+	pkid: number
+	id: string
+	username: string
+	first_name: string | null
+	last_name: string | null
+	profile_photo: string
+	cover_photo: string
+	is_friends: boolean
+}
+
+export interface FollowingUser {
+	pkid: number
+	id: string
+	username: string
+	first_name: string | null
+	last_name: string | null
+	profile_photo: string
 }
 
 export interface UsersListData {
@@ -244,5 +252,9 @@ export interface UsersListResponse {
 	data: UsersListData
 }
 
+export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<SuggestionUser>>
+
+export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
+export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
 export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
 export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>

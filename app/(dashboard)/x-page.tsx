@@ -1,5 +1,5 @@
 import { Feed } from "@/components/dashboard/feed"
-import { FriendsSuggestion } from "@/components/dashboard/friends-suggestion"
+import { FriendsSuggestion } from "@/components/dashboard/friend-suggestions"
 
 const DashboardPage = () => {
 	return (

@@ -1,13 +1,27 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, MapPin } from "lucide-react"
+import { MoreHorizontal, Users } from "lucide-react"
 import { Avatar } from "radix-ui"
 import type { Post, OriginalPost, OriginalComment } from "@/types/api"
 import { Like, Comment, Repost, Share, Bookmark2, Stats } from "./icons"
 import { useAuthStore } from "@/stores/auth-store"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import {
+	Block,
+	ChangeReplier,
+	ColorMessage,
+	Connect,
+	Mute,
+	NotInterested,
+	Pin,
+	Quote,
+	RequestNote,
+	ScreenReader,
+	Trash,
+} from "../posts/icons"
+import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 
 function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -224,26 +238,19 @@ function QuotedPostCard({ post }: { post: OriginalPost }) {
 
 function ActionBar({
 	post,
-	likes: initLikes,
 	comments,
 	reposts: initReposts,
-	likedByMe,
-	bookmarkedByMe,
 	repostedByMe,
 }: {
 	post: Post
-	likes: number
 	comments: number
 	reposts: number
-	likedByMe: boolean
-	bookmarkedByMe: boolean
 	repostedByMe: boolean
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 
-	const [bookmarked, setBookmarked] = useState(bookmarkedByMe)
 	const [reposted, setReposted] = useState(repostedByMe)
 	const [reposts, setReposts] = useState(initReposts)
 
@@ -266,20 +273,17 @@ function ActionBar({
 					<span className="text-sm tabular-nums">{formatCount(comments)}</span>
 				</button>
 
-				<button
-					onClick={() => {
+				<RepostButton
+					reposted={reposted}
+					reposts={reposts}
+					postId={post.id}
+					onToggle={() => {
 						setReposted((v) => !v)
 						setReposts((n) => (reposted ? n - 1 : n + 1))
 					}}
-					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
-				>
-					<Repost color={reposted ? "#6A88D1" : undefined} />
-					<span className="text-sm tabular-nums">{formatCount(reposts)}</span>
-				</button>
+				/>
 
-				<button className="flex flex-1 flex-row items-center hover:text-primary transition-colors">
-					<Share />
-				</button>
+				<ShareButton postId={post.id} />
 			</div>
 
 			<div className="flex flex-row items-center gap-4 ml-auto">
@@ -299,6 +303,173 @@ function ActionBar({
 				</button>
 			</div>
 		</div>
+	)
+}
+
+function RepostButton({
+	reposted,
+	reposts,
+	postId,
+	onToggle,
+}: {
+	reposted: boolean
+	reposts: number
+	postId: string
+	onToggle: () => void
+}) {
+	return (
+		<ActionDropdown
+			trigger={
+				<>
+					<Repost color={reposted ? "#6A88D1" : undefined} />
+					<span className="text-sm tabular-nums">{formatCount(reposts)}</span>
+				</>
+			}
+			items={[
+				{
+					label: reposted ? "Undo repost" : "Repost",
+					icon: <Repost size={20} color={reposted ? "#6A88D1" : undefined} />,
+					onSelect: onToggle,
+				},
+				{
+					label: "Quote",
+					icon: <Quote size={20} color="#6A7282" />,
+					onSelect: () => console.log("TODO: quote post", postId),
+				},
+			]}
+			clsName="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
+		/>
+	)
+}
+
+function ShareButton({ postId }: { postId: string }) {
+	return (
+		<ActionDropdown
+			trigger={<Share />}
+			items={[
+				{
+					label: "Share to messenger",
+					icon: <ColorMessage size={23} />,
+					onSelect: () => console.log("TODO: share to messenger", postId),
+				},
+				{
+					label: "Share to followers",
+					icon: <Users size={18} color="#6A7282" className="shrink-0" />,
+					onSelect: () => console.log("TODO: share to followers", postId),
+				},
+			]}
+			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+		/>
+	)
+}
+
+function StatsButton({ postId }: { postId: string }) {
+	return (
+		<ActionDropdown
+			trigger={<Stats />}
+			items={[
+				{
+					label: "Share to messenger",
+					icon: <ColorMessage size={23} />,
+					onSelect: () => console.log("TODO: share to messenger", postId),
+				},
+				{
+					label: "Share to followers",
+					icon: <Users size={18} color="#6A7282" className="shrink-0" />,
+					onSelect: () => console.log("TODO: share to followers", postId),
+				},
+			]}
+			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+		/>
+	)
+}
+
+function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
+	const isOwn = post.user.pkid === currentUserId
+
+	const ownItems: ActionDropdownItem[] = [
+		{
+			label: "Edit post",
+			icon: <Quote />,
+			onSelect: () => console.log("TODO: edit post", post.id),
+		},
+		{
+			label: post.is_pinned ? "Unpin from profile" : "Pin to profile",
+			icon: <Pin />,
+			onSelect: () => console.log("TODO: pin post", post.id),
+		},
+		{
+			label: "Change who can reply",
+			icon: <ChangeReplier />,
+			onSelect: () => console.log("TODO: change replier", post.id),
+		},
+		{
+			label: "Delete post",
+			icon: <Trash />,
+			onSelect: () => console.log("TODO: delete post", post.id),
+			destructive: true,
+		},
+	]
+
+	const otherItems: ActionDropdownItem[] = [
+		{
+			label: "Read post out loud",
+			icon: <ScreenReader />,
+			onSelect: () => console.log("TODO: read post", post.id),
+		},
+		{
+			label: "Request community note",
+			icon: <RequestNote />,
+			onSelect: () => console.log("TODO: request note", post.id),
+		},
+		{
+			label: "Not interested in this post",
+			icon: <NotInterested />,
+			onSelect: () => console.log("TODO: not interested", post.id),
+		},
+		{
+			label: post.bookmarked_by_me ? "Remove from saved" : "Add to saved",
+			icon: (
+				<Bookmark2
+					size={20}
+					color={post.bookmarked_by_me ? "#6A88D1" : undefined}
+					bookmarked={post.bookmarked_by_me}
+				/>
+			),
+			onSelect: () => console.log("TODO: save post", post.id),
+		},
+		{
+			label: `Follow @${post.user.username}`,
+			icon: <Connect />,
+			onSelect: () => console.log("TODO: unfollow", post.user.username),
+		},
+		{
+			label: `Mute @${post.user.username}`,
+			icon: <Mute />,
+			onSelect: () => console.log("TODO: mute", post.user.username),
+		},
+		{
+			label: `Block @${post.user.username}`,
+			icon: <Block />,
+			onSelect: () => console.log("TODO: block", post.user.username),
+			destructive: true,
+		},
+		{
+			label: "Request community note",
+			icon: <RequestNote />,
+			onSelect: () => console.log("TODO: unfollow", post.id),
+		},
+	]
+
+	return (
+		<ActionDropdown
+			trigger={
+				<button className="text-gray-400 hover:text-gray-600 shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none">
+					<MoreHorizontal size={18} />
+				</button>
+			}
+			items={isOwn ? ownItems : otherItems}
+		/>
 	)
 }
 
@@ -359,9 +530,11 @@ export function PostCard({ post }: { post: Post }) {
 						)}
 					</div>
 				</div>
-				<button className="text-gray-400 hover:text-gray-600 shrink-0 mt-0.5">
+
+				<PostOptionsMenu post={post} currentUserId={user?.pkid} />
+				{/* <button className="text-gray-400 hover:text-gray-600 shrink-0 mt-0.5">
 					<MoreHorizontal size={18} />
-				</button>
+				</button> */}
 			</div>
 
 			<div className="mt-2.5">
@@ -383,11 +556,8 @@ export function PostCard({ post }: { post: Post }) {
 
 				<ActionBar
 					post={post}
-					likes={post.post_like_count}
 					comments={post.post_comment_count}
 					reposts={post.repost_count}
-					likedByMe={post.liked_by_me}
-					bookmarkedByMe={post.bookmarked_by_me}
 					repostedByMe={post.reposted_by_me}
 				/>
 			</div>

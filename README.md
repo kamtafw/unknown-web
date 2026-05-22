@@ -14,7 +14,7 @@ appscombo/
 │   │   ├── security-verification/page.tsx
 │   │   ├── complete-profile/page.tsx
 │   │   ├── interests/page.tsx
-│   │   └── friends-suggestion/page.tsx
+│   │   └── friend-suggestions/page.tsx
 │   ├── dashboard/            # Protected routes
 │   │   └── page.tsx
 │   └── layout.tsx            # Root layout
@@ -35,7 +35,7 @@ appscombo/
 │       ├── security-verification.tsx
 │       ├── complete-profile.tsx
 │       ├── choose-interests.tsx
-│       └── friends-suggestion.tsx
+│       └── friend-suggestions.tsx
 │
 ├── hooks/                   # Reusable hooks
 │   ├── useAuth.ts           # Auth context hook (Lucia)

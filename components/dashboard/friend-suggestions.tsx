@@ -1,14 +1,19 @@
 "use client"
 
-import { useUsersList } from "@/hooks/use-users"
+import { useFriendSuggestions } from "@/hooks/use-users"
 import { SuggestionUser } from "@/types/api"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Avatar, ScrollArea } from "radix-ui"
+import { InfiniteData, useQueryClient } from "@tanstack/react-query"
+import {
+	removeUserFromSuggestionsCache,
+	useFollowUser,
+	useUnfollowUser,
+} from "@/hooks/use-follow-actions"
 
-function getInitials(firstName: string, lastName: string) {
-	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+function getInitials(first: string, last: string) {
+	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
-
 const AVATAR_COLORS = [
 	"bg-violet-200 text-violet-700",
 	"bg-blue-200 text-blue-700",
@@ -21,7 +26,55 @@ const AVATAR_COLORS = [
 ]
 
 function Row({ user, index }: { user: SuggestionUser; index: number }) {
-	const [following, setFollowing] = useState(user.youFollowThisUser)
+	const qc = useQueryClient()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
+
+	const [isFollowed, setIsFollowed] = useState(user.youFollowThisUser)
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	useEffect(
+		() => () => {
+			if (timerRef.current) clearTimeout(timerRef.current)
+		},
+		[],
+	)
+
+	const handleFollow = () => {
+		if (isFollowed) return
+
+		setIsFollowed(true)
+		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.pkid), 5_000)
+
+		followUser.mutate(user.pkid, {
+			onError: () => {
+				setIsFollowed(user.youFollowThisUser)
+				if (timerRef.current) {
+					clearTimeout(timerRef.current)
+					timerRef.current = null
+				}
+			},
+		})
+	}
+
+	const handleUnfollow = () => {
+		if (!isFollowed) return
+
+		setIsFollowed(false)
+
+		if (timerRef.current) {
+			clearTimeout(timerRef.current)
+			timerRef.current = null
+		}
+
+		unfollowUser.mutate(user.pkid, {
+			onError: () => {
+				setIsFollowed(user.youFollowThisUser)
+			},
+		})
+	}
+
+	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 	const colorCls = AVATAR_COLORS[index % AVATAR_COLORS.length]
 
 	return (
@@ -29,33 +82,30 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 			<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
 				<Avatar.Image
 					src={user?.profile_photo}
-					alt={user ? `${user.first_name} ${user.last_name}` : ""}
+					alt={user ? `${user.first_name} ${user.last_name}` : "unknown"}
 					className="w-full h-full object-cover"
 				/>
 				<Avatar.Fallback
 					className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
 				>
-					{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
+					{user ? getInitials(user.first_name, user.last_name) : "?"}
 				</Avatar.Fallback>
 			</Avatar.Root>
 
 			<div className="flex-1 min-w-0">
-				<p className="text-sm font-semibold text-gray-900 truncate leading-tight">
-					{user.first_name && user.last_name
-						? `${user.first_name} ${user.last_name}`
-						: user.username}
-				</p>
+				<p className="text-sm font-semibold text-gray-900 truncate leading-tight">{displayName}</p>
 				<p className="text-xs text-gray-500 truncate">@{user.username}</p>
 			</div>
 
 			<button
+				onClick={isFollowed ? handleUnfollow : handleFollow}
 				className={
-					following
+					isFollowed
 						? "text-xs font-semibold px-4 py-1.5 rounded-full border border-primary text-gray-600 hover:border-primary hover:text-primary transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
 						: "text-xs font-semibold px-4 py-1.5 rounded-full bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
 				}
 			>
-				{following ? "Following" : "Follow"}
+				{isFollowed ? "Following" : user.followsYou ? "Follow Back" : "Follow"}
 			</button>
 		</div>
 	)
@@ -75,13 +125,13 @@ function SkeletonRow() {
 }
 
 export function FriendsSuggestion() {
-	const { data, isLoading } = useUsersList()
+	const { data, isLoading } = useFriendSuggestions()
 	const users = data?.data.results ?? []
 
 	return (
 		<aside className="w-md shrink-0 flex flex-col bg-white rounded-t-2xl overflow-hidden">
 			<div className="px-4 pt-4 pb-3 shrink-0">
-				<h2 className="font-bold text-gray-900 text-sm">Friends suggestion</h2>
+				<h2 className="font-bold text-gray-900 text-sm">Friend suggestions</h2>
 			</div>
 
 			<div className="mx-4 border-t border-gray-100 shrink-0" />

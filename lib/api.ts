@@ -2,6 +2,9 @@ import {
 	ApiResponse,
 	BookmarkResponse,
 	FeedResponse,
+	FollowersResponse,
+	FollowingsResponse,
+	FriendSuggestionsResponse,
 	FullUser,
 	LikeResponse,
 	LoginPayload,
@@ -42,8 +45,22 @@ export const userApi = {
 			return user
 		}),
 
-	getUsersList: async (): Promise<UsersListResponse> =>
-		await apiClient.get<UsersListResponse>("/api/users/list").then((r) => r.data),
+	getFriendSuggestions: async (): Promise<FriendSuggestionsResponse> =>
+		await apiClient
+			.get<FriendSuggestionsResponse>("/api/users/friend-suggestions")
+			.then((r) => r.data),
+
+	getFollowers: async (): Promise<FollowersResponse> =>
+		await apiClient.get<FollowersResponse>("/api/users/followers").then((r) => r.data),
+
+	getFollowings: async (): Promise<FollowingsResponse> =>
+		await apiClient.get<FollowingsResponse>("/api/users/followings").then((r) => r.data),
+
+	followUser: (payload: { followed_user: number }) =>
+		apiClient.post<ApiResponse<{}>>("/api/users/follow", payload).then((r) => r.data),
+
+	unfollowUser: (payload: { followed_user: number }) =>
+		apiClient.post<ApiResponse<{}>>("/api/users/unfollow", payload).then((r) => r.data),
 }
 
 export const socialApi = {

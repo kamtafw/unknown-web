@@ -1,4 +1,4 @@
-import { FriendsSuggestion } from "@/components/dashboard/friends-suggestion"
+import { FriendsSuggestion } from "@/components/dashboard/friend-suggestions"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { TopBar } from "@/components/dashboard/top-bar"
 import { ReactNode } from "react"
