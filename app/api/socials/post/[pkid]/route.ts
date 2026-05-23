@@ -20,6 +20,5 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pki
 	})
 
 	const json = await upstream.json()
-	console.log("POST DETAIL upstream", JSON.stringify(json))
 	return NextResponse.json(json, { status: upstream.status })
 }

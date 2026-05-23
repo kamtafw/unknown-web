@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAccessToken } from "@/lib/cookies"
-import { FeedResponse } from "@/types/api"
 
 const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
@@ -19,7 +18,6 @@ export async function GET(req: NextRequest) {
 		cache: "no-store",
 	})
 
-	const json: FeedResponse = await upstream.json()
-
+	const json = await upstream.json()
 	return NextResponse.json(json, { status: upstream.status })
 }

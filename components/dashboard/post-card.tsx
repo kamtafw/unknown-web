@@ -63,7 +63,7 @@ export function renderText(text: string) {
 	)
 }
 
-function isOriginalComment(
+export function isOriginalComment(
 	obj: OriginalPost | OriginalComment | null | undefined,
 ): obj is OriginalComment {
 	return !!obj && "message" in obj
@@ -169,7 +169,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	)
 }
 
-function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
+export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 	const { message, mediaUrls } = normaliseCommentOriginal(comment)
 	const timeAgo = useTimeAgo(comment.created_at)
 	const fullname =
@@ -306,23 +306,25 @@ function ActionBar({
 	)
 }
 
-function RepostButton({
+export function RepostButton({
 	reposted,
 	reposts,
 	postId,
 	onToggle,
+	size,
 }: {
 	reposted: boolean
-	reposts: number
+	reposts?: number
 	postId: string
 	onToggle: () => void
+	size?: number
 }) {
 	return (
 		<ActionDropdown
 			trigger={
 				<>
-					<Repost color={reposted ? "#6A88D1" : undefined} />
-					<span className="text-sm tabular-nums">{formatCount(reposts)}</span>
+					<Repost color={reposted ? "#6A88D1" : undefined} size={size} />
+					{reposts && <span className="text-sm tabular-nums">{formatCount(reposts)}</span>}
 				</>
 			}
 			items={[
@@ -337,15 +339,15 @@ function RepostButton({
 					onSelect: () => console.log("TODO: quote post", postId),
 				},
 			]}
-			clsName="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
+			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors"
 		/>
 	)
 }
 
-function ShareButton({ postId }: { postId: string }) {
+export function ShareButton({ postId, size }: { postId: string; size?: number }) {
 	return (
 		<ActionDropdown
-			trigger={<Share />}
+			trigger={<Share size={size} />}
 			items={[
 				{
 					label: "Share to messenger",
@@ -358,12 +360,12 @@ function ShareButton({ postId }: { postId: string }) {
 					onSelect: () => console.log("TODO: share to followers", postId),
 				},
 			]}
-			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+			clsName="flex flex-1 items-center rounded-full transition-colors"
 		/>
 	)
 }
 
-function StatsButton({ postId }: { postId: string }) {
+export function StatsButton({ postId, size }: { postId: string; size?: number }) {
 	const { data, isLoading } = usePostStats(postId)
 
 	const statItems: ActionDropdownItem[] = [
@@ -427,9 +429,9 @@ function StatsButton({ postId }: { postId: string }) {
 
 	return (
 		<ActionDropdown
-			trigger={<Stats />}
+			trigger={<Stats size={size} />}
 			items={statItems}
-			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+			clsName="flex flex-1 flex-row items-center rounded-full transition-colors"
 		/>
 	)
 }

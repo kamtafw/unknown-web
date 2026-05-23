@@ -1,23 +1,29 @@
 "use client"
 
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { Comment, Post, PostDetail } from "@/types/api"
+import { Comment, Post } from "@/types/api"
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
 	formatCount,
+	isOriginalComment,
 	MediaGrid,
 	mediaType,
 	PostOptionsMenu,
+	QuotedCommentCard,
 	QuotedPostCard,
 	renderText,
+	RepostButton,
+	ShareButton,
+	StatsButton,
 	UserAvatar,
 } from "./post-card"
 import { useTimeAgo } from "@/hooks/use-time-ago"
-import { Like, Comment as CommentIcon, Repost, Share, Bookmark2 } from "./icons"
+import { Like, Comment as CommentIcon, Repost, Bookmark2 } from "./icons"
 import { useLikePost, useBookmarkPost } from "@/hooks/use-post-actions"
 import { useEffect, useRef, useState } from "react"
 import dayjs from "dayjs"
+import { useAuthStore } from "@/stores/auth-store"
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
@@ -105,8 +111,8 @@ function CommentRow({ comment }: { comment: Comment }) {
 
 					{/* Actions */}
 					<div className="flex items-center gap-5 mt-2.5">
-						<button className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors">
-							<Like size={16} color={comment.liked_by_me ? "#ef4444" : undefined} />
+						<button className="flex items-center gap-1 text-gray-400 transition-colors">
+							<Like size={20} color={comment.liked_by_me ? "#6A88D1" : undefined} />
 							{comment.like_count > 0 && (
 								<span className="text-xs">{formatCount(comment.like_count)}</span>
 							)}
@@ -127,6 +133,12 @@ function CommentRow({ comment }: { comment: Comment }) {
 							<span className="flex items-center gap-1 text-gray-400">
 								<Repost size={16} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
 								<span className="text-xs">{formatCount(comment.repost_count)}</span>
+							</span>
+						)}
+
+						{comment.repost_count > 0 && (
+							<span className="flex items-center gap-1 text-gray-400">
+								<Repost size={16} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
 							</span>
 						)}
 					</div>
@@ -212,9 +224,12 @@ function RepliesSection({ commentId }: { commentId: string }) {
 	)
 }
 
-function PostBody({ post }: { post: PostDetail }) {
+function PostBody({ post }: { post: Post }) {
+	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
+
+	const isOwn = post.user.id === post.user.id
 	const mediaUrls = post.post_media.map((m) => m.external_url)
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
@@ -247,7 +262,12 @@ function PostBody({ post }: { post: PostDetail }) {
 
 				{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
 
-				{post.original_post && <QuotedPostCard post={post.original_post} />}
+				{post.original_post &&
+					(isOriginalComment(post.original_post) ? (
+						<QuotedCommentCard comment={post.original_post} />
+					) : (
+						<QuotedPostCard post={post.original_post} />
+					))}
 			</div>
 
 			{/* Timestamp */}
@@ -257,7 +277,7 @@ function PostBody({ post }: { post: PostDetail }) {
 			</div>
 
 			{/* Engagement stats */}
-			{(post.repost_count > 0 || post.post_like_count > 0) && (
+			{(post.repost_count > 0 || post.post_like_count > 0 || post.post_comment_count > 0) && (
 				<div className="py-3 border-b border-gray-100 flex items-center gap-5 text-sm">
 					{post.repost_count > 0 && (
 						<span>
@@ -273,11 +293,19 @@ function PostBody({ post }: { post: PostDetail }) {
 							<span className="text-gray-500">{post.post_like_count === 1 ? "Like" : "Likes"}</span>
 						</span>
 					)}
+					{post.post_comment_count > 0 && (
+						<span>
+							<strong className="text-gray-900">{formatCount(post.post_comment_count)}</strong>{" "}
+							<span className="text-gray-500">
+								{post.post_comment_count === 1 ? "Comment" : "Comments"}
+							</span>
+						</span>
+					)}
 				</div>
 			)}
 
 			{/* Action bar */}
-			<div className="py-1 border-b border-gray-100 flex items-center">
+			<div className="py-1 flex items-center">
 				<div className="flex flex-1 flex-row items-center gap-5">
 					<button
 						onClick={() => likePost.mutate(post.id)}
@@ -286,22 +314,20 @@ function PostBody({ post }: { post: PostDetail }) {
 					>
 						<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
 					</button>
-					<button className="p-3 rounded-full hover:bg-blue-50 transition-colors">
+					<button className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:primary transition-colors">
 						<CommentIcon size={22} />
 					</button>
-					<button className="p-3 rounded-full hover:bg-green-50 transition-colors">
-						<Repost size={22} />
-					</button>
-					<button className="p-3 rounded-full hover:bg-blue-50 transition-colors">
-						<Share size={22} />
-					</button>
+
+					<RepostButton reposted={post.is_repost} postId={post.id} onToggle={() => {}} size={22} />
+
+					<ShareButton postId={post.id} size={22} />
 				</div>
 
-				<div>
+				<div className="flex flex-row items-center gap-4 ml-auto">
 					<button
 						onClick={() => bookmarkPost.mutate(post.id)}
 						disabled={bookmarkPost.isPending}
-						className="p-3 rounded-full hover:bg-blue-50 transition-colors"
+						className="flex items-center ml-auto p-3 rounded-full hover:bg-blue-50 transition-colors"
 					>
 						<Bookmark2
 							size={22}
@@ -309,6 +335,8 @@ function PostBody({ post }: { post: PostDetail }) {
 							bookmarked={post.bookmarked_by_me}
 						/>
 					</button>
+
+					{isOwn && <StatsButton postId={post.id} size={22} />}
 				</div>
 			</div>
 		</div>
@@ -408,6 +436,8 @@ export function PostDetailView({ pkid }: { pkid: number }) {
 				) : post ? (
 					<>
 						<PostBody post={post} />
+
+						<div className="border-b border-gray-100" />
 
 						{/* Comments */}
 						{(commentsLoading || isPlaceholderData) && !commentsData ? (

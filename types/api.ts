@@ -196,8 +196,8 @@ export interface Post {
 	post_like_count: number
 	post_comment_count: number
 	repost_count: number
-	post_reaction: unknown[]
 	post_hashtagged: string[]
+	post_reaction: unknown[]
 	post_bookmarked: unknown[]
 	post_comment: unknown[]
 	post_liked: unknown[]
@@ -282,38 +282,6 @@ export interface PostCommentDetail {
 	comment_hashtagged: string[]
 }
 
-export interface PostDetail {
-	pkid: number
-	id: string
-	user: PostUser
-	content_text: string
-	bookmarked_by_me: boolean
-	liked_by_me: boolean
-	is_shared: boolean | null
-	is_repost: boolean
-	original_post: OriginalPost | null
-	who_can_see: WhoCanSee
-	who_can_reply: WhoCanReply
-	created_at: string
-	updated_at: string
-	post_location: PostLocation[]
-	post_media: PostMedia[]
-	post_bookmarked: Array<{ pkid: number; user: number; post: number; created_at: string }>
-	post_liked: Array<{
-		pkid: number
-		user: number
-		post: number
-		post_is_liked: boolean
-		created_at: string
-	}>
-	post_like_count: number
-	post_comment: PostCommentDetail[]
-	post_comment_count: number
-	repost: unknown[]
-	repost_count: number
-	post_hashtagged: string[]
-}
-
 export interface Comment {
 	id: string
 	pkid: number
@@ -333,5 +301,5 @@ export interface Comment {
 	reposted_by_me: boolean
 }
 
-export type PostDetailResponse = ApiResponse<PostDetail>
+export type PostDetailResponse = ApiResponse<Post>
 export type CommentsResponse = ApiResponse<PaginatedResponse<Comment>>
