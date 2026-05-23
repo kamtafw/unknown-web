@@ -1,32 +1,29 @@
-import type { Metadata } from "next";
-import { Work_Sans } from "next/font/google";
-import "@/styles/globals.css";
-import ReactQueryProvider from "@/lib/react-query-provider";
-
+// @ts-ignore: CSS module declarations are handled by Next.js
+import "./globals.css"
+import type { Metadata } from "next"
+import type { ReactNode } from "react"
+import { Work_Sans } from "next/font/google"
+import { QueryProvider } from "@/providers/query-provider"
 
 const workSans = Work_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-work-sans",
-  weight: ["400", "500", "600", "700"],
-  preload: true, 
-});
+	subsets: ["latin"],
+	display: "swap",
+	variable: "--font-work-sans",
+	weight: ["400", "500", "600", "700"],
+	preload: true,
+})
 
 export const metadata: Metadata = {
-  title: "AppCombo",
-  description: "Social media network",
-};
+	title: "AppsCombo",
+	description: "Social media network",
+}
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" className={workSans.variable}>
-      <body className={workSans.className}>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: ReactNode }) {
+	return (
+		<html lang="en" className={workSans.variable}>
+			<body className={workSans.className}>
+				<QueryProvider>{children}</QueryProvider>
+			</body>
+		</html>
+	)
 }

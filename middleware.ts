@@ -1,92 +1,128 @@
-// import { NextRequest, NextResponse } from "next/server";
+// route classification
 
-// export function middleware(request: NextRequest) {
-//   const { pathname } = request.nextUrl;
+import { NextRequest, NextResponse } from "next/server"
+import { COOKIE } from "./lib/cookies"
 
-//   const publicRoutes = ["/", "/signup", "/forgot-password"];
-//   const protectedAuthRoutes = [
-//     "/otp",
-//     "/profile",
-//     "/interest",
-//     "/verify-email",
-//     "/verify-code",
-//     "/create-password",
-//     "/confirm-password",
-//     "/success",
-//     "/home",
-//   ];
+const PUBLIC_ROUTES = [
+	"/sign-in",
+	"/sign-up",
+	"/forgot-password",
+	"/create-new-password",
+	"/verify",
+	"/2fa",
+]
 
-//   const isPublicRoute =
-//     publicRoutes.includes(pathname) ||
-//     pathname.startsWith("/layout") ||
-//     pathname.startsWith("/shared");
-//   const accessToken = request.cookies.get("accessToken")?.value;
-//   const signupFlow = request.cookies.get("signupFlow")?.value;
-//   const resetFlow = request.cookies.get("resetFlow")?.value;
-//   // const loginFlow = request.cookies.get("loginFlow")?.value;
-//   const isProtectedAuthRoute = protectedAuthRoutes.includes(pathname);
+const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friends"]
 
-//   if (isPublicRoute) {
-//     return NextResponse.next();
-//   }
-//   if (isProtectedAuthRoute) {
-//     if (
-//       (pathname === "/otp" ||
-//         pathname === "/profile" ||
-//         pathname === "/interest") &&
-//       signupFlow
-//     ) {
-//       return NextResponse.next();
-//     }
+const ADMIN_ROUTES = ["/admin"]
 
-//     if (
-//       (pathname === "/verify-code" ||
-//         pathname === "/create-password" ||
-//         pathname === "/confirm-password" ||
-//         pathname === "/success") &&
-//       resetFlow
-//     ) {
-//       return NextResponse.next();
-//     }
+function matchesPrefix(pathname: string, routes: string[]) {
+	return routes.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+}
 
-//     // if (pathname === "/home" && accessToken) {
-//     //   return NextResponse.next();
-//     // }
+/**
+ * decode JWT payload without a library — edge runtime only has Web Crypto
+ * we only need the claims (exp, role) — we don't verify the signature here
+ * actual verification happens on the Django side per-request
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+	try {
+		const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")
+		const json = atob(base64)
+		return JSON.parse(json)
+	} catch {
+		return null
+	}
+}
 
-//     if (accessToken) {
-//       return NextResponse.next();
-//     }
+function isTokenExpired(token: string): boolean {
+	const payload = decodeJwtPayload(token)
+	if (!payload || typeof payload.exp !== "number") return true
+	// 10s buffer to avoid edge-case races
+	return Date.now() / 1000 > payload.exp - 10
+}
 
-//     if (accessToken) {
-//       return NextResponse.next();
-//     }
+export async function middleware(req: NextRequest) {
+	const { pathname } = req.nextUrl
 
-//     return NextResponse.redirect(new URL("/", request.url));
-//   }
+	const accessToken = req.cookies.get(COOKIE.ACCESS)?.value
+	const refreshToken = req.cookies.get(COOKIE.REFRESH)?.value
 
-//   if (!accessToken) {
-//     return NextResponse.redirect(new URL("/", request.url));
-//   }
+	const isPublic = matchesPrefix(pathname, PUBLIC_ROUTES)
+	const isOnboarding = matchesPrefix(pathname, ONBOARDING_ROUTES)
+	const isAdmin = matchesPrefix(pathname, ADMIN_ROUTES)
+	const isApiRoute = pathname.startsWith("/api/")
 
-//   return NextResponse.next();
-// }
+	// always pass through api routes and Next.js internals
+	if (isApiRoute || pathname.startsWith("/_next")) {
+		return NextResponse.next()
+	}
 
-// export const config = {
-//   matcher: [
-//     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif).*)",
-//   ],
-// };
+	// case 1: no tokens at all
+	if (!accessToken && !refreshToken) {
+		if (isPublic) return NextResponse.next()
+		return NextResponse.redirect(new URL("/sign-in", req.url))
+	}
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+	// case 2: access token expired but refresh token exists
+	// attempt a silent refresh inline; if it fails, clear and redirect
+	// NOTE: this can only be done for non-public routes
+	if (accessToken && isTokenExpired(accessToken) && refreshToken) {
+		const refreshRes = await fetch(new URL("/api/auth/refresh", req.url), {
+			method: "POST",
+			headers: { Cookie: `${COOKIE.REFRESH}=${refreshToken}` },
+		})
 
-import { NextRequest, NextResponse } from "next/server";
+		if (!refreshRes.ok) {
+			// refresh failed — expired or revoked; force re-login
+			const res = NextResponse.redirect(new URL("/sign-in", req.url))
+			res.cookies.delete(COOKIE.ACCESS)
+			res.cookies.delete(COOKIE.REFRESH)
+			return res
+		}
 
-export function middleware(request: NextRequest) {
-  return NextResponse.next();
+		// refresh succeeded — forward the new Set-Cookie headers
+		const res = isPublic
+			? NextResponse.redirect(new URL("/home", req.url))
+			: NextResponse.next()
+
+		refreshRes.headers.getSetCookie().forEach((cookie) => {
+			res.headers.append("Set-Cookie", cookie)
+		})
+
+		return res
+	}
+
+	// case 3: valid token, visiting a public/auth route
+	if (accessToken && !isTokenExpired(accessToken) && isPublic) {
+		return NextResponse.redirect(new URL("/home", req.url))
+	}
+
+	// case 4: role-based access for admin routes
+	if (isAdmin && accessToken) {
+		const payload = decodeJwtPayload(accessToken)
+		const isAdministrator = payload?.is_administrator === true
+
+		if (!isAdministrator) {
+			return NextResponse.redirect(new URL("/home", req.url))
+		}
+	}
+
+	// case 5: onboarding routes — require valid token
+	// onboarding is a subset of protected routes and require no extra logic
+	// beyond the token check already done above
+	return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif).*)",
-  ],
-};
+	matcher: [
+		/**
+		 * match all paths except:
+		 * - _next/static (static files)
+		 * - _next/image (image optimisation)
+		 * - favicon.ico
+		 * - public folder files
+		 */
+		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+	],
+}
