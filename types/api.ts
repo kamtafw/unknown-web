@@ -269,3 +269,69 @@ export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
 export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
 export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>
 export type PostStatsResponse = ApiResponse<PostStats>
+
+export interface PostCommentDetail {
+	pkid: number
+	user: number // commenter's pkid
+	post: number // comment's parent post pkid
+	message: string | null
+	created_at: string
+	updated_at: string
+	uploaded_media: string[]
+	comment_location: PostLocation
+	comment_hashtagged: string[]
+}
+
+export interface PostDetail {
+	pkid: number
+	id: string
+	user: PostUser
+	content_text: string
+	bookmarked_by_me: boolean
+	liked_by_me: boolean
+	is_shared: boolean | null
+	is_repost: boolean
+	original_post: OriginalPost | null
+	who_can_see: WhoCanSee
+	who_can_reply: WhoCanReply
+	created_at: string
+	updated_at: string
+	post_location: PostLocation[]
+	post_media: PostMedia[]
+	post_bookmarked: Array<{ pkid: number; user: number; post: number; created_at: string }>
+	post_liked: Array<{
+		pkid: number
+		user: number
+		post: number
+		post_is_liked: boolean
+		created_at: string
+	}>
+	post_like_count: number
+	post_comment: PostCommentDetail[]
+	post_comment_count: number
+	repost: unknown[]
+	repost_count: number
+	post_hashtagged: string[]
+}
+
+export interface Comment {
+	id: string
+	pkid: number
+	user: PostUser
+	post: number
+	message: string
+	parent_comment: number | null
+	created_at: string
+	updated_at: string
+	uploaded_media: string[]
+	comment_location: PostLocation | null
+	comment_hashtagged: string[]
+	like_count: number
+	replies_count: number
+	repost_count: number
+	liked_by_me: boolean
+	reposted_by_me: boolean
+}
+
+export type PostDetailResponse = ApiResponse<PostDetail>
+export type CommentsResponse = ApiResponse<PaginatedResponse<Comment>>

@@ -3,14 +3,15 @@ import { getAccessToken } from "@/lib/cookies"
 
 const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const { id } = await params
 	const accessToken = await getAccessToken()
 
 	if (!accessToken) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO}/socials/posts/feed${req.nextUrl.search}`, {
+	const upstream = await fetch(`${DJANGO}/socials/post/comments/${id}/replies`, {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",

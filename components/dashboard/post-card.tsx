@@ -23,14 +23,15 @@ import {
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { usePostStats } from "@/hooks/use-post-stats"
+import { useRouter } from "next/navigation"
 
-function formatCount(count: number) {
+export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
 	if (count >= 1_000) return `${(count / 1_000).toFixed(0)}k`
 	return String(count)
 }
 
-function shortAddress(address: string) {
+export function shortAddress(address: string) {
 	const parts = address
 		.split(",")
 		.map((s) => s.trim())
@@ -39,18 +40,18 @@ function shortAddress(address: string) {
 	return parts.slice(-3, -1).join(", ")
 }
 
-function mediaType(url: string): "image" | "video" | "audio" {
+export function mediaType(url: string): "image" | "video" | "audio" {
 	const ext = url.split(".").pop()?.split("?")[0]?.toLowerCase() ?? ""
 	if (["mp4", "mov", "webm"].includes(ext)) return "video"
 	if (["mp3", "wav", "ogg", "m4a"].includes(ext)) return "audio"
 	return "image"
 }
 
-function getInitials(first: string, last: string) {
+export function getInitials(first: string, last: string) {
 	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
 
-function renderText(text: string) {
+export function renderText(text: string) {
 	return text.split(/([@#]\w+)/g).map((part, i) =>
 		/^[@#]/.test(part) ? (
 			<span key={i} className="text-primary cursor-pointer hover:underline">
@@ -84,7 +85,7 @@ function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 	}
 }
 
-function UserAvatar({
+export function UserAvatar({
 	src,
 	first,
 	last,
@@ -113,7 +114,7 @@ function UserAvatar({
 	)
 }
 
-function MediaGrid({ urls }: { urls: string[] }) {
+export function MediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
 
 	const types = urls.map((url) => mediaType(url))
@@ -203,7 +204,7 @@ function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 	)
 }
 
-function QuotedPostCard({ post }: { post: OriginalPost }) {
+export function QuotedPostCard({ post }: { post: OriginalPost }) {
 	const timeAgo = useTimeAgo(post.created_at)
 	const mediaUrls = post.post_media?.map((m) => m.external_url) ?? []
 	const fullname =
@@ -433,7 +434,7 @@ function StatsButton({ postId }: { postId: string }) {
 	)
 }
 
-function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
+export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
 	const isOwn = post.user.pkid === currentUserId
 
 	const ownItems: ActionDropdownItem[] = [
@@ -520,7 +521,10 @@ function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: 
 }
 
 export function PostCard({ post }: { post: Post }) {
+	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
+
+	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
 
 	const isCommentRepost = post.reposted_object_type === "Comment"
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
@@ -551,55 +555,61 @@ export function PostCard({ post }: { post: Post }) {
 	return (
 		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
 			{unquotedRepost && (
-				<div className="flex items-center gap-1.5 mb-3 text-xs text-gray-400 font-medium">
+				<div
+					onClick={handleNavigate}
+					className="flex items-center gap-1.5 mb-3 text-xs text-gray-400 font-medium"
+				>
 					<Repost size={13} />
 					{isMyRepost ? "You" : repostName} reposted
 				</div>
 			)}
 
-			<div className="flex items-start gap-3">
-				<UserAvatar
-					src={displayPost.user.profile_photo}
-					first={displayPost.user.first_name}
-					last={displayPost.user.last_name}
-				/>
-				<div className="flex-1 min-w-0">
-					<span className="font-semibold text-sm text-gray-900">{fullname}</span>{" "}
-					<span className="text-gray-500 text-[13.5px]">@{displayPost.user.username}</span>
-					<div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 overflow-hidden whitespace-nowrap">
-						<span className="shrink-0">{timeAgo}</span>
-						{address && (
-							<>
-								<span className="shrink-0">•</span>
-								<span className="truncate">{address}</span>
-							</>
-						)}
+			<div onClick={handleNavigate} className="cursor-pointer">
+				<div className="flex items-start gap-3">
+					<UserAvatar
+						src={displayPost.user.profile_photo}
+						first={displayPost.user.first_name}
+						last={displayPost.user.last_name}
+					/>
+					<div className="flex-1 min-w-0">
+						<span className="font-semibold text-sm text-gray-900">{fullname}</span>{" "}
+						<span className="text-gray-500 text-[13.5px]">@{displayPost.user.username}</span>
+						<div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 overflow-hidden whitespace-nowrap">
+							<span className="shrink-0">{timeAgo}</span>
+							{address && (
+								<>
+									<span className="shrink-0">•</span>
+									<span className="truncate">{address}</span>
+								</>
+							)}
+						</div>
+					</div>
+
+					<div onClick={(e) => e.stopPropagation()}>
+						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
 					</div>
 				</div>
 
-				<PostOptionsMenu post={post} currentUserId={user?.pkid} />
-				{/* <button className="text-gray-400 hover:text-gray-600 shrink-0 mt-0.5">
-					<MoreHorizontal size={18} />
-				</button> */}
+				<div className="mt-2.5">
+					{!!displayText && (
+						<p className="text-[13.5px] text-gray-800 leading-relaxed">{renderText(displayText)}</p>
+					)}
+
+					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
+
+					{!unquotedRepost && post.original_post && (
+						<div>
+							{isOriginalComment(post.original_post) ? (
+								<QuotedCommentCard comment={post.original_post} />
+							) : (
+								<QuotedPostCard post={post.original_post} />
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 
-			<div className="mt-2.5">
-				{!!displayText && (
-					<p className="text-[13.5px] text-gray-800 leading-relaxed">{renderText(displayText)}</p>
-				)}
-
-				{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
-
-				{!unquotedRepost && post.original_post && (
-					<div>
-						{isOriginalComment(post.original_post) ? (
-							<QuotedCommentCard comment={post.original_post} />
-						) : (
-							<QuotedPostCard post={post.original_post} />
-						)}
-					</div>
-				)}
-
+			<div onClick={(e) => e.stopPropagation()}>
 				<ActionBar
 					post={post}
 					comments={post.post_comment_count}

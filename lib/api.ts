@@ -1,6 +1,7 @@
 import {
 	ApiResponse,
 	BookmarkResponse,
+	CommentsResponse,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
@@ -9,10 +10,9 @@ import {
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
-	PostStats,
+	PostDetailResponse,
 	PostStatsResponse,
 	SignupPayload,
-	UsersListResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 } from "@/types/api"
@@ -82,8 +82,21 @@ export const socialApi = {
 	bookmarkPost: (payload: { post: string }) =>
 		apiClient.post<BookmarkResponse>("/api/socials/bookmark-post", payload).then((r) => r.data),
 
-	getPostStats: async (postId: string) =>
+	getPostStats: async (id: string) =>
 		await apiClient
-			.get<PostStatsResponse>(`/api/socials/post-stats?id=${postId}`)
+			.get<PostStatsResponse>(`/api/socials/post-stats/${id}`)
 			.then((r) => r.data.data),
+
+	getPostDetail: (pkid: number) =>
+		apiClient.get<PostDetailResponse>(`/api/socials/post/${pkid}`).then((r) => r.data),
+
+	getPostComments: (pkid: number, page: number) =>
+		apiClient
+			.get<CommentsResponse>(`/api/socials/post-comments/${pkid}?page=${page}`)
+			.then((r) => r.data),
+
+	getCommentReplies: (commentId: string) =>
+		apiClient
+			.get<CommentsResponse>(`/api/socials/comment-replies/${commentId}`)
+			.then((r) => r.data),
 }
