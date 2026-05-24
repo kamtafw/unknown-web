@@ -309,7 +309,6 @@ function PostBody({ post }: { post: Post }) {
 				<div className="flex flex-1 flex-row items-center gap-5">
 					<button
 						onClick={() => likePost.mutate(post.id)}
-						disabled={likePost.isPending}
 						className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:primary transition-colors"
 					>
 						<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
@@ -326,7 +325,6 @@ function PostBody({ post }: { post: Post }) {
 				<div className="flex flex-row items-center gap-4 ml-auto">
 					<button
 						onClick={() => bookmarkPost.mutate(post.id)}
-						disabled={bookmarkPost.isPending}
 						className="flex items-center ml-auto p-3 rounded-full hover:bg-blue-50 transition-colors"
 					>
 						<Bookmark2

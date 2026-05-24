@@ -42,7 +42,7 @@ export function useForYouFeed() {
 	})
 }
 
-export function useFollowingFeed(enabled = true) {
+export function useFollowingFeed() {
 	return useInfiniteQuery({
 		queryKey: feedKeys.following,
 		queryFn: ({ pageParam }) => fetchFeed(pageParam as string),
@@ -50,7 +50,6 @@ export function useFollowingFeed(enabled = true) {
 		getNextPageParam: (last) =>
 			last.nextPage ? toPath(feedBase.following, last.nextPage) : undefined,
 		placeholderData: (prev) => prev,
-		enabled,
 	})
 }
 
