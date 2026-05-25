@@ -24,6 +24,7 @@ import {
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRouter } from "next/navigation"
+import { CommentModal } from "./comment-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -243,11 +244,13 @@ function ActionBar({
 	comments,
 	reposts: initReposts,
 	repostedByMe,
+	onCommentClick,
 }: {
 	post: Post
 	comments: number
 	reposts: number
 	repostedByMe: boolean
+	onCommentClick: () => void
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
@@ -270,7 +273,10 @@ function ActionBar({
 					</span>
 				</button>
 
-				<button className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors">
+				<button
+					onClick={onCommentClick}
+					className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors"
+				>
 					<Comment />
 					<span className="text-sm tabular-nums">{formatCount(comments)}</span>
 				</button>
@@ -525,6 +531,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 export function PostCard({ post }: { post: Post }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
+	const [commentOpen, setCommentOpen] = useState(false)
 
 	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
 
@@ -617,8 +624,11 @@ export function PostCard({ post }: { post: Post }) {
 					comments={post.post_comment_count}
 					reposts={post.repost_count}
 					repostedByMe={post.reposted_by_me}
+					onCommentClick={() => setCommentOpen(true)}
 				/>
 			</div>
+
+			<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
 		</article>
 	)
 }

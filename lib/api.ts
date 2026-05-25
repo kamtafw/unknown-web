@@ -1,4 +1,6 @@
 import {
+	AddCommentPayload,
+	AddCommentResponse,
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
@@ -99,4 +101,7 @@ export const socialApi = {
 		apiClient
 			.get<CommentsResponse>(`/api/socials/comment-replies/${commentId}`)
 			.then((r) => r.data),
+
+	addComment: (payload: AddCommentPayload) =>
+		apiClient.post<AddCommentResponse>("/api/socials/add-comment", payload).then((r) => r.data),
 }

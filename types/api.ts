@@ -301,5 +301,15 @@ export interface Comment {
 	reposted_by_me: boolean
 }
 
+export interface AddCommentPayload {
+	post: number
+	message?: string
+	parent_comment?: number
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+}
+
 export type PostDetailResponse = ApiResponse<Post>
 export type CommentsResponse = ApiResponse<PaginatedResponse<Comment>>
+export type AddCommentResponse = ApiResponse<Comment>
