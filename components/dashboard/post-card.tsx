@@ -25,6 +25,8 @@ import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRouter } from "next/navigation"
 import { CommentModal } from "./comment-modal"
+import { useRepost } from "@/hooks/use-repost"
+import { QuoteModal } from "./quote-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -244,20 +246,33 @@ function ActionBar({
 	comments,
 	reposts: initReposts,
 	repostedByMe,
+	onQuoteClick,
 	onCommentClick,
 }: {
 	post: Post
 	comments: number
 	reposts: number
 	repostedByMe: boolean
+	onQuoteClick: () => void
 	onCommentClick: () => void
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 
+	const isOwn = post.user.pkid === user?.pkid
+
+	const repost = useRepost()
 	const [reposted, setReposted] = useState(repostedByMe)
 	const [reposts, setReposts] = useState(initReposts)
+
+	const handleRepost = () => {
+		setReposted((v) => !v)
+		setReposts((n) => (reposted ? n - 1 : n + 1))
+		if (!reposted) {
+			repost.mutate({ is_repost: true, original_post: post.id })
+		}
+	}
 
 	return (
 		<div className="flex items-center mt-4 text-gray-400">
@@ -284,11 +299,8 @@ function ActionBar({
 				<RepostButton
 					reposted={reposted}
 					reposts={reposts}
-					postId={post.id}
-					onToggle={() => {
-						setReposted((v) => !v)
-						setReposts((n) => (reposted ? n - 1 : n + 1))
-					}}
+					onRepost={handleRepost}
+					onQuote={onQuoteClick}
 				/>
 
 				<ShareButton postId={post.id} />
@@ -306,7 +318,7 @@ function ActionBar({
 					/>
 				</button>
 
-				<StatsButton postId={post.id} />
+				{isOwn && <StatsButton postId={post.id} />}
 			</div>
 		</div>
 	)
@@ -315,14 +327,14 @@ function ActionBar({
 export function RepostButton({
 	reposted,
 	reposts,
-	postId,
-	onToggle,
+	onRepost,
+	onQuote,
 	size,
 }: {
 	reposted: boolean
 	reposts?: number
-	postId: string
-	onToggle: () => void
+	onRepost: () => void
+	onQuote: () => void
 	size?: number
 }) {
 	return (
@@ -336,13 +348,13 @@ export function RepostButton({
 			items={[
 				{
 					label: reposted ? "Undo repost" : "Repost",
-					icon: <Repost size={20} color={reposted ? "#6A88D1" : undefined} />,
-					onSelect: onToggle,
+					icon: <Repost size={20} color="#6A7282" />,
+					onSelect: onRepost,
 				},
 				{
 					label: "Quote",
 					icon: <Quote size={20} color="#6A7282" />,
-					onSelect: () => console.log("TODO: quote post", postId),
+					onSelect: onQuote,
 				},
 			]}
 			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors"
@@ -372,7 +384,8 @@ export function ShareButton({ postId, size }: { postId: string; size?: number })
 }
 
 export function StatsButton({ postId, size }: { postId: string; size?: number }) {
-	const { data, isLoading } = usePostStats(postId)
+	const [isOpen, setIsOpen] = useState(false)
+	const { data, isLoading } = usePostStats(postId, isOpen)
 
 	const statItems: ActionDropdownItem[] = [
 		{
@@ -437,6 +450,9 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		<ActionDropdown
 			trigger={<Stats size={size} />}
 			items={statItems}
+			onOpenChange={(open) => {
+				if (open) setIsOpen(true)
+			}}
 			clsName="flex flex-1 flex-row items-center rounded-full transition-colors"
 		/>
 	)
@@ -532,6 +548,7 @@ export function PostCard({ post }: { post: Post }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
 	const [commentOpen, setCommentOpen] = useState(false)
+	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
 
@@ -625,10 +642,12 @@ export function PostCard({ post }: { post: Post }) {
 					reposts={post.repost_count}
 					repostedByMe={post.reposted_by_me}
 					onCommentClick={() => setCommentOpen(true)}
+					onQuoteClick={() => setQuoteOpen(true)}
 				/>
 			</div>
 
 			<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
+			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</article>
 	)
 }

@@ -63,10 +63,10 @@ export function TopBar() {
 			{/* User info */}
 			<div className="flex items-center gap-2 shrink-0">
 				<button className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
-					<Bell />
-					<span className="absolute top-1.5 right-1.5 w-4.5 h-4.5 bg-destructive text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+					<Bell size={20} />
+					{/* <span className="absolute top-1.5 right-1.5 w-4.5 h-4.5 bg-destructive text-white text-[9px] font-bold rounded-full flex items-center justify-center">
 						2
-					</span>
+					</span> */}
 				</button>
 
 				<button className="flex items-center gap-2.5 px-1 py-1 rounded-full hover:bg-gray-50 transition-colors">

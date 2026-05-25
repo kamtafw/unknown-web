@@ -14,6 +14,8 @@ import {
 	LoginResponseData,
 	PostDetailResponse,
 	PostStatsResponse,
+	RepostPayload,
+	RepostResponse,
 	SignupPayload,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
@@ -104,4 +106,7 @@ export const socialApi = {
 
 	addComment: (payload: AddCommentPayload) =>
 		apiClient.post<AddCommentResponse>("/api/socials/add-comment", payload).then((r) => r.data),
+
+	repost: (payload: RepostPayload) =>
+		apiClient.post<RepostResponse>("/api/socials/repost", payload).then((r) => r.data),
 }

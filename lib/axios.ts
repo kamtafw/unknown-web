@@ -35,7 +35,10 @@ apiClient.interceptors.response.use(
 			// queue request until ongoing refresh completes
 			return new Promise((resolve, reject) => {
 				waitingQueue.push({ resolve, reject })
-			}).then(() => apiClient(original))
+			}).then(() => {
+				original._retry=true
+				return apiClient(original)
+			})
 		}
 
 		original._retry = true

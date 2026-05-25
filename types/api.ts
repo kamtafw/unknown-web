@@ -310,6 +310,21 @@ export interface AddCommentPayload {
 	location?: { longitude: string; latitude: string }
 }
 
+export interface RepostPayload {
+	is_repost: true
+	original_post: string
+	content_text?: string
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+	who_can_reply?: WhoCanReply
+}
+
 export type PostDetailResponse = ApiResponse<Post>
 export type CommentsResponse = ApiResponse<PaginatedResponse<Comment>>
 export type AddCommentResponse = ApiResponse<Comment>
+export type RepostResponse = ApiResponse<{
+	repost_id: string
+	repost_created_at: string
+	original_post: { reposts: { pkid: number; id: string }[] }
+}>
