@@ -2,14 +2,24 @@
 
 import * as Dialog from "@radix-ui/react-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Check, ChevronDown, Image as ImageIcon, MapPin, Smile, X } from "lucide-react"
+import {
+	Check,
+	ChevronDown,
+	Image as ImageIcon,
+	Loader2,
+	MapPin,
+	RefreshCw,
+	Smile,
+	X,
+} from "lucide-react"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import type { OriginalPost, Post, RepostPayload, WhoCanReply } from "@/types/api"
+import type { MediaItem, OriginalPost, Post, RepostPayload, WhoCanReply } from "@/types/api"
 import { useAuthStore } from "@/stores/auth-store"
 import { QuotedPostCard, getInitials } from "./post-card"
 import { Everyone, Followers, Following, Mention, Verified } from "../posts/icons"
 import { useRepost } from "@/hooks/use-repost"
+import { socialApi } from "@/lib/api"
 
 interface ReplyOption {
 	value: WhoCanReply
@@ -104,8 +114,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 	const [text, setText] = useState("")
 	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>("EVERYONE")
 	const [replyPickerOpen, setReplyPickerOpen] = useState(false)
-	const [mediaPreviews, setMediaPreviews] = useState<string[]>([])
-	const [mediaFiles, setMediaFiles] = useState<File[]>([])
+	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
 	const [showEmoji, setShowEmoji] = useState(false)
 	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(null)
 	const [locationLabel, setLocationLabel] = useState<string | null>(null)
@@ -115,32 +124,60 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
 	const currentOption = REPLY_OPTIONS.find((o) => o.value === whoCanReply) ?? REPLY_OPTIONS[0]
+	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
+	const anyUploading = mediaItems.some((m) => m.uploading)
+	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
+	const canSubmit = hasContent && !anyUploading
 
 	const reset = () => {
+		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
 		setText("")
-		setMediaPreviews([])
-		setMediaFiles([])
+		setMediaItems([])
 		setShowEmoji(false)
 		setLocation(null)
 		setLocationLabel(null)
 		setWhoCanReply("EVERYONE")
 	}
 
+	const uploadFile = async (id: string, file: File) => {
+		setMediaItems((prev) =>
+			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
+		)
+		try {
+			const urls = await socialApi.uploadMedia(file)
+			setMediaItems((prev) =>
+				prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)),
+			)
+		} catch {
+			setMediaItems((prev) =>
+				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
+			)
+		}
+	}
+
 	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const remaining = 4 - mediaPreviews.length
+		const remaining = 4 - mediaItems.length
 		const files = Array.from(e.target.files ?? []).slice(0, remaining)
+
 		files.forEach((file) => {
-			const reader = new FileReader()
-			reader.onload = (ev) => setMediaPreviews((p) => [...p, ev.target?.result as string])
-			reader.readAsDataURL(file)
+			const id = crypto.randomUUID()
+			const preview = URL.createObjectURL(file)
+			setMediaItems((prev) => [
+				...prev,
+				{ id, file, preview, urls: null, uploading: true, error: false },
+			])
+			uploadFile(id, file)
 		})
-		setMediaFiles((prev) => [...prev, ...files])
+
 		e.target.value = ""
 	}
 
-	const removeMedia = (index: number) => {
-		setMediaPreviews((p) => p.filter((_, i) => i !== index))
-		setMediaFiles((f) => f.filter((_, i) => i !== index))
+	const removeMedia = (id: string) => {
+		setMediaItems((prev) => {
+			const item = prev.find((m) => m.id === id)
+			if (item) URL.revokeObjectURL(item.preview)
+			return prev.filter((m) => m.id !== id)
+		})
 	}
 
 	const handleEmojiClick = (emoji: string) => {
@@ -182,15 +219,18 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 	}
 
 	const handleSubmit = () => {
+		if (!canSubmit) return
 		const hashtags = extractHashtags(text)
 		const payload: RepostPayload = {
 			is_repost: true,
 			original_post: post.id,
 			content_text: text.trim() || undefined,
 			hashtags: hashtags.length ? hashtags : undefined,
+			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
 			who_can_reply: whoCanReply,
 		}
+
 		repost.mutate(payload, {
 			onSuccess: () => {
 				reset()
@@ -318,29 +358,48 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 									className="w-full resize-none text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed"
 								/>
 
-								{/* Media previews */}
-								{mediaPreviews.length > 0 && (
+								{/* Media grid */}
+								{mediaItems.length > 0 && (
 									<div
-										className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
-											mediaPreviews.length === 1 ? "grid-cols-1" : "grid-cols-2"
-										}`}
+										className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
 									>
-										{mediaPreviews.map((src, i) => (
+										{mediaItems.map((item) => (
 											<div
-												key={i}
+												key={item.id}
 												className="relative bg-gray-100 aspect-video rounded-lg overflow-hidden"
 											>
-												{mediaFiles[i]?.type.startsWith("video/") ? (
-													<video src={src} className="w-full h-full object-cover" />
+												{item.file.type.startsWith("video/") ? (
+													<video src={item.preview} className="w-full h-full object-cover" />
 												) : (
-													<img src={src} alt="" className="w-full h-full object-cover" />
+													<img src={item.preview} alt="" className="w-full h-full object-cover" />
 												)}
-												<button
-													onClick={() => removeMedia(i)}
-													className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
-												>
-													<X size={12} />
-												</button>
+
+												{item.uploading && (
+													<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+														<Loader2 size={22} className="animate-spin text-white" />
+													</div>
+												)}
+
+												{item.error && (
+													<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
+														<span className="text-white text-[11px]">Upload failed</span>
+														<button
+															onClick={() => uploadFile(item.id, item.file)}
+															className="flex items-center gap-1 text-white text-[11px] bg-white/20 hover:bg-white/30 rounded-full px-2.5 py-1 transition-colors"
+														>
+															<RefreshCw size={11} /> Retry
+														</button>
+													</div>
+												)}
+
+												{!item.uploading && (
+													<button
+														onClick={() => removeMedia(item.id)}
+														className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+													>
+														<X size={12} />
+													</button>
+												)}
 											</div>
 										))}
 									</div>
@@ -393,7 +452,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 							{/* Media */}
 							<button
 								onClick={() => fileInputRef.current?.click()}
-								disabled={mediaPreviews.length >= 4}
+								disabled={mediaItems.length >= 4}
 								title="Add photo or video"
 								className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
 							>
@@ -432,13 +491,20 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 							</button>
 						</div>
 
-						<button
-							onClick={handleSubmit}
-							disabled={repost.isPending}
-							className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-						>
-							{repost.isPending ? "Posting…" : "Post"}
-						</button>
+						<div className="flex items-center gap-3">
+							{anyUploading && (
+								<span className="text-xs text-gray-400 flex items-center gap-1.5">
+									<Loader2 size={12} className="animate-spin" /> Uploading…
+								</span>
+							)}
+							<button
+								onClick={handleSubmit}
+								disabled={anyUploading || repost.isPending}
+								className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+							>
+								{repost.isPending ? "Posting…" : "Post"}
+							</button>
+						</div>
 					</div>
 				</Dialog.Content>
 			</Dialog.Portal>

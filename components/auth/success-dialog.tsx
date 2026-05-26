@@ -57,7 +57,7 @@ export function SuccessDialog({
 						onClick={onAction}
 						className="
               w-full h-13 rounded-2xl text-sm text-white font-semibold
-              bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99]
+              bg-primary hover:bg-primary/85 active:scale-[0.99]
               transition-all duration-200
             "
 					>

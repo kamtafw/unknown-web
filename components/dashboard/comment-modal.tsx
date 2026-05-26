@@ -73,6 +73,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const canSubmit = hasContent && !anyUploading
 
 	const reset = () => {
+		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
 		setText("")
 		setMediaItems([])
 		setShowEmoji(false)
@@ -85,8 +86,8 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const { urls } = await socialApi.uploadMedia(file)
-			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, uploading: false } : m)))
+			const urls = await socialApi.uploadMedia(file)
+			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
 				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
@@ -158,6 +159,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 	const handleSubmit = () => {
 		if (!canSubmit) return
+
 		const hashtags = extractHashtags(text)
 		const payload: AddCommentPayload = {
 			post: post.pkid,
@@ -407,13 +409,20 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 							</button>
 						</div>
 
-						<button
-							onClick={handleSubmit}
-							disabled={!canSubmit || addComment.isPending}
-							className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-						>
-							{addComment.isPending ? "Replying…" : "Reply"}
-						</button>
+						<div className="flex items-center gap-3">
+							{anyUploading && (
+								<span className="text-xs text-gray-400 flex items-center gap-1.5">
+									<Loader2 size={12} className="animate-spin" /> Uploading…
+								</span>
+							)}
+							<button
+								onClick={handleSubmit}
+								disabled={!canSubmit || addComment.isPending}
+								className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+							>
+								{addComment.isPending ? "Replying…" : "Reply"}
+							</button>
+						</div>
 					</div>
 				</Dialog.Content>
 			</Dialog.Portal>
