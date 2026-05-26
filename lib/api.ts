@@ -12,11 +12,13 @@ import {
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
+	MediaItem,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
 	RepostResponse,
 	SignupPayload,
+	UploadMediaResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 } from "@/types/api"
@@ -109,4 +111,13 @@ export const socialApi = {
 
 	repost: (payload: RepostPayload) =>
 		apiClient.post<RepostResponse>("/api/socials/repost", payload).then((r) => r.data),
+
+	uploadMedia: async (file: File): Promise<string> => {
+		const formData = new FormData()
+		formData.append("file", file)
+		formData.append("folder", "post")
+
+		const res = await apiClient.post<ApiResponse<string>>("/api/socials/upload-media", formData)
+		return res.data.data
+	},
 }

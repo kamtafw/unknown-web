@@ -109,6 +109,7 @@ export interface SignupPayload {
 export interface VerifyOtpPayload {
 	email: string
 	otp: string
+	type?: "otp" | "pin" | "2fa"
 	need_tokens?: boolean
 	need_otp_token?: boolean
 }
@@ -328,3 +329,16 @@ export type RepostResponse = ApiResponse<{
 	repost_created_at: string
 	original_post: { reposts: { pkid: number; id: string }[] }
 }>
+
+export type MediaKind = "image" | "video" | "audio" | "existing"
+
+export interface MediaItem {
+	id: string
+	file: File
+	preview: string
+	urls: string[] | null
+	uploading: boolean
+	error: boolean
+}
+
+export type UploadMediaResponse = ApiResponse<{ media_type: string; media_urls: string[] }>

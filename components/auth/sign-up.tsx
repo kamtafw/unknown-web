@@ -3,10 +3,10 @@
 import React, { FormEvent, useState } from "react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
+import { Loader2 } from "lucide-react"
 import { signUpSchema, SignUpValues } from "@/lib/schemas"
 import { EmailIcon, PadlockIcon } from "../shared/Icons"
 import { TermsDialog } from "./terms-dialog"
-import { SuccessDialog } from "./success-dialog"
 
 export interface SignUpFormData {
 	email: string
@@ -23,7 +23,6 @@ interface SignUpProps {
 export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) {
 	const [pendingData, setPendingData] = useState<SignUpFormData | null>(null)
 	const [showTerms, setShowTerms] = useState(false)
-	const [showSuccess, setShowSuccess] = useState(false)
 
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
@@ -42,6 +41,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 
 	const handleTermsAccepted = () => {
 		setShowTerms(false)
+		console.log("signup PENDING DATA:", JSON.stringify(pendingData))
 		if (pendingData) {
 			onSuccess(pendingData)
 		}
@@ -156,9 +156,16 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2"
 							>
-								{isPending ? "Signing up..." : "Sign Up"}
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Signing up...
+									</>
+								) : (
+									"Sign Up"
+								)}
 							</button>
 						</Form.Submit>
 
@@ -181,18 +188,6 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 				onOpenChange={(open) => !open && setShowTerms(false)}
 				onContinue={handleTermsAccepted}
 			/>
-
-			{/* <SuccessDialog
-				open={showSuccess}
-				onOpenChange={setShowSuccess}
-				title="Sign up successful"
-				description="Your account was successfully created"
-				actionLabel="Continue"
-				onAction={() => {
-					setShowSuccess(false)
-					onSuccess?.()
-				}}
-			/> */}
 		</>
 	)
 }

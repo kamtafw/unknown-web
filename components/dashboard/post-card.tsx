@@ -208,13 +208,16 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 }
 
 export function QuotedPostCard({ post }: { post: OriginalPost }) {
+	const router = useRouter()
 	const timeAgo = useTimeAgo(post.created_at)
 	const mediaUrls = post.post_media?.map((m) => m.external_url) ?? []
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
 
+	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
+
 	return (
-		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={post.user.profile_photo}
@@ -279,8 +282,7 @@ function ActionBar({
 			<div className="flex flex-1 flex-row items-center gap-5">
 				<button
 					onClick={() => likePost.mutate(post.id)}
-					disabled={likePost.isPending}
-					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary"
+					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary cursor-pointer"
 				>
 					<Like color={post.liked_by_me ? "#6A88D1" : undefined} />
 					<span className="text-sm tabular-nums font-medium">
@@ -290,7 +292,7 @@ function ActionBar({
 
 				<button
 					onClick={onCommentClick}
-					className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors"
+					className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors cursor-pointer"
 				>
 					<Comment />
 					<span className="text-sm tabular-nums">{formatCount(comments)}</span>
@@ -310,7 +312,7 @@ function ActionBar({
 				<button
 					onClick={() => bookmarkPost.mutate(post.id)}
 					disabled={bookmarkPost.isPending}
-					className="flex items-center ml-auto transition-colors hover:text-primary"
+					className="flex items-center ml-auto transition-colors hover:text-primary cursor-pointer"
 				>
 					<Bookmark2
 						color={post.bookmarked_by_me ? "#6A88D1" : undefined}
@@ -357,7 +359,7 @@ export function RepostButton({
 					onSelect: onQuote,
 				},
 			]}
-			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors"
+			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
@@ -378,7 +380,7 @@ export function ShareButton({ postId, size }: { postId: string; size?: number })
 					onSelect: () => console.log("TODO: share to followers", postId),
 				},
 			]}
-			clsName="flex flex-1 items-center rounded-full transition-colors"
+			clsName="flex flex-1 items-center rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
@@ -453,7 +455,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 			onOpenChange={(open) => {
 				if (open) setIsOpen(true)
 			}}
-			clsName="flex flex-1 flex-row items-center rounded-full transition-colors"
+			clsName="flex flex-1 flex-row items-center rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
@@ -550,8 +552,6 @@ export function PostCard({ post }: { post: Post }) {
 	const [commentOpen, setCommentOpen] = useState(false)
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
-	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
-
 	const isCommentRepost = post.reposted_object_type === "Comment"
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
 	const isMyRepost = post.user.pkid === user?.pkid
@@ -577,6 +577,8 @@ export function PostCard({ post }: { post: Post }) {
 
 	const timeAgo = useTimeAgo(displayPost.created_at)
 	const address = !isCommentRepost ? (displayPost.post_location?.[0]?.address ?? "") : ""
+
+	const handleNavigate = () => router.push(`/posts/${displayPost.pkid}`)
 
 	return (
 		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
@@ -624,7 +626,7 @@ export function PostCard({ post }: { post: Post }) {
 					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
 
 					{!unquotedRepost && post.original_post && (
-						<div>
+						<div onClick={(e) => e.stopPropagation()}>
 							{isOriginalComment(post.original_post) ? (
 								<QuotedCommentCard comment={post.original_post} />
 							) : (

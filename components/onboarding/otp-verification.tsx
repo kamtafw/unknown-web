@@ -1,8 +1,8 @@
 "use client"
 
-import React, { FormEvent } from "react"
+import { FormEvent } from "react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { otpSchema } from "@/lib/schemas"
 
 const CODE_LENGTH = 6
@@ -91,9 +91,16 @@ export function OTPVerification({
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99]"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2"
 							>
-								{isPending ? "Verifying..." : "Verify Code"}
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Verifying...
+									</>
+								) : (
+									"Verify Code"
+								)}
 							</button>
 						</Form.Submit>
 

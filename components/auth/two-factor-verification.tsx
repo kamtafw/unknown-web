@@ -1,15 +1,15 @@
 "use client"
 
-import * as React from "react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { ArrowLeft, ArrowRight, Hash, Smartphone, KeyRound } from "lucide-react"
+import { ArrowLeft, ArrowRight, Hash, Smartphone, KeyRound, Loader2 } from "lucide-react"
 import { otpSchema } from "@/lib/schemas"
+import { ReactNode, useState } from "react"
 
 export type TwoFAMethod = "authenticator" | "otp" | "pin"
 
 const METHOD_META: Record<
 	TwoFAMethod,
-	{ label: string; shortLabel: string; icon: React.ReactNode; subtitle: string }
+	{ label: string; shortLabel: string; icon: ReactNode; subtitle: string }
 > = {
 	authenticator: {
 		label: "Google Authenticator",
@@ -50,8 +50,8 @@ export function TwoFactorVerification({
 	onResend,
 	onBack,
 }: TwoFactorVerificationProps) {
-	const [activeMethod, setActiveMethod] = React.useState<TwoFAMethod>(initialMethod)
-	const [otpKey, setOtpKey] = React.useState(0)
+	const [activeMethod, setActiveMethod] = useState<TwoFAMethod>(initialMethod)
+	const [otpKey, setOtpKey] = useState(0)
 
 	const current = METHOD_META[activeMethod]
 	const tabs = availableMethods
@@ -151,9 +151,16 @@ export function TwoFactorVerification({
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2"
 							>
-								{isPending ? "Verifying..." : "Verify Code"}
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Verifying...
+									</>
+								) : (
+									"Verify Code"
+								)}
 							</button>
 						</Form.Submit>
 
