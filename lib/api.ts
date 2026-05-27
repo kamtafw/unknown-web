@@ -4,6 +4,8 @@ import {
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
+	CompleteProfilePayload,
+	CompleteProfileResponse,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
@@ -52,6 +54,10 @@ export const userApi = {
 			if (!user) throw new Error("getMe returned empty data")
 			return user
 		}),
+	completeProfile: (payload: CompleteProfilePayload) =>
+		apiClient
+			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
+			.then((r) => r.data),
 
 	getFriendSuggestions: async (): Promise<FriendSuggestionsResponse> =>
 		await apiClient

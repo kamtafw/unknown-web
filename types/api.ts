@@ -342,3 +342,11 @@ export interface MediaItem {
 }
 
 export type UploadMediaResponse = ApiResponse<{ media_type: string; media_urls: string[] }>
+
+export interface CompleteProfilePayload {
+	first_name: string
+	last_name: string
+	dob: string // YYYY-MM-DD format I guess
+}
+
+export type CompleteProfileResponse = ApiResponse<CompleteProfilePayload>

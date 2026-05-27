@@ -17,27 +17,23 @@ const VerifyPage = () => {
 	const pendingAuth = useAuthStore((s) => s.pendingAuth)
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 	const verifyOtp = useVerifyOtp(flow)
-	const [showSuccess, setShowSuccess] = useState(false)
+
+	const [email] = useState(() => pendingAuth?.email ?? "")
 
 	useEffect(() => {
-		// guard: if somehow no pending auth: bounce back
-		if (!pendingAuth && !isAuthenticated) router.replace("/sign-in")
-	}, [pendingAuth, isAuthenticated, router])
+		if (!pendingAuth && !isAuthenticated && !verifyOtp.isSuccess) router.replace("/sign-in")
+	}, [pendingAuth, isAuthenticated, verifyOtp.isSuccess, router])
 
-	useEffect(() => {
-		if (verifyOtp.isSuccess && flow === "signup") setShowSuccess(true)
-	}, [verifyOtp.isSuccess, flow])
-
-	if (!pendingAuth) return null
+	if (!email) return null
 
 	return (
 		<>
 			<OTPVerification
-				email={pendingAuth.email}
+				email={email}
 				isPending={verifyOtp.isPending}
 				onVerify={(code) =>
 					verifyOtp.mutate({
-						email: pendingAuth.email,
+						email: email,
 						otp: code,
 						type: "otp",
 						need_tokens: true,
@@ -49,15 +45,12 @@ const VerifyPage = () => {
 			/>
 
 			<SuccessDialog
-				open={showSuccess}
-				onOpenChange={setShowSuccess}
+				open={verifyOtp.isSuccess && flow === "signup"}
+				onOpenChange={() => {}}
 				title="Account created!"
 				description="Your account was created successfully. Let's set up your profile."
 				actionLabel="Continue"
-				onAction={() => {
-					setShowSuccess(false)
-					router.push("/complete-profile")
-				}}
+				onAction={() => router.push("/complete-profile")}
 			/>
 		</>
 	)

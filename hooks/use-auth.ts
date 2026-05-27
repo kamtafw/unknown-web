@@ -109,6 +109,19 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 	})
 }
 
+export function useCompleteProfile() {
+	const router = useRouter()
+
+	return useMutation({
+		mutationFn: userApi.completeProfile,
+		onSuccess: (res) => {
+			if (!res.success) return
+
+			router.push("/interests")
+		},
+	})
+}
+
 export function useMe() {
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
