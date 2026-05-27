@@ -58,7 +58,7 @@ export function SuccessDialog({
 						className="
               w-full h-13 rounded-2xl text-sm text-white font-semibold
               bg-primary hover:bg-primary/85 active:scale-[0.99]
-              transition-all duration-200
+              transition-all duration-200 cursor-pointer
             "
 					>
 						{actionLabel}

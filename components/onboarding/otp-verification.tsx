@@ -91,7 +91,7 @@ export function OTPVerification({
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
 							>
 								{isPending ? (
 									<>
@@ -109,7 +109,7 @@ export function OTPVerification({
 							<button
 								type="button"
 								onClick={onResend}
-								className="text-primary font-medium hover:underline focus:outline-none"
+								className="text-primary font-medium hover:underline focus:outline-none cursor-pointer"
 							>
 								Resend
 							</button>

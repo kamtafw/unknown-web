@@ -249,20 +249,6 @@ export interface FollowingUser {
 	profile_photo: string
 }
 
-export interface UsersListData {
-	count: number
-	next: string | null
-	previous: string | null
-	results: SuggestionUser[]
-}
-
-export interface UsersListResponse {
-	success: boolean
-	status_code: number
-	message: string | null
-	data: UsersListData
-}
-
 export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<SuggestionUser>>
 
 export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
@@ -349,4 +335,12 @@ export interface CompleteProfilePayload {
 	dob: string // YYYY-MM-DD format I guess
 }
 
+export interface InterestsPayload {
+	interests: string[]
+}
+
 export type CompleteProfileResponse = ApiResponse<CompleteProfilePayload>
+
+export type InterestsResponse = ApiResponse<InterestsPayload>
+
+export type UserListResponse = ApiResponse<PaginatedResponse<FullUser>>

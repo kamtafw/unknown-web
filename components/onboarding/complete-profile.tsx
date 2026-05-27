@@ -115,7 +115,7 @@ export function CompleteProfile({ isPending = false, onContinue }: CompleteProfi
 					<Form.Submit asChild>
 						<button
 							disabled={isPending}
-							className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary transition-all duration-200 flex items-center justify-center gap-2"
+							className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
 						>
 							{isPending ? (
 								<>

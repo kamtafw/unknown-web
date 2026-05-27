@@ -122,7 +122,7 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200 mt-2">
+							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 cursor-pointer">
 								Change password
 							</button>
 						</Form.Submit>

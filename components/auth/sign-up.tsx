@@ -3,10 +3,10 @@
 import React, { FormEvent, useState } from "react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
-import { Loader2 } from "lucide-react"
+import { CheckCircle2, Circle, Loader2 } from "lucide-react"
 import { signUpSchema, SignUpValues } from "@/lib/schemas"
-import { EmailIcon, PadlockIcon } from "../shared/Icons"
 import { TermsDialog } from "./terms-dialog"
+import { Email, Padlock, Phone } from "./icons"
 
 export interface SignUpFormData {
 	email: string
@@ -22,7 +22,15 @@ interface SignUpProps {
 
 export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) {
 	const [pendingData, setPendingData] = useState<SignUpFormData | null>(null)
+	const [password, setPassword] = useState("")
 	const [showTerms, setShowTerms] = useState(false)
+
+	const RULES = [
+		{ label: "At least 8 to 12 characters", test: (v: string) => v.length >= 8 && v.length <= 12 },
+		{ label: "Special character", test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+		{ label: "One uppercase", test: (v: string) => /[A-Z]/.test(v) },
+		{ label: "One number", test: (v: string) => /\d/.test(v) },
+	]
 
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
@@ -60,7 +68,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						<Form.Field name="email" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">Email Address</Form.Label>
 							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
-								<EmailIcon />
+								<Email />
 								<Form.Control asChild>
 									<input
 										type="email"
@@ -83,7 +91,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						<Form.Field name="phone" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">Phone Number</Form.Label>
 							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
-								<EmailIcon />
+								<Phone />
 								<Form.Control asChild>
 									<input
 										type="tel"
@@ -107,7 +115,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 							<Form.Label className="text-sm font-medium text-gray-800">Create Password</Form.Label>
 							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors">
 								<PasswordToggleField.Root>
-									<PadlockIcon />
+									<Padlock />
 									<Form.Control asChild>
 										<PasswordToggleField.Input
 											name="password"
@@ -116,6 +124,8 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 											minLength={8}
 											maxLength={12}
 											autoComplete="new-password"
+											value={password}
+											onChange={(e) => setPassword(e.target.value)}
 											className="flex-1 text-sm text-gray-900 placeholder:text-gray-500 bg-transparent outline-none"
 										/>
 									</Form.Control>
@@ -127,6 +137,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 									</PasswordToggleField.Toggle>
 								</PasswordToggleField.Root>
 							</div>
+
 							<Form.Message match="valueMissing" className="text-xs text-destructive">
 								Password is required
 							</Form.Message>
@@ -153,10 +164,28 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 							</Form.Message>
 						</Form.Field>
 
+						<ul className="flex flex-col gap-2 -mt-2">
+							{RULES.map(({ label, test }) => {
+								const passed = test(password)
+								return (
+									<li key={label} className="flex items-center gap-2">
+										{passed ? (
+											<CheckCircle2 size={15} className="text-[#6A88D1] shrink-0" strokeWidth={2} />
+										) : (
+											<Circle size={15} className="text-gray-300 shrink-0" strokeWidth={2} />
+										)}
+										<span className={`text-xs ${passed ? "text-gray-700" : "text-gray-400"}`}>
+											{label}
+										</span>
+									</li>
+								)
+							})}
+						</ul>
+
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer"
 							>
 								{isPending ? (
 									<>

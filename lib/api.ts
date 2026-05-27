@@ -11,16 +11,18 @@ import {
 	FollowingsResponse,
 	FriendSuggestionsResponse,
 	FullUser,
+	InterestsPayload,
+	InterestsResponse,
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
-	MediaItem,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
 	RepostResponse,
 	SignupPayload,
 	UploadMediaResponse,
+	UserListResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 } from "@/types/api"
@@ -54,10 +56,19 @@ export const userApi = {
 			if (!user) throw new Error("getMe returned empty data")
 			return user
 		}),
+
 	completeProfile: (payload: CompleteProfilePayload) =>
 		apiClient
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
 			.then((r) => r.data),
+
+	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
+
+	saveInterests: (payload: InterestsPayload) =>
+		apiClient.post<InterestsResponse>("/api/users/interests", payload).then((r) => r.data),
+
+	getUsersList: (page = 1) =>
+		apiClient.get<UserListResponse>(`/api/users/list?page=${page}`).then((r) => r.data),
 
 	getFriendSuggestions: async (): Promise<FriendSuggestionsResponse> =>
 		await apiClient
