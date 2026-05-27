@@ -34,7 +34,7 @@ import { useLikePost, useBookmarkPost } from "@/hooks/use-post-actions"
 import { useEffect, useRef, useState } from "react"
 import dayjs from "dayjs"
 import { useAuthStore } from "@/stores/auth-store"
-import { useAddComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
 import { socialApi } from "@/lib/api"
 
 const EMOJIS = [
@@ -276,6 +276,7 @@ function RepliesSection({ commentId }: { commentId: string }) {
 function CommentComposer({ post }: { post: Post }) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
+	const prependComment = usePrependComment()
 
 	const [text, setText] = useState("")
 	const [focused, setFocused] = useState(false)
@@ -390,7 +391,17 @@ function CommentComposer({ post }: { post: Post }) {
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
-			onSuccess: () => {
+			onSuccess: (res) => {
+				const newComment: Comment = {
+					...res.data,
+					like_count: res.data.like_count ?? 0,
+					replies_count: res.data.replies_count ?? 0,
+					repost_count: res.data.repost_count ?? 0,
+					liked_by_me: res.data.liked_by_me ?? false,
+					reposted_by_me: res.data.reposted_by_me ?? false,
+				}
+				prependComment(post.pkid, newComment)
+
 				reset()
 				setFocused(false)
 			},

@@ -1,11 +1,11 @@
 import { socialApi } from "@/lib/api"
-import { AddCommentPayload, Comment, Post } from "@/types/api"
+import { AddCommentPayload, Comment, CommentsResponse, Post } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
 import { commentKeys, postDetailKeys } from "./use-post-detail"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
-type CommentsCache = InfiniteData<{ comments: Comment[]; nextPage: string | null }>
+type CommentsCache = InfiniteData<CommentsResponse>
 
 function incrementCommentCount(old: FeedCache | undefined, pkid: number): FeedCache | undefined {
 	if (!old) return old
@@ -21,21 +21,24 @@ function incrementCommentCount(old: FeedCache | undefined, pkid: number): FeedCa
 	}
 }
 
-function prependComment(qc: ReturnType<typeof useQueryClient>, pkid: number, comment: Comment) {
-	const key = commentKeys.list(pkid)
+export function usePrependComment() {
+	const qc = useQueryClient()
 
-	console.log("commentKey:", key)
+	return (pkid: number, comment: Comment) => {
+		const key = commentKeys.list(pkid)
 
-	qc.setQueryData<CommentsCache>(key, (old) => {
-		console.log("OLD:", JSON.stringify(old))
-		if (!old) return
-		return {
-			...old,
-			pages: old.pages.map((page, i) =>
-				i === 0 ? { ...page, comments: [comment, ...page.comments] } : page,
-			),
-		}
-	})
+		qc.setQueryData<CommentsCache>(key, (old) => {
+			if (!old) return
+			return {
+				...old,
+				pages: old.pages.map((page, i) =>
+					i === 0
+						? { ...page, data: { ...page.data, results: [comment, ...page.data.results] } }
+						: page,
+				),
+			}
+		})
+	}
 }
 
 export function useAddComment() {
@@ -44,18 +47,9 @@ export function useAddComment() {
 	return useMutation({
 		mutationFn: (payload: AddCommentPayload) => socialApi.addComment(payload),
 
-		onSuccess: (data, vars) => {
+		onSuccess: (_data, vars) => {
 			const pkid = vars.post
 			const detailKey = postDetailKeys.detail(pkid)
-
-			const newComment: Comment = {
-				...data.data,
-				like_count: data.data.like_count ?? 0,
-				replies_count: data.data.replies_count ?? 0,
-				repost_count: data.data.repost_count ?? 0,
-				liked_by_me: data.data.liked_by_me ?? false,
-				reposted_by_me: data.data.reposted_by_me ?? false,
-			}
 
 			// patch comment count in every feed cache
 			qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => incrementCommentCount(old, pkid))
@@ -65,8 +59,6 @@ export function useAddComment() {
 			qc.setQueryData<Post>(detailKey, (old) =>
 				old ? { ...old, post_comment_count: old.post_comment_count + 1 } : old,
 			)
-			console.log("NEW COMMENT:", JSON.stringify(newComment))
-			prependComment(qc, pkid, newComment)
 		},
 	})
 }
