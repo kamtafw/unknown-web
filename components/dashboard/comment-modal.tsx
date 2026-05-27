@@ -272,7 +272,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 										if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
 									}}
 									placeholder="Post your reply"
-									rows={3}
+									rows={2}
 									autoFocus
 									className="w-full resize-none text-[15px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed"
 								/>

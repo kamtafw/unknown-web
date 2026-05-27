@@ -1,8 +1,18 @@
 "use client"
 
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { Comment, Post } from "@/types/api"
-import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import {
+	ArrowLeft,
+	ChevronDown,
+	ChevronUp,
+	Image as ImageIcon,
+	Loader2,
+	MapPin,
+	RefreshCw,
+	Smile,
+	X,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
 	formatCount,
@@ -24,6 +34,45 @@ import { useLikePost, useBookmarkPost } from "@/hooks/use-post-actions"
 import { useEffect, useRef, useState } from "react"
 import dayjs from "dayjs"
 import { useAuthStore } from "@/stores/auth-store"
+import { useAddComment } from "@/hooks/use-comment"
+import { socialApi } from "@/lib/api"
+
+const EMOJIS = [
+	"😀",
+	"😂",
+	"😍",
+	"🥺",
+	"😊",
+	"🔥",
+	"👍",
+	"❤️",
+	"🎉",
+	"✨",
+	"😭",
+	"🤣",
+	"😎",
+	"🙏",
+	"💯",
+	"🤔",
+	"😅",
+	"😤",
+	"🥰",
+	"😢",
+	"💪",
+	"👏",
+	"🎊",
+	"🌟",
+	"😏",
+	"🤩",
+	"😳",
+	"🫶",
+	"💀",
+	"😇",
+]
+
+function extractHashtags(str: string) {
+	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
+}
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
@@ -224,12 +273,348 @@ function RepliesSection({ commentId }: { commentId: string }) {
 	)
 }
 
+function CommentComposer({ post }: { post: Post }) {
+	const user = useAuthStore((s) => s.user)
+	const addComment = useAddComment()
+
+	const [text, setText] = useState("")
+	const [focused, setFocused] = useState(false)
+	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+	const [showEmoji, setShowEmoji] = useState(false)
+	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(null)
+	const [locationLabel, setLocationLabel] = useState<string | null>(null)
+	const [fetchingLocation, setFetchingLocation] = useState(false)
+
+	const containerRef = useRef<HTMLDivElement>(null)
+	const fileInputRef = useRef<HTMLInputElement>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
+	const anyUploading = mediaItems.some((m) => m.uploading)
+	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
+	const canSubmit = hasContent && !anyUploading
+
+	const reset = () => {
+		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
+		setText("")
+		setMediaItems([])
+		setShowEmoji(false)
+		setLocation(null)
+		setLocationLabel(null)
+	}
+
+	const uploadFile = async (id: string, file: File) => {
+		setMediaItems((prev) =>
+			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
+		)
+		try {
+			const urls = await socialApi.uploadMedia(file)
+			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
+		} catch {
+			setMediaItems((prev) =>
+				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
+			)
+		}
+	}
+
+	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const remaining = 4 - mediaItems.length
+		const files = Array.from(e.target.files ?? []).slice(0, remaining)
+
+		files.forEach((file) => {
+			const id = crypto.randomUUID()
+			const preview = URL.createObjectURL(file)
+			setMediaItems((prev) => [
+				...prev,
+				{ id, file, preview, urls: null, uploading: true, error: false },
+			])
+			uploadFile(id, file)
+		})
+
+		e.target.value = ""
+	}
+
+	const removeMedia = (id: string) => {
+		setMediaItems((prev) => {
+			const item = prev.find((m) => m.id === id)
+			if (item) URL.revokeObjectURL(item.preview)
+			return prev.filter((m) => m.id !== id)
+		})
+	}
+
+	const handleEmojiClick = (emoji: string) => {
+		const ta = textareaRef.current
+		if (ta) {
+			const start = ta.selectionStart ?? text.length
+			const end = ta.selectionEnd ?? text.length
+			const next = text.slice(0, start) + emoji + text.slice(end)
+			setText(next)
+			setTimeout(() => {
+				ta.selectionStart = ta.selectionEnd = start + emoji.length
+				ta.focus()
+			}, 0)
+		} else {
+			setText((t) => t + emoji)
+		}
+		setShowEmoji(false)
+	}
+
+	const handleLocation = () => {
+		if (!navigator.geolocation || locationLabel) {
+			setLocation(null)
+			setLocationLabel(null)
+			return
+		}
+		setFetchingLocation(true)
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				setLocation({
+					longitude: String(pos.coords.longitude),
+					latitude: String(pos.coords.latitude),
+				})
+				setLocationLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`)
+				setFetchingLocation(false)
+			},
+			() => setFetchingLocation(false),
+		)
+	}
+
+	const handleSubmit = () => {
+		if (!canSubmit) return
+		const hashtags = extractHashtags(text)
+		const payload: AddCommentPayload = {
+			post: post.pkid,
+			message: text.trim() || undefined,
+			hashtags: hashtags.length ? hashtags : undefined,
+			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
+			location: location ?? undefined,
+		}
+		addComment.mutate(payload, {
+			onSuccess: () => {
+				reset()
+				setFocused(false)
+			},
+		})
+	}
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+			handleSubmit()
+		}
+	}
+
+	return (
+		<div
+			ref={containerRef}
+			className="px-5 py-3 border-b border-gray-100"
+			onBlur={() => {
+				setTimeout(() => {
+					if (!containerRef.current?.contains(document.activeElement) && !text.trim()) {
+						setFocused(false)
+					}
+				}, 0)
+			}}
+		>
+			{focused && (
+				<p className="text-xs text-gray-400 mb-2">
+					Replying to <span className="text-primary">@{post.user.username}</span>
+				</p>
+			)}
+
+			<div className="flex gap-3">
+				<UserAvatar
+					src={user?.profile_photo}
+					first={user?.first_name ?? ""}
+					last={user?.last_name ?? ""}
+				/>
+
+				<div className="flex-1 min-w-0">
+					<textarea
+						ref={textareaRef}
+						value={text}
+						onChange={(e) => setText(e.target.value)}
+						onFocus={() => setFocused(true)}
+						onKeyDown={handleKeyDown}
+						placeholder="Post your reply"
+						rows={focused ? 2 : 1}
+						className="w-full resize-none bg-transparent text-[13.5px] text-gray-800 placeholder:text-gray-400 outline-none leading-relaxed pt-0.5"
+					/>
+
+					{/* Media grid */}
+					{mediaItems.length > 0 && (
+						<div
+							className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
+								mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-2"
+							}`}
+						>
+							{mediaItems.map((item) => (
+								<div
+									key={item.id}
+									className="relative bg-gray-100 aspect-video rounded-lg overflow-hidden"
+								>
+									{item.file.type.startsWith("video/") ? (
+										<video src={item.preview} className="w-full h-full object-cover" />
+									) : (
+										<img src={item.preview} alt="" className="w-full h-full object-cover" />
+									)}
+									{/* Uploading overlay */}
+									{item.uploading && (
+										<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+											<Loader2 size={22} className="animate-spin text-white" />
+										</div>
+									)}
+
+									{/* Error overlay with retry */}
+									{item.error && (
+										<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
+											<span className="text-white text-[11px]">Upload failed</span>
+											<button
+												onClick={() => uploadFile(item.id, item.file)}
+												className="flex items-center gap-1 text-white text-[11px] bg-white/20 hover:bg-white/30 rounded-full px-2.5 py-1 transition-colors"
+											>
+												<RefreshCw size={11} /> Retry
+											</button>
+										</div>
+									)}
+
+									{/* Remove (hidden while uploading) */}
+									{!item.uploading && (
+										<button
+											onClick={() => removeMedia(item.id)}
+											className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+										>
+											<X size={12} />
+										</button>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+
+					{/* Location badge */}
+					{locationLabel && (
+						<div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+							<MapPin size={11} />
+							{locationLabel}
+							<button
+								onClick={() => {
+									setLocation(null)
+									setLocationLabel(null)
+								}}
+								className="ml-0.5 hover:opacity-60"
+							>
+								<X size={10} />
+							</button>
+						</div>
+					)}
+
+					{/* Emoji picker */}
+					{showEmoji && (
+						<div className="mt-2 p-2 border border-gray-200 rounded-xl bg-white shadow-lg">
+							<div className="grid grid-cols-10 gap-0.5">
+								{EMOJIS.map((e) => (
+									<button
+										key={e}
+										onClick={() => handleEmojiClick(e)}
+										className="w-8 h-8 text-lg rounded hover:bg-gray-100 flex items-center justify-center transition-colors"
+									>
+										{e}
+									</button>
+								))}
+							</div>
+						</div>
+					)}
+
+					{focused && (
+						<div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+							<div className="flex items-center gap-3 text-primary">
+								{/* Media */}
+								<button
+									type="button"
+									title="Add image"
+									onClick={() => fileInputRef.current?.click()}
+									className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-40"
+								>
+									<ImageIcon size={18} />
+								</button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept="image/*,video/*"
+									multiple
+									className="hidden"
+									onChange={handleMediaSelect}
+								/>
+
+								{/* Emoji */}
+								<button
+									type="button"
+									title="Add emoji"
+									onClick={() => setShowEmoji((v) => !v)}
+									className={`p-2 rounded-full transition-colors cursor-pointer ${
+										showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"
+									}`}
+								>
+									<Smile size={18} />
+								</button>
+
+								{/* Location */}
+								<button
+									type="button"
+									title={locationLabel ? "Remove location" : "Add location"}
+									onClick={handleLocation}
+									disabled={fetchingLocation}
+									className={`p-2 rounded-full transition-colors disabled:opacity-50 cursor-pointer${
+										locationLabel
+											? "bg-primary/10 text-primary"
+											: "text-primary hover:bg-primary/10"
+									}`}
+								>
+									<MapPin size={18} />
+								</button>
+							</div>
+
+							<div className="flex items-center gap-3">
+								{anyUploading && (
+									<span className="text-xs text-gray-400 flex items-center gap-1.5">
+										<Loader2 size={12} className="animate-spin" /> Uploading…
+									</span>
+								)}
+								<button
+									onClick={handleSubmit}
+									disabled={!canSubmit || addComment.isPending}
+									className="px-4 py-1.5 rounded-full bg-primary cursor-pointer text-white text-sm font-semibold disabled:opacity-40 hover:bg-primary/85 active:scale-[0.98] transition-all"
+								>
+									{addComment.isPending ? "Posting…" : "Reply"}
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+
+				{!focused && (
+					<button
+						type="button"
+						onClick={() => {
+							setFocused(true)
+							setTimeout(() => textareaRef.current?.focus(), 0)
+						}}
+						className="shrink-0 self-start mt-0.5 px-4 py-1.5 cursor-pointer rounded-full border border-gray-200 text-gray-400 text-sm font-semibold"
+					>
+						Reply
+					</button>
+				)}
+			</div>
+		</div>
+	)
+}
+
 function PostBody({ post }: { post: Post }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 
-	const isOwn = post.user.id === post.user.id
+	const isOwn = post.user.id === user?.id
 	const mediaUrls = post.post_media.map((m) => m.external_url)
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
@@ -317,7 +702,12 @@ function PostBody({ post }: { post: Post }) {
 						<CommentIcon size={22} />
 					</button>
 
-					<RepostButton reposted={post.is_repost} postId={post.id} onToggle={() => {}} size={22} />
+					<RepostButton
+						reposted={post.is_repost}
+						onRepost={() => {}}
+						onQuote={() => {}}
+						size={22}
+					/>
 
 					<ShareButton postId={post.id} size={22} />
 				</div>
@@ -436,6 +826,8 @@ export function PostDetailView({ pkid }: { pkid: number }) {
 						<PostBody post={post} />
 
 						<div className="border-b border-gray-100" />
+
+						<CommentComposer post={post} />
 
 						{/* Comments */}
 						{(commentsLoading || isPlaceholderData) && !commentsData ? (
