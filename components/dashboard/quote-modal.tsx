@@ -13,7 +13,7 @@ import {
 	X,
 } from "lucide-react"
 import { Avatar } from "radix-ui"
-import { useRef, useState } from "react"
+import { ReactNode, useRef, useState } from "react"
 import type { MediaItem, OriginalPost, Post, RepostPayload, WhoCanReply } from "@/types/api"
 import { useAuthStore } from "@/stores/auth-store"
 import { QuotedPostCard, getInitials } from "./post-card"
@@ -24,7 +24,7 @@ import { socialApi } from "@/lib/api"
 interface ReplyOption {
 	value: WhoCanReply
 	label: string
-	icon: React.ReactNode
+	icon: ReactNode
 }
 
 const REPLY_OPTIONS: ReplyOption[] = [
@@ -145,9 +145,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 		)
 		try {
 			const urls = await socialApi.uploadMedia(file)
-			setMediaItems((prev) =>
-				prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)),
-			)
+			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
 				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
@@ -256,7 +254,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 
 				<Dialog.Content
 					className="
-						fixed left-1/2 top-[8%] -translate-x-1/2 z-50
+						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
 						w-full max-w-150 max-h-[85vh]
 						bg-white rounded-2xl shadow-2xl
 						flex flex-col
@@ -271,60 +269,60 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 						Write your quote for this post
 					</Dialog.Description>
 
-					<div className="flex items-center px-4 pt-4 pb-2 shrink-0">
+					<div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+						<div className="py-1.5 shrink-0">
+							<Popover open={replyPickerOpen} onOpenChange={setReplyPickerOpen}>
+								<PopoverTrigger asChild>
+									<button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary text-primary text-[13px] font-semibold hover:bg-primary/5 transition-colors">
+										{currentOption.icon}
+										{currentOption.label}
+										<ChevronDown size={13} />
+									</button>
+								</PopoverTrigger>
+
+								<PopoverContent
+									align="start"
+									sideOffset={6}
+									className="w-fit p-0 rounded-2xl border border-gray-100 shadow-xl"
+								>
+									<div className="px-2.5 pt-4 pb-2">
+										<h3 className="font-bold text-gray-900 text-[15px] mb-3">Who can reply?</h3>
+										<div className="flex flex-col">
+											{REPLY_OPTIONS.map((opt) => (
+												<button
+													key={opt.value}
+													onClick={() => {
+														setWhoCanReply(opt.value)
+														setReplyPickerOpen(false)
+													}}
+													className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+												>
+													<div className="flex items-center gap-3">
+														<div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+															{opt.icon}
+														</div>
+														<span className="text-sm font-medium text-gray-900 pr-1.5">
+															{opt.label}
+														</span>
+													</div>
+													{whoCanReply === opt.value && (
+														<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+															<Check size={11} className="text-white" strokeWidth={3} />
+														</div>
+													)}
+												</button>
+											))}
+										</div>
+									</div>
+								</PopoverContent>
+							</Popover>
+						</div>
+
 						<Dialog.Close asChild>
 							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
 								<X size={18} />
 							</button>
 						</Dialog.Close>
-					</div>
-
-					<div className="px-4 pb-3 shrink-0">
-						<Popover open={replyPickerOpen} onOpenChange={setReplyPickerOpen}>
-							<PopoverTrigger asChild>
-								<button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary text-primary text-[13px] font-semibold hover:bg-primary/5 transition-colors">
-									{currentOption.icon}
-									{currentOption.label}
-									<ChevronDown size={13} />
-								</button>
-							</PopoverTrigger>
-
-							<PopoverContent
-								align="start"
-								sideOffset={6}
-								className="w-fit p-0 rounded-2xl border border-gray-100 shadow-xl"
-							>
-								<div className="px-2.5 pt-4 pb-2">
-									<h3 className="font-bold text-gray-900 text-[15px] mb-3">Who can reply?</h3>
-									<div className="flex flex-col">
-										{REPLY_OPTIONS.map((opt) => (
-											<button
-												key={opt.value}
-												onClick={() => {
-													setWhoCanReply(opt.value)
-													setReplyPickerOpen(false)
-												}}
-												className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
-											>
-												<div className="flex items-center gap-3">
-													<div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-														{opt.icon}
-													</div>
-													<span className="text-sm font-medium text-gray-900 pr-1.5">
-														{opt.label}
-													</span>
-												</div>
-												{whoCanReply === opt.value && (
-													<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-														<Check size={11} className="text-white" strokeWidth={3} />
-													</div>
-												)}
-											</button>
-										))}
-									</div>
-								</div>
-							</PopoverContent>
-						</Popover>
 					</div>
 
 					<div className="flex-1 overflow-y-auto px-4 pb-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">

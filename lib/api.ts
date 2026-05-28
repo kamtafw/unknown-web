@@ -6,6 +6,8 @@ import {
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
+	CreatePostPayload,
+	CreatePostResponse,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
@@ -98,6 +100,9 @@ export const socialApi = {
 			.then((r) => r.data),
 
 	getFeedByPath: (path: string) => apiClient.get<FeedResponse>(path).then((r) => r.data),
+
+	createPost: (payload: CreatePostPayload) =>
+		apiClient.post<CreatePostResponse>("/api/socials/create-post", payload).then((r) => r.data),
 
 	likePost: (payload: { post: string }) =>
 		apiClient.post<LikeResponse>("/api/socials/like-post", payload).then((r) => r.data),

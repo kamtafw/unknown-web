@@ -126,12 +126,9 @@ export interface PostUser {
 }
 
 export interface PostLocation {
-	pkid: number
-	id: string
 	longitude: string
 	latitude: string
 	address: string
-	created_at: string
 }
 
 export interface PostMedia {
@@ -198,11 +195,6 @@ export interface Post {
 	post_comment_count: number
 	repost_count: number
 	post_hashtagged: string[]
-	post_reaction: unknown[]
-	post_bookmarked: unknown[]
-	post_comment: unknown[]
-	post_liked: unknown[]
-	reposts: unknown[]
 }
 
 export interface PostStats {
@@ -344,3 +336,23 @@ export type CompleteProfileResponse = ApiResponse<CompleteProfilePayload>
 export type InterestsResponse = ApiResponse<InterestsPayload>
 
 export type UserListResponse = ApiResponse<PaginatedResponse<FullUser>>
+
+export interface CreatePostPayload {
+	content_text: string | null
+	who_can_see: WhoCanSee
+	who_can_reply: WhoCanReply
+	is_shared: null
+	is_repost: false
+	original_post: null
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+}
+
+export type CreatePostResponse = ApiResponse<{
+	pkid: number
+	id: string
+	content_text: string | null
+	uploaded_media: string[]
+	created_at: string[]
+}>

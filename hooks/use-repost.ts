@@ -99,12 +99,9 @@ function buildOptimisticPost(payload: RepostPayload, originalPost: Post, user: F
 		post_location: payload.location
 			? [
 					{
-						pkid: 0,
-						id: "",
 						longitude: payload.location.longitude,
 						latitude: payload.location.latitude,
 						address: "",
-						created_at: "",
 					},
 				]
 			: [],
@@ -113,11 +110,6 @@ function buildOptimisticPost(payload: RepostPayload, originalPost: Post, user: F
 		post_comment_count: 0,
 		repost_count: 0,
 		post_hashtagged: payload.hashtags ?? [],
-		post_reaction: [],
-		post_bookmarked: [],
-		post_comment: [],
-		post_liked: [],
-		reposts: [],
 	}
 }
 
