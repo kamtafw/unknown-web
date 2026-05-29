@@ -21,5 +21,10 @@ export async function POST(req: NextRequest) {
 	})
 
 	const json = await upstream.json()
+
+	if (!upstream.ok || !json.success) {
+		return NextResponse.json(json, { status: upstream.status })
+	}
+
 	return NextResponse.json(json, { status: 200 })
 }

@@ -3,7 +3,7 @@
 import React, { FormEvent, useState } from "react"
 import { Form } from "radix-ui"
 import { completeProfileSchema, type CompleteProfileValues } from "@/lib/schemas"
-import { Calendar, Check, User } from "lucide-react"
+import { Calendar, Check, Loader2, User } from "lucide-react"
 
 function formatDOB(raw: string): string {
 	const digits = raw.replace(/\D/g, "").slice(0, 8)
@@ -13,10 +13,11 @@ function formatDOB(raw: string): string {
 }
 
 interface CompleteProfileProps {
+	isPending: boolean
 	onContinue: (data: CompleteProfileValues) => void
 }
 
-export function CompleteProfile({ onContinue }: CompleteProfileProps) {
+export function CompleteProfile({ isPending = false, onContinue }: CompleteProfileProps) {
 	const [dob, setDob] = useState("")
 
 	const dobParsed = completeProfileSchema.shape.dob.safeParse(dob)
@@ -32,9 +33,7 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 	return (
 		<div className="flex justify-center pt-20 px-4">
 			<div className="w-full max-w-110">
-				<h1 className="text-[28px] font-bold text-gray-900 mb-7">
-					Complete your profile
-				</h1>
+				<h1 className="text-[28px] font-bold text-gray-900 mb-7">Complete your profile</h1>
 
 				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
 					{/* Full name */}
@@ -43,7 +42,7 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 						<div className="flex gap-3">
 							<Form.Field name="firstName" className="flex-1 flex flex-col gap-1.5">
 								<Form.Label className="sr-only">First name</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-[#8892C4] transition-colors data-invalid:border-red-400 data-invalid:border-2">
+								<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
 									<User size={16} className="text-gray-400 shrink-0" />
 									<Form.Control asChild>
 										<input
@@ -62,7 +61,7 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 
 							<Form.Field name="lastName" className="flex-1 flex flex-col gap-1.5">
 								<Form.Label className="sr-only">Last name</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-[#8892C4] transition-colors data-invalid:border-red-400 data-invalid:border-2">
+								<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
 									<User size={16} className="text-gray-400 shrink-0" />
 									<Form.Control asChild>
 										<input
@@ -84,7 +83,7 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 					{/* Date of birth */}
 					<Form.Field name="dob" className="flex flex-col gap-1.5">
 						<Form.Label className="text-sm font-medium text-gray-800">Date of Birth</Form.Label>
-						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 bg-white focus-within:border-2 focus-within:border-[#8892C4] transition-colors">
+						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 bg-white focus-within:border-2 focus-within:border-primary transition-colors">
 							<Calendar size={16} className="text-gray-400 shrink-0" />
 							<Form.Control asChild>
 								<input
@@ -102,7 +101,7 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 								<Check size={16} className="text-green-500 shrink-0" strokeWidth={2.5} />
 							)}
 						</div>
-						<Form.Message match="valueMissing" className="text-xs text-red-500">
+						<Form.Message match="valueMissing" className="text-xs text-destructive">
 							Date of birth is required
 						</Form.Message>
 						<Form.Message
@@ -114,8 +113,18 @@ export function CompleteProfile({ onContinue }: CompleteProfileProps) {
 					</Form.Field>
 
 					<Form.Submit asChild>
-						<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#8892C4] transition-all duration-200">
-							Continue
+						<button
+							disabled={isPending}
+							className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+						>
+							{isPending ? (
+								<>
+									<Loader2 size={15} className="animate-spin" />
+									Saving...
+								</>
+							) : (
+								"Continue"
+							)}
 						</button>
 					</Form.Submit>
 				</Form.Root>

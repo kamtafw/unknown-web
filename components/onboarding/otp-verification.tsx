@@ -1,8 +1,8 @@
 "use client"
 
-import React, { FormEvent } from "react"
+import { FormEvent } from "react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { otpSchema } from "@/lib/schemas"
 
 const CODE_LENGTH = 6
@@ -64,10 +64,10 @@ export function OTPVerification({
 										key={i}
 										className="
                       w-15.5 h-15.5 text-center text-xl font-semibold
-                      bg-[#EEF1F8] text-gray-900 rounded-xl
+                      bg-gray-200 text-gray-900 rounded-xl
                       border-2 border-transparent
-                      focus:outline-none focus:border-[#8892C4]
-                      caret-[#8892C4] transition-colors duration-150
+                      focus:outline-none focus:border-primary
+                      caret-primary transition-colors duration-150
                     "
 									/>
 								))}
@@ -91,9 +91,16 @@ export function OTPVerification({
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-[#8892C4] hover:bg-[#7580B8] active:scale-[0.99]"
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
 							>
-								{isPending ? "Verifying" : "Verify Code"}
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Verifying...
+									</>
+								) : (
+									"Verify Code"
+								)}
 							</button>
 						</Form.Submit>
 
@@ -102,7 +109,7 @@ export function OTPVerification({
 							<button
 								type="button"
 								onClick={onResend}
-								className="text-[#5B67A8] font-medium hover:underline focus:outline-none"
+								className="text-primary font-medium hover:underline focus:outline-none cursor-pointer"
 							>
 								Resend
 							</button>

@@ -10,7 +10,7 @@ export async function POST(_req: NextRequest) {
 		return NextResponse.json({ success: false, message: "No refresh token" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO}/auth/token/refresh/`, {
+	const upstream = await fetch(`${DJANGO}/auth/token/refresh`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ refresh: refreshToken }),

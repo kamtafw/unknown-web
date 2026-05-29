@@ -9,7 +9,13 @@ import { useEffect } from "react"
 function toMethod(otp_default: string): TwoFAMethod {
 	if (otp_default === "2fa") return "authenticator"
 	if (otp_default === "pin") return "pin"
-	return "otp" // "email" → OTP tab
+	return "otp"
+}
+
+function methodToApiType(method: TwoFAMethod): "otp" | "pin" | "2fa" {
+	if (method === "authenticator") return "2fa"
+	if (method === "pin") return "pin"
+	return "otp"
 }
 
 const TwoFAPage = () => {
@@ -34,12 +40,11 @@ const TwoFAPage = () => {
 			initialMethod={toMethod(pendingAuth.otp_default)}
 			availableMethods={availableMethods}
 			isPending={verifyOtp.isPending}
-			onVerify={(_method, code) => {
-				// TODO: all verification funnels through verify-otp for now
-				// when dedicated 2FA/PIN endpoints are added, branch on _method here
+			onVerify={(method, code) => {
 				verifyOtp.mutate({
 					email: pendingAuth.email,
 					otp: code,
+					type: methodToApiType(method),
 					need_tokens: true,
 					need_otp_token: true,
 				})

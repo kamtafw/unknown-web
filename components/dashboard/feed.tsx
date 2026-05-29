@@ -3,8 +3,9 @@
 import { flattenFeedPages, useFollowingFeed, useForYouFeed } from "@/hooks/use-feed"
 import { Loader2 } from "lucide-react"
 import { Tabs } from "radix-ui"
-import { useEffect, useRef } from "react"
+import { RefObject, useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
+import { Post } from "@/types/api"
 
 function PostSkeleton() {
 	return (
@@ -23,15 +24,27 @@ function PostSkeleton() {
 	)
 }
 
-function FeedPanel({ feedType }: { feedType: "for-you" | "following" }) {
-	const sentinel = useRef<HTMLDivElement>(null)
+interface FeedContentProps {
+	posts: Post[]
+	isLoading: boolean
+	isError: boolean
+	isFetchingNextPage: boolean
+	hasNextPage: boolean
+	fetchNextPage: () => void
+	feedType: "for-you" | "following"
+	sentinel: RefObject<HTMLDivElement | null>
+}
 
-	const forYou = useForYouFeed()
-	const following = useFollowingFeed(feedType === "following")
-	const q = feedType === "for-you" ? forYou : following
-
-	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = q
-
+function FeedContent({
+	posts,
+	isLoading,
+	isError,
+	isFetchingNextPage,
+	hasNextPage,
+	fetchNextPage,
+	feedType,
+	sentinel,
+}: FeedContentProps) {
 	useEffect(() => {
 		const el = sentinel.current
 		if (!el) return
@@ -43,9 +56,7 @@ function FeedPanel({ feedType }: { feedType: "for-you" | "following" }) {
 		)
 		obs.observe(el)
 		return () => obs.disconnect()
-	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-	const posts = flattenFeedPages(data?.pages)
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage, sentinel])
 
 	if (isLoading)
 		return (
@@ -86,9 +97,65 @@ function FeedPanel({ feedType }: { feedType: "for-you" | "following" }) {
 	)
 }
 
-export function Feed() {
-	useForYouFeed()
+function ForYouPanel() {
+	const sentinel = useRef<HTMLDivElement>(null)
+	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+		useForYouFeed()
 
+	useEffect(() => {
+		const el = sentinel.current
+		if (!el) return
+		const obs = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+			},
+			{ rootMargin: "200px" },
+		)
+		obs.observe(el)
+		return () => obs.disconnect()
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
+
+	const posts = flattenFeedPages(data?.pages)
+
+	return (
+		<FeedContent
+			{...{
+				posts,
+				isLoading,
+				isError,
+				isFetchingNextPage,
+				hasNextPage,
+				fetchNextPage,
+				feedType: "for-you" as const,
+				sentinel,
+			}}
+		/>
+	)
+}
+
+function FollowingPanel() {
+	const sentinel = useRef<HTMLDivElement>(null)
+	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+		useFollowingFeed()
+	const posts = flattenFeedPages(data?.pages)
+
+	return (
+		<FeedContent
+			{...{
+				posts,
+				isLoading,
+				isError,
+				isFetchingNextPage,
+				hasNextPage,
+				fetchNextPage,
+				feedType: "following" as const,
+				sentinel,
+			}}
+		/>
+	)
+}
+
+export function Feed() {
 	return (
 		<Tabs.Root
 			defaultValue="for-you"
@@ -126,10 +193,14 @@ export function Feed() {
 				className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none"
 			>
 				<Tabs.Content value="for-you" className="focus:outline-none">
-					<FeedPanel feedType="for-you" />
+					<ForYouPanel />
 				</Tabs.Content>
-				<Tabs.Content value="following" className="focus:outline-none">
-					<FeedPanel feedType="following" />
+				<Tabs.Content
+					value="following"
+					forceMount
+					className="focus:outline-none data-[state=inactive]:hidden"
+				>
+					<FollowingPanel />
 				</Tabs.Content>
 			</div>
 		</Tabs.Root>

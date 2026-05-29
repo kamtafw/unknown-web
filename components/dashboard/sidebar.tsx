@@ -5,6 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Add, AI, Bookmark, Home, Invite, Logout, Settings } from "./icons"
 import { useLogout } from "@/hooks/use-auth"
+import { useState } from "react"
+import { CreatePostModal } from "./create-post-modal"
 
 const NAV_ITEMS = [
 	{ label: "Home", icon: Home, href: "/home" },
@@ -17,6 +19,8 @@ const NAV_ITEMS = [
 export function Sidebar() {
 	const pathname = usePathname()
 	const logout = useLogout()
+
+	const [createOpen, setCreateOpen] = useState(false)
 
 	return (
 		<aside className="w-80 shrink-0 flex flex-col bg-white rounded-2xl overflow-hidden mb-5">
@@ -46,11 +50,16 @@ export function Sidebar() {
 
 			{/* Create Post */}
 			<div className="mt-3 p-3 flex-1">
-				<button className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-primary font-semibold text-sm py-3 px-5 rounded-full transition-colors">
+				<button
+					onClick={() => setCreateOpen(true)}
+					className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-primary font-semibold text-sm py-3 px-5 rounded-full transition-colors cursor-pointer"
+				>
 					<Add color="#6A88D1" />
 					Create Post
 				</button>
 			</div>
+
+			<CreatePostModal open={createOpen} onOpenChange={setCreateOpen} />
 
 			<div className="mx-4 border-t border-gray-100" />
 

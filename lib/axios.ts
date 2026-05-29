@@ -5,7 +5,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://dev.appscombo.org/a
 export const apiClient: AxiosInstance = axios.create({
 	baseURL: BASE_URL,
 	withCredentials: true, // sends the HTTP-only cookies on every request
-	headers: { "Content-Type": "application/json" },
 })
 
 let isRefreshing = false
@@ -35,7 +34,10 @@ apiClient.interceptors.response.use(
 			// queue request until ongoing refresh completes
 			return new Promise((resolve, reject) => {
 				waitingQueue.push({ resolve, reject })
-			}).then(() => apiClient(original))
+			}).then(() => {
+				original._retry = true
+				return apiClient(original)
+			})
 		}
 
 		original._retry = true

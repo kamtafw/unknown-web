@@ -61,8 +61,8 @@ export function TermsDialog({ open, onOpenChange, onContinue }: TermsDialogProps
 						onClick={onContinue}
 						className="
               w-full h-13 rounded-2xl text-sm text-white font-semibold
-              bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99]
-              transition-all duration-200
+              bg-primary hover:bg-primary/85 active:scale-[0.99]
+              transition-all duration-200 cursor-pointer
             "
 					>
 						Continue to sign up

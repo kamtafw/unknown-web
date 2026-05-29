@@ -1,23 +1,20 @@
-import { NextRequest, NextResponse } from "next/server"
 import { getAccessToken } from "@/lib/cookies"
+import { NextRequest, NextResponse } from "next/server"
 
 const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ pkid: number }> }) {
-	const { pkid } = await params
+export async function GET(req: NextRequest) {
 	const accessToken = await getAccessToken()
 
-	if (!accessToken) {
+	if (!accessToken)
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
-	}
 
-	const upstream = await fetch(`${DJANGO}/socials/post/${pkid}/get`, {
-		headers: {
-			Authorization: `Bearer ${accessToken}`,
-			"Content-Type": "application/json",
-		},
+	const upstream = await fetch(`${DJANGO}/users/list${req.nextUrl.search}`, {
+		headers: { Authorization: `Bearer ${accessToken}` },
 		cache: "no-store",
 	})
+
+  console.log("user list upstream", upstream)
 
 	const json = await upstream.json()
 	return NextResponse.json(json, { status: upstream.status })

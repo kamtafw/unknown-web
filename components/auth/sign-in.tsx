@@ -3,6 +3,7 @@
 import React, { FormEvent } from "react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
+import { Loader2 } from "lucide-react"
 import { EmailIcon, PadlockIcon } from "../shared/Icons"
 import { signInSchema, type SignInValues } from "@/lib/schemas"
 
@@ -39,7 +40,7 @@ export function SignIn({
 					<Form.Field name="identifier" className="flex flex-col gap-1.5">
 						<Form.Label className="text-sm font-medium text-gray-800">Email or Phone</Form.Label>
 
-						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-red-400 data-invalid:border-2">
+						<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
 							<EmailIcon />
 							<Form.Control asChild>
 								<input
@@ -106,9 +107,16 @@ export function SignIn({
 					<Form.Submit asChild>
 						<button
 							disabled={isPending}
-							className="w-full h-12.5 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2"
+							className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer"
 						>
-							{isPending ? "Signing in..." : "Sign in"}
+							{isPending ? (
+								<>
+									<Loader2 size={15} className="animate-spin" />
+									Signing in...
+								</>
+							) : (
+								"Sign in"
+							)}
 						</button>
 					</Form.Submit>
 

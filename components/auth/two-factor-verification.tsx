@@ -1,15 +1,15 @@
 "use client"
 
-import * as React from "react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { ArrowLeft, ArrowRight, Hash, Smartphone, KeyRound } from "lucide-react"
+import { ArrowLeft, ArrowRight, Hash, Smartphone, KeyRound, Loader2 } from "lucide-react"
 import { otpSchema } from "@/lib/schemas"
+import { ReactNode, useState } from "react"
 
 export type TwoFAMethod = "authenticator" | "otp" | "pin"
 
 const METHOD_META: Record<
 	TwoFAMethod,
-	{ label: string; shortLabel: string; icon: React.ReactNode; subtitle: string }
+	{ label: string; shortLabel: string; icon: ReactNode; subtitle: string }
 > = {
 	authenticator: {
 		label: "Google Authenticator",
@@ -50,8 +50,8 @@ export function TwoFactorVerification({
 	onResend,
 	onBack,
 }: TwoFactorVerificationProps) {
-	const [activeMethod, setActiveMethod] = React.useState<TwoFAMethod>(initialMethod)
-	const [otpKey, setOtpKey] = React.useState(0)
+	const [activeMethod, setActiveMethod] = useState<TwoFAMethod>(initialMethod)
+	const [otpKey, setOtpKey] = useState(0)
 
 	const current = METHOD_META[activeMethod]
 	const tabs = availableMethods
@@ -99,7 +99,7 @@ export function TwoFactorVerification({
                       transition-all duration-200
                       ${
 												method === activeMethod
-													? "bg-white text-[#4A5BA8] shadow-sm"
+													? "bg-white text-primary/90 shadow-sm"
 													: "text-gray-500 hover:text-gray-700"
 											}
                     `}
@@ -130,10 +130,10 @@ export function TwoFactorVerification({
 										key={i}
 										className="
                       w-15.5 h-15.5 text-center text-xl font-semibold
-                      bg-[#EEF1F8] text-gray-900 rounded-xl
+                      bg-gray-200 text-gray-900 rounded-xl
                       border-2 border-transparent
-                      focus:outline-none focus:border-[#8892C4]
-                      caret-[#8892C4] transition-colors duration-150
+                      focus:outline-none focus:border-primary
+                      caret-primary transition-colors duration-150
                     "
 									/>
 								))}
@@ -142,15 +142,25 @@ export function TwoFactorVerification({
 
 							<Form.Message
 								match={(v) => v.length > 0 && v.length < CODE_LENGTH}
-								className="text-xs text-red-500"
+								className="text-xs text-destructive"
 							>
 								Enter all {CODE_LENGTH} digits
 							</Form.Message>
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-[#8892C4] hover:bg-[#7580b8] active:scale-[0.99] transition-all duration-200">
-								Verify Code
+							<button
+								disabled={isPending}
+								className="w-full h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2"
+							>
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Verifying...
+									</>
+								) : (
+									"Verify Code"
+								)}
 							</button>
 						</Form.Submit>
 
@@ -160,7 +170,7 @@ export function TwoFactorVerification({
 								<button
 									type="button"
 									onClick={() => onResend?.(activeMethod)}
-									className="text-[#5B67A8] font-medium hover:underline focus:outline-none"
+									className="text-primary font-medium hover:underline focus:outline-none"
 								>
 									Resend
 								</button>

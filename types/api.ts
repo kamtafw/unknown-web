@@ -109,6 +109,7 @@ export interface SignupPayload {
 export interface VerifyOtpPayload {
 	email: string
 	otp: string
+	type?: "otp" | "pin" | "2fa"
 	need_tokens?: boolean
 	need_otp_token?: boolean
 }
@@ -125,12 +126,9 @@ export interface PostUser {
 }
 
 export interface PostLocation {
-	pkid: number
-	id: string
 	longitude: string
 	latitude: string
 	address: string
-	created_at: string
 }
 
 export interface PostMedia {
@@ -196,12 +194,7 @@ export interface Post {
 	post_like_count: number
 	post_comment_count: number
 	repost_count: number
-	post_reaction: unknown[]
 	post_hashtagged: string[]
-	post_bookmarked: unknown[]
-	post_comment: unknown[]
-	post_liked: unknown[]
-	reposts: unknown[]
 }
 
 export interface PostStats {
@@ -248,20 +241,6 @@ export interface FollowingUser {
 	profile_photo: string
 }
 
-export interface UsersListData {
-	count: number
-	next: string | null
-	previous: string | null
-	results: SuggestionUser[]
-}
-
-export interface UsersListResponse {
-	success: boolean
-	status_code: number
-	message: string | null
-	data: UsersListData
-}
-
 export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<SuggestionUser>>
 
 export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
@@ -280,38 +259,6 @@ export interface PostCommentDetail {
 	uploaded_media: string[]
 	comment_location: PostLocation
 	comment_hashtagged: string[]
-}
-
-export interface PostDetail {
-	pkid: number
-	id: string
-	user: PostUser
-	content_text: string
-	bookmarked_by_me: boolean
-	liked_by_me: boolean
-	is_shared: boolean | null
-	is_repost: boolean
-	original_post: OriginalPost | null
-	who_can_see: WhoCanSee
-	who_can_reply: WhoCanReply
-	created_at: string
-	updated_at: string
-	post_location: PostLocation[]
-	post_media: PostMedia[]
-	post_bookmarked: Array<{ pkid: number; user: number; post: number; created_at: string }>
-	post_liked: Array<{
-		pkid: number
-		user: number
-		post: number
-		post_is_liked: boolean
-		created_at: string
-	}>
-	post_like_count: number
-	post_comment: PostCommentDetail[]
-	post_comment_count: number
-	repost: unknown[]
-	repost_count: number
-	post_hashtagged: string[]
 }
 
 export interface Comment {
@@ -333,5 +280,79 @@ export interface Comment {
 	reposted_by_me: boolean
 }
 
-export type PostDetailResponse = ApiResponse<PostDetail>
+export interface AddCommentPayload {
+	post: number
+	message?: string
+	parent_comment?: number
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+}
+
+export interface RepostPayload {
+	is_repost: true
+	original_post: string
+	content_text?: string
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+	who_can_reply?: WhoCanReply
+}
+
+export type PostDetailResponse = ApiResponse<Post>
 export type CommentsResponse = ApiResponse<PaginatedResponse<Comment>>
+export type AddCommentResponse = ApiResponse<Comment>
+export type RepostResponse = ApiResponse<{
+	repost_id: string
+	repost_created_at: string
+	original_post: { reposts: { pkid: number; id: string }[] }
+}>
+
+export type MediaKind = "image" | "video" | "audio" | "existing"
+
+export interface MediaItem {
+	id: string
+	file: File
+	preview: string
+	urls: string[] | null
+	uploading: boolean
+	error: boolean
+}
+
+export type UploadMediaResponse = ApiResponse<{ media_type: string; media_urls: string[] }>
+
+export interface CompleteProfilePayload {
+	first_name: string
+	last_name: string
+	dob: string // YYYY-MM-DD format I guess
+}
+
+export interface InterestsPayload {
+	interests: string[]
+}
+
+export type CompleteProfileResponse = ApiResponse<CompleteProfilePayload>
+
+export type InterestsResponse = ApiResponse<InterestsPayload>
+
+export type UserListResponse = ApiResponse<PaginatedResponse<FullUser>>
+
+export interface CreatePostPayload {
+	content_text: string | null
+	who_can_see: WhoCanSee
+	who_can_reply: WhoCanReply
+	is_shared: null
+	is_repost: false
+	original_post: null
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { longitude: string; latitude: string }
+}
+
+export type CreatePostResponse = ApiResponse<{
+	pkid: number
+	id: string
+	content_text: string | null
+	uploaded_media: string[]
+	created_at: string[]
+}>

@@ -1,5 +1,5 @@
 import { socialApi } from "@/lib/api"
-import { CommentsResponse, Post, PostDetail } from "@/types/api"
+import { CommentsResponse, Post } from "@/types/api"
 import { InfiniteData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
 
@@ -21,22 +21,11 @@ export function usePostDetail(pkid: number) {
 		queryKey: postDetailKeys.detail(pkid),
 		queryFn: () => socialApi.getPostDetail(pkid).then((r) => r.data),
 		staleTime: 1000 * 60 * 2,
-		// seeds from feed cache → post renders immediately, comments load in background
-		// isPlaceholderData will be true until real fetch completes
-		placeholderData: (): PostDetail | undefined => {
+		placeholderData: (): Post | undefined => {
 			for (const key of [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]) {
 				const cache = qc.getQueryData<FeedCache>(key)
 				const post = cache?.pages.flatMap((p) => p.posts).find((p) => p.pkid === pkid)
-				if (post) {
-					return {
-						...post,
-						post_comment: [],
-						post_bookmarked: [],
-						post_liked: [],
-						repost: [],
-						post_hashtagged: post.post_hashtagged ?? [],
-					} as unknown as PostDetail
-				}
+				return post
 			}
 		},
 	})

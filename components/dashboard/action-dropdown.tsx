@@ -14,13 +14,19 @@ interface ActionDropdownProps {
 	trigger: ReactNode
 	items: ActionDropdownItem[]
 	clsName?: string
+	onOpenChange?: (open: boolean) => void
 }
 
-export function ActionDropdown({ trigger, items, clsName }: ActionDropdownProps) {
+export function ActionDropdown({ trigger, items, clsName, onOpenChange }: ActionDropdownProps) {
 	const [open, setOpen] = useState(false)
 
+	const handleOpenChange = (next: boolean) => {
+		setOpen(next)
+		onOpenChange?.(next)
+	}
+
 	return (
-		<DropdownMenu.Root open={open} onOpenChange={setOpen}>
+		<DropdownMenu.Root open={open} onOpenChange={handleOpenChange}>
 			<DropdownMenu.Trigger asChild>
 				<button
 					className={clsName}

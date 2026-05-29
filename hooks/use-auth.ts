@@ -54,13 +54,12 @@ export function useSignup() {
 
 	return useMutation({
 		mutationFn: (payload: SignupPayload) => authApi.signup(payload),
-		onSuccess: (res) => {
+		onSuccess: (res, vars) => {
 			if (!res.success) return
 
-			// store email so verify page can pre-fill and submit
 			useAuthStore.setState({
 				pendingAuth: {
-					email: "",
+					email: vars.email,
 					otp_default: "email",
 					is_2fa_enabled: false,
 					is_pin_enabled: false,
@@ -103,11 +102,22 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			queryClient.setQueryData(authKeys.me, fullUser)
 			setUser(fullUser)
 
-			if (flow === "signup") {
-				router.push("/complete-profile")
-			} else {
+			if (flow === "signin") {
 				router.push("/home")
 			}
+		},
+	})
+}
+
+export function useCompleteProfile() {
+	const router = useRouter()
+
+	return useMutation({
+		mutationFn: userApi.completeProfile,
+		onSuccess: (res) => {
+			if (!res.success) return
+
+			router.push("/interests")
 		},
 	})
 }
@@ -119,7 +129,7 @@ export function useMe() {
 		queryKey: authKeys.me,
 		queryFn: userApi.getMe,
 		enabled: isAuthenticated,
-		staleTime: 1000 * 60 * 5, // 5 min
+		staleTime: 1000 * 60 * 5,
 	})
 }
 

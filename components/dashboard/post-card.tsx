@@ -24,6 +24,9 @@ import {
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRouter } from "next/navigation"
+import { CommentModal } from "./comment-modal"
+import { useRepost } from "@/hooks/use-repost"
+import { QuoteModal } from "./quote-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -63,7 +66,7 @@ export function renderText(text: string) {
 	)
 }
 
-function isOriginalComment(
+export function isOriginalComment(
 	obj: OriginalPost | OriginalComment | null | undefined,
 ): obj is OriginalComment {
 	return !!obj && "message" in obj
@@ -169,7 +172,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	)
 }
 
-function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
+export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 	const { message, mediaUrls } = normaliseCommentOriginal(comment)
 	const timeAgo = useTimeAgo(comment.created_at)
 	const fullname =
@@ -205,13 +208,16 @@ function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 }
 
 export function QuotedPostCard({ post }: { post: OriginalPost }) {
+	const router = useRouter()
 	const timeAgo = useTimeAgo(post.created_at)
 	const mediaUrls = post.post_media?.map((m) => m.external_url) ?? []
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
 
+	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
+
 	return (
-		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={post.user.profile_photo}
@@ -243,26 +249,40 @@ function ActionBar({
 	comments,
 	reposts: initReposts,
 	repostedByMe,
+	onQuoteClick,
+	onCommentClick,
 }: {
 	post: Post
 	comments: number
 	reposts: number
 	repostedByMe: boolean
+	onQuoteClick: () => void
+	onCommentClick: () => void
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 
+	const isOwn = post.user.pkid === user?.pkid
+
+	const repost = useRepost()
 	const [reposted, setReposted] = useState(repostedByMe)
 	const [reposts, setReposts] = useState(initReposts)
+
+	const handleRepost = () => {
+		setReposted((v) => !v)
+		setReposts((n) => (reposted ? n - 1 : n + 1))
+		if (!reposted) {
+			repost.mutate({ is_repost: true, original_post: post.id })
+		}
+	}
 
 	return (
 		<div className="flex items-center mt-4 text-gray-400">
 			<div className="flex flex-1 flex-row items-center gap-5">
 				<button
 					onClick={() => likePost.mutate(post.id)}
-					disabled={likePost.isPending}
-					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary"
+					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary cursor-pointer"
 				>
 					<Like color={post.liked_by_me ? "#6A88D1" : undefined} />
 					<span className="text-sm tabular-nums font-medium">
@@ -270,7 +290,10 @@ function ActionBar({
 					</span>
 				</button>
 
-				<button className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors">
+				<button
+					onClick={onCommentClick}
+					className="flex flex-1 flex-row items-center gap-1.5 hover:text-primary transition-colors cursor-pointer"
+				>
 					<Comment />
 					<span className="text-sm tabular-nums">{formatCount(comments)}</span>
 				</button>
@@ -278,11 +301,8 @@ function ActionBar({
 				<RepostButton
 					reposted={reposted}
 					reposts={reposts}
-					postId={post.id}
-					onToggle={() => {
-						setReposted((v) => !v)
-						setReposts((n) => (reposted ? n - 1 : n + 1))
-					}}
+					onRepost={handleRepost}
+					onQuote={onQuoteClick}
 				/>
 
 				<ShareButton postId={post.id} />
@@ -292,7 +312,7 @@ function ActionBar({
 				<button
 					onClick={() => bookmarkPost.mutate(post.id)}
 					disabled={bookmarkPost.isPending}
-					className="flex items-center ml-auto transition-colors hover:text-primary"
+					className="flex items-center ml-auto transition-colors hover:text-primary cursor-pointer"
 				>
 					<Bookmark2
 						color={post.bookmarked_by_me ? "#6A88D1" : undefined}
@@ -300,52 +320,54 @@ function ActionBar({
 					/>
 				</button>
 
-				<StatsButton postId={post.id} />
+				{isOwn && <StatsButton postId={post.id} />}
 			</div>
 		</div>
 	)
 }
 
-function RepostButton({
+export function RepostButton({
 	reposted,
 	reposts,
-	postId,
-	onToggle,
+	onRepost,
+	onQuote,
+	size,
 }: {
 	reposted: boolean
-	reposts: number
-	postId: string
-	onToggle: () => void
+	reposts?: number
+	onRepost: () => void
+	onQuote: () => void
+	size?: number
 }) {
 	return (
 		<ActionDropdown
 			trigger={
 				<>
-					<Repost color={reposted ? "#6A88D1" : undefined} />
-					<span className="text-sm tabular-nums">{formatCount(reposts)}</span>
+					<Repost color={reposted ? "#6A88D1" : undefined} size={size} />
+					{reposts && <span className="text-sm tabular-nums">{formatCount(reposts)}</span>}
 				</>
 			}
 			items={[
 				{
 					label: reposted ? "Undo repost" : "Repost",
-					icon: <Repost size={20} color={reposted ? "#6A88D1" : undefined} />,
-					onSelect: onToggle,
+					icon: <Repost size={20} color="#6A7282" />,
+					onSelect: onRepost,
 				},
 				{
 					label: "Quote",
 					icon: <Quote size={20} color="#6A7282" />,
-					onSelect: () => console.log("TODO: quote post", postId),
+					onSelect: onQuote,
 				},
 			]}
-			clsName="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-green-500"
+			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
 
-function ShareButton({ postId }: { postId: string }) {
+export function ShareButton({ postId, size }: { postId: string; size?: number }) {
 	return (
 		<ActionDropdown
-			trigger={<Share />}
+			trigger={<Share size={size} />}
 			items={[
 				{
 					label: "Share to messenger",
@@ -358,13 +380,14 @@ function ShareButton({ postId }: { postId: string }) {
 					onSelect: () => console.log("TODO: share to followers", postId),
 				},
 			]}
-			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+			clsName="flex flex-1 items-center rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
 
-function StatsButton({ postId }: { postId: string }) {
-	const { data, isLoading } = usePostStats(postId)
+export function StatsButton({ postId, size }: { postId: string; size?: number }) {
+	const [isOpen, setIsOpen] = useState(false)
+	const { data, isLoading } = usePostStats(postId, isOpen)
 
 	const statItems: ActionDropdownItem[] = [
 		{
@@ -427,9 +450,12 @@ function StatsButton({ postId }: { postId: string }) {
 
 	return (
 		<ActionDropdown
-			trigger={<Stats />}
+			trigger={<Stats size={size} />}
 			items={statItems}
-			clsName="flex flex-1 flex-row items-center hover:text-primary transition-colors"
+			onOpenChange={(open) => {
+				if (open) setIsOpen(true)
+			}}
+			clsName="flex flex-1 flex-row items-center rounded-full transition-colors cursor-pointer"
 		/>
 	)
 }
@@ -523,8 +549,8 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 export function PostCard({ post }: { post: Post }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
-
-	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
+	const [commentOpen, setCommentOpen] = useState(false)
+	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const isCommentRepost = post.reposted_object_type === "Comment"
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
@@ -551,6 +577,8 @@ export function PostCard({ post }: { post: Post }) {
 
 	const timeAgo = useTimeAgo(displayPost.created_at)
 	const address = !isCommentRepost ? (displayPost.post_location?.[0]?.address ?? "") : ""
+
+	const handleNavigate = () => router.push(`/posts/${displayPost.pkid}`)
 
 	return (
 		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
@@ -598,7 +626,7 @@ export function PostCard({ post }: { post: Post }) {
 					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
 
 					{!unquotedRepost && post.original_post && (
-						<div>
+						<div onClick={(e) => e.stopPropagation()}>
 							{isOriginalComment(post.original_post) ? (
 								<QuotedCommentCard comment={post.original_post} />
 							) : (
@@ -615,8 +643,13 @@ export function PostCard({ post }: { post: Post }) {
 					comments={post.post_comment_count}
 					reposts={post.repost_count}
 					repostedByMe={post.reposted_by_me}
+					onCommentClick={() => setCommentOpen(true)}
+					onQuoteClick={() => setQuoteOpen(true)}
 				/>
 			</div>
+
+			<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
+			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</article>
 	)
 }

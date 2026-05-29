@@ -1,18 +1,30 @@
 import {
+	AddCommentPayload,
+	AddCommentResponse,
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
+	CompleteProfilePayload,
+	CompleteProfileResponse,
+	CreatePostPayload,
+	CreatePostResponse,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
 	FriendSuggestionsResponse,
 	FullUser,
+	InterestsPayload,
+	InterestsResponse,
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
 	PostDetailResponse,
 	PostStatsResponse,
+	RepostPayload,
+	RepostResponse,
 	SignupPayload,
+	UploadMediaResponse,
+	UserListResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 } from "@/types/api"
@@ -47,6 +59,19 @@ export const userApi = {
 			return user
 		}),
 
+	completeProfile: (payload: CompleteProfilePayload) =>
+		apiClient
+			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
+			.then((r) => r.data),
+
+	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
+
+	saveInterests: (payload: InterestsPayload) =>
+		apiClient.post<InterestsResponse>("/api/users/interests", payload).then((r) => r.data),
+
+	getUsersList: (page = 1) =>
+		apiClient.get<UserListResponse>(`/api/users/list?page=${page}`).then((r) => r.data),
+
 	getFriendSuggestions: async (): Promise<FriendSuggestionsResponse> =>
 		await apiClient
 			.get<FriendSuggestionsResponse>("/api/users/friend-suggestions")
@@ -76,6 +101,9 @@ export const socialApi = {
 
 	getFeedByPath: (path: string) => apiClient.get<FeedResponse>(path).then((r) => r.data),
 
+	createPost: (payload: CreatePostPayload) =>
+		apiClient.post<CreatePostResponse>("/api/socials/create-post", payload).then((r) => r.data),
+
 	likePost: (payload: { post: string }) =>
 		apiClient.post<LikeResponse>("/api/socials/like-post", payload).then((r) => r.data),
 
@@ -99,4 +127,19 @@ export const socialApi = {
 		apiClient
 			.get<CommentsResponse>(`/api/socials/comment-replies/${commentId}`)
 			.then((r) => r.data),
+
+	addComment: (payload: AddCommentPayload) =>
+		apiClient.post<AddCommentResponse>("/api/socials/add-comment", payload).then((r) => r.data),
+
+	repost: (payload: RepostPayload) =>
+		apiClient.post<RepostResponse>("/api/socials/repost", payload).then((r) => r.data),
+
+	uploadMedia: async (file: File) => {
+		const formData = new FormData()
+		formData.append("file", file)
+		formData.append("folder", "post")
+
+		const res = await apiClient.post<UploadMediaResponse>("/api/socials/upload-media", formData)
+		return res.data.data.media_urls
+	},
 }
