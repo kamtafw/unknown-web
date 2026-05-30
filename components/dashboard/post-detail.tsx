@@ -2,17 +2,7 @@
 
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
-import {
-	ArrowLeft,
-	ChevronDown,
-	ChevronUp,
-	Image as ImageIcon,
-	Loader2,
-	MapPin,
-	RefreshCw,
-	Smile,
-	X,
-} from "lucide-react"
+import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
 	formatCount,
@@ -31,11 +21,13 @@ import {
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { Like, Comment as CommentIcon, Repost, Bookmark2 } from "./icons"
 import { useLikePost, useBookmarkPost } from "@/hooks/use-post-actions"
-import { useEffect, useRef, useState } from "react"
+import { forwardRef, useEffect, useRef, useState } from "react"
 import dayjs from "dayjs"
 import { useAuthStore } from "@/stores/auth-store"
 import { useAddComment, usePrependComment } from "@/hooks/use-comment"
 import { socialApi } from "@/lib/api"
+import { CommentModal } from "./comment-modal"
+import { ReplyModal } from "./reply-modal"
 
 const EMOJIS = [
 	"😀",
@@ -114,95 +106,108 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 	)
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
-	const [repliesOpen, setRepliesOpen] = useState(false)
-	const timeAgo = useTimeAgo(comment.created_at)
-	const fullname =
-		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
-		comment.user.username
+const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: boolean }>(
+	function CommentRow({ comment, highlighted }, ref) {
+		const [replyOpen, setReplyOpen] = useState(false)
+		const [repliesOpen, setRepliesOpen] = useState(false)
+		const timeAgo = useTimeAgo(comment.created_at)
+		const fullname =
+			[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
+			comment.user.username
 
-	const hasContent = !!comment.message?.trim() || comment.uploaded_media.length > 0
+		const hasContent = !!comment.message?.trim() || comment.uploaded_media.length > 0
 
-	if (!hasContent) return null
+		if (!hasContent) return null
 
-	return (
-		<div className="px-5 py-4 border-b border-gray-100">
-			<div className="flex gap-3">
-				{/* Avatar + optional thread line */}
-				<div className="flex flex-col items-center shrink-0">
-					<UserAvatar
-						src={comment.user.profile_photo}
-						first={comment.user.first_name}
-						last={comment.user.last_name}
-					/>
-					{repliesOpen && comment.replies_count > 0 && (
-						<div className="w-0.5 bg-gray-200 flex-1 mt-1.5 min-h-4" />
-					)}
-				</div>
-
-				<div className="flex-1 min-w-0">
-					{/* Header */}
-					<div className="flex items-center gap-1.5 flex-wrap">
-						<span className="font-semibold text-sm text-gray-900 leading-tight">{fullname}</span>
-						<span className="text-gray-500 text-[13px]">@{comment.user.username}</span>
-						<span className="text-gray-400 text-xs">· {timeAgo}</span>
+		return (
+			<div
+				ref={ref}
+				className={`px-5 py-4 border-b border-gray-100 transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+			>
+				<div className="flex gap-3">
+					{/* Avatar + optional thread line */}
+					<div className="flex flex-col items-center shrink-0">
+						<UserAvatar
+							src={comment.user.profile_photo}
+							first={comment.user.first_name}
+							last={comment.user.last_name}
+						/>
+						{repliesOpen && comment.replies_count > 0 && (
+							<div className="w-0.5 bg-gray-200 flex-1 mt-1.5 min-h-4" />
+						)}
 					</div>
 
-					{/* Message */}
-					{comment.message?.trim() && (
-						<p className="text-[13.5px] text-gray-800 leading-relaxed mt-0.5">
-							{renderText(comment.message)}
-						</p>
-					)}
+					<div className="flex-1 min-w-0">
+						{/* Header */}
+						<div className="flex items-center gap-1.5 flex-wrap">
+							<span className="font-semibold text-sm text-gray-900 leading-tight">{fullname}</span>
+							<span className="text-gray-500 text-[13px]">@{comment.user.username}</span>
+							<span className="text-gray-400 text-xs">· {timeAgo}</span>
+						</div>
 
-					{/* Media */}
-					<CommentMediaGrid urls={comment.uploaded_media} />
+						{/* Message */}
+						{comment.message?.trim() && (
+							<p className="text-[13.5px] text-gray-800 leading-relaxed mt-0.5">
+								{renderText(comment.message)}
+							</p>
+						)}
 
-					{/* Actions */}
-					<div className="flex items-center gap-5 mt-2.5">
-						<button className="flex items-center gap-1 text-gray-400 transition-colors">
-							<Like size={20} color={comment.liked_by_me ? "#6A88D1" : undefined} />
-							{comment.like_count > 0 && (
-								<span className="text-xs">{formatCount(comment.like_count)}</span>
-							)}
-						</button>
+						{/* Media */}
+						<CommentMediaGrid urls={comment.uploaded_media} />
+
+						{/* Actions */}
+						<div className="flex items-center text-gray-400 mt-2.5 w-4/5">
+							<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
+								<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
+								<span className="text-sm tabular-nums font-medium">
+									{formatCount(comment.like_count)}
+								</span>
+							</button>
+
+							<button
+								onClick={() => setReplyOpen(true)}
+								className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer"
+							>
+								<CommentIcon size={22} />
+								<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
+							</button>
+
+							<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
+								<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
+								<span className="text-sm tabular-nums font-medium">
+									{formatCount(comment.repost_count)}
+								</span>
+							</button>
+
+							<ShareButton postId={comment.id} size={22} />
+						</div>
 
 						{comment.replies_count > 0 && (
 							<button
-								onClick={() => setRepliesOpen((v) => !v)}
-								className="flex items-center gap-1 text-gray-400 hover:text-primary transition-colors"
+								className="mt-1 flex-row items-center gap-1.5"
+								onClick={() => setRepliesOpen(true)}
 							>
-								<CommentIcon size={16} />
-								<span className="text-xs">{comment.replies_count}</span>
-								{repliesOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+								<span className="text-sm text-primary font-medium">
+									{repliesOpen
+										? "Hide replies"
+										: `View ${comment.replies_count} ${comment.replies_count === 1 ? "reply" : "replies"}`}
+								</span>
 							</button>
-						)}
-
-						{comment.repost_count > 0 && (
-							<span className="flex items-center gap-1 text-gray-400">
-								<Repost size={16} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-								<span className="text-xs">{formatCount(comment.repost_count)}</span>
-							</span>
-						)}
-
-						{comment.repost_count > 0 && (
-							<span className="flex items-center gap-1 text-gray-400">
-								<Repost size={16} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-							</span>
 						)}
 					</div>
 				</div>
-			</div>
+				{/* Replies — indented with left border */}
+				{repliesOpen && (
+					<div className="ml-13 mt-1 border-l-2 border-gray-100 pl-3">
+						<RepliesSection commentId={comment.id} />
+					</div>
+				)}
 
-			{/* Replies — indented with left border */}
-			{repliesOpen && (
-				<div className="ml-13 mt-1 border-l-2 border-gray-100 pl-3">
-					<RepliesSection commentId={comment.id} />
-				</div>
-			)}
-		</div>
-	)
-}
+				<ReplyModal comment={comment} open={replyOpen} onOpenChange={setReplyOpen} />
+			</div>
+		)
+	},
+)
 
 function ReplyRow({ reply }: { reply: Comment }) {
 	const timeAgo = useTimeAgo(reply.created_at)
@@ -620,7 +625,7 @@ function CommentComposer({ post }: { post: Post }) {
 	)
 }
 
-function PostBody({ post }: { post: Post }) {
+function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
@@ -634,111 +639,118 @@ function PostBody({ post }: { post: Post }) {
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	return (
-		<div className="px-5">
-			<div className="flex items-start gap-3 pt-5 pb-2">
-				<UserAvatar
-					src={post.user.profile_photo}
-					first={post.user.first_name}
-					last={post.user.last_name}
-				/>
-				<div className="flex-1 min-w-0">
-					<p className="font-bold text-[15px] text-gray-900 leading-tight">{fullname}</p>
-					<p className="text-gray-500 text-sm">@{post.user.username}</p>
+		<>
+			<div className="px-5">
+				<div className="flex items-start gap-3 pt-5 pb-2">
+					<UserAvatar
+						src={post.user.profile_photo}
+						first={post.user.first_name}
+						last={post.user.last_name}
+					/>
+					<div className="flex-1 min-w-0">
+						<p className="font-bold text-[15px] text-gray-900 leading-tight">{fullname}</p>
+						<p className="text-gray-500 text-sm">@{post.user.username}</p>
+					</div>
+
+					<div onClick={(e) => e.stopPropagation()}>
+						<PostOptionsMenu post={post} currentUserId={post.user?.pkid} />
+					</div>
 				</div>
 
-				<div onClick={(e) => e.stopPropagation()}>
-					<PostOptionsMenu post={post} currentUserId={post.user?.pkid} />
-				</div>
-			</div>
+				<div>
+					{!!post.content_text && (
+						<p className="text-gray-800 leading-relaxed">{renderText(post.content_text)}</p>
+					)}
 
-			<div>
-				{!!post.content_text && (
-					<p className="text-gray-800 leading-relaxed">{renderText(post.content_text)}</p>
+					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
+
+					{post.original_post &&
+						(isOriginalComment(post.original_post) ? (
+							<QuotedCommentCard comment={post.original_post} />
+						) : (
+							<QuotedPostCard post={post.original_post} />
+						))}
+				</div>
+
+				{/* Timestamp */}
+				<div className="pt-3 text-[13px] text-gray-400">
+					{fullDate}
+					{shortAddress && <> · {shortAddress}</>}
+				</div>
+
+				{/* Engagement stats */}
+				{(post.repost_count > 0 || post.post_like_count > 0 || post.post_comment_count > 0) && (
+					<div className="py-3 border-b border-gray-100 flex items-center gap-5 text-sm">
+						{post.repost_count > 0 && (
+							<span>
+								<strong className="text-gray-900">{formatCount(post.repost_count)}</strong>{" "}
+								<span className="text-gray-500">
+									{post.repost_count === 1 ? "Repost" : "Reposts"}
+								</span>
+							</span>
+						)}
+						{post.post_like_count > 0 && (
+							<span>
+								<strong className="text-gray-900">{formatCount(post.post_like_count)}</strong>{" "}
+								<span className="text-gray-500">
+									{post.post_like_count === 1 ? "Like" : "Likes"}
+								</span>
+							</span>
+						)}
+						{post.post_comment_count > 0 && (
+							<span>
+								<strong className="text-gray-900">{formatCount(post.post_comment_count)}</strong>{" "}
+								<span className="text-gray-500">
+									{post.post_comment_count === 1 ? "Comment" : "Comments"}
+								</span>
+							</span>
+						)}
+					</div>
 				)}
 
-				{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
+				{/* Action bar */}
+				<div className="py-1 flex items-center">
+					<div className="flex flex-1 flex-row items-center gap-5">
+						<button
+							onClick={() => likePost.mutate(post.id)}
+							className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:primary transition-colors cursor-pointer"
+						>
+							<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
+						</button>
+						<button
+							onClick={onCommentClick}
+							className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:primary transition-colors cursor-pointer"
+						>
+							<CommentIcon size={22} />
+						</button>
 
-				{post.original_post &&
-					(isOriginalComment(post.original_post) ? (
-						<QuotedCommentCard comment={post.original_post} />
-					) : (
-						<QuotedPostCard post={post.original_post} />
-					))}
-			</div>
-
-			{/* Timestamp */}
-			<div className="pt-3 text-[13px] text-gray-400">
-				{fullDate}
-				{shortAddress && <> · {shortAddress}</>}
-			</div>
-
-			{/* Engagement stats */}
-			{(post.repost_count > 0 || post.post_like_count > 0 || post.post_comment_count > 0) && (
-				<div className="py-3 border-b border-gray-100 flex items-center gap-5 text-sm">
-					{post.repost_count > 0 && (
-						<span>
-							<strong className="text-gray-900">{formatCount(post.repost_count)}</strong>{" "}
-							<span className="text-gray-500">
-								{post.repost_count === 1 ? "Repost" : "Reposts"}
-							</span>
-						</span>
-					)}
-					{post.post_like_count > 0 && (
-						<span>
-							<strong className="text-gray-900">{formatCount(post.post_like_count)}</strong>{" "}
-							<span className="text-gray-500">{post.post_like_count === 1 ? "Like" : "Likes"}</span>
-						</span>
-					)}
-					{post.post_comment_count > 0 && (
-						<span>
-							<strong className="text-gray-900">{formatCount(post.post_comment_count)}</strong>{" "}
-							<span className="text-gray-500">
-								{post.post_comment_count === 1 ? "Comment" : "Comments"}
-							</span>
-						</span>
-					)}
-				</div>
-			)}
-
-			{/* Action bar */}
-			<div className="py-1 flex items-center">
-				<div className="flex flex-1 flex-row items-center gap-5">
-					<button
-						onClick={() => likePost.mutate(post.id)}
-						className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:primary transition-colors"
-					>
-						<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
-					</button>
-					<button className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:primary transition-colors">
-						<CommentIcon size={22} />
-					</button>
-
-					<RepostButton
-						reposted={post.is_repost}
-						onRepost={() => {}}
-						onQuote={() => {}}
-						size={22}
-					/>
-
-					<ShareButton postId={post.id} size={22} />
-				</div>
-
-				<div className="flex flex-row items-center gap-4 ml-auto">
-					<button
-						onClick={() => bookmarkPost.mutate(post.id)}
-						className="flex items-center ml-auto p-3 rounded-full hover:bg-blue-50 transition-colors"
-					>
-						<Bookmark2
+						<RepostButton
+							reposted={post.is_repost}
+							onRepost={() => {}}
+							onQuote={() => {}}
 							size={22}
-							color={post.bookmarked_by_me ? "#6A88D1" : undefined}
-							bookmarked={post.bookmarked_by_me}
 						/>
-					</button>
 
-					{isOwn && <StatsButton postId={post.id} size={22} />}
+						<ShareButton postId={post.id} size={22} />
+					</div>
+
+					<div className="flex flex-row items-center gap-4 ml-auto">
+						<button
+							onClick={() => bookmarkPost.mutate(post.id)}
+							className="flex items-center ml-auto p-3 rounded-full hover:bg-blue-50 transition-colors cursor-pointer"
+						>
+							<Bookmark2
+								size={22}
+								color={post.bookmarked_by_me ? "#6A88D1" : undefined}
+								bookmarked={post.bookmarked_by_me}
+							/>
+						</button>
+
+						{isOwn && <StatsButton postId={post.id} size={22} />}
+					</div>
 				</div>
 			</div>
-		</div>
+		</>
 	)
 }
 
@@ -775,9 +787,18 @@ function PostSkeleton() {
 	)
 }
 
-export function PostDetailView({ pkid }: { pkid: number }) {
+export function PostDetailView({
+	pkid,
+	highlightCommentId,
+}: {
+	pkid: number
+	highlightCommentId?: string
+}) {
 	const router = useRouter()
 	const sentinel = useRef<HTMLDivElement>(null)
+	const highlightRef = useRef<HTMLDivElement>(null)
+
+	const [commentOpen, setCommentOpen] = useState(false)
 
 	const { data: post, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
 	const {
@@ -789,6 +810,16 @@ export function PostDetailView({ pkid }: { pkid: number }) {
 	} = usePostComments(post?.pkid)
 
 	const comments = commentsData?.pages.flatMap((p) => p.data.results) ?? []
+
+	// scroll to highlighted comment after first land
+	useEffect(() => {
+		if (!highlightCommentId || !highlightRef.current) return
+
+		const id = setTimeout(() => {
+			highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+		}, 400)
+		return () => clearTimeout(id)
+	}, [highlightCommentId, comments.length])
 
 	useEffect(() => {
 		const el = sentinel.current
@@ -834,7 +865,9 @@ export function PostDetailView({ pkid }: { pkid: number }) {
 					<p className="px-5 py-16 text-center text-sm text-gray-500">Failed to load post.</p>
 				) : post ? (
 					<>
-						<PostBody post={post} />
+						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />
+
+						<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
 
 						<div className="border-b border-gray-100" />
 
@@ -848,7 +881,12 @@ export function PostDetailView({ pkid }: { pkid: number }) {
 						) : (
 							<>
 								{comments.map((comment) => (
-									<CommentRow key={comment.pkid} comment={comment} />
+									<CommentRow
+										key={comment.pkid}
+										comment={comment}
+										highlighted={comment.id === highlightCommentId}
+										ref={comment.id === highlightCommentId ? highlightRef : undefined}
+									/>
 								))}
 								<div ref={sentinel} className="h-1" />
 								{isFetchingNextPage && (

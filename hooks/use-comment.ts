@@ -6,6 +6,7 @@ import { commentKeys, postDetailKeys } from "./use-post-detail"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 type CommentsCache = InfiniteData<CommentsResponse>
+type RepliesCache = CommentsResponse
 
 function incrementCommentCount(old: FeedCache | undefined, pkid: number): FeedCache | undefined {
 	if (!old) return old
@@ -41,6 +42,38 @@ export function usePrependComment() {
 	}
 }
 
+export function usePrependReply() {
+	const qc = useQueryClient()
+
+	return (id: string, pkid: number, reply: Comment) => {
+		const repliesKey = commentKeys.replies(id)
+		const commentKey = commentKeys.list(pkid)
+
+		qc.setQueryData<RepliesCache>(repliesKey, (old) => {
+			if (!old) return
+			return {
+				...old,
+				data: { ...old.data, results: [reply, ...old.data.results] },
+			}
+		})
+
+		qc.setQueryData<CommentsCache>(commentKey, (old) => {
+			if (!old) return
+			return {
+				...old,
+				pages: old.pages.map((page) => ({
+					...page,
+					data: {
+						...page.data,
+						results: page.data.results.map((c) =>
+							c.id === id ? { ...c, replies_count: c.replies_count + 1 } : c,
+						),
+					},
+				})),
+			}
+		})
+	}
+}
 export function useAddComment() {
 	const qc = useQueryClient()
 

@@ -74,7 +74,6 @@ function buildOptimisticPost(payload: CreatePostPayload, user: FullUser): Post {
 }
 export function useCreatePost() {
 	const qc = useQueryClient()
-	const user = useAuthStore((s) => s.user)
 
 	return useMutation({
 		mutationFn: (payload: CreatePostPayload) => socialApi.createPost(payload),
@@ -99,7 +98,7 @@ export function useCreatePost() {
 			return snapshots
 		},
 
-		onSuccess: (_data, _vars, ctx) => {
+		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: feedKeys.forYou })
 		},
 	})
