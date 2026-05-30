@@ -18,12 +18,14 @@ export async function POST(_req: NextRequest) {
 
 	const json = await upstream.json()
 
-	if (!upstream.ok) {
+	if (!upstream.ok || !json.success) {
 		await clearAuthCookies()
-		return NextResponse.json({ success: false, message: "Session expired" }, { status: 401 })
+		return NextResponse.json({ success: false, message: json.message }, { status: upstream.status })
 	}
 
-	await setAuthCookies(json.access, json.refresh ?? refreshToken)
+	const { access_token, refresh_token } = json.data
+
+	await setAuthCookies(access_token, refresh_token ?? refreshToken)
 
 	return NextResponse.json({ success: true }, { status: 200 })
 }

@@ -1,6 +1,14 @@
 import { PostDetailView } from "@/components/dashboard/post-detail"
 
-export default async function PostPage({ params }: { params: Promise<{ pkid: number }> }) {
+export default async function PostPage({
+	params,
+	searchParams,
+}: {
+	params: Promise<{ pkid: number }>
+	searchParams: Promise<{ comment?: string }>
+}) {
 	const { pkid } = await params
-	return <PostDetailView pkid={Number(pkid)} />
+	const { comment } = await searchParams
+
+	return <PostDetailView pkid={Number(pkid)} highlightCommentId={comment} />
 }

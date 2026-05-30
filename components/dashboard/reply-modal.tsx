@@ -4,9 +4,9 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import type { AddCommentPayload, MediaItem, Post } from "@/types/api"
+import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import { UserAvatar, renderText, getInitials } from "./post-card"
-import { useAddComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependReply } from "@/hooks/use-comment"
 import { useAuthStore } from "@/stores/auth-store"
 import { socialApi } from "@/lib/api"
 
@@ -47,15 +47,16 @@ function extractHashtags(str: string) {
 	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
 }
 
-interface CommentModalProps {
-	post: Post
+interface ReplyModalProps {
+	comment: Comment
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
 
-export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
+export function ReplyModal({ comment, open, onOpenChange }: ReplyModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
+	const prependReply = usePrependReply()
 
 	const [text, setText] = useState("")
 	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
@@ -162,22 +163,34 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 		const hashtags = extractHashtags(text)
 		const payload: AddCommentPayload = {
-			post: post.pkid,
+			post: comment.post,
+			parent_comment: comment.pkid,
 			message: text.trim() || undefined,
 			hashtags: hashtags.length ? hashtags : undefined,
 			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
-			onSuccess: () => {
+			onSuccess: (res) => {
+				const newComment: Comment = {
+					...res.data,
+					like_count: res.data.like_count ?? 0,
+					replies_count: res.data.replies_count ?? 0,
+					repost_count: res.data.repost_count ?? 0,
+					liked_by_me: res.data.liked_by_me ?? false,
+					reposted_by_me: res.data.reposted_by_me ?? false,
+				}
+				prependReply(comment.id, comment.post, newComment)
+
 				reset()
 				onOpenChange(false)
 			},
 		})
 	}
 
-	const postAuthorName =
-		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
+	const commentAuthorName =
+		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
+		comment.user.username
 
 	const myName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -196,19 +209,19 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 				<Dialog.Content
 					className="
-						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
-						w-full max-w-150 max-h-[85vh]
-						bg-white rounded-2xl shadow-2xl
-						flex flex-col
-						focus:outline-none
-						data-[state=open]:animate-in data-[state=closed]:animate-out
-						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
-						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
-					"
+            fixed left-1/2 top-[15%] -translate-x-1/2 z-50
+            w-full max-w-150 max-h-[85vh]
+            bg-white rounded-2xl shadow-2xl
+            flex flex-col
+            focus:outline-none
+            data-[state=open]:animate-in data-[state=closed]:animate-out
+            data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+            data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+          "
 				>
 					<Dialog.Title className="sr-only">Reply to post</Dialog.Title>
 					<Dialog.Description className="sr-only">
-						Write your comment to {postAuthorName}
+						Write your reply to {commentAuthorName}
 					</Dialog.Description>
 
 					<div className="flex items-center px-4 pt-4 pb-2 shrink-0">
@@ -224,9 +237,9 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 						<div className="flex gap-3">
 							<div className="flex flex-col items-center shrink-0">
 								<UserAvatar
-									src={post.user.profile_photo}
-									first={post.user.first_name}
-									last={post.user.last_name}
+									src={comment.user.profile_photo}
+									first={comment.user.first_name}
+									last={comment.user.last_name}
 								/>
 
 								<div className="w-0.5 bg-gray-200 flex-1 mt-2 min-h-7" />
@@ -234,16 +247,16 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 							<div className="flex-1 min-w-0 pb-3">
 								<div className="flex items-center gap-1.5 flex-wrap">
-									<span className="font-semibold text-sm text-gray-900">{postAuthorName}</span>
-									<span className="text-gray-400 text-[13px]">@{post.user.username}</span>
+									<span className="font-semibold text-sm text-gray-900">{commentAuthorName}</span>
+									<span className="text-gray-400 text-[13px]">@{comment.user.username}</span>
 								</div>
-								{!!post.content_text && (
+								{!!comment.message && (
 									<p className="text-[13.5px] text-gray-700 leading-relaxed mt-0.5 line-clamp-3">
-										{renderText(post.content_text)}
+										{renderText(comment.message)}
 									</p>
 								)}
 								<p className="text-[12px] text-gray-400 mt-1.5">
-									Replying to <span className="text-primary">@{post.user.username}</span>
+									Replying to <span className="text-primary">@{comment.user.username}</span>
 								</p>
 							</div>
 						</div>
@@ -271,7 +284,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
 									}}
-									placeholder="Post your comment"
+									placeholder="Post your reply"
 									rows={2}
 									autoFocus
 									className="w-full resize-none text-[15px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed"

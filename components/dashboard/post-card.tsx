@@ -173,14 +173,17 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 }
 
 export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
+	const router = useRouter()
 	const { message, mediaUrls } = normaliseCommentOriginal(comment)
 	const timeAgo = useTimeAgo(comment.created_at)
 	const fullname =
 		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
 		comment.user.username
 
+	const handleNavigate = ()=>router.push(`/posts/${comment.post}?comment=${comment.id}`)
+
 	return (
-		<div className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={comment.user.profile_photo}
