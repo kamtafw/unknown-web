@@ -1,5 +1,5 @@
 {
-  "name": "my-project",
+  "name": "appscombo-web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
