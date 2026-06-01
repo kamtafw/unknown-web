@@ -1,11 +1,11 @@
 "use client"
 
-import { flattenFeedPages, useBookmarks } from "@/hooks/use-feed"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import { Tabs } from "radix-ui"
-import { useEffect, useRef } from "react"
-import { PostCard } from "./post-card"
+import { flattenFeedPages,useBookmarks } from "@/hooks/use-feed"
+import { ArrowLeft,Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { Tabs } from "radix-ui"
+import { useEffect,useRef } from "react"
+import { PostCard } from "./post-card"
 
 function PostSkeleton() {
 	return (
@@ -85,7 +85,7 @@ export function Bookmarks() {
 							Failed to load bookmarks.
 						</p>
 					) : !bookmarks.length ? (
-						<p className="px-5 py-16 text-center text-[13px] text-gray-500">"No bookmarks yet."</p>
+						<p className="px-5 py-16 text-center text-[13px] text-gray-500">No bookmarks yet.</p>
 					) : (
 						<>
 							{bookmarks.map((post) => (

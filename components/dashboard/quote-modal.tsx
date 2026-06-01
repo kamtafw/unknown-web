@@ -1,7 +1,11 @@
 "use client"
 
-import * as Dialog from "@radix-ui/react-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useRepost } from "@/hooks/use-repost"
+import { socialApi } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
+import type { MediaItem, OriginalPost, Post, RepostPayload, WhoCanReply } from "@/types/api"
+import * as Dialog from "@radix-ui/react-dialog"
 import {
 	Check,
 	ChevronDown,
@@ -12,14 +16,11 @@ import {
 	Smile,
 	X,
 } from "lucide-react"
+import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { ReactNode, useRef, useState } from "react"
-import type { MediaItem, OriginalPost, Post, RepostPayload, WhoCanReply } from "@/types/api"
-import { useAuthStore } from "@/stores/auth-store"
-import { QuotedPostCard, getInitials } from "./post-card"
 import { Everyone, Followers, Following, Mention, Verified } from "../posts/icons"
-import { useRepost } from "@/hooks/use-repost"
-import { socialApi } from "@/lib/api"
+import { QuotedPostCard, getInitials } from "./post-card"
 
 interface ReplyOption {
 	value: WhoCanReply
@@ -369,7 +370,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 												{item.file.type.startsWith("video/") ? (
 													<video src={item.preview} className="w-full h-full object-cover" />
 												) : (
-													<img src={item.preview} alt="" className="w-full h-full object-cover" />
+													<Image src={item.preview} alt="" fill={true} objectFit="cover" />
 												)}
 
 												{item.uploading && (

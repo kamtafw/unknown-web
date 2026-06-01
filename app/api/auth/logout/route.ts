@@ -1,9 +1,9 @@
 import { clearAuthCookies, getRefreshToken } from "@/lib/cookies"
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
 const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
 	const refreshToken = await getRefreshToken()
 
 	if (refreshToken) {
