@@ -10,6 +10,8 @@ const PUBLIC_ROUTES = [
 	"/create-new-password",
 	"/verify",
 	"/2fa",
+	"/terms",
+	"/privacy-policy",
 ]
 
 const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friends"]
@@ -82,9 +84,7 @@ export async function middleware(req: NextRequest) {
 		}
 
 		// refresh succeeded — forward the new Set-Cookie headers
-		const res = isPublic
-			? NextResponse.redirect(new URL("/home", req.url))
-			: NextResponse.next()
+		const res = isPublic ? NextResponse.redirect(new URL("/home", req.url)) : NextResponse.next()
 
 		refreshRes.headers.getSetCookie().forEach((cookie) => {
 			res.headers.append("Set-Cookie", cookie)

@@ -1,11 +1,11 @@
 "use client"
 
-import React, { FormEvent } from "react"
-import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
-import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
+import { signInSchema,type SignInValues } from "@/lib/schemas"
+import { EyeClosedIcon,EyeOpenIcon } from "@radix-ui/react-icons"
 import { Loader2 } from "lucide-react"
-import { EmailIcon, PadlockIcon } from "../shared/Icons"
-import { signInSchema, type SignInValues } from "@/lib/schemas"
+import { Form,unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
+import { FormEvent } from "react"
+import { EmailIcon,PadlockIcon } from "../shared/Icons"
 
 interface SignInProps {
 	onSignIn: (data: SignInValues) => void
@@ -13,6 +13,8 @@ interface SignInProps {
 	error?: string
 	onForgotPassword: () => void
 	onSignUp: () => void
+	onTerms: () => void
+	onPrivacyPolicy: () => void
 }
 
 export function SignIn({
@@ -21,6 +23,8 @@ export function SignIn({
 	error,
 	onForgotPassword,
 	onSignUp,
+	onTerms,
+	onPrivacyPolicy,
 }: SignInProps) {
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
@@ -129,6 +133,26 @@ export function SignIn({
 						>
 							Sign Up
 						</button>
+					</p>
+
+					<p className="text-sm text-gray-500 text-center leading-relaxed mt-6">
+						By signing in, you agree to our{" "}
+						<button
+							type="button"
+							onClick={onTerms}
+							className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+						>
+							Terms & Conditions
+						</button>
+						, and{" "}
+						<button
+							type="button"
+							onClick={onPrivacyPolicy}
+							className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+						>
+							Privacy Policy
+						</button>
+						.
 					</p>
 				</Form.Root>
 			</div>
