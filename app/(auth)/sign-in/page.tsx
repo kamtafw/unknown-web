@@ -16,6 +16,8 @@ const SignInPage = () => {
 			isPending={login.isPending}
 			onForgotPassword={() => router.push("/forgot-password")}
 			onSignUp={() => router.push("/sign-up")}
+			onTerms={() => router.push("/terms")}
+			onPrivacyPolicy={() => router.push("/privacy-policy")}
 		/>
 	)
 }

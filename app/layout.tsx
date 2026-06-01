@@ -1,4 +1,3 @@
-// @ts-expect-error: CSS module declarations are handled by Next.js
 import "./globals.css"
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
