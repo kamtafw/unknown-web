@@ -84,10 +84,10 @@ export const userApi = {
 		await apiClient.get<FollowingsResponse>("/api/users/followings").then((r) => r.data),
 
 	followUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<{}>>("/api/users/follow", payload).then((r) => r.data),
+		apiClient.post<ApiResponse<unknown>>("/api/users/follow", payload).then((r) => r.data),
 
 	unfollowUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<{}>>("/api/users/unfollow", payload).then((r) => r.data),
+		apiClient.post<ApiResponse<unknown>>("/api/users/unfollow", payload).then((r) => r.data),
 }
 
 export const socialApi = {

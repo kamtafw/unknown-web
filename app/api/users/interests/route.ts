@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
 	const accessToken = await getAccessToken()
 
 	if (!accessToken)

@@ -47,9 +47,10 @@ export function SecurityVerification({
 
 				<div className="flex-1 max-w-110">
 					<h1 className="text-2xl font-bold text-gray-900 mb-1">Security Verification</h1>
-					<p className="block text-sm text-gray-500 mb-6">
+					<p className="block text-sm text-gray-500 mb-1">
 						Enter the {CODE_LENGTH} digit code we sent to your google authenticator app
 					</p>
+					<p className="text-sm font-semibold text-gray-900 mb-7">{email}</p>
 
 					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
 						<Form.Field name="otp" className="flex flex-col gap-2">

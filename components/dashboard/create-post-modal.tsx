@@ -1,12 +1,15 @@
 "use client"
 
-import * as Dialog from "@radix-ui/react-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useCreatePost } from "@/hooks/use-create-post"
+import { socialApi } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
+import type { CreatePostPayload, MediaItem, WhoCanReply } from "@/types/api"
+import * as Dialog from "@radix-ui/react-dialog"
 import {
 	Camera,
 	Check,
 	ChevronDown,
-	Hash,
 	Image as ImageIcon,
 	Loader2,
 	MapPin,
@@ -14,14 +17,11 @@ import {
 	Smile,
 	X,
 } from "lucide-react"
+import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { ReactNode, useRef, useState } from "react"
-import type { CreatePostPayload, MediaItem, WhoCanReply } from "@/types/api"
-import { useAuthStore } from "@/stores/auth-store"
-import { getInitials } from "./post-card"
 import { Everyone, Followers, Following, Mention, Verified } from "../posts/icons"
-import { socialApi } from "@/lib/api"
-import { useCreatePost } from "@/hooks/use-create-post"
+import { getInitials } from "./post-card"
 
 interface ReplyOption {
 	value: WhoCanReply
@@ -324,7 +324,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 											{isVideo ? (
 												<video src={item.preview} className="w-full h-full object-cover" />
 											) : (
-												<img src={item.preview} alt="" className="w-full h-full object-cover" />
+												<Image src={item.preview} alt="" className="w-full h-full object-cover" />
 											)}
 
 											{item.uploading && (

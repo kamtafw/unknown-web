@@ -1,15 +1,15 @@
 "use client"
 
-import { useFriendSuggestions } from "@/hooks/use-users"
-import { SuggestionUser } from "@/types/api"
-import { useEffect, useRef, useState } from "react"
-import { Avatar, ScrollArea } from "radix-ui"
-import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import {
 	removeUserFromSuggestionsCache,
 	useFollowUser,
 	useUnfollowUser,
 } from "@/hooks/use-follow-actions"
+import { useFriendSuggestions } from "@/hooks/use-users"
+import { SuggestionUser } from "@/types/api"
+import { useQueryClient } from "@tanstack/react-query"
+import { Avatar, ScrollArea } from "radix-ui"
+import { useEffect, useRef, useState } from "react"
 
 function getInitials(first: string, last: string) {
 	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()

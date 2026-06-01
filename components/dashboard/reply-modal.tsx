@@ -1,14 +1,15 @@
 "use client"
 
+import { useAddComment, usePrependReply } from "@/hooks/use-comment"
+import { socialApi } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
+import type { AddCommentPayload, Comment, MediaItem } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
+import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
-import { UserAvatar, renderText, getInitials } from "./post-card"
-import { useAddComment, usePrependReply } from "@/hooks/use-comment"
-import { useAuthStore } from "@/stores/auth-store"
-import { socialApi } from "@/lib/api"
+import { UserAvatar, getInitials, renderText } from "./post-card"
 
 const EMOJIS = [
 	"😀",
@@ -305,7 +306,7 @@ export function ReplyModal({ comment, open, onOpenChange }: ReplyModalProps) {
 												{item.file.type.startsWith("video/") ? (
 													<video src={item.preview} className="w-full h-full object-cover" />
 												) : (
-													<img src={item.preview} alt="" className="w-full h-full object-cover" />
+													<Image src={item.preview} alt="" fill={true} objectFit="cover" />
 												)}
 												{/* Uploading overlay */}
 												{item.uploading && (

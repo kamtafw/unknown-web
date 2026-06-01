@@ -1,13 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { MoreHorizontal, Users } from "lucide-react"
-import { Avatar } from "radix-ui"
-import type { Post, OriginalPost, OriginalComment } from "@/types/api"
-import { Like, Comment, Repost, Share, Bookmark2, Stats } from "./icons"
-import { useAuthStore } from "@/stores/auth-store"
-import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { usePostStats } from "@/hooks/use-post-stats"
+import { useRepost } from "@/hooks/use-repost"
+import { useTimeAgo } from "@/hooks/use-time-ago"
+import { useAuthStore } from "@/stores/auth-store"
+import type { OriginalComment, OriginalPost, Post } from "@/types/api"
+import { MoreHorizontal, Users } from "lucide-react"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { Avatar } from "radix-ui"
+import { useState } from "react"
 import {
 	Block,
 	ChangeReplier,
@@ -22,10 +25,8 @@ import {
 	Trash,
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
-import { usePostStats } from "@/hooks/use-post-stats"
-import { useRouter } from "next/navigation"
 import { CommentModal } from "./comment-modal"
-import { useRepost } from "@/hooks/use-repost"
+import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { QuoteModal } from "./quote-modal"
 
 export function formatCount(count: number) {
@@ -158,7 +159,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 								<audio controls src={url} className="w-5/6" />
 							</div>
 						) : (
-							<img src={url} alt="" className="w-full h-full object-cover" />
+							<Image src={url} alt="" fill={true} objectFit="cover" />
 						)}
 						{isLast && (
 							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -180,7 +181,7 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
 		comment.user.username
 
-	const handleNavigate = ()=>router.push(`/posts/${comment.post}?comment=${comment.id}`)
+	const handleNavigate = () => router.push(`/posts/${comment.post}?comment=${comment.id}`)
 
 	return (
 		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">

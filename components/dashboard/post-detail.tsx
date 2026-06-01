@@ -1,9 +1,19 @@
 "use client"
 
-import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
-import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
+import { useAddComment,usePrependComment } from "@/hooks/use-comment"
+import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
+import { useTimeAgo } from "@/hooks/use-time-ago"
+import { socialApi } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
+import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
+import dayjs from "dayjs"
+import { ArrowLeft,Image as ImageIcon,Loader2,MapPin,RefreshCw,Smile,X } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { forwardRef,useEffect,useRef,useState } from "react"
+import { CommentModal } from "./comment-modal"
+import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
 import {
 	formatCount,
 	isOriginalComment,
@@ -18,15 +28,6 @@ import {
 	StatsButton,
 	UserAvatar,
 } from "./post-card"
-import { useTimeAgo } from "@/hooks/use-time-ago"
-import { Like, Comment as CommentIcon, Repost, Bookmark2 } from "./icons"
-import { useLikePost, useBookmarkPost } from "@/hooks/use-post-actions"
-import { forwardRef, useEffect, useRef, useState } from "react"
-import dayjs from "dayjs"
-import { useAuthStore } from "@/stores/auth-store"
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
-import { socialApi } from "@/lib/api"
-import { CommentModal } from "./comment-modal"
 import { ReplyModal } from "./reply-modal"
 
 const EMOJIS = [
@@ -97,7 +98,7 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 								<audio controls src={url} className="w-5/6" />
 							</div>
 						) : (
-							<img src={url} alt="" className="w-full h-full object-cover" />
+							<Image src={url} alt="" fill={true} objectFit="cover" />
 						)}
 					</div>
 				)
@@ -471,7 +472,7 @@ function CommentComposer({ post }: { post: Post }) {
 									{item.file.type.startsWith("video/") ? (
 										<video src={item.preview} className="w-full h-full object-cover" />
 									) : (
-										<img src={item.preview} alt="" className="w-full h-full object-cover" />
+										<Image src={item.preview} alt="" fill={true} objectFit="cover" />
 									)}
 									{/* Uploading overlay */}
 									{item.uploading && (
