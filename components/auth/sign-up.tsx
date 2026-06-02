@@ -264,7 +264,7 @@ function PhoneField({ onChange, hasError }: PhoneFieldProps) {
 	return (
 		<div className="relative" ref={dropdownRef}>
 			<div
-				className={`flex items-center h-12.5 rounded-xl border bg-white transition-colors ${
+				className={`flex items-center h-12 sm:h-12.5 rounded-xl border bg-white transition-colors ${
 					hasError
 						? "border-2 border-destructive"
 						: "border-gray-200 focus-within:border-2 focus-within:border-primary"
@@ -388,7 +388,6 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 
 	const handleTermsAccepted = () => {
 		setShowTerms(false)
-		console.log("signup PENDING DATA:", JSON.stringify(pendingData))
 		if (pendingData) onSuccess(pendingData)
 	}
 
@@ -396,9 +395,9 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 
 	return (
 		<>
-			<div className="flex justify-center pt-20 px-4">
+			<div className="flex justify-center pt-10 sm:pt-15 px-4 pb-10">
 				<div className="w-full max-w-110">
-					<h1 className="text-[28px] text-center font-bold text-gray-900 mb-7">
+					<h1 className="text-2xl sm:text-[28px] text-center font-bold text-gray-900 mb-6 sm:mb-7">
 						Sign up to Appscombo
 					</h1>
 
@@ -406,7 +405,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						{/* Email */}
 						<Form.Field name="email" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">Email Address</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus:focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
 								<Email />
 								<Form.Control asChild>
 									<input
@@ -438,7 +437,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						{/* Password */}
 						<Form.Field name="password" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">Create Password</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors">
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors">
 								<PasswordToggleField.Root>
 									<Padlock />
 									<Form.Control asChild>
@@ -476,7 +475,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 												<Circle size={15} className="text-gray-300 shrink-0" strokeWidth={2} />
 											)}
 											<span
-												className={`text-xs ${
+												className={`text-[11px] text-xs leading-tight ${
 													passed ? "text-gray-700" : failing ? "text-destructive" : "text-gray-400"
 												}`}
 											>
@@ -491,7 +490,7 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer"
+								className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
 							>
 								{isPending ? (
 									<>
