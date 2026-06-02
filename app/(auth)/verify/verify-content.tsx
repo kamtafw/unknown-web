@@ -3,6 +3,7 @@
 import { SuccessDialog } from "@/components/auth/success-dialog"
 import { OTPVerification } from "@/components/onboarding/otp-verification"
 import { useVerifyOtp } from "@/hooks/use-auth"
+import { extractOtpMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -24,11 +25,14 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 
 	if (!email) return null
 
+	const otpError = verifyOtp.isError ? extractOtpMessage(verifyOtp.error) : undefined
+
 	return (
 		<>
 			<OTPVerification
 				email={email}
 				isPending={verifyOtp.isPending}
+				error={otpError}
 				onVerify={(code) =>
 					verifyOtp.mutate({
 						email: email,

@@ -1,8 +1,8 @@
 "use client"
 
 import { otpSchema } from "@/lib/schemas"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
+import { ArrowLeft,Loader2 } from "lucide-react"
+import { Form,unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent } from "react"
 
 const CODE_LENGTH = 6
@@ -10,6 +10,7 @@ const CODE_LENGTH = 6
 interface OTPVerificationProps {
 	email: string
 	isPending: boolean
+	error?: string
 	onVerify: (code: string) => void
 	onResend: () => void
 	onBack: () => void
@@ -18,6 +19,7 @@ interface OTPVerificationProps {
 export function OTPVerification({
 	email,
 	isPending,
+	error,
 	onVerify,
 	onResend,
 	onBack,
@@ -48,7 +50,7 @@ export function OTPVerification({
 						<button
 							type="button"
 							onClick={onBack}
-							className="flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors rounded-full px-4 py-2 font-medium"
+							className="flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors rounded-full px-4 py-2 font-medium cursor-pointer"
 						>
 							<ArrowLeft size={14} strokeWidth={2} />
 							Back
@@ -101,6 +103,8 @@ export function OTPVerification({
 									Code must be numeric
 								</Form.Message>
 							</Form.Field>
+							
+							{error && <p className="text-sm text-destructive text-center -mt-2">{error}</p>}
 
 							<Form.Submit asChild>
 								<button

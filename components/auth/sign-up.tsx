@@ -1,5 +1,6 @@
 "use client"
 
+import { formatMessage } from "@/lib/api-error"
 import { signUpSchema } from "@/lib/schemas"
 import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
 import { CheckCircle2, ChevronDown, Circle, Loader2, Search, XCircle } from "lucide-react"
@@ -348,9 +349,12 @@ interface SignUpProps {
 	onSuccess: (data: SignUpFormData) => void
 	isPending: boolean
 	onSignIn: () => void
+	onTerms: () => void
+	onPrivacyPolicy: () => void
+	fieldErrors?: { email?: string; phone?: string }
 }
 
-export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) {
+export function SignUp({ onSuccess, isPending = false, onSignIn,onTerms, onPrivacyPolicy, fieldErrors }: SignUpProps) {
 	const [pendingData, setPendingData] = useState<SignUpFormData | null>(null)
 	const [password, setPassword] = useState("")
 	const [phone, setPhone] = useState("")
@@ -423,14 +427,21 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 							<Form.Message match="typeMismatch" className="text-xs text-destructive">
 								Enter a valid email address
 							</Form.Message>
+							{fieldErrors?.email && (
+								<p className="text-xs text-destructive">{formatMessage(fieldErrors.email)}</p>
+							)}
 						</Form.Field>
 
 						{/* Phone number */}
 						<div className="flex flex-col gap-1.5">
 							<label className="text-sm font-medium text-gray-800">Phone Number</label>
 							<PhoneField onChange={setPhone} hasError={phoneInvalid} />
-							{phoneInvalid && (
+							{phoneInvalid ? (
 								<p className="text-xs text-destructive">Enter a valid phone number</p>
+							) : (
+								fieldErrors?.phone && (
+									<p className="text-xs text-destructive">{formatMessage(fieldErrors.phone)}</p>
+								)
 							)}
 						</div>
 
@@ -521,6 +532,8 @@ export function SignUp({ onSuccess, isPending = false, onSignIn }: SignUpProps) 
 				open={showTerms}
 				onOpenChange={(open) => !open && setShowTerms(false)}
 				onContinue={handleTermsAccepted}
+				onTerms={onTerms}
+				onPrivacyPolicy={onPrivacyPolicy}
 			/>
 		</>
 	)

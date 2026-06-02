@@ -6,9 +6,11 @@ interface TermsDialogProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	onContinue: () => void
+	onTerms: () => void
+	onPrivacyPolicy: () => void
 }
 
-export function TermsDialog({ open, onOpenChange, onContinue }: TermsDialogProps) {
+export function TermsDialog({ open, onOpenChange, onContinue,onTerms,onPrivacyPolicy }: TermsDialogProps) {
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
 			<Dialog.Portal>
@@ -40,20 +42,28 @@ export function TermsDialog({ open, onOpenChange, onContinue }: TermsDialogProps
 						/>
 					</div>
 
-					<Dialog.Title className="sr-only">Terms and Agreement</Dialog.Title>
+					<Dialog.Title className="sr-only">Terms & Conditions</Dialog.Title>
 					<Dialog.Description className="sr-only">
-						Terms and agreement, with Privacy Policy
+						Terms & Conditions, and Privacy Policy
 					</Dialog.Description>
 
 					<p className="text-sm text-gray-700 text-center leading-relaxed mb-6">
-						By signing up with Appscombo, you have agreed to our{" "}
-						<a href="#" className="text-primary hover:underline font-medium">
-							terms and agreement
-						</a>
-						, with{" "}
-						<a href="#" className="text-primary hover:underline font-medium">
+						By signing up with AppsCombo, you have agreed to our{" "}
+						<button
+							type="button"
+							onClick={onTerms}
+							className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+						>
+							Terms & Conditions
+						</button>
+						, and{" "}
+						<button
+							type="button"
+							onClick={onPrivacyPolicy}
+							className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+						>
 							Privacy Policy
-						</a>
+						</button>
 						.
 					</p>
 
