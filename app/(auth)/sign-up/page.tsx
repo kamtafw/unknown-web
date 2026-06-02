@@ -2,7 +2,7 @@
 
 import { SignUp } from "@/components/auth/sign-up"
 import { useSignup } from "@/hooks/use-auth"
-import { extractFieldErrors, extractMessage } from "@/lib/api-error"
+import { extractFieldErrors,extractMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -13,9 +13,17 @@ const SignUpPage = () => {
 	const signup = useSignup()
 	const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({})
 
+	const clearFieldError = (field: "email" | "phone") => {
+		setFieldErrors((prev) => ({
+			...prev,
+			[field]: undefined,
+		}))
+	}
+
 	return (
 		<SignUp
 			fieldErrors={fieldErrors}
+			clearFieldError={clearFieldError}
 			onSuccess={(formData) => {
 				setFieldErrors({})
 				useAuthStore.setState({
