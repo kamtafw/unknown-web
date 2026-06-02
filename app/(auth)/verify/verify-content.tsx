@@ -31,7 +31,7 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 		<>
 			<OTPVerification
 				email={email}
-				isPending={verifyOtp.isPending}
+				isPending={verifyOtp.isPending || verifyOtp.isSuccess}
 				error={otpError}
 				onVerify={(code) =>
 					verifyOtp.mutate({

@@ -49,7 +49,7 @@ const SignUpPage = () => {
 					},
 				)
 			}}
-			isPending={signup.isPending}
+			isPending={signup.isPending || signup.isSuccess}
 			onSignIn={() => router.push("/sign-in")}
 			onTerms={() => router.push("/terms")}
 			onPrivacyPolicy={() => router.push("/privacy-policy")}

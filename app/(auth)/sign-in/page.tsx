@@ -13,7 +13,7 @@ const SignInPage = () => {
 			onSignIn={(data) => {
 				login.mutate({ identifier: data.identifier, password: data.password })
 			}}
-			isPending={login.isPending}
+			isPending={login.isPending || login.isSuccess}
 			onForgotPassword={() => router.push("/forgot-password")}
 			onSignUp={() => router.push("/sign-up")}
 			onTerms={() => router.push("/terms")}

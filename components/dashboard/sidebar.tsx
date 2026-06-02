@@ -1,12 +1,12 @@
 "use client"
 
+import { useLogout } from "@/hooks/use-auth"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Add, AI, Bookmark, Home, Invite, Logout, Settings } from "./icons"
-import { useLogout } from "@/hooks/use-auth"
 import { useState } from "react"
 import { CreatePostModal } from "./create-post-modal"
+import { Add, AI, Bookmark, Home, Invite, Logout, Settings } from "./icons"
 
 const NAV_ITEMS = [
 	{ label: "Home", icon: Home, href: "/home" },
@@ -39,7 +39,7 @@ export function Sidebar() {
 									: "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
 							)}
 						>
-							<Icon />
+							<Icon color={active ? "#FFFFFF" : undefined} />
 							{label}
 						</Link>
 					)

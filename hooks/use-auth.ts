@@ -20,7 +20,10 @@ export function useLogin() {
 	return useMutation({
 		mutationFn: (payload: LoginPayload) => authApi.login(payload),
 		onSuccess: (res) => {
-			if (!res.success) return
+			if (!res.success) {
+				toast.error(extractMessage(res, "Login failed. Please try again."))
+				return
+			}
 
 			const user = res.data.user
 			setPendingAuth(user)
