@@ -24,7 +24,7 @@ const SECTIONS = [
 	{ id: "s7-1", label: "7.1 AppsCombo Ownership", sub: true },
 	{ id: "s7-2", label: "7.2 Copyright Complaints", sub: true },
 
-	{ id: "s8", label: "8. Messaging" },
+	{ id: "s8", label: "8. Messaging, Calls, and Communications" },
 
 	{ id: "s9", label: "9. Advertising, Promotions, and Sponsored Content" },
 
@@ -158,8 +158,8 @@ export default function Terms() {
 
 			<div className="flex">
 				{/* Sticky sidebar nav */}
-				<nav className="hidden lg:block w-56 xl:w-64 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto px-4 py-8 border-r border-gray-100 scrollbar-hide">
-					<div className="flex flex-col gap-0.5">
+				<nav className="hidden lg:block w-84 xl:w-96 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto px-16 py-8 border-r border-gray-100 scrollbar-hide">
+					<div className="flex flex-col gap-0.75">
 						{SECTIONS.map(({ id, label, sub }) => (
 							<NavItem
 								key={id}
@@ -174,7 +174,7 @@ export default function Terms() {
 				</nav>
 
 				{/* Main content */}
-				<main ref={contentRef} className="flex-1 max-w-2xl px-6 lg:px-12 py-12 pb-32">
+				<main ref={contentRef} className="flex-1 max-w-4xl px-6 lg:px-12 py-12 pb-32">
 					{/* Hero */}
 					<div className="mb-14">
 						<h1 className="text-5xl text-primary lg:text-6xl font-bold tracking-tighter leading-[1.05] mb-4">
@@ -191,176 +191,217 @@ export default function Terms() {
 					</div>
 
 					{/* Section 1 */}
-					<Section id="s1" title="1. Acceptance of Terms">
-						<P>
-							By accessing or using AppsCombo, you agree to be bound by these Terms and Conditions
-							and all applicable laws and regulations. If you do not agree with any part of these
-							terms, you may not use our services.
-						</P>
-						<P>
-							These terms apply to all visitors, users, and others who access or use the platform.
-							Your continued use of AppsCombo after any changes to these terms constitutes your
-							acceptance of the new terms.
-						</P>
-						<P>
-							AppsCombo reserves the right to update or modify these Terms at any time without prior
-							notice. We encourage you to review these Terms periodically to stay informed of any
-							changes.
-						</P>
+					<Section id="s1" title="1. Eligibility and Account Registration">
+						<SubSection id="s1-1" title="1.1 Eligibility">
+							<P>To use AppsCombo, you must:</P>
+							<UL>
+								<li>Be at least the minimum legal age required in your jurisdiction</li>
+								<li>Have the legal capacity to enter into a binding agreement</li>
+								<li>Not be prohibited from using the Services under applicable laws</li>
+							</UL>
+							<P>By using AppsCombo, you represent and warrant that you meet these requirements.</P>
+						</SubSection>
+						<SubSection id="s1-2" title="1.2 Account Registration">
+							<P>You may need to create an account to access certain features.</P>
+							<P>You agree to:</P>
+							<UL>
+								<li>Provide accurate and complete information</li>
+								<li>Keep your information updated </li>
+								<li>Maintain the security of your account credentials</li>
+								<li>Be responsible for all activities under your account</li>
+							</UL>
+							<P>You may not:</P>
+							<UL>
+								<li>Create fake or misleading accounts</li>
+								<li>Use another person’s account without permission</li>
+								<li>Sell, transfer, or license your account</li>
+								<li>Impersonate individuals, businesses, or organizations</li>
+							</UL>
+							<P>We reserve the right to suspend or terminate accounts that violate these Terms.</P>
+						</SubSection>
 					</Section>
 
 					<Divider />
 
 					{/* Section 2 */}
-					<Section id="s2" title="2. User Accounts">
+					<Section id="s2" title="2. Your Use of AppsCombo">
 						<P>
-							To access certain features of AppsCombo, you must create an account. You are
-							responsible for maintaining the confidentiality of your account credentials and for
-							all activities that occur under your account.
+							AppsCombo is a social networking and digital interaction platform that allows users
+							to:
 						</P>
-						<SubSection id="s2-1" title="2.1 Registration">
-							<P>
-								When you register for an account, you must provide accurate, current, and complete
-								information. You agree to update your information to keep it accurate. Accounts
-								registered with false information may be suspended or permanently removed.
-							</P>
-						</SubSection>
-						<SubSection id="s2-2" title="2.2 Account Security">
-							<P>
-								You are responsible for safeguarding your password and any authentication
-								credentials associated with your account. You must notify AppsCombo immediately of
-								any unauthorised use of your account. We will not be liable for any losses resulting
-								from unauthorised access to your account.
-							</P>
-						</SubSection>
-						<SubSection id="s2-3" title="2.3 Account Termination">
-							<P>
-								You may delete your account at any time through your account settings. AppsCombo
-								reserves the right to suspend or terminate accounts that violate these Terms, engage
-								in fraudulent activity, or pose a risk to other users or the platform.
-							</P>
-						</SubSection>
+						<UL>
+							<li>Share content</li>
+							<li>Communicate with others</li>
+							<li>Create communities and events</li>
+							<li>Upload media</li>
+							<li>Promote businesses and brands</li>
+							<li>Discover contents and opportunities</li>
+							<li>Engage socially and professionally</li>
+						</UL>
+						<P>You agree to use the Services responsibly and lawfully.</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 3 */}
-					<Section id="s3" title="3. Privacy Policy">
-						<P>
-							Your use of AppsCombo is also governed by our Privacy Policy, which is incorporated
-							into these Terms by reference. Our Privacy Policy describes how we collect, use, and
-							share information when you use our services.
-						</P>
-						<P>
-							By using AppsCombo, you consent to the collection and use of your information as
-							described in our Privacy Policy. We are committed to protecting your personal data in
-							accordance with applicable data protection laws.
-						</P>
+					<Section id="s3" title="3. User Content and Ownership">
+						<SubSection id="s3-1" title="3.1 Your Content">
+							<P>
+								You retain ownership of the content you create, upload, post, or share on AppsCombo
+								(“User Content”).
+							</P>
+							<P>This may include:</P>
+							<UL>
+								<li>Photos</li>
+								<li>Videos</li>
+								<li>Audio</li>
+								<li>Text</li>
+								<li>Comments</li>
+								<li>Messages</li>
+								<li>Business information</li>
+								<li>Profile details</li>
+								<li>Live streams</li>
+								<li>Event content</li>
+							</UL>
+						</SubSection>
+						<SubSection id="s3-2" title="3.2 License You Grant to AppsCombo">
+							<P>
+								By posting or sharing content on AppsCombo, you grant us a worldwide, non-exclusive,
+								transferable, sub-licensable, royalty-free license to:
+							</P>
+							<UL>
+								<li>Host</li>
+								<li>Store</li>
+								<li>Use</li>
+								<li>Display</li>
+								<li>Reproduce</li>
+								<li>Modify</li>
+								<li>Adapt</li>
+								<li>Publish</li>
+								<li>Distribute</li>
+								<li>Promote</li>
+								<li>Analyze</li>
+								<li>Process</li>
+							</UL>
+							<P>
+								your content solely for operating, improving, promoting, securing, and providing the
+								Services.
+							</P>
+							<P>This license ends when your content is deleted from our systems, except where:</P>
+							<UL>
+								<li>Content has been shared by others</li>
+								<li>Retention is legally required</li>
+								<li>Backups or cached systems temporarily retain copies</li>
+							</UL>
+						</SubSection>
 					</Section>
 
 					<Divider />
 
 					{/* Section 4 */}
 					<Section id="s4" title="4. Content & Conduct">
-						<P>
-							AppsCombo is a community platform. The quality and integrity of content shared here is
-							the shared responsibility of all users. The following rules govern what you may post
-							and how you may interact.
-						</P>
-						<SubSection id="s4-1" title="4.1 Your Content">
-							<P>
-								You retain ownership of any content you post on AppsCombo. By posting content, you
-								grant AppsCombo a non-exclusive, royalty-free, worldwide licence to use, display,
-								and distribute your content in connection with operating the platform.
-							</P>
-						</SubSection>
-						<SubSection id="s4-2" title="4.2 Prohibited Content">
-							<P>
-								You may not post content that is unlawful, harmful, threatening, abusive, harassing,
-								defamatory, or otherwise objectionable. This includes but is not limited to: hate
-								speech, explicit violence, spam, and content that infringes third-party intellectual
-								property rights.
-							</P>
-						</SubSection>
-						<SubSection id="s4-3" title="4.3 Content Removal">
-							<P>
-								AppsCombo reserves the right to remove any content that violates these Terms or our
-								Community Guidelines, without prior notice. Repeated violations may result in
-								account suspension or termination. You may appeal content removal decisions through
-								our support channels.
-							</P>
-						</SubSection>
-						<SubSection id="s4-4" title="4.4 Community Standards">
-							<P>
-								We expect all users to treat each other with respect. Harassment, bullying, or
-								coordinated attacks against any individual or group are strictly prohibited.
-								AppsCombo may take action against accounts involved in such behaviour, including
-								permanent banning.
-							</P>
-						</SubSection>
+						<P>You agree NOT to use AppsCombo to:</P>
+						<UL>
+							<li>Violate laws or regulations</li>
+							<li>Promote violence or criminal activity</li>
+							<li>Harass, threaten, abuse, or intimidate others</li>
+							<li>Spread misinformation or fraudulent schemes</li>
+							<li>Upload malicious software or harmful code</li>
+							<li>Engage in spam or unauthorized advertising</li>
+							<li>Infringe intellectual property rights</li>
+							<li>Post sexually exploitative or abusive content</li>
+							<li>Exploit minors</li>
+							<li>Engage in hate speech or discriminatory conduct</li>
+							<li>Manipulate platform systems or algorithms</li>
+							<li>Scrape or harvest user data without authorization</li>
+							<li>Create fake engagement or fake accounts</li>
+							<li>Circumvent security or access controls</li>
+							<li>Conduct unauthorized surveillance or tracking</li>
+						</UL>
+						<P>We may remove content or restrict accounts that violate these Terms.</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 5 */}
-					<Section id="s5" title="5. Intellectual Property">
+					<Section id="s5" title="5. Community Standards and Moderation">
 						<P>
-							The AppsCombo name, logo, platform design, software, and all related materials are the
-							exclusive intellectual property of AppsCombo and its licensors. You may not use,
-							reproduce, or distribute any of these without our express written permission.
+							AppsCombo may monitor, review, remove, restrict, or disable content that violates:
 						</P>
+						<UL>
+							<li>These Terms</li>
+							<li>Community Guidelines</li>
+							<li>Applicable laws</li>
+							<li>Safety and integrity policies</li>
+						</UL>
+						<P>We reserve the right to:</P>
+						<UL>
+							<li>Suspend accounts</li>
+							<li>Remove posts</li>
+							<li>Limit visibility</li>
+							<li>Disable features</li>
+							<li>Restrict monetization</li>
+							<li>Permanently ban users</li>
+						</UL>
 						<P>
-							If you believe any content on our platform infringes your intellectual property
-							rights, please contact our support team with the relevant details and we will
-							investigate promptly.
+							Moderation may involve automated systems, artificial intelligence, human reviewers, or
+							external partners.
 						</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 6 */}
-					<Section id="s6" title="6. Third-Party Services">
+					<Section id="s6" title="6. Privacy">
+						<P>Your use of AppsCombo is also governed by our Privacy Policy.</P>
 						<P>
-							AppsCombo may contain links to or integrations with third-party websites and services.
-							We do not control and are not responsible for the content, privacy policies, or
-							practices of any third-party services.
-						</P>
-						<P>
-							Your interactions with third-party services are governed by their own terms and
-							conditions. We encourage you to review those terms before engaging with any external
-							service through AppsCombo.
+							By using the Services, you acknowledge that your information may be collected, used,
+							stored, and shared as described in our Privacy Policy.
 						</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 7 */}
-					<Section id="s7" title="7. Payments & Subscriptions">
-						<P>
-							Certain features of AppsCombo are available through paid subscriptions or one-time
-							purchases. All payments are processed securely through our third-party payment
-							providers.
-						</P>
-						<SubSection id="s7-1" title="7.1 Billing">
+					<Section id="s7" title="7. Intellectual Property Rights">
+						<SubSection id="s7-1" title="7.1 AppsCombo Ownership">
+							<P>AppsCombo and its Services, including:</P>
+							<UL>
+								<li>Software</li>
+								<li>Logos</li>
+								<li>Designs</li>
+								<li>Features</li>
+								<li>Branding</li>
+								<li>User interfaces</li>
+								<li>Graphics</li>
+								<li>Code</li>
+								<li>Databases</li>
+								<li>Algorithms</li>
+							</UL>
 							<P>
-								Subscription fees are billed in advance on a monthly or annual basis, depending on
-								the plan you select. You authorise AppsCombo to charge your chosen payment method at
-								the start of each billing cycle. Prices are subject to change with reasonable
-								advance notice.
+								are owned by AppsCombo or its licensors and protected by intellectual property laws.
 							</P>
+							<P>You may not:</P>
+							<UL>
+								<li>Copy</li>
+								<li>Modify</li>
+								<li>Reverse engineer</li>
+								<li>Sell</li>
+								<li>Redistribute</li>
+								<li>Reproduce</li>
+								<li>License</li>
+								<li>Exploit</li>
+							</UL>
+							<P>any part of the Services without written permission.</P>
 						</SubSection>
-						<SubSection id="s7-2" title="7.2 Refunds">
+						<SubSection id="s7-2" title="7.2 Copyright Complaints">
 							<P>
-								Payments are generally non-refundable except where required by applicable law or in
-								cases of documented technical failure on our part. Requests for refunds must be
-								submitted within 14 days of the charge. Each case will be reviewed on its merits.
+								If you believe your intellectual property rights have been violated, you may submit
+								a complaint with sufficient legal documentation.
 							</P>
-						</SubSection>
-						<SubSection id="s7-3" title="7.3 Free Trials">
 							<P>
-								Where a free trial is offered, you will not be charged until the trial period ends.
-								You may cancel at any time before the trial ends to avoid being charged. If you do
-								not cancel, your subscription will automatically convert to a paid plan.
+								AppsCombo reserves the right to remove allegedly infringing content and terminate
+								repeat offenders.
 							</P>
 						</SubSection>
 					</Section>
@@ -368,165 +409,391 @@ export default function Terms() {
 					<Divider />
 
 					{/* Section 8 */}
-					<Section id="s8" title="8. Disclaimers">
-						<P>
-							AppsCombo is provided on an &quot;as is&quot; and &quot;as available&quot; basis
-							without warranties of any kind, express or implied. We do not warrant that the
-							platform will be uninterrupted, error-free, or free of harmful components.
-						</P>
-						<P>
-							We make no representations about the accuracy, completeness, or reliability of any
-							content posted by users on the platform. Use of the platform and reliance on any
-							content is entirely at your own risk.
-						</P>
+					<Section id="s8" title="8. Messaging, Calls, and Communications">
+						<P>AppsCombo may provide:</P>
+						<UL>
+							<li>Messaging</li>
+							<li>Voice communication</li>
+							<li>Video calls</li>
+							<li>Group chats</li>
+							<li>Broadcast features</li>
+						</UL>
+						<P>You understand that:</P>
+						<UL>
+							<li>Communications may travel through third-party infrastructure</li>
+							<li>No system is completely secure</li>
+							<li>We may use automated systems to detect spam, fraud, abuse, or harmful content</li>
+						</UL>
+						<P>You are responsible for the communications you send through the platform.</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 9 */}
-					<Section id="s9" title="9. Indemnification">
+					<Section id="s9" title="9. Advertising, Promotions, and Sponsored Content">
+						<P>AppsCombo may display:</P>
+						<UL>
+							<li>Advertisements</li>
+							<li>Sponsored posts</li>
+							<li>Promotional campaigns</li>
+							<li>Business listings</li>
+							<li>Influencer promotions</li>
+						</UL>
+						<P>We may personalize advertising based on user activities and preferences.</P>
+						<P>You agree that:</P>
+						<UL>
+							<li>Ads may appear near your content</li>
+							<li>
+								We are not obligated to compensate you for advertisements displayed alongside your
+								content unless expressly agreed
+							</li>
+						</UL>
 						<P>
-							You agree to indemnify, defend, and hold harmless AppsCombo, its officers, directors,
-							employees, and agents from and against any and all claims, damages, losses, costs, and
-							expenses arising out of or related to your use of the platform, your content, or your
-							violation of these Terms.
-						</P>
-						<P>
-							AppsCombo reserves the right to assume exclusive control of the defence of any matter
-							for which you are required to indemnify us, and you agree to cooperate with our
-							defence of such claims.
+							Businesses and advertisers are solely responsible for their promotions and claims.
 						</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 10 */}
-					<Section id="s10" title="10. Limitation of Liability">
+					<Section id="s10" title="10. Paid Services and Monetization">
+						<P>AppsCombo may offer paid services, including:</P>
+						<UL>
+							<li>Subscriptions</li>
+							<li>Verification services</li>
+							<li>Advertising tools</li>
+							<li>Premium features</li>
+							<li>Creator monetization</li>
+							<li>Marketplace services</li>
+						</UL>
 						<P>
-							To the fullest extent permitted by applicable law, AppsCombo shall not be liable for
-							any damages arising out of or in connection with your use of or inability to use the
-							platform.
+							All fees are generally non-refundable unless required by law or expressly stated
+							otherwise.
 						</P>
-						<SubSection id="s10-1" title="10.1 Indirect Damages">
-							<P>
-								AppsCombo shall not be liable for any indirect, incidental, special, consequential,
-								or punitive damages, including but not limited to loss of profits, data, goodwill,
-								or other intangible losses, even if we have been advised of the possibility of such
-								damages.
-							</P>
-						</SubSection>
-						<SubSection id="s10-2" title="10.2 Cap on Liability">
-							<P>
-								In no event shall our total aggregate liability to you for all claims relating to
-								the platform exceed the greater of: (a) the amount you paid to AppsCombo in the
-								twelve months preceding the claim, or (b) one hundred US dollars (USD $100).
-							</P>
-						</SubSection>
-						<SubSection id="s10-3" title="10.3 Exceptions">
-							<P>
-								Some jurisdictions do not allow the exclusion of certain warranties or the
-								limitation of liability for incidental or consequential damages. In such
-								jurisdictions, our liability is limited to the greatest extent permitted by law.
-								Nothing in these Terms limits our liability for fraud, gross negligence, or wilful
-								misconduct.
-							</P>
-						</SubSection>
+						<P>We reserve the right to:</P>
+						<UL>
+							<li>Change pricing</li>
+							<li>Modify features</li>
+							<li>Introduce new charges</li>
+							<li>Suspend monetization eligibility</li>
+						</UL>
 					</Section>
 
 					<Divider />
 
 					{/* Section 11 */}
-					<Section id="s11" title="11. Governing Law">
-						<P>
-							These Terms shall be governed by and construed in accordance with the laws of the
-							Federal Republic of Nigeria, without regard to its conflict of law principles. Any
-							disputes arising under these Terms shall be subject to the exclusive jurisdiction of
-							the courts located in Lagos, Nigeria.
-						</P>
-						<P>
-							If you access AppsCombo from outside Nigeria, you are responsible for compliance with
-							local laws to the extent they are applicable.
-						</P>
+					<Section id="s11" title="11. Third-Party Services and Links">
+						<P>AppsCombo may integrate with or link to third-party services, including:</P>
+						<UL>
+							<li>Payment providers</li>
+							<li>Authentication services</li>
+							<li>Cloud services</li>
+							<li>Social integrations</li>
+							<li>Advertisers</li>
+						</UL>
+						<P>We are not responsible for:</P>
+						<UL>
+							<li>Third-party content</li>
+							<li>Policies</li>
+							<li>Security practices</li>
+							<li>Transactions</li>
+							<li>Service availability</li>
+						</UL>
+						<P>Your use of third-party services is subject to their own terms and policies.</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 12 */}
-					<Section id="s12" title="12. Changes to Terms">
-						<P>
-							AppsCombo reserves the right to revise these Terms at any time. We will make
-							reasonable efforts to notify you of significant changes before they take effect.
-						</P>
-						<SubSection id="s12-1" title="12.1 Notice of Changes">
-							<P>
-								We will notify you of material changes to these Terms via email, an in-app
-								notification, or a prominent notice on our website at least 14 days before the
-								changes take effect. For minor changes, we may update the effective date at the top
-								of this page without further notice.
-							</P>
-						</SubSection>
-						<SubSection id="s12-2" title="12.2 Continued Use">
-							<P>
-								Your continued use of AppsCombo after any changes to these Terms constitutes your
-								acceptance of the revised Terms. If you do not agree to the updated Terms, you must
-								stop using the platform and may delete your account at any time.
-							</P>
-						</SubSection>
+					<Section id="s12" title="12. Platform Availability and Changes">
+						<P>We may:</P>
+						<UL>
+							<li>Modify features</li>
+							<li>Updates interfaces</li>
+							<li>Introduce new functionality</li>
+							<li>Remove content</li>
+							<li>Suspend services</li>
+							<li>Discontinue portions of the platform</li>
+						</UL>
+						<P>without prior notice.</P>
+						<P>We do not guarantee uninterrupted or error-free operation of the Services.</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 13 */}
-					<Section id="s13" title="13. Dispute Resolution">
+					<Section id="s13" title="13. Artificial Intelligence and Automated Systems">
+						<P>AppsCombo may use artificial intelligence and automated systems to:</P>
+						<UL>
+							<li>Personalize feeds</li>
+							<li>Recommend content</li>
+							<li>Detect harmful activity</li>
+							<li>Improve moderation</li>
+							<li>Enhance search and discovery</li>
+							<li>Analyze engagement</li>
+							<li>Prevent fraud and abuse</li>
+						</UL>
 						<P>
-							Before filing a claim, you agree to first attempt to resolve any dispute informally by
-							contacting AppsCombo directly. We will try to resolve the dispute within 30 days. If
-							informal resolution fails, disputes shall be resolved through binding arbitration in
-							accordance with applicable arbitration rules.
-						</P>
-						<P>
-							You agree to waive the right to participate in class action lawsuits or class-wide
-							arbitration against AppsCombo. Individual arbitration is the exclusive remedy for any
-							dispute that cannot be resolved informally.
+							You acknowledge that automated decisions may affect visibility, recommendations,
+							moderation, and platform interactions.
 						</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 14 */}
-					<Section id="s14" title="14. Severability">
+					<Section id="s14" title="14. Data Usage and Analytics">
+						<P>We may analyze usage data, trends, interactions, and content performance to:</P>
+						<UL>
+							<li>Improve user experience</li>
+							<li>Develop new features</li>
+							<li>Enhance recommendations</li>
+							<li>Improve security</li>
+							<li>Conduct research and analytics</li>
+						</UL>
 						<P>
-							If any provision of these Terms is found to be unenforceable or invalid by a court of
-							competent jurisdiction, that provision shall be limited or eliminated to the minimum
-							extent necessary, and the remaining provisions shall continue in full force and
-							effect.
-						</P>
-						<P>
-							The failure of AppsCombo to enforce any right or provision of these Terms shall not be
-							deemed a waiver of such right or provision unless acknowledged and agreed to by us in
-							writing.
+							Aggregated or anonymized data may be used for business, analytical, or research
+							purposes.
 						</P>
 					</Section>
 
 					<Divider />
 
 					{/* Section 15 */}
-					<Section id="s15" title="15. Contact Us">
-						<P>If you have any questions about these Terms and Conditions, please contact us at:</P>
+					<Section id="s15" title="15. Account Suspension and Termination">
+						<P>We may suspend, restrict, or terminate your account if:</P>
+						<UL>
+							<li>You violate these Terms</li>
+							<li>We detect suspicious activity</li>
+							<li>Required by law</li>
+							<li>Necessary to protect users or platform integrity</li>
+						</UL>
 						<P>
-							Email: <span className="text-gray-900 font-medium">legal@appscombo.com</span>
-							<br />
-							Address: AppsCombo Ltd, Lagos, Nigeria
+							You may also delete your account at any time through account settings where available.
 						</P>
-						<div className="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-400">
-							Effective date: June 1, 2026.{" "}
+						<P>
+							Certain data may remain retained for legal, security, fraud prevention, or operational
+							purposes.
+						</P>
+					</Section>
+
+					{/* Section 16 */}
+					<Section id="s16" title="16. Disclaimer of Warranties">
+						<P>AppsCombo is provided “AS IS” and “AS AVAILABLE.”</P>
+						<P>To the fullest extent permitted by law, we disclaim all warranties, including:</P>
+						<UL>
+							<li>Merchantability</li>
+							<li>Fitness for a particular purpose</li>
+							<li>Non-infringement</li>
+							<li>Reliability</li>
+							<li>Availability</li>
+							<li>Security</li>
+							<li>Accuracy</li>
+						</UL>
+						<P>We do not guarantee that:</P>
+						<UL>
+							<li>The Services will always be available</li>
+							<li>The platform will be error-free</li>
+							<li>Content will be accurate or reliable</li>
+							<li>The Services will be secure from all threats</li>
+						</UL>
+					</Section>
+
+					{/* Section 17 */}
+					<Section id="s17" title="17. Limitation of Liabilities">
+						<P>
+							To the maximum extent permitted by law, AppsCombo and its affiliates, officers,
+							employees, partners, and licensors shall not be liable for:
+						</P>
+						<UL>
+							<li>Indirect damages</li>
+							<li>Incidental damages</li>
+							<li>Lost profits</li>
+							<li>Data loss</li>
+							<li>Reputation damage</li>
+							<li>Business interruption</li>
+							<li>Unauthorized access</li>
+							<li>User conduct</li>
+							<li>Third-party actions</li>
+						</UL>
+						<P>
+							Our total liability shall not exceed the amount you paid to AppsCombo, if any, within
+							the previous twelve months.
+						</P>
+					</Section>
+
+					{/* Section 18 */}
+					<Section id="s18" title="18. Indemnification">
+						<P>
+							You agree to indemnify and hold harmless AppsCombo and its affiliates from claims,
+							damages, liabilities, losses, and expenses arising from:
+						</P>
+						<UL>
+							<li>Your use of the Services </li>
+							<li>Your content</li>
+							<li>Your violations of these Terms</li>
+							<li>Your infringement of third-party rights</li>
+							<li>Your unlawful activities</li>
+						</UL>
+					</Section>
+
+					{/* Section 19 */}
+					<Section id="s19" title="19. Governing Law and Jurisdiction">
+						<P>
+							These Terms shall be governed by and interpreted under the laws of United State/
+							Delaware.
+						</P>
+						<P>
+							Any disputes arising from these Terms or the Services shall be resolved exclusively in
+							the courts located within the applicable jurisdiction unless otherwise required by
+							law.
+						</P>
+					</Section>
+
+					{/* Section 20 */}
+					<Section id="s20" title="20. International Use">
+						<P>AppsCombo may be accessible globally.</P>
+						<P>
+							You are responsible for complying with local laws applicable to your use of the
+							Services.
+						</P>
+						<P>
+							We make no representation that the Services are lawful or available in every
+							jurisdiction.
+						</P>
+					</Section>
+
+					{/* Section 21 */}
+					<Section id="s21" title="21. Changes to These Terms">
+						<P>We may modify these Terms from time to time.</P>
+						<P>When changes are made, we may:</P>
+						<UL>
+							<li>Update the “Last Updated” date</li>
+							<li>Notify users through the platform</li>
+							<li>Send emails or notifications where required</li>
+						</UL>
+						<P>
+							Continued use of AppsCombo after changes become effective constitutes acceptance of
+							the updated Terms.
+						</P>
+					</Section>
+
+					{/* Section 22 */}
+					<Section id="s22" title="22. Contact Information">
+						<P>If you have any questions regarding these Terms, please contact us at:</P>
+						<P>
+							Email: <span className="text-gray-700 font-medium">legal@appscombo.com</span>
+							<br />
+							Website:{" "}
 							<a
-								href="#"
-								className="text-gray-600 underline underline-offset-2 hover:text-gray-900"
+								className="text-blue-600 underline underline-offset-2"
+								href="https://www.appscombo.com"
 							>
-								Archive of previous terms
+								https://appscombo.com
 							</a>
-						</div>
+							<br />
+							Address:{" "}
+							<span className="text-gray-700 font-medium">
+								8 THE GREEN,STE A,KENT, DOVER, DE, 19901
+							</span>
+						</P>
+					</Section>
+
+					{/* Section 23 */}
+					<Section id="s23" title="23. Entire Agreement">
+						<P>
+							These Terms, together with the Privacy Policy and other applicable policies,
+							constitute the entire agreement between you and AppsCombo regarding the Services.
+						</P>
+						<P>
+							If any provision of these Terms is found unenforceable, the remaining provisions shall
+							remain in full force and effect.
+						</P>
+					</Section>
+
+					{/* Section 24 */}
+					<Section id="s24" title="24. Waiver and Severability">
+						<P>
+							Failure by AppsCombo to enforce any provision of these Terms shall not constitute a
+							waiver of that provision.
+						</P>
+						<P>
+							If any part of these Terms is determined to be invalid or unenforceable, the remaining
+							provisions will continue in effect.
+						</P>
+					</Section>
+
+					{/* Section 25 */}
+					<Section id="s25" title="25. Electronic Communication">
+						<P>
+							By using AppsCombo, you consent to receive electronic communications from us,
+							including:
+						</P>
+						<UL>
+							<li>Notices</li>
+							<li>Announcements</li>
+							<li>Security Alerts</li>
+							<li>Updates</li>
+							<li>Transactional messages</li>
+							<li>Legal communications</li>
+						</UL>
+						<P>These communications may be delivered through:</P>
+						<UL>
+							<li>Email</li>
+							<li>In-app notifications</li>
+							<li>SMS</li>
+							<li>Website notices</li>
+							<li>Push notifications</li>
+						</UL>
+					</Section>
+
+					{/* Section 26 */}
+					<Section id="s26" title="26. User Feedback and Suggestions">
+						<P>
+							If you provide suggestions, ideas, feedback, or recommendations regarding AppsCombo,
+							you grant us the right to use them without compensation, restriction, or obligation to
+							you.
+						</P>
+					</Section>
+
+					{/* Section 27*/}
+					<Section id="s27" title="27. Beta Features and Experimental Services">
+						<P>AppsCombo may release beta, experimental, or test features.</P>
+						<P>These features may:</P>
+						<UL>
+							<li>Be incomplete</li>
+							<li>Contain bugs</li>
+							<li>Change without notice</li>
+							<li>Be discontinued at any time</li>
+						</UL>
+						<P>Use of beta features is at your own risk.</P>
+					</Section>
+
+					{/* Section 28*/}
+					<Section id="s28" title="28. Force Majeure">
+						<P>
+							AppsCombo shall not be liable for delays or failures caused by events beyond our
+							reasonable control, including:
+						</P>
+						<UL>
+							<li>Natural disasters</li>
+							<li>Internet outages</li>
+							<li>Government actions</li>
+							<li>Wars</li>
+							<li>Cyberattacks</li>
+							<li>Labor disputes</li>
+							<li>Infrastructure failures</li>
+						</UL>
+						<P>Use of beta features is at your own risk.</P>
+					</Section>
+
+					{/* Section 29 */}
+					<Section id="s29" title="29. Acceptance of Terms">
+						<P>
+							By accessing or using AppsCombo, you acknowledge that you have read, understood, and
+							agreed to these Terms and Conditions.
+						</P>
+						<P>Thank you for using AppsCombo</P>
 					</Section>
 				</main>
 			</div>
@@ -574,4 +841,12 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Divider() {
 	return <hr className="border-gray-100 my-8" />
+}
+
+function UL({ children }: { children: React.ReactNode }) {
+	return (
+		<ul className="list-disc pl-6 mb-3 text-sm text-gray-500 leading-relaxed space-y-1">
+			{children}
+		</ul>
+	)
 }
