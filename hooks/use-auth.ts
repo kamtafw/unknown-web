@@ -1,11 +1,13 @@
 "use client"
 
 import { authApi, userApi } from "@/lib/api"
+import { extractMessage } from "@/lib/api-error"
+import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { FullUser, LoginPayload, SignupPayload, VerifyOtpPayload } from "@/types/api"
-import { useShallow } from "zustand/react/shallow"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
+import { useShallow } from "zustand/react/shallow"
 
 export const authKeys = {
 	me: ["auth", "me"] as const,
@@ -18,7 +20,10 @@ export function useLogin() {
 	return useMutation({
 		mutationFn: (payload: LoginPayload) => authApi.login(payload),
 		onSuccess: (res) => {
-			if (!res.success) return
+			if (!res.success) {
+				toast.error(extractMessage(res, "Login failed. Please try again."))
+				return
+			}
 
 			const user = res.data.user
 			setPendingAuth(user)
@@ -45,6 +50,9 @@ export function useLogin() {
 			} else {
 				router.push("/verify?flow=signin")
 			}
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Invalid email or password. Please try again."))
 		},
 	})
 }
@@ -105,6 +113,9 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			if (flow === "signin") {
 				router.push("/home")
 			}
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Invalid or expired code. Please try again."))
 		},
 	})
 }

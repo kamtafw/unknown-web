@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios"
+import axios,{ AxiosError,AxiosInstance,InternalAxiosRequestConfig } from "axios"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://dev.appscombo.org/api/v1"
 
@@ -18,6 +18,8 @@ function processQueue(error: AxiosError | null) {
 	waitingQueue = []
 }
 
+const AUTH_ROUTES = ["/api/auth/login", "/api/auth/signup", "/api/auth/verify-otp"]
+
 apiClient.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
@@ -26,7 +28,11 @@ apiClient.interceptors.response.use(
 		}
 
 		// only attempt a refresh on 401, and only once per request
-		if (error.response?.status !== 401 || original._retry) {
+		if (
+			error.response?.status !== 401 ||
+			original._retry ||
+			AUTH_ROUTES.some((route) => original.url?.includes(route))
+		) {
 			return Promise.reject(error)
 		}
 
@@ -47,7 +53,6 @@ apiClient.interceptors.response.use(
 			// the refresh route handler reads the HTTP-only cookie itself —
 			// no token needs to be passed in the body
 			await axios.post("/api/auth/refresh", {}, { withCredentials: true })
-
 			processQueue(null)
 			return apiClient(original)
 		} catch (refreshError) {

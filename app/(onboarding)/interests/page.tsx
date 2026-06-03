@@ -13,7 +13,7 @@ const ChooseInterestsPage = () => {
 		<ChooseInterests
 			interests={data?.data.interests}
 			isLoading={isLoading}
-			isPending={save.isPending}
+			isPending={save.isPending || save.isSuccess}
 			onNext={(selected) => {
 				if (selected.length === 0) {
 					router.push("/friend-suggestions")

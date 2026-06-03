@@ -1,9 +1,9 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/auth-store"
-import { useVerifyOtp } from "@/hooks/use-auth"
 import { TwoFactorVerification, TwoFAMethod } from "@/components/auth/two-factor-verification"
+import { useVerifyOtp } from "@/hooks/use-auth"
+import { useAuthStore } from "@/stores/auth-store"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 function toMethod(otp_default: string): TwoFAMethod {
@@ -44,7 +44,7 @@ const TwoFAPage = () => {
 		<TwoFactorVerification
 			initialMethod={toMethod(otp_default)}
 			availableMethods={availableMethods}
-			isPending={verifyOtp.isPending}
+			isPending={verifyOtp.isPending || verifyOtp.isSuccess}
 			onVerify={(method, code) => {
 				verifyOtp.mutate({
 					email: email,

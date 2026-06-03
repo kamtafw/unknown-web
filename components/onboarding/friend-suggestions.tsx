@@ -87,10 +87,10 @@ export function FriendSuggestions({
 	onContinue,
 }: FriendSuggestionsProps) {
 	return (
-		<div className="flex justify-center pt-16 px-4">
+		<div className="flex justify-center pt-10 sm:pt-15 px-4 pb-10">
 			<div className="w-full max-w-115">
 				<h1 className="text-2xl font-bold text-gray-900 mb-1">Friends suggestion</h1>
-				<p className="text-sm text-gray-500 mb-6">Follow some people to personalise your feed</p>
+				<p className="text-sm text-gray-500 mb-5 sm:mb-6">Follow some people to personalise your feed</p>
 
 				{isLoading ? (
 					<div className="flex flex-col animate-pulse">

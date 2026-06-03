@@ -14,8 +14,6 @@ export async function GET(req: NextRequest) {
 		cache: "no-store",
 	})
 
-  console.log("user list upstream", upstream)
-
 	const json = await upstream.json()
 	return NextResponse.json(json, { status: upstream.status })
 }

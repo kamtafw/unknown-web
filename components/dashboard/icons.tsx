@@ -135,7 +135,7 @@ export function Home({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Settings({ size = 24, color = "#111827" }: IconProps) {
+export function Settings({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -159,7 +159,7 @@ export function Settings({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function Bookmark({ size = 24, color = "#111827" }: IconProps) {
+export function Bookmark({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -181,7 +181,7 @@ export function Bookmark({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function AI({ size = 24, color = "#111827" }: IconProps) {
+export function AI({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -221,7 +221,7 @@ export function AI({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function Invite({ size = 24, color = "#111827" }: IconProps) {
+export function Invite({ size = 24, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
@@ -252,7 +252,7 @@ export function Invite({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function Add({ size = 20, color = "#111827" }: IconProps) {
+export function Add({ size = 20, color = "#101828" }: IconProps) {
 	return (
 		<svg
 			width={size}
