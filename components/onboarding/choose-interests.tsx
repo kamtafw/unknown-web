@@ -84,7 +84,7 @@ export function ChooseInterests({
 				</p>
 
 				{isLoading ? (
-					<div className="flex justify-center pt-16 px-4">
+					<div className="flex justify-center py-2">
 						<div className="w-full max-w-115 animate-pulse">
 							<div className="h-7 bg-gray-200 rounded-full w-2/5 mb-2" />
 							<div className="h-4 bg-gray-200 rounded-full w-3/5 mb-6" />

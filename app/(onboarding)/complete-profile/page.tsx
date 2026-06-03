@@ -15,7 +15,7 @@ const CompleteProfilePage = () => {
 
 	return (
 		<CompleteProfile
-			isPending={completeProfile.isPending}
+			isPending={completeProfile.isPending || completeProfile.isSuccess}
 			onContinue={(data) =>
 				completeProfile.mutate({
 					first_name: data.firstName,
