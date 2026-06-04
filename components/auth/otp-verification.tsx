@@ -1,9 +1,10 @@
 "use client"
 
 import { otpSchema } from "@/lib/schemas"
-import { ArrowLeft,Loader2 } from "lucide-react"
-import { Form,unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent } from "react"
+import { ResendButton } from "../shared/resend-button"
 
 const CODE_LENGTH = 6
 
@@ -103,7 +104,7 @@ export function OTPVerification({
 									Code must be numeric
 								</Form.Message>
 							</Form.Field>
-							
+
 							{error && <p className="text-sm text-destructive text-center -mt-2">{error}</p>}
 
 							<Form.Submit asChild>
@@ -122,16 +123,7 @@ export function OTPVerification({
 								</button>
 							</Form.Submit>
 
-							<p className="text-center text-sm text-gray-500">
-								I didn&apos;t receive any code{" "}
-								<button
-									type="button"
-									onClick={onResend}
-									className="text-primary font-medium hover:underline focus:outline-none cursor-pointer"
-								>
-									Resend
-								</button>
-							</p>
+							<ResendButton onResend={onResend} />
 						</Form.Root>
 					</div>
 				</div>

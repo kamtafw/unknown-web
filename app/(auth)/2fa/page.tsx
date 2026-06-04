@@ -1,7 +1,7 @@
 "use client"
 
 import { TwoFactorVerification, TwoFAMethod } from "@/components/auth/two-factor-verification"
-import { useVerifyOtp } from "@/hooks/use-auth"
+import { useResendOtp, useVerifyOtp } from "@/hooks/use-auth"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -24,6 +24,7 @@ const TwoFAPage = () => {
 	const pendingAuth = useAuthStore((s) => s.pendingAuth)
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 	const verifyOtp = useVerifyOtp("signin")
+	const resendOtp = useResendOtp()
 
 	const [email] = useState(() => pendingAuth?.email ?? "")
 	const [otp_default] = useState(() => pendingAuth?.otp_default ?? "otp")
@@ -55,9 +56,7 @@ const TwoFAPage = () => {
 				})
 			}}
 			onResend={(method) => {
-				if (method === "otp") {
-					// TODO: call dedicated resend endpoint
-				}
+				if (method === "otp") resendOtp.mutate(email)
 			}}
 			onBack={() => router.back()}
 		/>

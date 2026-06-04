@@ -142,6 +142,18 @@ export function useCompleteProfile() {
 	})
 }
 
+export function useResendOtp() {
+	return useMutation({
+		mutationFn: (email: string) => authApi.resendOtp(email),
+		onSuccess: () => {
+			toast.success("New code sent to your email")
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Couldn't resend code. Try again shortly."))
+		},
+	})
+}
+
 export function useMe() {
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 

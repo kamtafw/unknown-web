@@ -1,8 +1,8 @@
 "use client"
 
+import { OTPVerification } from "@/components/auth/otp-verification"
 import { SuccessDialog } from "@/components/auth/success-dialog"
-import { OTPVerification } from "@/components/onboarding/otp-verification"
-import { useVerifyOtp } from "@/hooks/use-auth"
+import { useResendOtp, useVerifyOtp } from "@/hooks/use-auth"
 import { extractOtpMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
@@ -16,6 +16,7 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 	const pendingAuth = useAuthStore((s) => s.pendingAuth)
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 	const verifyOtp = useVerifyOtp(flow)
+	const resendOtp = useResendOtp()
 
 	const [email] = useState(() => pendingAuth?.email ?? "")
 
@@ -42,7 +43,7 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 						need_otp_token: true,
 					})
 				}
-				onResend={() => console.log("Resend clicked")} // TODO: replace with dedicated resend endpoint
+				onResend={() => resendOtp.mutate(email)}
 				onBack={() => router.back()}
 			/>
 

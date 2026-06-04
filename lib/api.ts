@@ -47,6 +47,9 @@ export const authApi = {
 			>("/api/auth/verify-otp", payload)
 			.then((r) => r.data),
 
+	resendOtp: (email: string) =>
+		apiClient.post<ApiResponse<null>>("/api/auth/resend-otp", { email }).then((r) => r.data),
+
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
 
