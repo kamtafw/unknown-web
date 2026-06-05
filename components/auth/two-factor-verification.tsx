@@ -4,6 +4,7 @@ import { otpSchema } from "@/lib/schemas"
 import { ArrowLeft, ArrowRight, Hash, KeyRound, Loader2, Smartphone } from "lucide-react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { ReactNode, useState } from "react"
+import { ResendButton } from "../shared/resend-button"
 
 export type TwoFAMethod = "authenticator" | "otp" | "pin"
 
@@ -178,18 +179,7 @@ export function TwoFactorVerification({
 								</button>
 							</Form.Submit>
 
-							{activeMethod === "otp" && (
-								<p className="text-center text-sm text-gray-500">
-									I didn&apos;t receive any code{" "}
-									<button
-										type="button"
-										onClick={() => onResend?.(activeMethod)}
-										className="text-primary font-medium hover:underline focus:outline-none"
-									>
-										Resend
-									</button>
-								</p>
-							)}
+							{activeMethod === "otp" && <ResendButton onResend={() => onResend?.(activeMethod)} />}
 
 							{fallbacks.length > 0 && (
 								<div>

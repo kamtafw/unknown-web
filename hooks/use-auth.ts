@@ -46,8 +46,10 @@ export function useLogin() {
 			const hasAdditionalMethods = user.is_2fa_enabled || user.is_pin_enabled
 
 			if (hasAdditionalMethods) {
+				toast.info("Security verification required")
 				router.push("/2fa")
 			} else {
+				toast.info("OTP code sent to your email")
 				router.push("/verify?flow=signin")
 			}
 		},
@@ -73,6 +75,7 @@ export function useSignup() {
 					is_pin_enabled: false,
 				},
 			})
+			toast.success("Account created! Check your inbox for a verification code.")
 			router.push("/verify?flow=signup")
 		},
 	})
@@ -95,6 +98,7 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			if (!res.success) return
 
 			if (flow === "reset") {
+				toast.success("Code verified! Set your new password.")
 				clearPendingAuth()
 				router.push("/create-new-password")
 				return
@@ -111,6 +115,7 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			setUser(fullUser)
 
 			if (flow === "signin") {
+				toast.success(`Welcome back, ${fullUser.first_name || fullUser.username}!`)
 				router.push("/home")
 			}
 		},
@@ -128,7 +133,23 @@ export function useCompleteProfile() {
 		onSuccess: (res) => {
 			if (!res.success) return
 
+			toast.success("Profile saved! Now let's personalise your feed.")
 			router.push("/interests")
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Couldn't save your profile. Please try again."))
+		},
+	})
+}
+
+export function useResendOtp() {
+	return useMutation({
+		mutationFn: (email: string) => authApi.resendOtp(email),
+		onSuccess: () => {
+			toast.success("New code sent to your email")
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Couldn't resend code. Try again shortly."))
 		},
 	})
 }

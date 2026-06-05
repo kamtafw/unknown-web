@@ -32,14 +32,14 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 
 	return (
 		<>
-			<div className="flex items-start justify-center pt-20 px-4">
+			<div className="flex items-start justify-center pt-10 sm:pt-20 px-4 pb-10">
 				<div className="w-full max-w-110">
-					<h1 className="text-2xl font-bold text-gray-900 mb-7">Create new password</h1>
+					<h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-7">Create new password</h1>
 
-					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
+					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
 						<Form.Field name="password" className="flex flex-col gap-1.5">
 							<Form.Label className="text-sm font-medium text-gray-800">New Password</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border-2 border-[#8892C4] bg-white">
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border-2 border-primary bg-white">
 								<PasswordToggleField.Root>
 									<PadlockIcon />
 									<Form.Control asChild>
@@ -68,15 +68,15 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 							</Form.Message>
 						</Form.Field>
 
-						<ul className="flex flex-col gap-2 -mt-2">
+						<ul className="flex flex-col gap-1.5 sm:gap-2 -mt-1 sm:-mt-2">
 							{RULES.map(({ label, test }) => {
 								const passed = test(password)
 								return (
 									<li key={label} className="flex items-center gap-2">
 										{passed ? (
-											<CheckCircle2 size={15} className="text-[#8892C4] shrink-0" strokeWidth={2} />
+											<CheckCircle2 size={14} className="text-primary shrink-0" strokeWidth={2} />
 										) : (
-											<Circle size={15} className="text-gray-300 shrink-0" strokeWidth={2} />
+											<Circle size={14} className="text-gray-300 shrink-0" strokeWidth={2} />
 										)}
 										<span className={`text-xs ${passed ? "text-gray-700" : "text-gray-400"}`}>
 											{label}
@@ -90,7 +90,7 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 							<Form.Label className="text-sm font-medium text-gray-800">
 								Confirm Password
 							</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12.5 rounded-xl border-2 border-[#8892C4] bg-white">
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border-2 border-primary bg-white">
 								<PasswordToggleField.Root>
 									<PadlockIcon />
 									<Form.Control asChild>
@@ -122,7 +122,7 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 cursor-pointer">
+							<button className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-1 sm:mt-2 cursor-pointer">
 								Change password
 							</button>
 						</Form.Submit>

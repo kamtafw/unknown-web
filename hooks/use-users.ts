@@ -12,7 +12,9 @@ export function useUsersList(page = 1) {
 	return useQuery({
 		queryKey: usersKeys.list(page),
 		queryFn: () => userApi.getUsersList(page),
-		staleTime: 1000 * 60 * 2,
+		// staleTime: 0,
+		refetchOnMount: "always",
+		refetchOnWindowFocus: "always",
 	})
 }
 
