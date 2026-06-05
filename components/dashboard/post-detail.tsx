@@ -1,19 +1,19 @@
 "use client"
 
-import { useAddComment,usePrependComment } from "@/hooks/use-comment"
-import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
+import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
-import { ArrowLeft,Image as ImageIcon,Loader2,MapPin,RefreshCw,Smile,X } from "lucide-react"
+import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { forwardRef,useEffect,useRef,useState } from "react"
+import { forwardRef, useEffect, useRef, useState } from "react"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
+import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
 import {
 	formatCount,
 	isOriginalComment,

@@ -1,11 +1,11 @@
 "use client"
 
 import { flattenFeedPages, useFollowingFeed, useForYouFeed } from "@/hooks/use-feed"
+import { Post } from "@/types/api"
 import { Loader2 } from "lucide-react"
 import { Tabs } from "radix-ui"
 import { RefObject, useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
-import { Post } from "@/types/api"
 
 function PostSkeleton() {
 	return (
