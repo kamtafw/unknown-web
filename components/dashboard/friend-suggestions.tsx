@@ -124,7 +124,7 @@ function SkeletonRow() {
 	)
 }
 
-export function FriendsSuggestion() {
+export function FriendSuggestions() {
 	const { data, isLoading } = useFriendSuggestions()
 	const users = data?.data.results ?? []
 
