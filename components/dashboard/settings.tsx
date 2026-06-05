@@ -313,7 +313,6 @@ function formatCount(n: number) {
 	return String(n)
 }
 
-// ─── Dialog shell ─────────────────────────────────────────────────────────────
 
 function SettingsDialog({
 	open,
@@ -360,7 +359,6 @@ function SettingsDialog({
 	)
 }
 
-// ─── Deactivate dialog ────────────────────────────────────────────────────────
 
 function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	return (
@@ -406,7 +404,6 @@ function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => voi
 	)
 }
 
-// ─── Coming soon dialog ───────────────────────────────────────────────────────
 
 function ComingSoonDialog({
 	open,
@@ -433,8 +430,6 @@ function ComingSoonDialog({
 		</SettingsDialog>
 	)
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	const user = useAuthStore((s) => s.user)
@@ -486,7 +481,6 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 	)
 }
 
-// ─── Profile public view (left side) ─────────────────────────────────────────
 
 function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
@@ -570,17 +564,17 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				)}
 
 				{/* Location + date joined */}
-				<div className="flex items-center gap-4 flex-wrap">
+				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
-						<div className="flex items-center gap-1 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<MapPin size={13} />
-							{[user.state, user.country].filter(Boolean).join(", ")}
+							<span className="text-semibold text-gray-700">{[user.state, user.country].filter(Boolean).join(", ")}</span>
 						</div>
 					)}
 					{user.date_joined && (
-						<div className="flex items-center gap-1 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<Calendar size={13} />
-							{dayjs(user.date_joined).format("MMM D, YYYY")}
+							<span className="text-semibold text-gray-700">{dayjs(user.date_joined).format("MMM D, YYYY")}</span>
 						</div>
 					)}
 				</div>
@@ -588,8 +582,6 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 		</div>
 	)
 }
-
-// ─── Edit profile panel (right side) ─────────────────────────────────────────
 
 function EditRow({
 	label,
@@ -662,7 +654,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 			</div>
 
 			{/* photo section */}
-			<div className="px-2 py-2 border-b border-gray-100 shrink-0">
+			<div className="p-1 border-b border-gray-100 shrink-0">
 				<div className="relative">
 					{/* cover thumbnail */}
 					<button
@@ -682,7 +674,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					{/* avatar — overlapping cover */}
 					<button
 						onClick={() => onOpenDialog("edit-avatar")}
-						className="absolute left-3 -bottom-4 group"
+						className="absolute left-3 -bottom-5 group"
 					>
 						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
 							{user.profile_photo ? (
@@ -874,7 +866,7 @@ function SettingsListView({
 			{/* left nav */}
 			<nav
 				className={cn(
-					"w-full lg:w-105 shrink-0 border-r border-gray-100 flex-col overflow-hidden",
+					"w-full lg:w-[40%] shrink-0 border-r border-gray-100 flex-col overflow-hidden",
 					mobileView === "panel" ? "hidden lg:flex" : "flex",
 				)}
 			>
