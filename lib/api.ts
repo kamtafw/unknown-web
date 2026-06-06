@@ -18,11 +18,15 @@ import {
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
+	NullResponse,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
 	RepostResponse,
+	ResetPasswordPayload,
+	ResetPasswordResponse,
 	SignupPayload,
+	UnknownResponse,
 	UploadMediaResponse,
 	UserListResponse,
 	VerifyOtpPayload,
@@ -38,7 +42,7 @@ export const authApi = {
 		apiClient.post<ApiResponse<LoginResponseData>>("/api/auth/login", payload).then((r) => r.data),
 
 	signup: (payload: SignupPayload) =>
-		apiClient.post<ApiResponse<null>>("/api/auth/signup", payload).then((r) => r.data),
+		apiClient.post<NullResponse>("/api/auth/signup", payload).then((r) => r.data),
 
 	verifyOtp: (payload: VerifyOtpPayload) =>
 		apiClient
@@ -48,13 +52,20 @@ export const authApi = {
 			.then((r) => r.data),
 
 	resendOtp: (email: string) =>
-		apiClient.post<ApiResponse<null>>("/api/auth/resend-otp", { email }).then((r) => r.data),
+		apiClient.post<NullResponse>("/api/auth/resend-otp", { email }).then((r) => r.data),
+
+	forgotPassword: (email: string) =>
+		apiClient
+			.post<ResetPasswordResponse>("/api/auth/forgot-password", { email })
+			.then((r) => r.data),
+
+	resetPassword: (payload: ResetPasswordPayload) =>
+		apiClient.post<ResetPasswordResponse>("/api/auth/forgot-password", payload).then((r) => r.data),
 
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
 
 export const userApi = {
-	/** full profile — call immediately after verify-otp success */
 	getMe: () =>
 		apiClient.get<ApiResponse<FullUser>>("/api/users/me").then((r) => {
 			const user = r.data.data
@@ -87,10 +98,10 @@ export const userApi = {
 		await apiClient.get<FollowingsResponse>("/api/users/followings").then((r) => r.data),
 
 	followUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<unknown>>("/api/users/follow", payload).then((r) => r.data),
+		apiClient.post<UnknownResponse>("/api/users/follow", payload).then((r) => r.data),
 
 	unfollowUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<unknown>>("/api/users/unfollow", payload).then((r) => r.data),
+		apiClient.post<UnknownResponse>("/api/users/unfollow", payload).then((r) => r.data),
 }
 
 export const socialApi = {

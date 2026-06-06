@@ -13,7 +13,7 @@ const eslintConfig = [
 	...compat.extends("next/core-web-vitals", "next/typescript"),
 
 	{
-		files: ["hooks/use-otp-cooldown.ts"],
+		files: ["hooks/use-otp-cooldown.ts", "components/auth/create-new-password.tsx"],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",
 		},
