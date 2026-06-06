@@ -27,6 +27,9 @@ import {
 	ResetPasswordResponse,
 	SignupPayload,
 	UnknownResponse,
+	UpdateBioResponse,
+	UpdateNameResponse,
+	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
 	VerifyOtpPayload,
@@ -77,6 +80,17 @@ export const userApi = {
 		apiClient
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
 			.then((r) => r.data),
+
+	updateName: (payload: { first_name: string; last_name: string }) =>
+		apiClient.patch<UpdateNameResponse>("/api/users/update-name", payload).then((r) => r.data),
+
+	updateUsername: (payload: { username: string }) =>
+		apiClient
+			.patch<UpdateUsernameResponse>("/api/users/change-username", payload)
+			.then((r) => r.data),
+
+	updateBio: (payload: { about_me: string }) =>
+		apiClient.patch<UpdateBioResponse>("/api/users/update-bio", payload).then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
 

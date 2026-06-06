@@ -36,6 +36,7 @@ import {
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { ReactNode, useState } from "react"
+import { EditBioPanel, EditNamePanel, EditUsernamePanel } from "./profile-edit-panels"
 import {
 	Account,
 	Alert,
@@ -186,7 +187,7 @@ const SECTIONS: Section[] = [
 		id: "chat",
 		label: "Chat",
 		description: "Customize your private and group message settings",
-		icon: <Chat size={20}/>,
+		icon: <Chat size={20} />,
 		items: [
 			{
 				id: "chat-backup",
@@ -206,7 +207,7 @@ const SECTIONS: Section[] = [
 		id: "data-storage",
 		label: "Data and Storage",
 		description: "Power usage, Folder, Devices",
-		icon: <DataStorage size={20}/>,
+		icon: <DataStorage size={20} />,
 		items: [
 			{
 				id: "storage-usage",
@@ -240,7 +241,7 @@ const SECTIONS: Section[] = [
 		id: "support",
 		label: "Support",
 		description: "Get help with AppsCombo, report a problem, or review our policies",
-		icon: <Support size={20}/>,
+		icon: <Support size={20} />,
 		items: [
 			{
 				id: "report",
@@ -291,9 +292,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "report", title: "Report a problem" },
 	{ id: "security", title: "Security advisories" },
 	// edit profile actions
-	{ id: "edit-name", title: "Update name" },
-	{ id: "edit-username", title: "Change username" },
-	{ id: "edit-bio", title: "Edit bio" },
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
 	{ id: "edit-dob", title: "Date of birth" },
@@ -312,7 +310,6 @@ function formatCount(n: number) {
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
 	return String(n)
 }
-
 
 function SettingsDialog({
 	open,
@@ -359,7 +356,6 @@ function SettingsDialog({
 	)
 }
 
-
 function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	return (
 		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
@@ -403,7 +399,6 @@ function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => voi
 		</SettingsDialog>
 	)
 }
-
 
 function ComingSoonDialog({
 	open,
@@ -480,7 +475,6 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 		</SettingsDialog>
 	)
 }
-
 
 function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
@@ -568,13 +562,17 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					{(user.country || user.state) && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<MapPin size={13} />
-							<span className="text-semibold text-gray-700">{[user.state, user.country].filter(Boolean).join(", ")}</span>
+							<span className="text-semibold text-gray-700">
+								{[user.state, user.country].filter(Boolean).join(", ")}
+							</span>
 						</div>
 					)}
 					{user.date_joined && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<Calendar size={13} />
-							<span className="text-semibold text-gray-700">{dayjs(user.date_joined).format("MMM D, YYYY")}</span>
+							<span className="text-semibold text-gray-700">
+								{dayjs(user.date_joined).format("MMM D, YYYY")}
+							</span>
 						</div>
 					)}
 				</div>
@@ -685,10 +683,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 								</div>
 							)}
 							<div className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center rounded-full">
-								<Camera
-									size={11}
-									className="text-white opacity-100 transition-opacity"
-								/>
+								<Camera size={11} className="text-white opacity-100 transition-opacity" />
 							</div>
 						</div>
 					</button>
@@ -770,6 +765,26 @@ function ProfileView({
 	onOpenDialog: (id: string) => void
 }) {
 	const [mobileTab, setMobileTab] = useState<"profile" | "edit">("profile")
+	const [activePanel, setActivePanel] = useState<string | null>(null)
+
+	const handleEdit = (id: string) => {
+		if (id === "edit-name" || id === "edit-username" || id === "edit-bio") {
+			setActivePanel(id)
+		} else {
+			onOpenDialog(id)
+		}
+	}
+
+	const rightContent =
+		activePanel === "edit-name" ? (
+			<EditNamePanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-username" ? (
+			<EditUsernamePanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-bio" ? (
+			<EditBioPanel onBack={() => setActivePanel(null)} />
+		) : (
+			<EditProfilePanel onOpenDialog={handleEdit} />
+		)
 
 	return (
 		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
@@ -805,7 +820,7 @@ function ProfileView({
 					mobileTab === "profile" ? "hidden lg:block" : "block w-full",
 				)}
 			>
-				<EditProfilePanel onOpenDialog={onOpenDialog} />
+				{rightContent}
 			</div>
 		</div>
 	)
@@ -1020,151 +1035,6 @@ export function Settings() {
 			/>
 			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
 			<DeactivateDialog open={openDialog === "deactivate"} onClose={closeDialog} />
-			{COMING_SOON.map(({ id, title }) => (
-				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
-			))}
-		</>
-	)
-}
-
-export function Settings2() {
-	const [activeSection, setActiveSection] = useState<SectionId>("account")
-	const [mobileView, setMobileView] = useState<"nav" | "panel">("nav")
-	const [openDialog, setOpenDialog] = useState<string | null>(null)
-
-	const currentSection = SECTIONS.find((s) => s.id === activeSection)!
-	const closeDialog = () => setOpenDialog(null)
-
-	const handleSectionSelect = (id: SectionId) => {
-		setActiveSection(id)
-		setMobileView("panel")
-	}
-
-	const handleItemClick = (item: SectionItem) => {
-		if (item.href) {
-			window.open(item.href, "_blank")
-			return
-		}
-		setOpenDialog(item.id)
-	}
-
-	return (
-		<>
-			<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
-				{/* ── Left: settings nav ──────────────────────────────────────── */}
-				<nav
-					className={cn(
-						"w-full lg:w-96 shrink-0 border-r border-gray-100 flex-col",
-						"overflow-y-auto [&::-webkit-scrollbar]:hidden",
-						mobileView === "panel" ? "hidden lg:flex" : "flex",
-					)}
-				>
-					<div className="flex items-center px-4 py-3 border-b border-gray-100 shrink-0 bg-white">
-						<h1 className="text-[17px] font-bold text-gray-900">Settings</h1>
-					</div>
-
-					<div className="flex-1 py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-						{SECTIONS.map((section) => {
-							const isActive = activeSection === section.id
-							return (
-								<button
-									key={section.id}
-									onClick={() => handleSectionSelect(section.id)}
-									className={cn(
-										"w-full flex items-center gap-3 px-5 py-3.75",
-										"text-base font-medium transition-colors text-left group",
-										isActive
-											? "bg-gray-100 text-gray-900"
-											: "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
-									)}
-								>
-									<span
-										className={cn(
-											"shrink-0 transition-colors tracking-[1.5]",
-											isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-500",
-										)}
-									>
-										{section.icon}
-									</span>
-									<span className="flex-1 truncate">{section.label}</span>
-									<ChevronRight
-										size={15}
-										className={cn(
-											"shrink-0 transition-colors",
-											isActive ? "text-gray-400" : "text-gray-250",
-										)}
-									/>
-								</button>
-							)
-						})}
-					</div>
-				</nav>
-
-				{/* ── Right: content panel ─────────────────────────────────────── */}
-				<div
-					className={cn(
-						"flex-1 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:hidden",
-						mobileView === "nav" ? "hidden lg:block" : "block",
-					)}
-				>
-					{/* Panel header */}
-					<div className="px-7 pt-5 pb-4 border-b border-gray-100">
-						<div className="flex items-center gap-2 mb-1">
-							<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
-						</div>
-						<p className="text-[12.5px] text-gray-500 leading-relaxed">
-							{currentSection.description}
-						</p>
-					</div>
-
-					{/* Panel items */}
-					<div>
-						{currentSection.items.map((item, i) => (
-							<button
-								key={item.id}
-								onClick={() => handleItemClick(item)}
-								className={cn(
-									"w-full flex items-center gap-4 px-7 py-4",
-									"hover:bg-gray-50/80 transition-colors text-left",
-									i < currentSection.items.length - 1 && "border-b border-gray-50",
-								)}
-							>
-								{/* Icon bubble */}
-								<div
-									className={cn(
-										"w-9 h-9 rounded-full flex items-center justify-center shrink-0",
-										item.destructive ? "bg-red-50 text-destructive" : "bg-gray-100 text-gray-500",
-									)}
-								>
-									{item.icon}
-								</div>
-
-								{/* Text */}
-								<div className="flex-1 min-w-0">
-									<p
-										className={cn(
-											"text-[13.5px] font-medium leading-tight",
-											item.destructive ? "text-destructive" : "text-gray-900",
-										)}
-									>
-										{item.label}
-									</p>
-									<p className="text-[12px] text-gray-500 mt-0.5 leading-relaxed">
-										{item.description}
-									</p>
-								</div>
-
-								<ChevronRight size={14} className="text-gray-300 shrink-0" />
-							</button>
-						))}
-					</div>
-				</div>
-			</div>
-
-			{/* ── Dialogs ───────────────────────────────────────────────────── */}
-			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
-			<DeactivateDialog open={openDialog === "deactivate"} onClose={closeDialog} />
-
 			{COMING_SOON.map(({ id, title }) => (
 				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 			))}
