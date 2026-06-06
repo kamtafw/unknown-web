@@ -3,11 +3,12 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 interface PendingAuth {
-	/** from the longing response — enough to route to the right verify screen */
+	/** from the sign-in response — enough to route to the right verify screen */
 	email: string
 	otp_default: OtpDefault
 	is_2fa_enabled: boolean
 	is_pin_enabled: boolean
+	reset_otp?:string
 }
 
 interface AuthStore {

@@ -114,6 +114,17 @@ export interface VerifyOtpPayload {
 	need_otp_token?: boolean
 }
 
+export interface ResetPasswordPayload {
+	email: string
+	otp: string
+	new_password: string
+	confirm_password: string
+}
+
+export type ResetPasswordResponse = ApiResponse<Record<string, never>>
+export type NullResponse = ApiResponse<null>
+export type UnknownResponse = ApiResponse<unknown>
+
 export interface PostUser {
 	pkid: number
 	id: string
@@ -245,8 +256,8 @@ export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<Suggestion
 
 export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
 export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
-export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
-export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>
+export type LikeResponse = ApiResponse<{ post_is_liked?: boolean }>
+export type BookmarkResponse = ApiResponse<{ created_at?: string }>
 export type PostStatsResponse = ApiResponse<PostStats>
 
 export interface PostCommentDetail {

@@ -1,12 +1,12 @@
 "use client"
 
-import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
-import { FormEvent, useState } from "react"
-import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
-import { CheckCircle2, Circle } from "lucide-react"
-import { PadlockIcon } from "../shared/Icons"
-import { createPasswordSchema } from "@/lib/schemas"
 import { SuccessDialog } from "@/components/auth/success-dialog"
+import { createPasswordSchema } from "@/lib/schemas"
+import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
+import { CheckCircle2, Circle, Loader2 } from "lucide-react"
+import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
+import { FormEvent, useEffect, useState } from "react"
+import { PadlockIcon } from "../shared/Icons"
 
 const RULES = [
 	{ label: "At least 8 to 12 characters", test: (v: string) => v.length >= 8 && v.length <= 12 },
@@ -16,25 +16,41 @@ const RULES = [
 ]
 
 interface CreateNewPasswordProps {
-	onSuccess?: () => void
+	isPending?: boolean
+	isSuccess?: boolean
+	onSubmit: (payload: { new_password: string; confirm_password: string }) => void
+	onDone: () => void
 }
 
-export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
+export function CreateNewPassword({
+	isPending = false,
+	isSuccess = false,
+	onSubmit,
+	onDone,
+}: CreateNewPasswordProps) {
 	const [password, setPassword] = useState("")
 	const [showSuccess, setShowSuccess] = useState(false)
+
+	useEffect(() => {
+		if (isSuccess) setShowSuccess(true)
+	}, [isSuccess])
 
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 		const raw = Object.fromEntries(new FormData(e.currentTarget))
 		const result = createPasswordSchema.safeParse(raw)
-		if (result.success) setShowSuccess(true)
+		if (result.success) {
+			onSubmit({ new_password: result.data.password, confirm_password: result.data.confirm })
+		}
 	}
 
 	return (
 		<>
 			<div className="flex items-start justify-center pt-10 sm:pt-20 px-4 pb-10">
 				<div className="w-full max-w-110">
-					<h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-7">Create new password</h1>
+					<h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-7">
+						Create new password
+					</h1>
 
 					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
 						<Form.Field name="password" className="flex flex-col gap-1.5">
@@ -122,8 +138,18 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 						</Form.Field>
 
 						<Form.Submit asChild>
-							<button className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-1 sm:mt-2 cursor-pointer">
-								Change password
+							<button
+								disabled={isPending}
+								className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+							>
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Changing password...
+									</>
+								) : (
+									"Change password"
+								)}
 							</button>
 						</Form.Submit>
 					</Form.Root>
@@ -137,7 +163,7 @@ export function CreateNewPassword({ onSuccess }: CreateNewPasswordProps) {
 				actionLabel="Proceed to login"
 				onAction={() => {
 					setShowSuccess(false)
-					onSuccess?.()
+					onDone()
 				}}
 			/>
 		</>
