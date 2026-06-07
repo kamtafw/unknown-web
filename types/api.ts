@@ -53,7 +53,7 @@ export interface FullUser {
 	country: string
 	state: string
 	date_joined: string
-	dob_visibility: "full" | "partial" | "hidden"
+	dob_visibility: "full" | "partial"
 	profile_photo: string
 	cover_photo: string
 	is_2fa_enabled: boolean
@@ -371,3 +371,5 @@ export type CreatePostResponse = ApiResponse<{
 export type UpdateNameResponse = ApiResponse<{ first_name: string; last_name: string }>
 export type UpdateUsernameResponse = ApiResponse<{ username: string }>
 export type UpdateBioResponse = ApiResponse<{ about_me: string }>
+export type UpdateDobResponse = ApiResponse<{ dob: string }>
+export type UpdateDobVisibilityResponse = ApiResponse<{ dob_visibility: "full" | "partial" }>

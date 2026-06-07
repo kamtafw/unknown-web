@@ -122,3 +122,80 @@ export function useUpdateBio() {
 		},
 	})
 }
+
+export function useUpdateDob() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { dob: string }) => userApi.updateDob(payload),
+
+		onMutate: async (payload) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+			}
+
+			const patch = { dob: payload.dob }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { dob: data.data.dob }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+	})
+}
+
+export function useUpdateDobVisibility() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { dob_visibility: "full" | "partial" }) =>
+			userApi.updateDobVisibility(payload),
+
+		onMutate: async (payload) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+			}
+
+			const patch = { dob_visibility: payload.dob_visibility }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { dob_visibility: data.data.dob_visibility }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+	})
+}

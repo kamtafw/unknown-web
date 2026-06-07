@@ -1,10 +1,10 @@
 "use client"
 
-import { useUpdateBio, useUpdateName, useUpdateUsername } from "@/hooks/use-update-profile"
+import { useUpdateBio,useUpdateName,useUpdateUsername } from "@/hooks/use-update-profile"
 import { extractFieldErrors } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { ArrowLeft,Loader2 } from "lucide-react"
+import { useEffect,useRef,useState } from "react"
 
 const BIO_MAX = 160
 
@@ -46,10 +46,6 @@ function PanelSave({
 	)
 }
 
-/**
- * Twitter/X-style floating label field — label sits above the value
- * inside the border so the field reads as a single contained unit.
- */
 function FloatingField({
 	label,
 	error,
@@ -196,8 +192,25 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Username" onBack={onBack} />
 
-			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-5">
-				<FloatingField label="Username" error={displayError}>
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-4">
+				<FloatingField label="Current Username">
+					<div className="flex items-center gap-0.5">
+						<span className="text-sm text-gray-400 select-none shrink-0">@</span>
+						<input
+							type="text"
+							value={user?.username}
+							disabled
+							className="flex-1 bg-transparent text-sm text-gray-900 outline-none opacity-60"
+						/>
+					</div>
+				</FloatingField>
+
+				<p className="text-xs text-gray-400 leading-relaxed">
+					Usernames can contain only letters, numbers, underscores, and periods. You also can only
+					change your username every 180 days.
+				</p>
+
+				<FloatingField label="New Username" error={displayError}>
 					<div className="flex items-center gap-0.5">
 						<span className="text-sm text-gray-400 select-none shrink-0">@</span>
 						<input
@@ -206,7 +219,6 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 							autoFocus
 							placeholder="username"
 							onChange={(e) => {
-								// Strip disallowed chars inline so the field never shows invalid chars
 								const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30)
 								setUsername(val)
 								if (errors.username) setErrors((p) => ({ ...p, username: "" }))
@@ -223,11 +235,6 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 						</span>
 					</div>
 				</FloatingField>
-
-				<p className="text-[12.5px] text-gray-400 leading-relaxed">
-					Usernames can contain only letters, numbers, underscores, and periods. You also can only
-					change your username every 180 days.
-				</p>
 			</div>
 
 			<PanelSave
@@ -238,8 +245,6 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 		</div>
 	)
 }
-
-// ─── Edit Bio ─────────────────────────────────────────────────────────────────
 
 export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
@@ -327,6 +332,163 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 				onSave={handleSave}
 				disabled={!isDirty || overLimit || updateBio.isPending}
 				pending={updateBio.isPending}
+			/>
+		</div>
+	)
+}
+
+export function EditDobPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const updateUsername = useUpdateUsername()
+
+	const [username, setUsername] = useState("")
+	const [errors, setErrors] = useState<Record<string, string>>({})
+
+	useEffect(() => {
+		const u = useAuthStore.getState().user
+		setUsername(u?.username ?? "")
+	}, [])
+
+	const isDirty = username !== (user?.username ?? "")
+	const isValidFormat = /^[a-zA-Z0-9_]{1,30}$/.test(username)
+	// Only show format error once they've typed something invalid — not on empty
+	const formatError =
+		username.length > 0 && !isValidFormat
+			? "Only letters, numbers, and underscores — up to 30 characters."
+			: undefined
+	const displayError = errors.username ?? formatError
+
+	const handleSave = () => {
+		if (!isDirty || !isValidFormat || updateUsername.isPending) return
+		setErrors({})
+		updateUsername.mutate(
+			{ username },
+			{
+				onSuccess: (data) => {
+					if (data.success) onBack()
+				},
+				onError: (err) => setErrors(extractFieldErrors(err)),
+			},
+		)
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Username" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-5">
+				<FloatingField label="Username" error={displayError}>
+					<div className="flex items-center gap-0.5">
+						<span className="text-sm text-gray-400 select-none shrink-0">@</span>
+						<input
+							type="text"
+							value={username}
+							autoFocus
+							placeholder="username"
+							onChange={(e) => {
+								// Strip disallowed chars inline so the field never shows invalid chars
+								const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30)
+								setUsername(val)
+								if (errors.username) setErrors((p) => ({ ...p, username: "" }))
+							}}
+							onKeyDown={(e) => e.key === "Enter" && handleSave()}
+							className="flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
+						/>
+						<span
+							className={`text-xs tabular-nums shrink-0 ml-2 transition-colors ${
+								username.length >= 28 ? "text-amber-400" : "text-gray-300"
+							}`}
+						>
+							{username.length}/30
+						</span>
+					</div>
+				</FloatingField>
+
+				<p className="text-[12.5px] text-gray-400 leading-relaxed">
+					Usernames can contain only letters, numbers, underscores, and periods. You also can only
+					change your username every 180 days.
+				</p>
+			</div>
+
+			<PanelSave
+				onSave={handleSave}
+				disabled={!isDirty || !isValidFormat || updateUsername.isPending}
+				pending={updateUsername.isPending}
+			/>
+		</div>
+	)
+}
+
+export function AddLinkPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const updateName = useUpdateName()
+
+	const [title, setTitle] = useState("")
+	const [url, setUrl] = useState("")
+	const [errors, setErrors] = useState<Record<string, string>>({})
+
+	// useEffect(() => {
+	// 	const u = useAuthStore.getState().user
+	// 	setFirstName(u?.first_name ?? "")
+	// 	setLastName(u?.last_name ?? "")
+	// }, [])
+
+	const isDirty =
+		title.trim() !== (user?.first_name ?? "") || url.trim() !== (user?.last_name ?? "")
+
+	// const handleSave = () => {
+	// 	if (!isDirty || updateName.isPending) return
+	// 	setErrors({})
+	// 	updateName.mutate(
+	// 		{ first_name: firstName.trim(), last_name: lastName.trim() },
+	// 		{
+	// 			onSuccess: (data) => {
+	// 				if (data.success) onBack()
+	// 			},
+	// 			onError: (err) => setErrors(extractFieldErrors(err)),
+	// 		},
+	// 	)
+	// }
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Add external link" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-4">
+				<FloatingField label="Title" error={errors.first_name}>
+					<input
+						type="text"
+						value={title}
+						autoFocus
+						placeholder="Title"
+						onChange={(e) => {
+							setTitle(e.target.value)
+							if (errors.first_name) setErrors((p) => ({ ...p, first_name: "" }))
+						}}
+						onKeyDown={(e) => e.key === "Enter"}
+						className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
+					/>
+				</FloatingField>
+
+				<FloatingField label="URL" error={errors.last_name}>
+					<input
+						type="text"
+						value={url}
+						placeholder="URL"
+						onChange={(e) => {
+							setUrl(e.target.value)
+							if (errors.last_name) setErrors((p) => ({ ...p, last_name: "" }))
+						}}
+						onKeyDown={(e) => e.key === "Enter"}
+						className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
+					/>
+				</FloatingField>
+			</div>
+
+			<PanelSave
+				// onSave={handleSave}
+				disabled={!isDirty || updateName.isPending}
+				pending={updateName.isPending}
 			/>
 		</div>
 	)

@@ -28,6 +28,8 @@ import {
 	SignupPayload,
 	UnknownResponse,
 	UpdateBioResponse,
+	UpdateDobResponse,
+	UpdateDobVisibilityResponse,
 	UpdateNameResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
@@ -63,7 +65,7 @@ export const authApi = {
 			.then((r) => r.data),
 
 	resetPassword: (payload: ResetPasswordPayload) =>
-		apiClient.post<ResetPasswordResponse>("/api/auth/forgot-password", payload).then((r) => r.data),
+		apiClient.post<ResetPasswordResponse>("/api/auth/reset-password", payload).then((r) => r.data),
 
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
@@ -91,6 +93,14 @@ export const userApi = {
 
 	updateBio: (payload: { about_me: string }) =>
 		apiClient.patch<UpdateBioResponse>("/api/users/update-bio", payload).then((r) => r.data),
+
+	updateDob: (payload: { dob: string }) =>
+		apiClient.patch<UpdateDobResponse>("/api/users/update-dob", payload).then((r) => r.data),
+
+	updateDobVisibility: (payload: { dob_visibility: "full" | "partial" }) =>
+		apiClient
+			.patch<UpdateDobVisibilityResponse>("/api/users/update-dob-visibility", payload)
+			.then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
 

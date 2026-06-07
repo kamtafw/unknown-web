@@ -211,12 +211,9 @@ export function useResendOtp() {
 }
 
 export function useMe() {
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
 	return useQuery({
 		queryKey: authKeys.me,
 		queryFn: userApi.getMe,
-		enabled: isAuthenticated,
 		staleTime: 1000 * 60 * 5,
 	})
 }

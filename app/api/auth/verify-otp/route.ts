@@ -1,13 +1,12 @@
+import { DJANGO_API_URL } from "@/lib/server-config"
 import { setAuthCookies } from "@/lib/cookies"
 import { ApiResponse, FullUser, VerifyOtpResponseData } from "@/types/api"
 import { NextRequest, NextResponse } from "next/server"
 
-const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
-
 export async function POST(req: NextRequest) {
 	const body = await req.json()
 
-	const verifyRes = await fetch(`${DJANGO}/auth/verify-otp`, {
+	const verifyRes = await fetch(`${DJANGO_API_URL}/auth/verify-otp`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
 
 	await setAuthCookies(access_token, refresh_token)
 
-	const meRes = await fetch(`${DJANGO}/users/me`, {
+	const meRes = await fetch(`${DJANGO_API_URL}/users/me`, {
 		headers: {
 			Authorization: `Bearer ${access_token}`,
 			"Content-Type": "application/json",

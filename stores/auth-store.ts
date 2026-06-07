@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthStore>()(
 			name: "auth-store",
 			partialize: (state) => ({
 				user: state.user,
-				isAuthenticated: state.isAuthenticated,
+				isAuthenticated: false,
 				// pendingAuth intentionally excluded cos it's transient
 			}),
 		},
