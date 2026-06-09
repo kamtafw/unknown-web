@@ -1,6 +1,7 @@
 import {
 	AddCommentPayload,
 	AddCommentResponse,
+	AddExternalLinkResponse,
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
@@ -30,6 +31,7 @@ import {
 	UpdateBioResponse,
 	UpdateDobResponse,
 	UpdateDobVisibilityResponse,
+	UpdateLocationResponse,
 	UpdateNameResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
@@ -100,6 +102,16 @@ export const userApi = {
 	updateDobVisibility: (payload: { dob_visibility: "full" | "partial" }) =>
 		apiClient
 			.patch<UpdateDobVisibilityResponse>("/api/users/update-dob-visibility", payload)
+			.then((r) => r.data),
+
+	updateLocation: (payload: { country: string; state: string }) =>
+		apiClient
+			.patch<UpdateLocationResponse>("/api/users/update-location", payload)
+			.then((r) => r.data),
+
+	addExternalLink: (payload: { url: string; label: string }) =>
+		apiClient
+			.post<AddExternalLinkResponse>("/api/users/add-external-link", payload)
 			.then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),

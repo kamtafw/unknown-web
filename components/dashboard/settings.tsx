@@ -1,15 +1,15 @@
 "use client"
 
-import { useUpdateDobVisibility } from "@/hooks/use-update-profile"
+import { updateProfileKeys, useUpdateDobVisibility } from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
+import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
 	AlertCircle,
 	ArrowLeft,
 	Bell,
-	Calendar,
 	Camera,
 	ChevronRight,
 	Clock,
@@ -21,6 +21,7 @@ import {
 	HardDrive,
 	Layers,
 	Link2,
+	Loader2,
 	Lock,
 	MapPin,
 	Monitor,
@@ -35,7 +36,15 @@ import {
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { ReactNode, useState } from "react"
-import { AddLinkPanel, EditBioPanel, EditNamePanel, EditUsernamePanel } from "./profile-edit-panels"
+import {
+	AddExternalLinkPanel,
+	EditBioPanel,
+	EditDobPanel,
+	EditLocationPanel,
+	EditNamePanel,
+	EditUsernamePanel,
+} from "./profile-edit-panels"
+import { Calendar, Link, Location } from "./profile-icons"
 import {
 	Account,
 	AddAccount,
@@ -338,8 +347,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	// edit profile actions
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
-	{ id: "edit-dob", title: "Date of birth" },
-	{ id: "edit-location", title: "Location" },
 	{ id: "edit-cover", title: "Edit cover photo" },
 	{ id: "edit-avatar", title: "Edit profile photo" },
 ]
@@ -352,6 +359,11 @@ function formatCount(n: number) {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
 	return String(n)
+}
+
+function formatDob(dob: string, dob_visibility: "full" | "partial") {
+	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"
+	return dayjs(dob).format(format)
 }
 
 function SettingsDialog({
@@ -593,7 +605,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 								rel="noopener noreferrer"
 								className="flex items-center gap-1 text-[12.5px] text-primary font-medium hover:underline"
 							>
-								<Link2 size={12} />
+								<Link size={12} />
 								{link.label || link.url}
 							</a>
 						))}
@@ -604,17 +616,25 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<MapPin size={13} />
-							<span className="text-semibold text-gray-700">
+							<Location size={14} />
+							<span className="font-medium text-gray-700">
 								{[user.state, user.country].filter(Boolean).join(", ")}
 							</span>
 						</div>
 					)}
 					{user.date_joined && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<Calendar size={13} />
-							<span className="text-semibold text-gray-700">
-								{dayjs(user.date_joined).format("MMM D, YYYY")}
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
+							</span>
+						</div>
+					)}
+					{user.dob && (
+						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Born {formatDob(user.dob, user.dob_visibility)}
 							</span>
 						</div>
 					)}
@@ -629,11 +649,13 @@ function EditRow({
 	value,
 	onClick,
 	destructive,
+	isPending,
 }: {
 	label: string
 	value?: string
 	onClick?: () => void
 	destructive?: boolean
+	isPending?: boolean
 }) {
 	return (
 		<button
@@ -651,7 +673,13 @@ function EditRow({
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
 					<span className="text-[12.5px] text-gray-400 truncate max-w-40 text-right">{value}</span>
-					{onClick && <ChevronRight size={13} className="text-gray-300 shrink-0" />}
+					{onClick ? (
+						isPending ? (
+							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
+						) : (
+							<ChevronRight size={13} className="text-gray-300 shrink-0" />
+						)
+					) : null}
 				</div>
 			)}
 		</button>
@@ -695,6 +723,9 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 		user?.dob_visibility ?? "partial",
 	)
 
+	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
+	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
+
 	if (!user) return null
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -702,13 +733,14 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 	const links = user.external_links ?? []
 
 	const handleToggle = () => {
-		if (dobVisibility === "full") {
-			setDobVisibility("partial")
-		} else {
-			setDobVisibility("full")
-		}
-
-		updateDobVisibility.mutate({ dob_visibility: dobVisibility })
+		const nextVisibility = dobVisibility === "full" ? "partial" : "full"
+		setDobVisibility(nextVisibility)
+		updateDobVisibility.mutate(
+			{ dob_visibility: nextVisibility },
+			{
+				onError: () => setDobVisibility(dobVisibility),
+			},
+		)
 	}
 
 	return (
@@ -762,13 +794,23 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
 					About You
 				</p>
-				<EditRow label="Name" value={displayName} onClick={() => onOpenDialog("edit-name")} />
+				<EditRow
+					label="Name"
+					value={displayName}
+					onClick={() => onOpenDialog("edit-name")}
+					isPending={isUpdatingName}
+				/>
 				<EditRow
 					label="User Name"
 					value={`@${user.username}`}
 					onClick={() => onOpenDialog("edit-username")}
 				/>
-				<EditRow label="Bio" value={bio || "Add a bio"} onClick={() => onOpenDialog("edit-bio")} />
+				<EditRow
+					label="Bio"
+					value={bio || "Add a bio"}
+					onClick={() => onOpenDialog("edit-bio")}
+					isPending={isUpdatingBio}
+				/>
 				<EditRow label="Email" value={user.email} />
 				<EditRow label="Phone No" value={user.phone_number || "Not set"} />
 				<EditRow
@@ -783,7 +825,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				/>
 				<EditRow
 					label="Locations"
-					value={[user.country, user.state].filter(Boolean).join(", ") || "Set location"}
+					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
 					onClick={() => onOpenDialog("edit-location")}
 				/>
 			</div>
@@ -833,8 +875,17 @@ function ProfileView({
 	const [mobileTab, setMobileTab] = useState<"profile" | "edit">("profile")
 	const [activePanel, setActivePanel] = useState<string | null>(null)
 
+	const INLINE_PANELS = [
+		"edit-name",
+		"edit-username",
+		"edit-bio",
+		"edit-dob",
+		"edit-location",
+		"add-link",
+	]
+
 	const handleEdit = (id: string) => {
-		if (id === "edit-name" || id === "edit-username" || id === "edit-bio" || id === "add-link") {
+		if (INLINE_PANELS.includes(id)) {
 			setActivePanel(id)
 		} else {
 			onOpenDialog(id)
@@ -848,8 +899,12 @@ function ProfileView({
 			<EditUsernamePanel onBack={() => setActivePanel(null)} />
 		) : activePanel === "edit-bio" ? (
 			<EditBioPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-dob" ? (
+			<EditDobPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-location" ? (
+			<EditLocationPanel onBack={() => setActivePanel(null)} />
 		) : activePanel === "add-link" ? (
-			<AddLinkPanel onBack={() => setActivePanel(null)} />
+			<AddExternalLinkPanel onBack={() => setActivePanel(null)} />
 		) : (
 			<EditProfilePanel onOpenDialog={handleEdit} />
 		)

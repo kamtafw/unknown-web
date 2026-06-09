@@ -1,7 +1,7 @@
 export interface ApiResponse<T> {
 	success: boolean
 	status_code: number
-	message: string
+	message: string | null
 	data: T
 }
 
@@ -368,8 +368,16 @@ export type CreatePostResponse = ApiResponse<{
 	created_at: string[]
 }>
 
+export interface ExternalLink {
+	id: number
+	url: string
+	label: string
+}
+
 export type UpdateNameResponse = ApiResponse<{ first_name: string; last_name: string }>
 export type UpdateUsernameResponse = ApiResponse<{ username: string }>
 export type UpdateBioResponse = ApiResponse<{ about_me: string }>
-export type UpdateDobResponse = ApiResponse<{ dob: string }>
+export type UpdateDobResponse = ApiResponse<{ dob: string; last_dob_update: string }>
 export type UpdateDobVisibilityResponse = ApiResponse<{ dob_visibility: "full" | "partial" }>
+export type UpdateLocationResponse = ApiResponse<{ country: string; state: string }>
+export type AddExternalLinkResponse = ApiResponse<ExternalLink>
