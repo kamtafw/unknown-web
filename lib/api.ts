@@ -1,6 +1,7 @@
 import {
 	AddCommentPayload,
 	AddCommentResponse,
+	AddExternalLinkResponse,
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
@@ -28,7 +29,11 @@ import {
 	SignupPayload,
 	UnknownResponse,
 	UpdateBioResponse,
+	UpdateDobResponse,
+	UpdateDobVisibilityResponse,
+	UpdateLocationResponse,
 	UpdateNameResponse,
+	UpdateProfilePhotoResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
@@ -63,7 +68,7 @@ export const authApi = {
 			.then((r) => r.data),
 
 	resetPassword: (payload: ResetPasswordPayload) =>
-		apiClient.post<ResetPasswordResponse>("/api/auth/forgot-password", payload).then((r) => r.data),
+		apiClient.post<ResetPasswordResponse>("/api/auth/reset-password", payload).then((r) => r.data),
 
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
@@ -81,6 +86,17 @@ export const userApi = {
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
 			.then((r) => r.data),
 
+	updateProfilePhoto: async (file: File) => {
+		const formData = new FormData()
+		formData.append("profile_photo", file)
+
+		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
+			"/api/users/update-profile-photo",
+			formData,
+		)
+		return res.data
+	},
+
 	updateName: (payload: { first_name: string; last_name: string }) =>
 		apiClient.patch<UpdateNameResponse>("/api/users/update-name", payload).then((r) => r.data),
 
@@ -91,6 +107,24 @@ export const userApi = {
 
 	updateBio: (payload: { about_me: string }) =>
 		apiClient.patch<UpdateBioResponse>("/api/users/update-bio", payload).then((r) => r.data),
+
+	updateDob: (payload: { dob: string }) =>
+		apiClient.patch<UpdateDobResponse>("/api/users/update-dob", payload).then((r) => r.data),
+
+	updateDobVisibility: (payload: { dob_visibility: "full" | "partial" }) =>
+		apiClient
+			.patch<UpdateDobVisibilityResponse>("/api/users/update-dob-visibility", payload)
+			.then((r) => r.data),
+
+	updateLocation: (payload: { country: string; state: string }) =>
+		apiClient
+			.patch<UpdateLocationResponse>("/api/users/update-location", payload)
+			.then((r) => r.data),
+
+	addExternalLink: (payload: { url: string; label: string }) =>
+		apiClient
+			.post<AddExternalLinkResponse>("/api/users/add-external-link", payload)
+			.then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
 

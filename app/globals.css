@@ -10,7 +10,7 @@
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.145 0 0);
 
-	--primary: oklch(0.6354 0.116 266.22);
+	--primary: #6a88d1;
 	--primary-foreground: oklch(0.985 0 0);
 
 	--secondary: oklch(0.97 0 0);
@@ -22,7 +22,7 @@
 	--accent: oklch(0.97 0 0);
 	--accent-foreground: oklch(0.205 0 0);
 
-	--destructive: oklch(0.637 0.237 25.331);
+	--destructive: #fb2c36;
 
 	--border: oklch(0.922 0 0);
 	--input: oklch(0.922 0 0);

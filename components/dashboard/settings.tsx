@@ -1,14 +1,19 @@
 "use client"
 
+import {
+	updateProfileKeys,
+	useUpdateDobVisibility,
+	useUpdatePhoto,
+} from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
+import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
 	AlertCircle,
 	ArrowLeft,
 	Bell,
-	Calendar,
 	Camera,
 	ChevronRight,
 	Clock,
@@ -18,14 +23,13 @@ import {
 	Fingerprint,
 	Globe,
 	HardDrive,
-	Info,
 	Layers,
 	Link2,
+	Loader2,
 	Lock,
 	MapPin,
 	Monitor,
 	MoreHorizontal,
-	Phone,
 	Plus,
 	Users,
 	UserX,
@@ -35,16 +39,31 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { ReactNode, useState } from "react"
-import { EditBioPanel, EditNamePanel, EditUsernamePanel } from "./profile-edit-panels"
+import { ReactNode, useRef, useState } from "react"
+import {
+	AddExternalLinkPanel,
+	EditBioPanel,
+	EditDobPanel,
+	EditLocationPanel,
+	EditNamePanel,
+	EditUsernamePanel,
+} from "./profile-edit-panels"
+import { Calendar, Link, Location } from "./profile-icons"
 import {
 	Account,
+	AddAccount,
 	Alert,
+	ChangePhone,
 	Chat,
 	DataStorage,
 	Languages,
+	Logout,
 	Privacy,
+	ReportProblem,
+	SecurityNotifications,
 	Support,
+	TimeZone,
+	TwoStepVerification,
 	Verification,
 } from "./settings-icons"
 
@@ -105,10 +124,28 @@ const SECTIONS: Section[] = [
 		icon: <Account size={20} />,
 		items: [
 			{
-				id: "account-info",
-				label: "Account information",
-				description: "See your account information like your email and phone number",
-				icon: <Info size={18} />,
+				id: "security-notifications",
+				label: "Security notifications",
+				description: "Manage alerts about account activity and security events",
+				icon: <SecurityNotifications size={18} />,
+			},
+			{
+				id: "two-step-verification",
+				label: "Two-step verification",
+				description: "Secure your account with two-step verification",
+				icon: <TwoStepVerification size={18} />,
+			},
+			{
+				id: "report-problem",
+				label: "Report a problem",
+				description: "Report bugs, issues, or unexpected behaviour",
+				icon: <ReportProblem size={18} />,
+			},
+			{
+				id: "change-phone",
+				label: "Change phone number",
+				description: "Update the phone number linked to your account",
+				icon: <ChangePhone size={18} />,
 			},
 			{
 				id: "change-password",
@@ -117,10 +154,23 @@ const SECTIONS: Section[] = [
 				icon: <Lock size={18} />,
 			},
 			{
-				id: "change-phone",
-				label: "Change phone number",
-				description: "Update the phone number linked to your account",
-				icon: <Phone size={18} />,
+				id: "add-account",
+				label: "Add account",
+				description: "Add and switch between multiple accounts",
+				icon: <AddAccount size={18} />,
+			},
+			{
+				id: "time-zone",
+				label: "Time zone",
+				description: "Manage your preferred time zone",
+				icon: <TimeZone size={18} />,
+			},
+			{
+				id: "logout",
+				label: "Log out",
+				description: "Log out of your account",
+				icon: <Logout size={18} />,
+				destructive: true,
 			},
 			{
 				id: "deactivate",
@@ -276,8 +326,15 @@ const SECTIONS: Section[] = [
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "change-password", title: "Change your password" },
+	{ id: "security-notifications", title: "Security notifications" },
+	{ id: "two-step-verification", title: "Two-step verification" },
+	{ id: "report-problem", title: "Report a problem" },
 	{ id: "change-phone", title: "Change phone number" },
+	{ id: "change-password", title: "Change your password" },
+	{ id: "add-account", title: "Add account" },
+	{ id: "time-zone", title: "Time zone" },
+	{ id: "logout", title: "Log out" },
+	{ id: "deactivate", title: "Deactivate your account" },
 	{ id: "last-seen", title: "Last seen & online" },
 	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
@@ -294,9 +351,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	// edit profile actions
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
-	{ id: "edit-dob", title: "Date of birth" },
-	{ id: "edit-location", title: "Location" },
-	{ id: "add-link", title: "Add external link" },
 	{ id: "edit-cover", title: "Edit cover photo" },
 	{ id: "edit-avatar", title: "Edit profile photo" },
 ]
@@ -309,6 +363,11 @@ function formatCount(n: number) {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
 	return String(n)
+}
+
+function formatDob(dob: string, dob_visibility: "full" | "partial") {
+	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"
+	return dayjs(dob).format(format)
 }
 
 function SettingsDialog({
@@ -550,7 +609,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 								rel="noopener noreferrer"
 								className="flex items-center gap-1 text-[12.5px] text-primary font-medium hover:underline"
 							>
-								<Link2 size={12} />
+								<Link size={12} />
 								{link.label || link.url}
 							</a>
 						))}
@@ -561,17 +620,25 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<MapPin size={13} />
-							<span className="text-semibold text-gray-700">
+							<Location size={14} />
+							<span className="font-medium text-gray-700">
 								{[user.state, user.country].filter(Boolean).join(", ")}
 							</span>
 						</div>
 					)}
 					{user.date_joined && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<Calendar size={13} />
-							<span className="text-semibold text-gray-700">
-								{dayjs(user.date_joined).format("MMM D, YYYY")}
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
+							</span>
+						</div>
+					)}
+					{user.dob && (
+						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Born {formatDob(user.dob, user.dob_visibility)}
 							</span>
 						</div>
 					)}
@@ -586,11 +653,13 @@ function EditRow({
 	value,
 	onClick,
 	destructive,
+	isPending,
 }: {
 	label: string
 	value?: string
-	onClick: () => void
+	onClick?: () => void
 	destructive?: boolean
+	isPending?: boolean
 }) {
 	return (
 		<button
@@ -608,18 +677,33 @@ function EditRow({
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
 					<span className="text-[12.5px] text-gray-400 truncate max-w-40 text-right">{value}</span>
-					<ChevronRight size={13} className="text-gray-300 shrink-0" />
+					{onClick ? (
+						isPending ? (
+							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
+						) : (
+							<ChevronRight size={13} className="text-gray-300 shrink-0" />
+						)
+					) : null}
 				</div>
 			)}
 		</button>
 	)
 }
 
-function ToggleRow({ label, enabled }: { label: string; enabled: boolean }) {
+function ToggleRow({
+	label,
+	enabled,
+	onToggle,
+}: {
+	label: string
+	enabled: boolean
+	onToggle: () => void
+}) {
 	return (
 		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50">
 			<span className="text-[13px] font-medium text-gray-700">{label}</span>
 			<div
+				onClick={onToggle}
 				className={cn(
 					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors",
 					enabled ? "bg-primary" : "bg-gray-300",
@@ -638,12 +722,43 @@ function ToggleRow({ label, enabled }: { label: string; enabled: boolean }) {
 
 function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void }) {
 	const user = useAuthStore((s) => s.user)
+	const updatePhoto = useUpdatePhoto()
+	const updateDobVisibility = useUpdateDobVisibility()
+
+	const photoInputRef = useRef<HTMLInputElement>(null)
+	const [dobVisibility, setDobVisibility] = useState<"full" | "partial">(
+		user?.dob_visibility ?? "partial",
+	)
+
+	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
+	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
+
 	if (!user) return null
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 	const bio = user.profile?.about_me
 	const links = user.external_links ?? []
-	const showDob = user.dob_visibility === "full" || user.dob_visibility === "partial"
+
+	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+
+		if (!file) return
+
+		updatePhoto.mutate(file)
+
+		e.target.value = ""
+	}
+
+	const handleToggle = () => {
+		const nextVisibility = dobVisibility === "full" ? "partial" : "full"
+		setDobVisibility(nextVisibility)
+		updateDobVisibility.mutate(
+			{ dob_visibility: nextVisibility },
+			{
+				onError: () => setDobVisibility(dobVisibility),
+			},
+		)
+	}
 
 	return (
 		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
@@ -671,7 +786,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 					{/* avatar — overlapping cover */}
 					<button
-						onClick={() => onOpenDialog("edit-avatar")}
+						onClick={() => photoInputRef.current?.click()}
 						className="absolute left-3 -bottom-5 group"
 					>
 						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
@@ -686,6 +801,13 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 								<Camera size={11} className="text-white opacity-100 transition-opacity" />
 							</div>
 						</div>
+						<input
+							ref={photoInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={handlePhotoSelect}
+						/>
 					</button>
 				</div>
 				<div className="mt-8" />
@@ -696,28 +818,38 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
 					About You
 				</p>
-				<EditRow label="Name" value={displayName} onClick={() => onOpenDialog("edit-name")} />
+				<EditRow
+					label="Name"
+					value={displayName}
+					onClick={() => onOpenDialog("edit-name")}
+					isPending={isUpdatingName}
+				/>
 				<EditRow
 					label="User Name"
 					value={`@${user.username}`}
 					onClick={() => onOpenDialog("edit-username")}
 				/>
-				<EditRow label="Bio" value={bio || "Add a bio"} onClick={() => onOpenDialog("edit-bio")} />
-				<EditRow label="Email" value={user.email} onClick={() => onOpenDialog("edit-email")} />
 				<EditRow
-					label="Phone No"
-					value={user.phone_number || "Not set"}
-					onClick={() => onOpenDialog("edit-phone")}
+					label="Bio"
+					value={bio || "Add a bio"}
+					onClick={() => onOpenDialog("edit-bio")}
+					isPending={isUpdatingBio}
 				/>
+				<EditRow label="Email" value={user.email} />
+				<EditRow label="Phone No" value={user.phone_number || "Not set"} />
 				<EditRow
 					label="Set date of birth"
 					value={user.dob ? dayjs(user.dob).format("DD-MM-YYYY") : "Not set"}
 					onClick={() => onOpenDialog("edit-dob")}
 				/>
-				<ToggleRow label="Show date of birth" enabled={showDob} />
+				<ToggleRow
+					label="Show date of birth"
+					enabled={dobVisibility === "full"}
+					onToggle={handleToggle}
+				/>
 				<EditRow
 					label="Locations"
-					value={[user.country, user.state].filter(Boolean).join(", ") || "Set location"}
+					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
 					onClick={() => onOpenDialog("edit-location")}
 				/>
 			</div>
@@ -767,8 +899,17 @@ function ProfileView({
 	const [mobileTab, setMobileTab] = useState<"profile" | "edit">("profile")
 	const [activePanel, setActivePanel] = useState<string | null>(null)
 
+	const INLINE_PANELS = [
+		"edit-name",
+		"edit-username",
+		"edit-bio",
+		"edit-dob",
+		"edit-location",
+		"add-link",
+	]
+
 	const handleEdit = (id: string) => {
-		if (id === "edit-name" || id === "edit-username" || id === "edit-bio") {
+		if (INLINE_PANELS.includes(id)) {
 			setActivePanel(id)
 		} else {
 			onOpenDialog(id)
@@ -782,6 +923,12 @@ function ProfileView({
 			<EditUsernamePanel onBack={() => setActivePanel(null)} />
 		) : activePanel === "edit-bio" ? (
 			<EditBioPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-dob" ? (
+			<EditDobPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-location" ? (
+			<EditLocationPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "add-link" ? (
+			<AddExternalLinkPanel onBack={() => setActivePanel(null)} />
 		) : (
 			<EditProfilePanel onOpenDialog={handleEdit} />
 		)
@@ -955,7 +1102,7 @@ function SettingsListView({
 					</p>
 				</div>
 
-				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-2">
 					{currentSection.items.map((item, i) => (
 						<button
 							key={item.id}

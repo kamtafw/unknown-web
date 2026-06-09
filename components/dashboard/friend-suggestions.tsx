@@ -6,6 +6,7 @@ import {
 	useUnfollowUser,
 } from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
+import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
 import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { Avatar, ScrollArea } from "radix-ui"
@@ -81,7 +82,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 		<div className="flex items-center gap-3 py-2.5">
 			<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
 				<Avatar.Image
-					src={user?.profile_photo}
+					src={user?.profile_photo ?? DEFAULT_PROFILE_PHOTO}
 					alt={user ? `${user.first_name} ${user.last_name}` : "unknown"}
 					className="w-full h-full object-cover"
 				/>

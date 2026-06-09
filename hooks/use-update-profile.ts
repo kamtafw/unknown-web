@@ -4,11 +4,63 @@ import { FullUser } from "@/types/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
 
+export const updateProfileKeys = {
+	photo: ["update-profile", "photo"],
+	name: ["update-profile", "name"],
+	username: ["update-profile", "username"],
+	bio: ["update-profile", "bio"],
+}
+
+export function useUpdatePhoto() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationKey: updateProfileKeys.photo,
+		mutationFn: (file: File) => userApi.updateProfilePhoto(file),
+
+		onMutate: async (file) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+				previewUrl: URL.createObjectURL(file),
+			}
+
+			const patch = { profile_photo: snapshots.previewUrl }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { profile_photo: data.data.profile_photo }
+			qc.setQueryData(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+
+		onSettled: (_data, _err, _vars, ctx) => {
+			if (ctx?.previewUrl) URL.revokeObjectURL(ctx.previewUrl)
+		},
+	})
+}
+
 export function useUpdateName() {
 	const qc = useQueryClient()
 	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
+		mutationKey: updateProfileKeys.name,
 		mutationFn: (payload: { first_name: string; last_name: string }) => userApi.updateName(payload),
 
 		onMutate: async (payload) => {
@@ -85,6 +137,7 @@ export function useUpdateBio() {
 	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
+		mutationKey: updateProfileKeys.bio,
 		mutationFn: (payload: { about_me: string }) => userApi.updateBio(payload),
 
 		onMutate: async (payload) => {
@@ -119,6 +172,142 @@ export function useUpdateBio() {
 			)
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, profile: { ...user.profile, ...patch } })
+		},
+	})
+}
+
+export function useUpdateDob() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { dob: string }) => userApi.updateDob(payload),
+
+		onMutate: async (payload) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+			}
+
+			const patch = { dob: payload.dob }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { dob: data.data.dob }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+	})
+}
+
+export function useUpdateDobVisibility() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { dob_visibility: "full" | "partial" }) =>
+			userApi.updateDobVisibility(payload),
+
+		onMutate: async (payload) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+			}
+
+			const patch = { dob_visibility: payload.dob_visibility }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { dob_visibility: data.data.dob_visibility }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+	})
+}
+
+export function useUpdateLocation() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { country: string; state: string }) => userApi.updateLocation(payload),
+
+		onMutate: async (payload) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+			}
+
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...payload } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...payload })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const patch = { country: data.data.country, state: data.data.state }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+	})
+}
+
+export function useAddExternalLink() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { url: string; label: string }) => userApi.addExternalLink(payload),
+
+		// No optimistic update for POST — we don't know the server-assigned id yet
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const newLink = data.data
+
+			qc.setQueryData<FullUser>(authKeys.me, (old) =>
+				old ? { ...old, external_links: [...(old.external_links ?? []), newLink] } : old,
+			)
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, external_links: [...(user.external_links ?? []), newLink] })
 		},
 	})
 }

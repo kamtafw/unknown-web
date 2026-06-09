@@ -1,7 +1,6 @@
+import { DJANGO_API_URL } from "@/lib/server-config"
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/cookies"
 import { NextResponse } from "next/server"
-
-const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
 export async function POST() {
 	const refreshToken = await getRefreshToken()
@@ -10,7 +9,7 @@ export async function POST() {
 		return NextResponse.json({ success: false, message: "No refresh token" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO}/auth/token/refresh`, {
+	const upstream = await fetch(`${DJANGO_API_URL}/auth/token/refresh`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ refresh: refreshToken }),

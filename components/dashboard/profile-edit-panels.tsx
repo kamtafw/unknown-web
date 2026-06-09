@@ -1,22 +1,110 @@
 "use client"
 
-import { useUpdateBio, useUpdateName, useUpdateUsername } from "@/hooks/use-update-profile"
+import {
+	useAddExternalLink,
+	useUpdateBio,
+	useUpdateDob,
+	useUpdateDobVisibility,
+	useUpdateLocation,
+	useUpdateName,
+	useUpdateUsername,
+} from "@/hooks/use-update-profile"
 import { extractFieldErrors } from "@/lib/api-error"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { Country, ICountry, IState, State } from "country-state-city"
+import { ArrowLeft, Check, ChevronDown, Loader2, RefreshCw, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
-const BIO_MAX = 160
+const BIO_MAX = 200
+const NAME_MAX = 20
+
+/** accepts raw keystrokes and returns DD/MM/YYYY formatted string */
+function formatDob(raw: string): string {
+	const digits = raw.replace(/\D/g, "").slice(0, 8)
+	if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+	if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+	return digits
+}
+
+/** DD/MM/YYYY → YYYY-MM-DD (null if incomplete) */
+function dobToApiFormat(dob: string): string | null {
+	const parts = dob.split("/")
+	if (parts.length !== 3) return null
+	const [day, month, year] = parts
+	if (year.length < 4 || day.length < 2 || month.length < 2) return null
+	return `${year}-${month}-${day}`
+}
+
+/** YYYY-MM-DD → DD/MM/YYYY (empty string if null/undefined) */
+function dobFromApiFormat(apiDob: string | null | undefined): string {
+	if (!apiDob) return ""
+	const [year, month, day] = apiDob.split("-")
+	return `${day ?? ""}/${month ?? ""}/${year ?? ""}`
+}
+
+function isValidUrl(url: string): boolean {
+	try {
+		const u = new URL(url)
+		return u.protocol === "http:" || u.protocol === "https:"
+	} catch {
+		return false
+	}
+}
+
+const ADJECTIVES = [
+	"swift",
+	"bright",
+	"calm",
+	"bold",
+	"cool",
+	"dark",
+	"fair",
+	"glad",
+	"happy",
+	"kind",
+	"lively",
+	"quick",
+	"sharp",
+	"smart",
+	"wild",
+	"wise",
+]
+const NOUNS = [
+	"bear",
+	"cloud",
+	"creek",
+	"eagle",
+	"fox",
+	"hawk",
+	"lake",
+	"leaf",
+	"moon",
+	"peak",
+	"rain",
+	"river",
+	"star",
+	"stone",
+	"sun",
+	"wolf",
+]
+
+function generateUsername(): string {
+	const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)]
+	const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)]
+	const num = Math.floor(Math.random() * 9999)
+	return `${adj}_${noun}${num}`
+}
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-6 pt-4.5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
 			<button
 				onClick={onBack}
 				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
 				aria-label="Back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" />
+				<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
 			</button>
 			<h2 className="font-bold text-gray-900">{title}</h2>
 		</div>
@@ -33,11 +121,11 @@ function PanelSave({
 	pending: boolean
 }) {
 	return (
-		<div className="shrink-0 flex justify-end px-6 py-4 border-t border-gray-100">
+		<div className="shrink-0 px-5 pt-4 pb-6 border-t border-gray-50">
 			<button
 				onClick={onSave}
 				disabled={disabled}
-				className="h-9 px-6 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+				className="w-full h-13 rounded-2xl bg-primary text-white text-[15px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 			>
 				{pending && <Loader2 size={13} className="animate-spin" />}
 				Save
@@ -46,35 +134,105 @@ function PanelSave({
 	)
 }
 
-/**
- * Twitter/X-style floating label field — label sits above the value
- * inside the border so the field reads as a single contained unit.
- */
-function FloatingField({
+function FieldWrapper({
 	label,
+	hint,
 	error,
 	children,
 }: {
 	label: string
+	hint?: string
 	error?: string
 	children: React.ReactNode
 }) {
 	return (
-		<div className="flex flex-col gap-1">
-			<div
-				className={`rounded-xl border px-3.5 pt-2 pb-2.5 transition-colors ${
-					error
-						? "border-destructive"
-						: "border-gray-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/10"
-				}`}
-			>
-				<span className="block text-[10.5px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">
-					{label}
-				</span>
-				{children}
-			</div>
-			{error && <p className="text-xs text-destructive px-0.5">{error}</p>}
+		<div className="flex flex-col gap-2">
+			<p className="text-sm font-semibold text-gray-900">{label}</p>
+			{hint && <p className="text-xs text-gray-500 leading-relaxed -mt-1">{hint}</p>}
+			{children}
+			{error && <p className="text-xs text-destructive mt-0.5 px-0.5">{error}</p>}
 		</div>
+	)
+}
+
+function TextInput({
+	value,
+	onChange,
+	onKeyDown,
+	placeholder,
+	maxLength,
+	autoFocus,
+	readOnly,
+	icon,
+	trailingEl,
+	hasError,
+}: {
+	value: string
+	onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+	onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+	placeholder?: string
+	maxLength?: number
+	autoFocus?: boolean
+	readOnly?: boolean
+	icon?: React.ReactNode
+	trailingEl?: React.ReactNode
+	hasError?: boolean
+}) {
+	return (
+		<div
+			className={cn(
+				"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
+				readOnly
+					? "bg-gray-100 border-gray-200 cursor-default"
+					: hasError
+						? "border-destructive focus-within:border-destructive"
+						: "border-gray-200 focus-within:border-primary",
+			)}
+		>
+			{icon && <span className="text-gray-400 shrink-0">{icon}</span>}
+			<input
+				value={value}
+				onChange={onChange}
+				onKeyDown={onKeyDown}
+				placeholder={placeholder}
+				maxLength={maxLength}
+				autoFocus={autoFocus}
+				readOnly={readOnly}
+				className="flex-1 text-sm text-gray-900 bg-transparent outline-none placeholder:text-gray-400 read-only:cursor-default read-only:text-gray-500"
+			/>
+			{trailingEl}
+		</div>
+	)
+}
+
+function Toggle({
+	enabled,
+	onToggle,
+	disabled,
+}: {
+	enabled: boolean
+	onToggle: () => void
+	disabled?: boolean
+}) {
+	return (
+		<button
+			role="switch"
+			aria-checked={enabled}
+			onClick={onToggle}
+			disabled={disabled}
+			type="button"
+			className={cn(
+				"w-11 h-6 rounded-full flex items-center px-0.5 cursor-pointer transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed",
+				enabled ? "bg-primary" : "bg-gray-300",
+			)}
+		>
+			<div
+				className={cn(
+					"w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+					enabled ? "translate-x-5" : "translate-x-0",
+				)}
+			/>
+		</button>
 	)
 }
 
@@ -98,50 +256,56 @@ export function EditNamePanel({ onBack }: { onBack: () => void }) {
 	const handleSave = () => {
 		if (!isDirty || updateName.isPending) return
 		setErrors({})
-		updateName.mutate(
-			{ first_name: firstName.trim(), last_name: lastName.trim() },
-			{
-				onSuccess: (data) => {
-					if (data.success) onBack()
-				},
-				onError: (err) => setErrors(extractFieldErrors(err)),
-			},
-		)
+		updateName.mutate({ first_name: firstName.trim(), last_name: lastName.trim() })
+		onBack()
 	}
+
+	const counterCls = (len: number) =>
+		cn("text-xs tabular-nums shrink-0", len >= NAME_MAX - 2 ? "text-amber-400" : "text-gray-300")
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-			<PanelHeader title="Name" onBack={onBack} />
+			<PanelHeader title="Change Name" onBack={onBack} />
 
-			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-4">
-				<FloatingField label="First name" error={errors.first_name}>
-					<input
-						type="text"
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
+				<FieldWrapper label="First Name" error={errors.first_name}>
+					<TextInput
 						value={firstName}
-						autoFocus
-						placeholder="First name"
 						onChange={(e) => {
-							setFirstName(e.target.value)
+							setFirstName(e.target.value.slice(0, NAME_MAX))
 							if (errors.first_name) setErrors((p) => ({ ...p, first_name: "" }))
 						}}
 						onKeyDown={(e) => e.key === "Enter" && handleSave()}
-						className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
+						autoFocus
+						placeholder="First Name"
+						icon={<User size={16} />}
+						hasError={!!errors.first_name}
+						trailingEl={
+							<span className={counterCls(firstName.length)}>
+								{firstName.length}/{NAME_MAX}
+							</span>
+						}
 					/>
-				</FloatingField>
+				</FieldWrapper>
 
-				<FloatingField label="Last name" error={errors.last_name}>
-					<input
-						type="text"
+				<FieldWrapper label="Last Name" error={errors.first_name}>
+					<TextInput
 						value={lastName}
-						placeholder="Last name"
 						onChange={(e) => {
-							setLastName(e.target.value)
+							setLastName(e.target.value.slice(0, NAME_MAX))
 							if (errors.last_name) setErrors((p) => ({ ...p, last_name: "" }))
 						}}
 						onKeyDown={(e) => e.key === "Enter" && handleSave()}
-						className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
+						placeholder="Last Name"
+						icon={<User size={16} />}
+						hasError={!!errors.last_name}
+						trailingEl={
+							<span className={counterCls(lastName.length)}>
+								{lastName.length}/{NAME_MAX}
+							</span>
+						}
 					/>
-				</FloatingField>
+				</FieldWrapper>
 
 				<p className="text-[12.5px] text-gray-400 leading-relaxed">
 					Your name can only be changed once every 7 days.
@@ -161,28 +325,34 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const updateUsername = useUpdateUsername()
 
-	const [username, setUsername] = useState("")
+	const [newUsername, setNewUsername] = useState("")
 	const [errors, setErrors] = useState<Record<string, string>>({})
 
 	useEffect(() => {
 		const u = useAuthStore.getState().user
-		setUsername(u?.username ?? "")
+		setNewUsername(u?.username ?? "")
 	}, [])
 
-	const isDirty = username !== (user?.username ?? "")
-	const isValidFormat = /^[a-zA-Z0-9_]{1,30}$/.test(username)
-	// Only show format error once they've typed something invalid — not on empty
+	const currentUsername = user?.username ?? ""
+	const isDirty = newUsername !== currentUsername
+	const isValidFormat = /^[a-zA-Z0-9_]{1,30}$/.test(newUsername)
 	const formatError =
-		username.length > 0 && !isValidFormat
-			? "Only letters, numbers, and underscores — up to 30 characters."
+		newUsername.length > 0 && !isValidFormat
+			? "Only letters, numbers, and underscores are allowed."
 			: undefined
 	const displayError = errors.username ?? formatError
+
+	const handleGenerate = () => {
+		const generated = generateUsername().slice(0, 30)
+		setNewUsername(generated)
+		if (errors.username) setErrors((p) => ({ ...p, username: "" }))
+	}
 
 	const handleSave = () => {
 		if (!isDirty || !isValidFormat || updateUsername.isPending) return
 		setErrors({})
 		updateUsername.mutate(
-			{ username },
+			{ username: newUsername },
 			{
 				onSuccess: (data) => {
 					if (data.success) onBack()
@@ -194,40 +364,46 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-			<PanelHeader title="Username" onBack={onBack} />
+			<PanelHeader title="Change Username" onBack={onBack} />
 
-			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-5">
-				<FloatingField label="Username" error={displayError}>
-					<div className="flex items-center gap-0.5">
-						<span className="text-sm text-gray-400 select-none shrink-0">@</span>
-						<input
-							type="text"
-							value={username}
-							autoFocus
-							placeholder="username"
-							onChange={(e) => {
-								// Strip disallowed chars inline so the field never shows invalid chars
-								const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30)
-								setUsername(val)
-								if (errors.username) setErrors((p) => ({ ...p, username: "" }))
-							}}
-							onKeyDown={(e) => e.key === "Enter" && handleSave()}
-							className="flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-300"
-						/>
-						<span
-							className={`text-xs tabular-nums shrink-0 ml-2 transition-colors ${
-								username.length >= 28 ? "text-amber-400" : "text-gray-300"
-							}`}
-						>
-							{username.length}/30
-						</span>
-					</div>
-				</FloatingField>
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
+				<FieldWrapper label="Current Username">
+					<TextInput value={`@${currentUsername}`} readOnly icon={<User size={16} />} />
+				</FieldWrapper>
 
-				<p className="text-[12.5px] text-gray-400 leading-relaxed">
-					Usernames can contain only letters, numbers, underscores, and periods. You also can only
-					change your username every 180 days.
-				</p>
+				<FieldWrapper
+					label="New Username"
+					hint="Usernames can contain only letters, numbers, and underscores. Changing username will also change your profile link. You can only change your username once every 180 days."
+					error={displayError}
+				>
+					<TextInput
+						value={newUsername}
+						onChange={(e) => {
+							const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30)
+							setNewUsername(val)
+							if (errors.username) setErrors((p) => ({ ...p, username: "" }))
+						}}
+						onKeyDown={(e) => e.key === "Enter" && handleSave()}
+						autoFocus
+						placeholder="Username"
+						icon={<User size={16} />}
+						hasError={!!displayError}
+						trailingEl={
+							isValidFormat && isDirty ? (
+								<Check size={16} className="text-green-500 shrink-0" strokeWidth={2.5} />
+							) : null
+						}
+					/>
+
+					<button
+						type="button"
+						onClick={handleGenerate}
+						className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-gray-800 hover:text-primary transition-colors mx-auto"
+					>
+						Generate username
+						<RefreshCw size={13} />
+					</button>
+				</FieldWrapper>
 			</div>
 
 			<PanelSave
@@ -238,8 +414,6 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 		</div>
 	)
 }
-
-// ─── Edit Bio ─────────────────────────────────────────────────────────────────
 
 export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
@@ -252,7 +426,6 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	useEffect(() => {
 		const u = useAuthStore.getState().user
 		setBio(u?.profile?.about_me ?? "")
-		// Slight delay so the panel transition completes before focus
 		setTimeout(() => textareaRef.current?.focus(), 60)
 	}, [])
 
@@ -263,8 +436,283 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	const handleSave = () => {
 		if (!isDirty || overLimit || updateBio.isPending) return
 		setErrors({})
-		updateBio.mutate(
-			{ about_me: bio },
+		updateBio.mutate({ about_me: bio })
+		onBack()
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Bio" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5">
+				<div
+					className={cn(
+						"relative rounded-xl border transition-colors",
+						errors.about_me || overLimit
+							? "border-destructive"
+							: "border-gray-200 focus-within:border-primary",
+					)}
+				>
+					<textarea
+						ref={textareaRef}
+						value={bio}
+						onChange={(e) => {
+							setBio(e.target.value)
+							if (errors.about_me) setErrors((p) => ({ ...p, about_me: "" }))
+						}}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave()
+						}}
+						placeholder="Tell people a little about yourself…"
+						rows={5}
+						className="w-full px-4 pt-3.5 pb-8 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+					/>
+					<span
+						className={cn(
+							"absolute bottom-2.5 right-3.5 text-xs tabular-nums pointer-events-none",
+							overLimit
+								? "text-destructive font-semibold"
+								: remaining <= 30
+									? "text-amber-400"
+									: "text-gray-300",
+						)}
+					>
+						{bio.length}/{BIO_MAX}
+					</span>
+				</div>
+				{errors.about_me && (
+					<p className="text-xs text-destructive mt-1.5 px-0.5">{errors.about_me}</p>
+				)}
+			</div>
+
+			<PanelSave
+				onSave={handleSave}
+				disabled={!isDirty || overLimit || updateBio.isPending}
+				pending={updateBio.isPending}
+			/>
+		</div>
+	)
+}
+
+export function EditDobPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const updateDob = useUpdateDob()
+	const updateDobVisibility = useUpdateDobVisibility()
+
+	const [dob, setDob] = useState("")
+	const [showYear, setShowYear] = useState(true)
+	const [errors, setErrors] = useState<Record<string, string>>({})
+
+	useEffect(() => {
+		const u = useAuthStore.getState().user
+		setDob(dobFromApiFormat(u?.dob))
+		setShowYear((u?.dob_visibility ?? "full") === "full")
+	}, [])
+
+	const currentDobDisplay = dobFromApiFormat(user?.dob)
+	const apiDob = dobToApiFormat(dob)
+	const isDirty = dob !== currentDobDisplay
+
+	const handleSave = async () => {
+		if (!isDirty || updateDob.isPending || !apiDob) return
+		setErrors({})
+
+		updateDob.mutate({ dob: apiDob })
+		onBack()
+	}
+
+	const handleVisibilityToggle = () => {
+		if (updateDobVisibility.isPending) return
+		const newVisibility = showYear ? "partial" : "full"
+		setShowYear(!showYear)
+		updateDobVisibility.mutate(
+			{ dob_visibility: newVisibility },
+			{ onError: () => setShowYear(showYear) },
+		)
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Set date of birth" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
+				<FieldWrapper label="Date of birth" error={errors.dob}>
+					<TextInput
+						value={dob}
+						onChange={(e) => {
+							setDob(formatDob(e.target.value))
+							if (errors.dob) setErrors((p) => ({ ...p, dob: "" }))
+						}}
+						onKeyDown={(e) => e.key === "Enter" && handleSave()}
+						autoFocus
+						placeholder="DD/MM/YYYY"
+						hasError={!!errors.dob}
+					/>
+				</FieldWrapper>
+
+				<div className="flex items-center justify-between py-1.5 border-t border-gray-50 pt-4">
+					<div className="min-w-0 pr-4">
+						<p className="text-sm font-semibold text-gray-900">Show birth year</p>
+						<p className="text-[12px] text-gray-500 mt-0.5 leading-relaxed">
+							When off, only your month and day are visible to others.
+						</p>
+					</div>
+					<Toggle
+						enabled={showYear}
+						onToggle={handleVisibilityToggle}
+						disabled={updateDobVisibility.isPending}
+					/>
+				</div>
+			</div>
+
+			<PanelSave
+				onSave={handleSave}
+				disabled={!isDirty || updateDob.isPending || !apiDob}
+				pending={updateDob.isPending}
+			/>
+		</div>
+	)
+}
+
+export function EditLocationPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const updateLocation = useUpdateLocation()
+
+	const [countries] = useState<ICountry[]>(Country.getAllCountries())
+	const [states, setStates] = useState<IState[]>([])
+
+	const [selectedCountry, setSelectedCountry] = useState(user?.country ?? "")
+	const [selectedState, setSelectedState] = useState(user?.state ?? "")
+	const [errors, setErrors] = useState<Record<string, string>>({})
+
+	useEffect(() => {
+		const u = useAuthStore.getState().user
+		setSelectedCountry(u?.country ?? "")
+		setSelectedState(u?.state ?? "")
+	}, [])
+
+	const isDirty = selectedCountry !== (user?.country ?? "") || selectedState !== (user?.state ?? "")
+
+	const handleCountryChange = (country: ICountry | undefined) => {
+		console.log("COUNTRY:", JSON.stringify(country))
+		if (!country) return
+		setSelectedCountry(country.name)
+		setStates(State.getStatesOfCountry(country.isoCode))
+	}
+
+	const handleStateChange = (state: IState | undefined) => {
+		if (!state) return
+		setSelectedState(state.name)
+	}
+
+	const handleSave = () => {
+		if (!isDirty || updateLocation.isPending) return
+		setErrors({})
+		updateLocation.mutate({ country: selectedCountry, state: selectedState })
+		onBack()
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Set Location" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-4">
+				<FieldWrapper label="Country" error={errors.country}>
+					<div
+						className={cn(
+							"relative flex items-center h-12 rounded-xl border transition-colors",
+							errors.country ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+						)}
+					>
+						<select
+							onChange={(e) => {
+								handleCountryChange(countries.find((c) => c.isoCode === e.target.value))
+								if (errors.country) setErrors((p) => ({ ...p, country: "" }))
+							}}
+							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
+						>
+							<option value="">Select country</option>
+							{countries.map((c) => (
+								<option key={c.isoCode} value={c.isoCode}>
+									{c.name}
+								</option>
+							))}
+						</select>
+						<ChevronDown
+							size={16}
+							className="absolute right-4 text-gray-400 pointer-events-none shrink-0"
+						/>
+					</div>
+				</FieldWrapper>
+
+				<FieldWrapper label="State" error={errors.state}>
+					<div
+						className={cn(
+							"relative flex items-center h-12 rounded-xl border transition-colors",
+							errors.state ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+						)}
+					>
+						<select
+							onChange={(e) => {
+								handleStateChange(states.find((s) => s.isoCode === e.target.value))
+								if (errors.state) setErrors((p) => ({ ...p, state: "" }))
+							}}
+							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
+							disabled={!selectedCountry}
+						>
+							<option value="">Select state</option>
+							{states.map((s) => (
+								<option key={s.isoCode} value={s.isoCode}>
+									{s.name}
+								</option>
+							))}
+						</select>
+						<ChevronDown
+							size={16}
+							className="absolute right-4 text-gray-400 pointer-events-none shrink-0"
+						/>
+					</div>
+				</FieldWrapper>
+			</div>
+
+			<PanelSave
+				onSave={handleSave}
+				disabled={!isDirty || updateLocation.isPending}
+				pending={updateLocation.isPending}
+			/>
+		</div>
+	)
+}
+
+export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
+	const addExternalLink = useAddExternalLink()
+	const urlRef = useRef<HTMLTextAreaElement>(null)
+
+	const [label, setLabel] = useState("")
+	const [url, setUrl] = useState("")
+	const [errors, setErrors] = useState<Record<string, string>>({})
+
+	const trimmedLabel = label.trim()
+	const trimmedUrl = url.trim()
+	const canSave = trimmedLabel.length > 0 && isValidUrl(trimmedUrl)
+
+	const handleSave = () => {
+		const newErrors: Record<string, string> = {}
+		if (!trimmedLabel) newErrors.label = "Title is required."
+		if (!isValidUrl(trimmedUrl))
+			newErrors.url = "Enter a valid URL starting with http:// or https://"
+
+		if (Object.keys(newErrors).length > 0) {
+			setErrors(newErrors)
+			return
+		}
+
+		if (addExternalLink.isPending) return
+
+		setErrors({})
+
+		addExternalLink.mutate(
+			{ label: trimmedLabel, url: trimmedUrl },
 			{
 				onSuccess: (data) => {
 					if (data.success) onBack()
@@ -276,57 +724,54 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-			<PanelHeader title="Bio" onBack={onBack} />
+			<PanelHeader title="Add external link" onBack={onBack} />
 
-			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5">
-				<div className="flex flex-col gap-1">
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
+				<FieldWrapper label="Title" error={errors.label}>
+					<TextInput
+						value={label}
+						onChange={(e) => {
+							setLabel(e.target.value)
+							if (errors.label) setErrors((p) => ({ ...p, label: "" }))
+						}}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault()
+								urlRef.current?.focus()
+							}
+						}}
+						autoFocus
+						placeholder="e.g. My Portfolio"
+						hasError={!!errors.label}
+					/>
+				</FieldWrapper>
+
+				<FieldWrapper label="URL" error={errors.url}>
 					<div
-						className={`rounded-xl border px-3.5 pt-2 pb-2.5 transition-colors ${
-							errors.about_me || overLimit
-								? "border-destructive"
-								: "border-gray-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/10"
-						}`}
+						className={cn(
+							"rounded-xl border transition-colors",
+							errors.url ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+						)}
 					>
-						<span className="block text-[10.5px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">
-							Bio
-						</span>
 						<textarea
-							ref={textareaRef}
-							value={bio}
-							rows={5}
-							placeholder="Tell people a little about yourself…"
+							ref={urlRef}
+							value={url}
 							onChange={(e) => {
-								setBio(e.target.value)
-								if (errors.about_me) setErrors((p) => ({ ...p, about_me: "" }))
+								setUrl(e.target.value)
+								if (errors.url) setErrors((p) => ({ ...p, url: "" }))
 							}}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave()
-							}}
-							className="w-full bg-transparent text-sm text-gray-900 outline-none resize-none leading-relaxed placeholder:text-gray-300"
+							placeholder="https://www.example.com/yourprofile"
+							rows={3}
+							className="w-full px-4 pt-3 pb-3 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
 						/>
-						<div className="flex justify-end mt-1">
-							<span
-								className={`text-xs tabular-nums transition-colors ${
-									overLimit
-										? "text-destructive font-semibold"
-										: remaining <= 20
-											? "text-amber-400"
-											: "text-gray-300"
-								}`}
-							>
-								{remaining}
-							</span>
-						</div>
 					</div>
-					{errors.about_me && <p className="text-xs text-destructive px-0.5">{errors.about_me}</p>}
-					<p className="text-[11px] text-gray-400 mt-1 px-0.5">⌘ + Enter to save</p>
-				</div>
+				</FieldWrapper>
 			</div>
 
 			<PanelSave
 				onSave={handleSave}
-				disabled={!isDirty || overLimit || updateBio.isPending}
-				pending={updateBio.isPending}
+				disabled={!canSave || addExternalLink.isPending}
+				pending={addExternalLink.isPending}
 			/>
 		</div>
 	)
