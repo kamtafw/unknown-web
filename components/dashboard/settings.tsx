@@ -1,6 +1,10 @@
 "use client"
 
-import { updateProfileKeys, useUpdateDobVisibility } from "@/hooks/use-update-profile"
+import {
+	updateProfileKeys,
+	useUpdateDobVisibility,
+	useUpdatePhoto,
+} from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -35,7 +39,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { ReactNode, useState } from "react"
+import { ReactNode, useRef, useState } from "react"
 import {
 	AddExternalLinkPanel,
 	EditBioPanel,
@@ -718,7 +722,10 @@ function ToggleRow({
 
 function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void }) {
 	const user = useAuthStore((s) => s.user)
+	const updatePhoto = useUpdatePhoto()
 	const updateDobVisibility = useUpdateDobVisibility()
+
+	const photoInputRef = useRef<HTMLInputElement>(null)
 	const [dobVisibility, setDobVisibility] = useState<"full" | "partial">(
 		user?.dob_visibility ?? "partial",
 	)
@@ -731,6 +738,16 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 	const bio = user.profile?.about_me
 	const links = user.external_links ?? []
+
+	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+
+		if (!file) return
+
+		updatePhoto.mutate(file)
+
+		e.target.value = ""
+	}
 
 	const handleToggle = () => {
 		const nextVisibility = dobVisibility === "full" ? "partial" : "full"
@@ -769,7 +786,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 					{/* avatar — overlapping cover */}
 					<button
-						onClick={() => onOpenDialog("edit-avatar")}
+						onClick={() => photoInputRef.current?.click()}
 						className="absolute left-3 -bottom-5 group"
 					>
 						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
@@ -784,6 +801,13 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 								<Camera size={11} className="text-white opacity-100 transition-opacity" />
 							</div>
 						</div>
+						<input
+							ref={photoInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={handlePhotoSelect}
+						/>
 					</button>
 				</div>
 				<div className="mt-8" />

@@ -33,6 +33,7 @@ import {
 	UpdateDobVisibilityResponse,
 	UpdateLocationResponse,
 	UpdateNameResponse,
+	UpdateProfilePhotoResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
@@ -84,6 +85,17 @@ export const userApi = {
 		apiClient
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
 			.then((r) => r.data),
+
+	updateProfilePhoto: async (file: File) => {
+		const formData = new FormData()
+		formData.append("profile_photo", file)
+
+		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
+			"/api/users/update-profile-photo",
+			formData,
+		)
+		return res.data
+	},
 
 	updateName: (payload: { first_name: string; last_name: string }) =>
 		apiClient.patch<UpdateNameResponse>("/api/users/update-name", payload).then((r) => r.data),

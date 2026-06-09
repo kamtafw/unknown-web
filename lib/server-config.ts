@@ -1,1 +1,2 @@
 export const DJANGO_API_URL = process.env.DJANGO_API_URL ?? "https://dev.appscombo.org/api/v1"
+export const DEFAULT_PROFILE_PHOTO = "https://appscombo.s3.eu-north-1.amazonaws.com/media/profiles/images/profile.jpg"
