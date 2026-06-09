@@ -29,6 +29,7 @@ import {
 	SignupPayload,
 	UnknownResponse,
 	UpdateBioResponse,
+	UpdateCoverPhotoResponse,
 	UpdateDobResponse,
 	UpdateDobVisibilityResponse,
 	UpdateLocationResponse,
@@ -92,6 +93,16 @@ export const userApi = {
 
 		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
 			"/api/users/update-profile-photo",
+			formData,
+		)
+		return res.data
+	},
+
+	updateCoverPhoto: async (file: File) => {
+		const formData = new FormData()
+		formData.append("cover_photo", file)
+		const res = await apiClient.patch<UpdateCoverPhotoResponse>(
+			"/api/users/update-cover-photo",
 			formData,
 		)
 		return res.data

@@ -2,6 +2,7 @@
 
 import {
 	updateProfileKeys,
+	useUpdateCoverPhoto,
 	useUpdateDobVisibility,
 	useUpdatePhoto,
 } from "@/hooks/use-update-profile"
@@ -66,6 +67,7 @@ import {
 	TwoStepVerification,
 	Verification,
 } from "./settings-icons"
+import { PhotoCropModal } from "./photo-crop-modal"
 
 type SectionId =
 	| "verification"
@@ -351,8 +353,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	// edit profile actions
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
-	{ id: "edit-cover", title: "Edit cover photo" },
-	{ id: "edit-avatar", title: "Edit profile photo" },
 ]
 
 function getInitials(first: string | null, last: string | null) {
@@ -723,12 +723,19 @@ function ToggleRow({
 function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void }) {
 	const user = useAuthStore((s) => s.user)
 	const updatePhoto = useUpdatePhoto()
+	const updateCoverPhoto = useUpdateCoverPhoto()
 	const updateDobVisibility = useUpdateDobVisibility()
 
 	const photoInputRef = useRef<HTMLInputElement>(null)
+	const coverInputRef = useRef<HTMLInputElement>(null)
+
 	const [dobVisibility, setDobVisibility] = useState<"full" | "partial">(
 		user?.dob_visibility ?? "partial",
 	)
+
+	const [cropSrc, setCropSrc] = useState<string | null>(null)
+	const [cropMode, setCropMode] = useState<"profile" | "cover">("profile")
+	const [cropOpen, setCropOpen] = useState(false)
 
 	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
 	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
@@ -739,14 +746,43 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 	const bio = user.profile?.about_me
 	const links = user.external_links ?? []
 
+	const openCrop = (file: File, mode: "profile" | "cover") => {
+		if (cropSrc) URL.revokeObjectURL(cropSrc)
+		setCropSrc(URL.createObjectURL(file))
+		setCropMode(mode)
+		setCropOpen(true)
+	}
+
 	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
-
 		if (!file) return
-
-		updatePhoto.mutate(file)
-
+		openCrop(file, 'profile')
 		e.target.value = ""
+	}
+
+	const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		openCrop(file, "cover")
+		e.target.value = ""
+	}
+
+	const handleCropModalChange = (open: boolean) => {
+		setCropOpen(open)
+		if (!open && cropSrc) {
+			URL.revokeObjectURL(cropSrc)
+			setCropSrc(null)
+		}
+	}
+
+	const handleCropConfirm = (blob: Blob) => {
+		const fileName = cropMode === "profile" ? "profile.jpg" : "cover.jpg"
+		const file = new File([blob], fileName, { type: "image/jpeg" })
+		if (cropMode === "profile") {
+			updatePhoto.mutate(file)
+		} else {
+			updateCoverPhoto.mutate(file)
+		}
 	}
 
 	const handleToggle = () => {
@@ -754,11 +790,15 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 		setDobVisibility(nextVisibility)
 		updateDobVisibility.mutate(
 			{ dob_visibility: nextVisibility },
-			{
-				onError: () => setDobVisibility(dobVisibility),
-			},
+			{onError: () => setDobVisibility(dobVisibility)},
 		)
 	}
+
+	const cropConfig =
+		cropMode === "profile"
+			? { containerW: 260, containerH: 260, outputW: 400, outputH: 400, shape: "circle" as const }
+			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
+
 
 	return (
 		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
@@ -771,18 +811,29 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				<div className="relative">
 					{/* cover thumbnail */}
 					<button
-						onClick={() => onOpenDialog("edit-cover")}
+						onClick={() => coverInputRef.current?.click()}
 						className="w-full h-30 overflow-hidden relative bg-linear-to-br from-primary/20 to-primary/5 block group"
 					>
 						{user.cover_photo ? (
 							<Image src={user.cover_photo} alt="Cover" fill className="object-cover" />
 						) : null}
-						<div className="absolute inset-0 bg-black/20 transition-colors flex items-center justify-center">
-							<div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center opacity-100 transition-opacity">
-								<Camera size={14} className="text-white" />
-							</div>
+						<div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-colors group-hover:bg-black/30">
+							{updateCoverPhoto.isPending ? (
+								<Loader2 size={20} className="animate-spin text-white" />
+							) : (
+								<div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+									<Camera size={14} className="text-white" />
+								</div>
+							)}
 						</div>
 					</button>
+					<input
+						ref={coverInputRef}
+						type="file"
+						accept="image/*"
+						className="hidden"
+						onChange={handleCoverSelect}
+					/>
 
 					{/* avatar — overlapping cover */}
 					<button
@@ -797,8 +848,12 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 									{getInitials(user.first_name, user.last_name)}
 								</div>
 							)}
-							<div className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center rounded-full">
-								<Camera size={11} className="text-white opacity-100 transition-opacity" />
+							<div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-full">
+								{updatePhoto.isPending ? (
+									<Loader2 size={11} className="animate-spin text-white" />
+								) : (
+									<Camera size={11} className="text-white" />
+								)}
 							</div>
 						</div>
 						<input
@@ -885,6 +940,18 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					</button>
 				))}
 			</div>
+
+			<PhotoCropModal
+				open={cropOpen}
+				onOpenChange={handleCropModalChange}
+				imageSrc={cropSrc}
+				shape={cropConfig.shape}
+				containerW={cropConfig.containerW}
+				containerH={cropConfig.containerH}
+				outputW={cropConfig.outputW}
+				outputH={cropConfig.outputH}
+				onCrop={handleCropConfirm}
+			/>
 		</div>
 	)
 }

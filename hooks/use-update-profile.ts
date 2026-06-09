@@ -42,9 +42,51 @@ export function useUpdatePhoto() {
 
 		onSuccess: (data) => {
 			if (!data.success) return
+			// append version to bust image cache
+			const patch = { profile_photo: `${data.data.profile_photo}?v=${Date.now()}` }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
 
-			const patch = { profile_photo: data.data.profile_photo }
-			qc.setQueryData(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+		onSettled: (_data, _err, _vars, ctx) => {
+			if (ctx?.previewUrl) URL.revokeObjectURL(ctx.previewUrl)
+		},
+	})
+}
+
+export function useUpdateCoverPhoto() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (file: File) => userApi.updateCoverPhoto(file),
+
+		onMutate: async (file) => {
+			await qc.cancelQueries({ queryKey: authKeys.me })
+
+			const snapshots = {
+				user: qc.getQueryData<FullUser>(authKeys.me),
+				store: useAuthStore.getState().user,
+				previewUrl: URL.createObjectURL(file),
+			}
+
+			const patch = { cover_photo: snapshots.previewUrl }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			if (snapshots.store) setUser({ ...snapshots.store, ...patch })
+
+			return snapshots
+		},
+
+		onError: (_err, _vars, ctx) => {
+			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
+			if (ctx?.store) setUser(ctx.store)
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+			const patch = { cover_photo: `${data.data.cover_photo}?v=${Date.now()}` }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
 		},
@@ -87,7 +129,7 @@ export function useUpdateName() {
 			if (!data.success) return
 
 			const patch = { first_name: data.data.first_name, last_name: data.data.last_name }
-			qc.setQueryData(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
 		},

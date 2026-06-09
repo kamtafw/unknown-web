@@ -2,6 +2,7 @@
 
 import { AlignLeft, X } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 const SECTIONS = [
@@ -100,6 +101,8 @@ function NavItem({
 }
 
 export default function Terms() {
+	const router = useRouter()
+
 	const [activeId, setActiveId] = useState("s1")
 	const [tocOpen, setTocOpen] = useState(false)
 	const contentRef = useRef<HTMLDivElement>(null)
@@ -156,8 +159,9 @@ export default function Terms() {
 						alt="App Combo"
 						width={180}
 						height={35}
-						className="mr-1 sm:mr-2 object-contain w-28 sm:w-44 h-auto shrink-0"
+						className="mr-1 sm:mr-2 object-contain w-28 sm:w-44 h-auto shrink-0 cursor-pointer"
 						priority
+						onClick={() => router.push("/sign-in")}
 					/>
 					<span className="font-semibold text-sm sm:text-xl text-primary tracking-tight truncate">
 						Terms & Conditions

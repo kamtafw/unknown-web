@@ -375,6 +375,7 @@ export interface ExternalLink {
 }
 
 export type UpdateProfilePhotoResponse = ApiResponse<{ profile_photo: string }>
+export type UpdateCoverPhotoResponse = ApiResponse<{ cover_photo: string }>
 export type UpdateNameResponse = ApiResponse<{ first_name: string; last_name: string }>
 export type UpdateUsernameResponse = ApiResponse<{ username: string }>
 export type UpdateBioResponse = ApiResponse<{ about_me: string }>
