@@ -1,11 +1,12 @@
 import { userApi } from "@/lib/api"
+import { extractMessage } from "@/lib/api-error"
+import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
 
 export const updateProfileKeys = {
-	photo: ["update-profile", "photo"],
 	name: ["update-profile", "name"],
 	username: ["update-profile", "username"],
 	bio: ["update-profile", "bio"],
@@ -16,7 +17,6 @@ export function useUpdatePhoto() {
 	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
-		mutationKey: updateProfileKeys.photo,
 		mutationFn: (file: File) => userApi.updateProfilePhoto(file),
 
 		onMutate: async (file) => {
@@ -35,18 +35,27 @@ export function useUpdatePhoto() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update profile photo"))
 		},
 
 		onSuccess: (data) => {
 			if (!data.success) return
-			// append version to bust image cache
-			const patch = { profile_photo: `${data.data.profile_photo}?v=${Date.now()}` }
-			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
-			const user = useAuthStore.getState().user
-			if (user) setUser({ ...user, ...patch })
+
+			const newVersion = Date.now()
+			const versionedUrl = `${data.data.profile_photo}?v=${newVersion}`
+			useAuthStore.setState((state) => ({
+				photoVersions: { ...state.photoVersions, profile: newVersion },
+				user: state.user ? { ...state.user, profile_photo: versionedUrl } : state.user,
+			}))
+
+			qc.setQueryData<FullUser>(authKeys.me, (old) =>
+				old ? { ...old, profile_photo: versionedUrl } : old,
+			)
+
+			toast.success("Profile photo updated")
 		},
 
 		onSettled: (_data, _err, _vars, ctx) => {
@@ -78,17 +87,28 @@ export function useUpdateCoverPhoto() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update cover photo"))
 		},
 
 		onSuccess: (data) => {
 			if (!data.success) return
-			const patch = { cover_photo: `${data.data.cover_photo}?v=${Date.now()}` }
-			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
-			const user = useAuthStore.getState().user
-			if (user) setUser({ ...user, ...patch })
+
+			const newVersion = Date.now()
+			const versionedUrl = `${data.data.cover_photo}?v=${newVersion}`
+
+			useAuthStore.setState((state) => ({
+				photoVersions: { ...state.photoVersions, cover: newVersion },
+				user: state.user ? { ...state.user, cover_photo: versionedUrl } : state.user,
+			}))
+
+			qc.setQueryData<FullUser>(authKeys.me, (old) =>
+				old ? { ...old, cover_photo: versionedUrl } : old,
+			)
+
+			toast.success("Cover photo updated")
 		},
 
 		onSettled: (_data, _err, _vars, ctx) => {
@@ -120,9 +140,10 @@ export function useUpdateName() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update name"))
 		},
 
 		onSuccess: (data) => {
@@ -132,6 +153,8 @@ export function useUpdateName() {
 			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
+
+			toast.success("Name updated")
 		},
 	})
 }
@@ -158,9 +181,10 @@ export function useUpdateUsername() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update username"))
 		},
 
 		onSuccess: (data) => {
@@ -170,6 +194,8 @@ export function useUpdateUsername() {
 			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
+
+			toast.success("Username updated")
 		},
 	})
 }
@@ -200,9 +226,10 @@ export function useUpdateBio() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update bio"))
 		},
 
 		onSuccess: (data) => {
@@ -214,6 +241,8 @@ export function useUpdateBio() {
 			)
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, profile: { ...user.profile, ...patch } })
+
+			toast.success("Bio updated")
 		},
 	})
 }
@@ -240,9 +269,10 @@ export function useUpdateDob() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update date of birth"))
 		},
 
 		onSuccess: (data) => {
@@ -252,6 +282,8 @@ export function useUpdateDob() {
 			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
+
+			toast.success("Date of birth updated")
 		},
 	})
 }
@@ -279,9 +311,10 @@ export function useUpdateDobVisibility() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update visibility setting"))
 		},
 
 		onSuccess: (data) => {
@@ -316,9 +349,10 @@ export function useUpdateLocation() {
 			return snapshots
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
+			toast.error(extractMessage(error, "Failed to update location"))
 		},
 
 		onSuccess: (data) => {
@@ -328,6 +362,8 @@ export function useUpdateLocation() {
 			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, ...patch })
+
+			toast.success("Location updated")
 		},
 	})
 }
@@ -339,17 +375,22 @@ export function useAddExternalLink() {
 	return useMutation({
 		mutationFn: (payload: { url: string; label: string }) => userApi.addExternalLink(payload),
 
+		onError: (error) => {
+			toast.error(extractMessage(error, "Failed to add link"))
+		},
+
 		// No optimistic update for POST — we don't know the server-assigned id yet
 		onSuccess: (data) => {
 			if (!data.success) return
 
 			const newLink = data.data
-
 			qc.setQueryData<FullUser>(authKeys.me, (old) =>
 				old ? { ...old, external_links: [...(old.external_links ?? []), newLink] } : old,
 			)
 			const user = useAuthStore.getState().user
 			if (user) setUser({ ...user, external_links: [...(user.external_links ?? []), newLink] })
+
+			toast.success("Link added")
 		},
 	})
 }

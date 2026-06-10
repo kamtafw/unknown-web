@@ -1,5 +1,9 @@
 "use client"
 
+
+// TODO: location dropdown should initialize with current country and state; likewise external links
+// TODO: edit dropdown UI to match what's on signup
+
 import {
 	useAddExternalLink,
 	useUpdateBio,
