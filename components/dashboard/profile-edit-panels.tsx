@@ -1,14 +1,15 @@
 "use client"
 
-
 // TODO: location dropdown should initialize with current country and state; likewise external links
 // TODO: edit dropdown UI to match what's on signup
 
 import {
 	useAddExternalLink,
+	useDeleteExternalLink,
 	useUpdateBio,
 	useUpdateDob,
 	useUpdateDobVisibility,
+	useUpdateExternalLink,
 	useUpdateLocation,
 	useUpdateName,
 	useUpdateUsername,
@@ -16,9 +17,10 @@ import {
 import { extractFieldErrors } from "@/lib/api-error"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
+import { ExternalLink } from "@/types/api"
 import { Country, ICountry, IState, State } from "country-state-city"
-import { ArrowLeft, Check, ChevronDown, Loader2, RefreshCw, User } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { ArrowLeft, Check, ChevronDown, Loader2, RefreshCw, Trash2, User } from "lucide-react"
+import { useRef, useState } from "react"
 
 const BIO_MAX = 200
 const NAME_MAX = 20
@@ -129,7 +131,7 @@ function PanelSave({
 			<button
 				onClick={onSave}
 				disabled={disabled}
-				className="w-full h-13 rounded-2xl bg-primary text-white text-[15px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+				className="w-full h-13 rounded-full bg-primary text-white text-[15px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 			>
 				{pending && <Loader2 size={13} className="animate-spin" />}
 				Save
@@ -244,15 +246,9 @@ export function EditNamePanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const updateName = useUpdateName()
 
-	const [firstName, setFirstName] = useState("")
-	const [lastName, setLastName] = useState("")
+	const [firstName, setFirstName] = useState(() => useAuthStore.getState().user?.first_name ?? "")
+	const [lastName, setLastName] = useState(() => useAuthStore.getState().user?.last_name ?? "")
 	const [errors, setErrors] = useState<Record<string, string>>({})
-
-	useEffect(() => {
-		const u = useAuthStore.getState().user
-		setFirstName(u?.first_name ?? "")
-		setLastName(u?.last_name ?? "")
-	}, [])
 
 	const isDirty =
 		firstName.trim() !== (user?.first_name ?? "") || lastName.trim() !== (user?.last_name ?? "")
@@ -265,7 +261,14 @@ export function EditNamePanel({ onBack }: { onBack: () => void }) {
 	}
 
 	const counterCls = (len: number) =>
-		cn("text-xs tabular-nums shrink-0", len >= NAME_MAX - 2 ? "text-amber-400" : "text-gray-300")
+		cn(
+			"text-xs tabular-nums shrink-0",
+			len >= NAME_MAX - 5
+				? "text-amber-400"
+				: len >= NAME_MAX - 2
+					? "text-destructive"
+					: "text-gray-300",
+		)
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
@@ -331,11 +334,6 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 
 	const [newUsername, setNewUsername] = useState("")
 	const [errors, setErrors] = useState<Record<string, string>>({})
-
-	useEffect(() => {
-		const u = useAuthStore.getState().user
-		setNewUsername(u?.username ?? "")
-	}, [])
 
 	const currentUsername = user?.username ?? ""
 	const isDirty = newUsername !== currentUsername
@@ -424,14 +422,8 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	const updateBio = useUpdateBio()
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-	const [bio, setBio] = useState("")
+	const [bio, setBio] = useState(() => useAuthStore.getState().user?.profile.about_me ?? "")
 	const [errors, setErrors] = useState<Record<string, string>>({})
-
-	useEffect(() => {
-		const u = useAuthStore.getState().user
-		setBio(u?.profile?.about_me ?? "")
-		setTimeout(() => textareaRef.current?.focus(), 60)
-	}, [])
 
 	const isDirty = bio !== (user?.profile?.about_me ?? "")
 	const remaining = BIO_MAX - bio.length
@@ -503,15 +495,11 @@ export function EditDobPanel({ onBack }: { onBack: () => void }) {
 	const updateDob = useUpdateDob()
 	const updateDobVisibility = useUpdateDobVisibility()
 
-	const [dob, setDob] = useState("")
-	const [showYear, setShowYear] = useState(true)
+	const [dob, setDob] = useState(() => dobFromApiFormat(useAuthStore.getState().user?.dob))
+	const [showYear, setShowYear] = useState(
+		() => (useAuthStore.getState().user?.dob_visibility ?? "full") === "full",
+	)
 	const [errors, setErrors] = useState<Record<string, string>>({})
-
-	useEffect(() => {
-		const u = useAuthStore.getState().user
-		setDob(dobFromApiFormat(u?.dob))
-		setShowYear((u?.dob_visibility ?? "full") === "full")
-	}, [])
 
 	const currentDobDisplay = dobFromApiFormat(user?.dob)
 	const apiDob = dobToApiFormat(dob)
@@ -527,12 +515,9 @@ export function EditDobPanel({ onBack }: { onBack: () => void }) {
 
 	const handleVisibilityToggle = () => {
 		if (updateDobVisibility.isPending) return
-		const newVisibility = showYear ? "partial" : "full"
+		const next: "full" | "partial" = showYear ? "partial" : "full"
 		setShowYear(!showYear)
-		updateDobVisibility.mutate(
-			{ dob_visibility: newVisibility },
-			{ onError: () => setShowYear(showYear) },
-		)
+		updateDobVisibility.mutate({ dob_visibility: next }, { onError: () => setShowYear(showYear) })
 	}
 
 	return (
@@ -582,40 +567,43 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const updateLocation = useUpdateLocation()
 
-	const [countries] = useState<ICountry[]>(Country.getAllCountries())
-	const [states, setStates] = useState<IState[]>([])
-
-	const [selectedCountry, setSelectedCountry] = useState(user?.country ?? "")
-	const [selectedState, setSelectedState] = useState(user?.state ?? "")
+	const [countries] = useState<ICountry[]>(() => Country.getAllCountries())
+	const [countryIso, setCountryIso] = useState<string>(() => {
+		const name = useAuthStore.getState().user?.country ?? ""
+		return Country.getAllCountries().find((c) => c.name === name)?.isoCode ?? ""
+	})
+	const [states, setStates] = useState<IState[]>(() => {
+		const name = useAuthStore.getState().user?.country ?? ""
+		const iso = Country.getAllCountries().find((c) => c.name === name)?.isoCode ?? ""
+		return iso ? State.getStatesOfCountry(iso) : []
+	})
+	const [stateIso, setStateIso] = useState<string>(() => {
+		const countryName = useAuthStore.getState().user?.country ?? ""
+		const stateName = useAuthStore.getState().user?.state ?? ""
+		const iso = Country.getAllCountries().find((c) => c.name === countryName)?.isoCode
+		if (!iso) return ""
+		return State.getStatesOfCountry(iso).find((s) => s.name === stateName)?.isoCode ?? ""
+	})
 	const [errors, setErrors] = useState<Record<string, string>>({})
 
-	useEffect(() => {
-		const u = useAuthStore.getState().user
-		setSelectedCountry(u?.country ?? "")
-		setSelectedState(u?.state ?? "")
-	}, [])
+	const countryName = countries.find((c) => c.isoCode === countryIso)?.name ?? ""
+	const stateName = states.find((s) => s.isoCode === stateIso)?.name ?? ""
 
-	const isDirty = selectedCountry !== (user?.country ?? "") || selectedState !== (user?.state ?? "")
+	const isDirty = countryName !== (user?.country ?? "") || stateName !== (user?.state ?? "")
 
-	const handleCountryChange = (country: ICountry | undefined) => {
-		console.log("COUNTRY:", JSON.stringify(country))
-		if (!country) return
-		setSelectedCountry(country.name)
-		setStates(State.getStatesOfCountry(country.isoCode))
-	}
-
-	const handleStateChange = (state: IState | undefined) => {
-		if (!state) return
-		setSelectedState(state.name)
+	const handleCountryChange = (iso: string) => {
+		setCountryIso(iso)
+		setStates(State.getStatesOfCountry(iso))
+		setStateIso("")
+		if (errors.country) setErrors((p) => ({ ...p, country: "" }))
 	}
 
 	const handleSave = () => {
 		if (!isDirty || updateLocation.isPending) return
 		setErrors({})
-		updateLocation.mutate({ country: selectedCountry, state: selectedState })
+		updateLocation.mutate({ country: countryName, state: stateName })
 		onBack()
 	}
-
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Set Location" onBack={onBack} />
@@ -629,10 +617,8 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 						)}
 					>
 						<select
-							onChange={(e) => {
-								handleCountryChange(countries.find((c) => c.isoCode === e.target.value))
-								if (errors.country) setErrors((p) => ({ ...p, country: "" }))
-							}}
+							value={countryIso}
+							onChange={(e) => handleCountryChange(e.target.value)}
 							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
 						>
 							<option value="">Select country</option>
@@ -657,12 +643,13 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 						)}
 					>
 						<select
+							value={stateIso}
 							onChange={(e) => {
-								handleStateChange(states.find((s) => s.isoCode === e.target.value))
+								setStateIso(e.target.value)
 								if (errors.state) setErrors((p) => ({ ...p, state: "" }))
 							}}
 							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
-							disabled={!selectedCountry}
+							disabled={!countryIso}
 						>
 							<option value="">Select state</option>
 							{states.map((s) => (
@@ -690,7 +677,6 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 
 export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 	const addExternalLink = useAddExternalLink()
-	const urlRef = useRef<HTMLTextAreaElement>(null)
 
 	const [label, setLabel] = useState("")
 	const [url, setUrl] = useState("")
@@ -710,8 +696,6 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 			setErrors(newErrors)
 			return
 		}
-
-		if (addExternalLink.isPending) return
 
 		setErrors({})
 
@@ -738,12 +722,6 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 							setLabel(e.target.value)
 							if (errors.label) setErrors((p) => ({ ...p, label: "" }))
 						}}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.preventDefault()
-								urlRef.current?.focus()
-							}
-						}}
 						autoFocus
 						placeholder="e.g. My Portfolio"
 						hasError={!!errors.label}
@@ -758,7 +736,6 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 						)}
 					>
 						<textarea
-							ref={urlRef}
 							value={url}
 							onChange={(e) => {
 								setUrl(e.target.value)
@@ -776,6 +753,134 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 				onSave={handleSave}
 				disabled={!canSave || addExternalLink.isPending}
 				pending={addExternalLink.isPending}
+			/>
+		</div>
+	)
+}
+
+export function EditExternalLinkPanel({
+	link,
+	onBack,
+}: {
+	link: ExternalLink
+	onBack: () => void
+}) {
+	const updateLink = useUpdateExternalLink()
+	const deleteLink = useDeleteExternalLink()
+
+	const [label, setLabel] = useState(link.label)
+	const [url, setUrl] = useState(link.url)
+	const [errors, setErrors] = useState<Record<string, string>>({})
+	const [confirmDelete, setConfirmDelete] = useState(false)
+
+	const isDirty = label.trim() !== link.label || url.trim() !== link.url
+	const canSave = label.trim().length > 0 && isValidUrl(url.trim()) && isDirty
+
+	const handleSave = () => {
+		const newErrors: Record<string, string> = {}
+		if (!label.trim()) newErrors.label = "Title is required."
+		if (!isValidUrl(url.trim()))
+			newErrors.url = "Enter a valid URL starting with http:// or https://"
+		if (Object.keys(newErrors).length > 0) {
+			setErrors(newErrors)
+			return
+		}
+		if (updateLink.isPending) return
+
+		setErrors({})
+		updateLink.mutate(
+			{ id: link.id, payload: { label: label.trim(), url: url.trim() } },
+			{
+				onSuccess: (data) => {
+					if (data.success) onBack()
+				},
+				onError: (err) => setErrors(extractFieldErrors(err)),
+			},
+		)
+	}
+
+	const handleDelete = () => {
+		if (deleteLink.isPending) return
+		deleteLink.mutate(link.id, { onSuccess: () => onBack() })
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Edit link" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
+				<FieldWrapper label="Title" error={errors.label}>
+					<TextInput
+						value={label}
+						onChange={(e) => {
+							setLabel(e.target.value)
+							if (errors.label) setErrors((p) => ({ ...p, label: "" }))
+						}}
+						autoFocus
+						placeholder="e.g. My Portfolio"
+						hasError={!!errors.label}
+					/>
+				</FieldWrapper>
+
+				<FieldWrapper label="URL" error={errors.url}>
+					<div
+						className={cn(
+							"rounded-xl border transition-colors",
+							errors.url ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+						)}
+					>
+						<textarea
+							value={url}
+							onChange={(e) => {
+								setUrl(e.target.value)
+								if (errors.url) setErrors((p) => ({ ...p, url: "" }))
+							}}
+							placeholder="https://www.example.com/yourprofile"
+							rows={3}
+							className="w-full px-4 pt-3 pb-3 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+						/>
+					</div>
+				</FieldWrapper>
+
+				{/* Delete section */}
+				<div className="pt-2 border-t border-gray-100">
+					{!confirmDelete ? (
+						<button
+							onClick={() => setConfirmDelete(true)}
+							className="flex items-center gap-2 text-[13px] font-medium text-destructive hover:opacity-75 transition-opacity"
+						>
+							<Trash2 size={14} />
+							Delete this link
+						</button>
+					) : (
+						<div className="bg-red-50 rounded-xl p-4 flex flex-col gap-3">
+							<p className="text-[13px] text-gray-700 font-medium">Delete this link?</p>
+							<p className="text-[12px] text-gray-500 -mt-1">This action cannot be undone.</p>
+							<div className="flex gap-2">
+								<button
+									onClick={() => setConfirmDelete(false)}
+									className="flex-1 h-9 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-white transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									onClick={handleDelete}
+									disabled={deleteLink.isPending}
+									className="flex-1 h-9 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+								>
+									{deleteLink.isPending && <Loader2 size={12} className="animate-spin" />}
+									Delete
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+
+			<PanelSave
+				onSave={handleSave}
+				disabled={!canSave || updateLink.isPending}
+				pending={updateLink.isPending}
 			/>
 		</div>
 	)

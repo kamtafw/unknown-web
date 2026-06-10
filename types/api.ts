@@ -383,3 +383,4 @@ export type UpdateDobResponse = ApiResponse<{ dob: string; last_dob_update: stri
 export type UpdateDobVisibilityResponse = ApiResponse<{ dob_visibility: "full" | "partial" }>
 export type UpdateLocationResponse = ApiResponse<{ country: string; state: string }>
 export type AddExternalLinkResponse = ApiResponse<ExternalLink>
+export type UpdateExternalLinkResponse = ApiResponse<ExternalLink>

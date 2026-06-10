@@ -562,6 +562,26 @@ export function SignUp({
 								Sign in
 							</button>
 						</p>
+
+						<p className="text-sm text-gray-500 text-center leading-relaxed mt-3 sm:mt-5">
+							By signing in, you agree to our{" "}
+							<button
+								type="button"
+								onClick={onTerms}
+								className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+							>
+								Terms & Conditions
+							</button>
+							, and{" "}
+							<button
+								type="button"
+								onClick={onPrivacyPolicy}
+								className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+							>
+								Privacy Policy
+							</button>
+							.
+						</p>
 					</Form.Root>
 				</div>
 			</div>

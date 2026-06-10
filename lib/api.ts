@@ -32,6 +32,7 @@ import {
 	UpdateCoverPhotoResponse,
 	UpdateDobResponse,
 	UpdateDobVisibilityResponse,
+	UpdateExternalLinkResponse,
 	UpdateLocationResponse,
 	UpdateNameResponse,
 	UpdateProfilePhotoResponse,
@@ -136,6 +137,14 @@ export const userApi = {
 		apiClient
 			.post<AddExternalLinkResponse>("/api/users/add-external-link", payload)
 			.then((r) => r.data),
+
+	updateExternalLink: (id: number, payload: { url: string; label: string }) =>
+		apiClient
+			.post<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
+			.then((r) => r.data),
+
+	deleteExternalLink: (id: number) =>
+		apiClient.delete<NullResponse>(`/api/users/external-links/${id}`).then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
 
