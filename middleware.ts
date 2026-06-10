@@ -11,8 +11,7 @@ const PUBLIC_ROUTES = [
 	"/terms",
 	"/privacy-policy",
 ]
-
-const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friends"]
+const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friend-suggestions"]
 const ADMIN_ROUTES = ["/admin"]
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 
@@ -33,24 +32,19 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 function isTokenExpired(token: string): boolean {
 	const payload = decodeJwtPayload(token)
 	if (!payload || typeof payload.exp !== "number") return true
+	// 10s buffer to avoid edge-case races
 	return Date.now() / 1000 > payload.exp - 10
 }
 
 function isSameOriginRequest(req: NextRequest) {
-	const requestOrigin = req.nextUrl.origin
 	const origin = req.headers.get("origin")
-	const referer = req.headers.get("referer")
 
-	if (origin) return origin === requestOrigin
-	if (referer) {
-		try {
-			return new URL(referer).origin === requestOrigin
-		} catch {
-			return false
-		}
-	}
+	if (!origin) return true
 
-	return true
+	const originUrl = new URL(origin)
+	const host = req.headers.get("x-forwarded-host") || req.headers.get("host")
+
+	return originUrl.host === host
 }
 
 async function refreshAuth(req: NextRequest, refreshToken: string) {
@@ -77,12 +71,16 @@ export async function middleware(req: NextRequest) {
 	const refreshToken = req.cookies.get(COOKIE.REFRESH)?.value
 
 	const isPublic = matchesPrefix(pathname, PUBLIC_ROUTES)
+	const isOnboarding = matchesPrefix(pathname, ONBOARDING_ROUTES)
 	const isAdmin = matchesPrefix(pathname, ADMIN_ROUTES)
 	const isApiRoute = pathname.startsWith("/api/")
 
 	if (isApiRoute || pathname.startsWith("/_next")) {
 		if (isApiRoute && !SAFE_METHODS.has(req.method) && !isSameOriginRequest(req)) {
-			return NextResponse.json({ success: false, message: "Invalid request origin" }, { status: 403 })
+			return NextResponse.json(
+				{ success: false, message: "Invalid request origin" },
+				{ status: 403 },
+			)
 		}
 
 		return NextResponse.next()
