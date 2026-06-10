@@ -1,7 +1,6 @@
+import { DJANGO_API_URL } from "@/lib/server-config"
 import { NextRequest, NextResponse } from "next/server"
 import { getAccessToken } from "@/lib/cookies"
-
-const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ pkid: number }> }) {
 	const { pkid } = await params
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ pkid
 
 	const page = req.nextUrl.searchParams.get("page") ?? "1"
 
-	const upstream = await fetch(`${DJANGO}/socials/post/comment/list/${pkid}?page=${page}`, {
+	const upstream = await fetch(`${DJANGO_API_URL}/socials/post/comment/list/${pkid}?page=${page}`, {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",

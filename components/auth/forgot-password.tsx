@@ -1,7 +1,7 @@
 "use client"
 
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/schemas"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { Form } from "radix-ui"
 import { FormEvent } from "react"
 import { EmailIcon } from "../shared/Icons"
@@ -9,9 +9,11 @@ import { EmailIcon } from "../shared/Icons"
 interface ForgotPasswordProps {
 	onBack: () => void
 	onContinue: (data: ForgotPasswordValues) => void
+	isPending?: boolean
+	error?: string
 }
 
-export function ForgotPassword({ onBack, onContinue }: ForgotPasswordProps) {
+export function ForgotPassword({ onBack, onContinue, isPending, error }: ForgotPasswordProps) {
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 		const raw = Object.fromEntries(new FormData(e.currentTarget))
@@ -82,9 +84,21 @@ export function ForgotPassword({ onBack, onContinue }: ForgotPasswordProps) {
 								</Form.Message>
 							</Form.Field>
 
+							{error && <p className="text-xs text-destructive -mt-1">{error}</p>}
+
 							<Form.Submit asChild>
-								<button className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60">
-									Continue
+								<button
+									disabled={isPending}
+									className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+								>
+									{isPending ? (
+										<>
+											<Loader2 size={15} className="animate-spin" />
+											Continuing...
+										</>
+									) : (
+										"Continue"
+									)}
 								</button>
 							</Form.Submit>
 						</Form.Root>

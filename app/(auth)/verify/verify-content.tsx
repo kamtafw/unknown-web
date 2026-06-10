@@ -39,8 +39,8 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 						email: email,
 						otp: code,
 						type: "otp",
-						need_tokens: true,
-						need_otp_token: true,
+						need_tokens: flow !== "reset",
+						need_otp_token: flow !== "reset",
 					})
 				}
 				onResend={() => resendOtp.mutate(email)}

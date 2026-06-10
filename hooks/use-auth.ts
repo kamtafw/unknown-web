@@ -1,13 +1,18 @@
 "use client"
 
-import { authApi, userApi } from "@/lib/api"
+import { authApi,userApi } from "@/lib/api"
 import { extractMessage } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import type { FullUser, LoginPayload, SignupPayload, VerifyOtpPayload } from "@/types/api"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type {
+	FullUser,
+	LoginPayload,
+	SignupPayload,
+	VerifyOtpPayload
+} from "@/types/api"
+import { useMutation,useQuery,useQueryClient } from "@tanstack/react-query"
+import { AxiosError } from "axios"
 import { useRouter } from "next/navigation"
-import { useShallow } from "zustand/react/shallow"
 
 export const authKeys = {
 	me: ["auth", "me"] as const,
@@ -84,22 +89,20 @@ export function useSignup() {
 export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 	const router = useRouter()
 	const queryClient = useQueryClient()
-
-	const { setUser, clearPendingAuth } = useAuthStore(
-		useShallow((s) => ({
-			setUser: s.setUser,
-			clearPendingAuth: s.clearPendingAuth,
-		})),
-	)
+	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
 		mutationFn: (payload: VerifyOtpPayload) => authApi.verifyOtp(payload),
-		onSuccess: async (res) => {
+		onSuccess: async (res, vars) => {
 			if (!res.success) return
 
 			if (flow === "reset") {
+				useAuthStore.setState((state) => ({
+					pendingAuth: state.pendingAuth
+						? { ...state.pendingAuth, reset_otp: vars.otp }
+						: state.pendingAuth,
+				}))
 				toast.success("Code verified! Set your new password.")
-				clearPendingAuth()
 				router.push("/create-new-password")
 				return
 			}
@@ -121,6 +124,59 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 		},
 		onError: (error) => {
 			toast.error(extractMessage(error, "Invalid or expired code. Please try again."))
+		},
+	})
+}
+
+export function useForgotPassword() {
+	const router = useRouter()
+
+	return useMutation({
+		mutationFn: (email: string) => authApi.forgotPassword(email),
+		onSuccess: (res, email) => {
+			if (!res.success) return // TODO: add an error toast
+
+			useAuthStore.setState({
+				pendingAuth: { email, otp_default: "email", is_2fa_enabled: false, is_pin_enabled: false },
+			})
+			toast.success("OTP sent to your email.")
+			router.push("/verify?flow=reset")
+		},
+		onError: (error) => {
+			toast.error(extractMessage(error, "Email does not exist in our database."))
+		},
+	})
+}
+
+export function useResetPassword() {
+	const router = useRouter()
+	const clearPendingAuth = useAuthStore((s) => s.clearPendingAuth)
+
+	return useMutation({
+		mutationFn: (payload: { new_password: string; confirm_password: string }) => {
+			const pendingAuth = useAuthStore.getState().pendingAuth
+			return authApi.resetPassword({
+				email: pendingAuth!.email,
+				otp: pendingAuth!.reset_otp!,
+				...payload,
+			})
+		},
+		onSuccess: (res) => {
+			if (!res.success) return
+
+			// TODO: add a success toast
+			clearPendingAuth()
+
+			router.push("/sign-in")
+		},
+		onError: (error) => {
+			const axiosErr = error as AxiosError<{ error?: Record<string, string[]> }>
+			const fieldErrors = axiosErr.response?.data?.error
+			if (fieldErrors) {
+				toast.error(Object.values(fieldErrors).flat()[0] || "Password reset failed.")
+			} else {
+				toast.error(extractMessage(error, "Password reset failed. Please try again."))
+			}
 		},
 	})
 }
@@ -155,12 +211,9 @@ export function useResendOtp() {
 }
 
 export function useMe() {
-	const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
 	return useQuery({
 		queryKey: authKeys.me,
 		queryFn: userApi.getMe,
-		enabled: isAuthenticated,
 		staleTime: 1000 * 60 * 5,
 	})
 }

@@ -1,7 +1,7 @@
 export interface ApiResponse<T> {
 	success: boolean
 	status_code: number
-	message: string
+	message: string | null
 	data: T
 }
 
@@ -53,7 +53,7 @@ export interface FullUser {
 	country: string
 	state: string
 	date_joined: string
-	dob_visibility: "full" | "partial" | "hidden"
+	dob_visibility: "full" | "partial"
 	profile_photo: string
 	cover_photo: string
 	is_2fa_enabled: boolean
@@ -113,6 +113,17 @@ export interface VerifyOtpPayload {
 	need_tokens?: boolean
 	need_otp_token?: boolean
 }
+
+export interface ResetPasswordPayload {
+	email: string
+	otp: string
+	new_password: string
+	confirm_password: string
+}
+
+export type ResetPasswordResponse = ApiResponse<Record<string, never>>
+export type NullResponse = ApiResponse<null>
+export type UnknownResponse = ApiResponse<unknown>
 
 export interface PostUser {
 	pkid: number
@@ -245,8 +256,8 @@ export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<Suggestion
 
 export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
 export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
-export type LikeResponse = ApiResponse<{ post_is_liked?: boolean } | {}>
-export type BookmarkResponse = ApiResponse<{ created_at?: string } | {}>
+export type LikeResponse = ApiResponse<{ post_is_liked?: boolean }>
+export type BookmarkResponse = ApiResponse<{ created_at?: string }>
 export type PostStatsResponse = ApiResponse<PostStats>
 
 export interface PostCommentDetail {
@@ -356,3 +367,19 @@ export type CreatePostResponse = ApiResponse<{
 	uploaded_media: string[]
 	created_at: string[]
 }>
+
+export interface ExternalLink {
+	id: number
+	url: string
+	label: string
+}
+
+export type UpdateProfilePhotoResponse = ApiResponse<{ profile_photo: string }>
+export type UpdateCoverPhotoResponse = ApiResponse<{ cover_photo: string }>
+export type UpdateNameResponse = ApiResponse<{ first_name: string; last_name: string }>
+export type UpdateUsernameResponse = ApiResponse<{ username: string }>
+export type UpdateBioResponse = ApiResponse<{ about_me: string }>
+export type UpdateDobResponse = ApiResponse<{ dob: string; last_dob_update: string }>
+export type UpdateDobVisibilityResponse = ApiResponse<{ dob_visibility: "full" | "partial" }>
+export type UpdateLocationResponse = ApiResponse<{ country: string; state: string }>
+export type AddExternalLinkResponse = ApiResponse<ExternalLink>

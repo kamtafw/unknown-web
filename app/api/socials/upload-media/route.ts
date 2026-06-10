@@ -1,7 +1,6 @@
+import { DJANGO_API_URL } from "@/lib/server-config"
 import { NextRequest, NextResponse } from "next/server"
 import { getAccessToken } from "@/lib/cookies"
-
-const DJANGO = process.env.DJANGO_API_URL ?? "https://appscombo.org/api/v1"
 
 export async function POST(req: NextRequest) {
 	const formData = await req.formData()
@@ -11,7 +10,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO}/socials/post/upload/media`, {
+	const upstream = await fetch(`${DJANGO_API_URL}/socials/post/upload/media`, {
 		method: "POST",
 		headers: { Authorization: `Bearer ${accessToken}` },
 		body: formData,

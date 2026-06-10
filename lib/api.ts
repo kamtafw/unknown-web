@@ -1,6 +1,7 @@
 import {
 	AddCommentPayload,
 	AddCommentResponse,
+	AddExternalLinkResponse,
 	ApiResponse,
 	BookmarkResponse,
 	CommentsResponse,
@@ -18,11 +19,23 @@ import {
 	LikeResponse,
 	LoginPayload,
 	LoginResponseData,
+	NullResponse,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
 	RepostResponse,
+	ResetPasswordPayload,
+	ResetPasswordResponse,
 	SignupPayload,
+	UnknownResponse,
+	UpdateBioResponse,
+	UpdateCoverPhotoResponse,
+	UpdateDobResponse,
+	UpdateDobVisibilityResponse,
+	UpdateLocationResponse,
+	UpdateNameResponse,
+	UpdateProfilePhotoResponse,
+	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
 	VerifyOtpPayload,
@@ -38,7 +51,7 @@ export const authApi = {
 		apiClient.post<ApiResponse<LoginResponseData>>("/api/auth/login", payload).then((r) => r.data),
 
 	signup: (payload: SignupPayload) =>
-		apiClient.post<ApiResponse<null>>("/api/auth/signup", payload).then((r) => r.data),
+		apiClient.post<NullResponse>("/api/auth/signup", payload).then((r) => r.data),
 
 	verifyOtp: (payload: VerifyOtpPayload) =>
 		apiClient
@@ -48,13 +61,20 @@ export const authApi = {
 			.then((r) => r.data),
 
 	resendOtp: (email: string) =>
-		apiClient.post<ApiResponse<null>>("/api/auth/resend-otp", { email }).then((r) => r.data),
+		apiClient.post<NullResponse>("/api/auth/resend-otp", { email }).then((r) => r.data),
+
+	forgotPassword: (email: string) =>
+		apiClient
+			.post<ResetPasswordResponse>("/api/auth/forgot-password", { email })
+			.then((r) => r.data),
+
+	resetPassword: (payload: ResetPasswordPayload) =>
+		apiClient.post<ResetPasswordResponse>("/api/auth/reset-password", payload).then((r) => r.data),
 
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
 
 export const userApi = {
-	/** full profile — call immediately after verify-otp success */
 	getMe: () =>
 		apiClient.get<ApiResponse<FullUser>>("/api/users/me").then((r) => {
 			const user = r.data.data
@@ -65,6 +85,56 @@ export const userApi = {
 	completeProfile: (payload: CompleteProfilePayload) =>
 		apiClient
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
+			.then((r) => r.data),
+
+	updateProfilePhoto: async (file: File) => {
+		const formData = new FormData()
+		formData.append("profile_photo", file)
+
+		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
+			"/api/users/update-profile-photo",
+			formData,
+		)
+		return res.data
+	},
+
+	updateCoverPhoto: async (file: File) => {
+		const formData = new FormData()
+		formData.append("cover_photo", file)
+		const res = await apiClient.patch<UpdateCoverPhotoResponse>(
+			"/api/users/update-cover-photo",
+			formData,
+		)
+		return res.data
+	},
+
+	updateName: (payload: { first_name: string; last_name: string }) =>
+		apiClient.patch<UpdateNameResponse>("/api/users/update-name", payload).then((r) => r.data),
+
+	updateUsername: (payload: { username: string }) =>
+		apiClient
+			.patch<UpdateUsernameResponse>("/api/users/change-username", payload)
+			.then((r) => r.data),
+
+	updateBio: (payload: { about_me: string }) =>
+		apiClient.patch<UpdateBioResponse>("/api/users/update-bio", payload).then((r) => r.data),
+
+	updateDob: (payload: { dob: string }) =>
+		apiClient.patch<UpdateDobResponse>("/api/users/update-dob", payload).then((r) => r.data),
+
+	updateDobVisibility: (payload: { dob_visibility: "full" | "partial" }) =>
+		apiClient
+			.patch<UpdateDobVisibilityResponse>("/api/users/update-dob-visibility", payload)
+			.then((r) => r.data),
+
+	updateLocation: (payload: { country: string; state: string }) =>
+		apiClient
+			.patch<UpdateLocationResponse>("/api/users/update-location", payload)
+			.then((r) => r.data),
+
+	addExternalLink: (payload: { url: string; label: string }) =>
+		apiClient
+			.post<AddExternalLinkResponse>("/api/users/add-external-link", payload)
 			.then((r) => r.data),
 
 	getInterests: () => apiClient.get<InterestsResponse>("/api/users/interests").then((r) => r.data),
@@ -87,10 +157,10 @@ export const userApi = {
 		await apiClient.get<FollowingsResponse>("/api/users/followings").then((r) => r.data),
 
 	followUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<unknown>>("/api/users/follow", payload).then((r) => r.data),
+		apiClient.post<UnknownResponse>("/api/users/follow", payload).then((r) => r.data),
 
 	unfollowUser: (payload: { followed_user: number }) =>
-		apiClient.post<ApiResponse<unknown>>("/api/users/unfollow", payload).then((r) => r.data),
+		apiClient.post<UnknownResponse>("/api/users/unfollow", payload).then((r) => r.data),
 }
 
 export const socialApi = {

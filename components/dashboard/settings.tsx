@@ -1,14 +1,20 @@
 "use client"
 
+import {
+	updateProfileKeys,
+	useUpdateCoverPhoto,
+	useUpdateDobVisibility,
+	useUpdatePhoto,
+} from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
+import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
 	AlertCircle,
 	ArrowLeft,
 	Bell,
-	Calendar,
 	Camera,
 	ChevronRight,
 	Clock,
@@ -18,14 +24,13 @@ import {
 	Fingerprint,
 	Globe,
 	HardDrive,
-	Info,
 	Layers,
 	Link2,
+	Loader2,
 	Lock,
 	MapPin,
 	Monitor,
 	MoreHorizontal,
-	Phone,
 	Plus,
 	Users,
 	UserX,
@@ -35,17 +40,34 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { ReactNode, useState } from "react"
+import { ReactNode, useRef, useState } from "react"
+import {
+	AddExternalLinkPanel,
+	EditBioPanel,
+	EditDobPanel,
+	EditLocationPanel,
+	EditNamePanel,
+	EditUsernamePanel,
+} from "./profile-edit-panels"
+import { Calendar, Link, Location } from "./profile-icons"
 import {
 	Account,
+	AddAccount,
 	Alert,
+	ChangePhone,
 	Chat,
 	DataStorage,
 	Languages,
+	Logout,
 	Privacy,
+	ReportProblem,
+	SecurityNotifications,
 	Support,
+	TimeZone,
+	TwoStepVerification,
 	Verification,
 } from "./settings-icons"
+import { PhotoCropModal } from "./photo-crop-modal"
 
 type SectionId =
 	| "verification"
@@ -104,10 +126,28 @@ const SECTIONS: Section[] = [
 		icon: <Account size={20} />,
 		items: [
 			{
-				id: "account-info",
-				label: "Account information",
-				description: "See your account information like your email and phone number",
-				icon: <Info size={18} />,
+				id: "security-notifications",
+				label: "Security notifications",
+				description: "Manage alerts about account activity and security events",
+				icon: <SecurityNotifications size={18} />,
+			},
+			{
+				id: "two-step-verification",
+				label: "Two-step verification",
+				description: "Secure your account with two-step verification",
+				icon: <TwoStepVerification size={18} />,
+			},
+			{
+				id: "report-problem",
+				label: "Report a problem",
+				description: "Report bugs, issues, or unexpected behaviour",
+				icon: <ReportProblem size={18} />,
+			},
+			{
+				id: "change-phone",
+				label: "Change phone number",
+				description: "Update the phone number linked to your account",
+				icon: <ChangePhone size={18} />,
 			},
 			{
 				id: "change-password",
@@ -116,10 +156,23 @@ const SECTIONS: Section[] = [
 				icon: <Lock size={18} />,
 			},
 			{
-				id: "change-phone",
-				label: "Change phone number",
-				description: "Update the phone number linked to your account",
-				icon: <Phone size={18} />,
+				id: "add-account",
+				label: "Add account",
+				description: "Add and switch between multiple accounts",
+				icon: <AddAccount size={18} />,
+			},
+			{
+				id: "time-zone",
+				label: "Time zone",
+				description: "Manage your preferred time zone",
+				icon: <TimeZone size={18} />,
+			},
+			{
+				id: "logout",
+				label: "Log out",
+				description: "Log out of your account",
+				icon: <Logout size={18} />,
+				destructive: true,
 			},
 			{
 				id: "deactivate",
@@ -186,7 +239,7 @@ const SECTIONS: Section[] = [
 		id: "chat",
 		label: "Chat",
 		description: "Customize your private and group message settings",
-		icon: <Chat size={20}/>,
+		icon: <Chat size={20} />,
 		items: [
 			{
 				id: "chat-backup",
@@ -206,7 +259,7 @@ const SECTIONS: Section[] = [
 		id: "data-storage",
 		label: "Data and Storage",
 		description: "Power usage, Folder, Devices",
-		icon: <DataStorage size={20}/>,
+		icon: <DataStorage size={20} />,
 		items: [
 			{
 				id: "storage-usage",
@@ -240,7 +293,7 @@ const SECTIONS: Section[] = [
 		id: "support",
 		label: "Support",
 		description: "Get help with AppsCombo, report a problem, or review our policies",
-		icon: <Support size={20}/>,
+		icon: <Support size={20} />,
 		items: [
 			{
 				id: "report",
@@ -275,8 +328,15 @@ const SECTIONS: Section[] = [
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "change-password", title: "Change your password" },
+	{ id: "security-notifications", title: "Security notifications" },
+	{ id: "two-step-verification", title: "Two-step verification" },
+	{ id: "report-problem", title: "Report a problem" },
 	{ id: "change-phone", title: "Change phone number" },
+	{ id: "change-password", title: "Change your password" },
+	{ id: "add-account", title: "Add account" },
+	{ id: "time-zone", title: "Time zone" },
+	{ id: "logout", title: "Log out" },
+	{ id: "deactivate", title: "Deactivate your account" },
 	{ id: "last-seen", title: "Last seen & online" },
 	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
@@ -291,16 +351,8 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "report", title: "Report a problem" },
 	{ id: "security", title: "Security advisories" },
 	// edit profile actions
-	{ id: "edit-name", title: "Update name" },
-	{ id: "edit-username", title: "Change username" },
-	{ id: "edit-bio", title: "Edit bio" },
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
-	{ id: "edit-dob", title: "Date of birth" },
-	{ id: "edit-location", title: "Location" },
-	{ id: "add-link", title: "Add external link" },
-	{ id: "edit-cover", title: "Edit cover photo" },
-	{ id: "edit-avatar", title: "Edit profile photo" },
 ]
 
 function getInitials(first: string | null, last: string | null) {
@@ -313,6 +365,10 @@ function formatCount(n: number) {
 	return String(n)
 }
 
+function formatDob(dob: string, dob_visibility: "full" | "partial") {
+	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"
+	return dayjs(dob).format(format)
+}
 
 function SettingsDialog({
 	open,
@@ -359,7 +415,6 @@ function SettingsDialog({
 	)
 }
 
-
 function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 	return (
 		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
@@ -403,7 +458,6 @@ function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => voi
 		</SettingsDialog>
 	)
 }
-
 
 function ComingSoonDialog({
 	open,
@@ -481,7 +535,6 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 	)
 }
 
-
 function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	if (!user) return null
@@ -556,7 +609,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 								rel="noopener noreferrer"
 								className="flex items-center gap-1 text-[12.5px] text-primary font-medium hover:underline"
 							>
-								<Link2 size={12} />
+								<Link size={12} />
 								{link.label || link.url}
 							</a>
 						))}
@@ -567,14 +620,26 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<MapPin size={13} />
-							<span className="text-semibold text-gray-700">{[user.state, user.country].filter(Boolean).join(", ")}</span>
+							<Location size={14} />
+							<span className="font-medium text-gray-700">
+								{[user.state, user.country].filter(Boolean).join(", ")}
+							</span>
 						</div>
 					)}
 					{user.date_joined && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
-							<Calendar size={13} />
-							<span className="text-semibold text-gray-700">{dayjs(user.date_joined).format("MMM D, YYYY")}</span>
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
+							</span>
+						</div>
+					)}
+					{user.dob && (
+						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+							<Calendar size={14} />
+							<span className="font-medium text-gray-700">
+								Born {formatDob(user.dob, user.dob_visibility)}
+							</span>
 						</div>
 					)}
 				</div>
@@ -588,11 +653,13 @@ function EditRow({
 	value,
 	onClick,
 	destructive,
+	isPending,
 }: {
 	label: string
 	value?: string
-	onClick: () => void
+	onClick?: () => void
 	destructive?: boolean
+	isPending?: boolean
 }) {
 	return (
 		<button
@@ -610,18 +677,33 @@ function EditRow({
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
 					<span className="text-[12.5px] text-gray-400 truncate max-w-40 text-right">{value}</span>
-					<ChevronRight size={13} className="text-gray-300 shrink-0" />
+					{onClick ? (
+						isPending ? (
+							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
+						) : (
+							<ChevronRight size={13} className="text-gray-300 shrink-0" />
+						)
+					) : null}
 				</div>
 			)}
 		</button>
 	)
 }
 
-function ToggleRow({ label, enabled }: { label: string; enabled: boolean }) {
+function ToggleRow({
+	label,
+	enabled,
+	onToggle,
+}: {
+	label: string
+	enabled: boolean
+	onToggle: () => void
+}) {
 	return (
 		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50">
 			<span className="text-[13px] font-medium text-gray-700">{label}</span>
 			<div
+				onClick={onToggle}
 				className={cn(
 					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors",
 					enabled ? "bg-primary" : "bg-gray-300",
@@ -640,12 +722,83 @@ function ToggleRow({ label, enabled }: { label: string; enabled: boolean }) {
 
 function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void }) {
 	const user = useAuthStore((s) => s.user)
+	const updatePhoto = useUpdatePhoto()
+	const updateCoverPhoto = useUpdateCoverPhoto()
+	const updateDobVisibility = useUpdateDobVisibility()
+
+	const photoInputRef = useRef<HTMLInputElement>(null)
+	const coverInputRef = useRef<HTMLInputElement>(null)
+
+	const [dobVisibility, setDobVisibility] = useState<"full" | "partial">(
+		user?.dob_visibility ?? "partial",
+	)
+
+	const [cropSrc, setCropSrc] = useState<string | null>(null)
+	const [cropMode, setCropMode] = useState<"profile" | "cover">("profile")
+	const [cropOpen, setCropOpen] = useState(false)
+
+	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
+	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
+
 	if (!user) return null
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 	const bio = user.profile?.about_me
 	const links = user.external_links ?? []
-	const showDob = user.dob_visibility === "full" || user.dob_visibility === "partial"
+
+	const openCrop = (file: File, mode: "profile" | "cover") => {
+		if (cropSrc) URL.revokeObjectURL(cropSrc)
+		setCropSrc(URL.createObjectURL(file))
+		setCropMode(mode)
+		setCropOpen(true)
+	}
+
+	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		openCrop(file, 'profile')
+		e.target.value = ""
+	}
+
+	const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		openCrop(file, "cover")
+		e.target.value = ""
+	}
+
+	const handleCropModalChange = (open: boolean) => {
+		setCropOpen(open)
+		if (!open && cropSrc) {
+			URL.revokeObjectURL(cropSrc)
+			setCropSrc(null)
+		}
+	}
+
+	const handleCropConfirm = (blob: Blob) => {
+		const fileName = cropMode === "profile" ? "profile.jpg" : "cover.jpg"
+		const file = new File([blob], fileName, { type: "image/jpeg" })
+		if (cropMode === "profile") {
+			updatePhoto.mutate(file)
+		} else {
+			updateCoverPhoto.mutate(file)
+		}
+	}
+
+	const handleToggle = () => {
+		const nextVisibility = dobVisibility === "full" ? "partial" : "full"
+		setDobVisibility(nextVisibility)
+		updateDobVisibility.mutate(
+			{ dob_visibility: nextVisibility },
+			{onError: () => setDobVisibility(dobVisibility)},
+		)
+	}
+
+	const cropConfig =
+		cropMode === "profile"
+			? { containerW: 260, containerH: 260, outputW: 400, outputH: 400, shape: "circle" as const }
+			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
+
 
 	return (
 		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
@@ -658,22 +811,33 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				<div className="relative">
 					{/* cover thumbnail */}
 					<button
-						onClick={() => onOpenDialog("edit-cover")}
+						onClick={() => coverInputRef.current?.click()}
 						className="w-full h-30 overflow-hidden relative bg-linear-to-br from-primary/20 to-primary/5 block group"
 					>
 						{user.cover_photo ? (
 							<Image src={user.cover_photo} alt="Cover" fill className="object-cover" />
 						) : null}
-						<div className="absolute inset-0 bg-black/20 transition-colors flex items-center justify-center">
-							<div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center opacity-100 transition-opacity">
-								<Camera size={14} className="text-white" />
-							</div>
+						<div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-colors group-hover:bg-black/30">
+							{updateCoverPhoto.isPending ? (
+								<Loader2 size={20} className="animate-spin text-white" />
+							) : (
+								<div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+									<Camera size={14} className="text-white" />
+								</div>
+							)}
 						</div>
 					</button>
+					<input
+						ref={coverInputRef}
+						type="file"
+						accept="image/*"
+						className="hidden"
+						onChange={handleCoverSelect}
+					/>
 
 					{/* avatar — overlapping cover */}
 					<button
-						onClick={() => onOpenDialog("edit-avatar")}
+						onClick={() => photoInputRef.current?.click()}
 						className="absolute left-3 -bottom-5 group"
 					>
 						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
@@ -684,13 +848,21 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 									{getInitials(user.first_name, user.last_name)}
 								</div>
 							)}
-							<div className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center rounded-full">
-								<Camera
-									size={11}
-									className="text-white opacity-100 transition-opacity"
-								/>
+							<div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-full">
+								{updatePhoto.isPending ? (
+									<Loader2 size={11} className="animate-spin text-white" />
+								) : (
+									<Camera size={11} className="text-white" />
+								)}
 							</div>
 						</div>
+						<input
+							ref={photoInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={handlePhotoSelect}
+						/>
 					</button>
 				</div>
 				<div className="mt-8" />
@@ -701,28 +873,38 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
 					About You
 				</p>
-				<EditRow label="Name" value={displayName} onClick={() => onOpenDialog("edit-name")} />
+				<EditRow
+					label="Name"
+					value={displayName}
+					onClick={() => onOpenDialog("edit-name")}
+					isPending={isUpdatingName}
+				/>
 				<EditRow
 					label="User Name"
 					value={`@${user.username}`}
 					onClick={() => onOpenDialog("edit-username")}
 				/>
-				<EditRow label="Bio" value={bio || "Add a bio"} onClick={() => onOpenDialog("edit-bio")} />
-				<EditRow label="Email" value={user.email} onClick={() => onOpenDialog("edit-email")} />
 				<EditRow
-					label="Phone No"
-					value={user.phone_number || "Not set"}
-					onClick={() => onOpenDialog("edit-phone")}
+					label="Bio"
+					value={bio || "Add a bio"}
+					onClick={() => onOpenDialog("edit-bio")}
+					isPending={isUpdatingBio}
 				/>
+				<EditRow label="Email" value={user.email} />
+				<EditRow label="Phone No" value={user.phone_number || "Not set"} />
 				<EditRow
 					label="Set date of birth"
 					value={user.dob ? dayjs(user.dob).format("DD-MM-YYYY") : "Not set"}
 					onClick={() => onOpenDialog("edit-dob")}
 				/>
-				<ToggleRow label="Show date of birth" enabled={showDob} />
+				<ToggleRow
+					label="Show date of birth"
+					enabled={dobVisibility === "full"}
+					onToggle={handleToggle}
+				/>
 				<EditRow
 					label="Locations"
-					value={[user.country, user.state].filter(Boolean).join(", ") || "Set location"}
+					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
 					onClick={() => onOpenDialog("edit-location")}
 				/>
 			</div>
@@ -758,6 +940,18 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					</button>
 				))}
 			</div>
+
+			<PhotoCropModal
+				open={cropOpen}
+				onOpenChange={handleCropModalChange}
+				imageSrc={cropSrc}
+				shape={cropConfig.shape}
+				containerW={cropConfig.containerW}
+				containerH={cropConfig.containerH}
+				outputW={cropConfig.outputW}
+				outputH={cropConfig.outputH}
+				onCrop={handleCropConfirm}
+			/>
 		</div>
 	)
 }
@@ -770,6 +964,41 @@ function ProfileView({
 	onOpenDialog: (id: string) => void
 }) {
 	const [mobileTab, setMobileTab] = useState<"profile" | "edit">("profile")
+	const [activePanel, setActivePanel] = useState<string | null>(null)
+
+	const INLINE_PANELS = [
+		"edit-name",
+		"edit-username",
+		"edit-bio",
+		"edit-dob",
+		"edit-location",
+		"add-link",
+	]
+
+	const handleEdit = (id: string) => {
+		if (INLINE_PANELS.includes(id)) {
+			setActivePanel(id)
+		} else {
+			onOpenDialog(id)
+		}
+	}
+
+	const rightContent =
+		activePanel === "edit-name" ? (
+			<EditNamePanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-username" ? (
+			<EditUsernamePanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-bio" ? (
+			<EditBioPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-dob" ? (
+			<EditDobPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-location" ? (
+			<EditLocationPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "add-link" ? (
+			<AddExternalLinkPanel onBack={() => setActivePanel(null)} />
+		) : (
+			<EditProfilePanel onOpenDialog={handleEdit} />
+		)
 
 	return (
 		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
@@ -805,7 +1034,7 @@ function ProfileView({
 					mobileTab === "profile" ? "hidden lg:block" : "block w-full",
 				)}
 			>
-				<EditProfilePanel onOpenDialog={onOpenDialog} />
+				{rightContent}
 			</div>
 		</div>
 	)
@@ -940,7 +1169,7 @@ function SettingsListView({
 					</p>
 				</div>
 
-				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-2">
 					{currentSection.items.map((item, i) => (
 						<button
 							key={item.id}
@@ -1020,151 +1249,6 @@ export function Settings() {
 			/>
 			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
 			<DeactivateDialog open={openDialog === "deactivate"} onClose={closeDialog} />
-			{COMING_SOON.map(({ id, title }) => (
-				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
-			))}
-		</>
-	)
-}
-
-export function Settings2() {
-	const [activeSection, setActiveSection] = useState<SectionId>("account")
-	const [mobileView, setMobileView] = useState<"nav" | "panel">("nav")
-	const [openDialog, setOpenDialog] = useState<string | null>(null)
-
-	const currentSection = SECTIONS.find((s) => s.id === activeSection)!
-	const closeDialog = () => setOpenDialog(null)
-
-	const handleSectionSelect = (id: SectionId) => {
-		setActiveSection(id)
-		setMobileView("panel")
-	}
-
-	const handleItemClick = (item: SectionItem) => {
-		if (item.href) {
-			window.open(item.href, "_blank")
-			return
-		}
-		setOpenDialog(item.id)
-	}
-
-	return (
-		<>
-			<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
-				{/* ── Left: settings nav ──────────────────────────────────────── */}
-				<nav
-					className={cn(
-						"w-full lg:w-96 shrink-0 border-r border-gray-100 flex-col",
-						"overflow-y-auto [&::-webkit-scrollbar]:hidden",
-						mobileView === "panel" ? "hidden lg:flex" : "flex",
-					)}
-				>
-					<div className="flex items-center px-4 py-3 border-b border-gray-100 shrink-0 bg-white">
-						<h1 className="text-[17px] font-bold text-gray-900">Settings</h1>
-					</div>
-
-					<div className="flex-1 py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-						{SECTIONS.map((section) => {
-							const isActive = activeSection === section.id
-							return (
-								<button
-									key={section.id}
-									onClick={() => handleSectionSelect(section.id)}
-									className={cn(
-										"w-full flex items-center gap-3 px-5 py-3.75",
-										"text-base font-medium transition-colors text-left group",
-										isActive
-											? "bg-gray-100 text-gray-900"
-											: "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
-									)}
-								>
-									<span
-										className={cn(
-											"shrink-0 transition-colors tracking-[1.5]",
-											isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-500",
-										)}
-									>
-										{section.icon}
-									</span>
-									<span className="flex-1 truncate">{section.label}</span>
-									<ChevronRight
-										size={15}
-										className={cn(
-											"shrink-0 transition-colors",
-											isActive ? "text-gray-400" : "text-gray-250",
-										)}
-									/>
-								</button>
-							)
-						})}
-					</div>
-				</nav>
-
-				{/* ── Right: content panel ─────────────────────────────────────── */}
-				<div
-					className={cn(
-						"flex-1 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:hidden",
-						mobileView === "nav" ? "hidden lg:block" : "block",
-					)}
-				>
-					{/* Panel header */}
-					<div className="px-7 pt-5 pb-4 border-b border-gray-100">
-						<div className="flex items-center gap-2 mb-1">
-							<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
-						</div>
-						<p className="text-[12.5px] text-gray-500 leading-relaxed">
-							{currentSection.description}
-						</p>
-					</div>
-
-					{/* Panel items */}
-					<div>
-						{currentSection.items.map((item, i) => (
-							<button
-								key={item.id}
-								onClick={() => handleItemClick(item)}
-								className={cn(
-									"w-full flex items-center gap-4 px-7 py-4",
-									"hover:bg-gray-50/80 transition-colors text-left",
-									i < currentSection.items.length - 1 && "border-b border-gray-50",
-								)}
-							>
-								{/* Icon bubble */}
-								<div
-									className={cn(
-										"w-9 h-9 rounded-full flex items-center justify-center shrink-0",
-										item.destructive ? "bg-red-50 text-destructive" : "bg-gray-100 text-gray-500",
-									)}
-								>
-									{item.icon}
-								</div>
-
-								{/* Text */}
-								<div className="flex-1 min-w-0">
-									<p
-										className={cn(
-											"text-[13.5px] font-medium leading-tight",
-											item.destructive ? "text-destructive" : "text-gray-900",
-										)}
-									>
-										{item.label}
-									</p>
-									<p className="text-[12px] text-gray-500 mt-0.5 leading-relaxed">
-										{item.description}
-									</p>
-								</div>
-
-								<ChevronRight size={14} className="text-gray-300 shrink-0" />
-							</button>
-						))}
-					</div>
-				</div>
-			</div>
-
-			{/* ── Dialogs ───────────────────────────────────────────────────── */}
-			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
-			<DeactivateDialog open={openDialog === "deactivate"} onClose={closeDialog} />
-
 			{COMING_SOON.map(({ id, title }) => (
 				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 			))}
