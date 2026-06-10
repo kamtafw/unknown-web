@@ -3,7 +3,7 @@ import { extractMessage } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation,useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
 
 export const updateProfileKeys = {
@@ -391,6 +391,64 @@ export function useAddExternalLink() {
 			if (user) setUser({ ...user, external_links: [...(user.external_links ?? []), newLink] })
 
 			toast.success("Link added")
+		},
+	})
+}
+
+export function useUpdateExternalLink() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: ({ id, payload }: { id: number; payload: { url: string; label: string } }) =>
+			userApi.updateExternalLink(id, payload),
+
+		onError: (error) => {
+			toast.error(extractMessage(error, "Failed to update link"))
+		},
+
+		onSuccess: (data) => {
+			if (!data.success) return
+
+			const updated = data.data
+			qc.setQueryData<FullUser>(authKeys.me, (old) =>
+				old
+					? {
+							...old,
+							external_links: old.external_links.map((l) => (l.id === updated.id ? updated : l)),
+						}
+					: old,
+			)
+			const user = useAuthStore.getState().user
+			if (user)
+				setUser({
+					...user,
+					external_links: user.external_links.map((l) => (l.id === updated.id ? updated : l)),
+				})
+
+			toast.success("Link updated")
+		},
+	})
+}
+
+export function useDeleteExternalLink() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (id: number) => userApi.deleteExternalLink(id),
+
+		onError: (error) => {
+			toast.error(extractMessage(error, "Failed to delete link"))
+		},
+
+		onSuccess: (_data, id) => {
+			qc.setQueryData<FullUser>(authKeys.me, (old) =>
+				old ? { ...old, external_links: old.external_links.filter((l) => l.id !== id) } : old,
+			)
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, external_links: user.external_links.filter((l) => l.id !== id) })
+			toast.success("Link deleted")
 		},
 	})
 }

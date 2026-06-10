@@ -8,6 +8,7 @@ import {
 } from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
+import { ExternalLink } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
@@ -41,10 +42,12 @@ import {
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { ReactNode, useRef, useState } from "react"
+import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
 	EditBioPanel,
 	EditDobPanel,
+	EditExternalLinkPanel,
 	EditLocationPanel,
 	EditNamePanel,
 	EditUsernamePanel,
@@ -67,7 +70,6 @@ import {
 	TwoStepVerification,
 	Verification,
 } from "./settings-icons"
-import { PhotoCropModal } from "./photo-crop-modal"
 
 type SectionId =
 	| "verification"
@@ -756,7 +758,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (!file) return
-		openCrop(file, 'profile')
+		openCrop(file, "profile")
 		e.target.value = ""
 	}
 
@@ -790,7 +792,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 		setDobVisibility(nextVisibility)
 		updateDobVisibility.mutate(
 			{ dob_visibility: nextVisibility },
-			{onError: () => setDobVisibility(dobVisibility)},
+			{ onError: () => setDobVisibility(dobVisibility) },
 		)
 	}
 
@@ -798,7 +800,6 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 		cropMode === "profile"
 			? { containerW: 260, containerH: 260, outputW: 400, outputH: 400, shape: "circle" as const }
 			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
-
 
 	return (
 		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
@@ -926,7 +927,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 				{links.map((link) => (
 					<button
 						key={link.id}
-						onClick={() => onOpenDialog("add-link")}
+						onClick={() => onOpenDialog(`edit-link-${link.id}`)}
 						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50"
 					>
 						<div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
@@ -963,8 +964,10 @@ function ProfileView({
 	onBack: () => void
 	onOpenDialog: (id: string) => void
 }) {
+	const user = useAuthStore((s) => s.user)
 	const [mobileTab, setMobileTab] = useState<"profile" | "edit">("profile")
 	const [activePanel, setActivePanel] = useState<string | null>(null)
+	const [selectedLink, setSelectedLink] = useState<ExternalLink | null>(null)
 
 	const INLINE_PANELS = [
 		"edit-name",
@@ -973,14 +976,29 @@ function ProfileView({
 		"edit-dob",
 		"edit-location",
 		"add-link",
+		"edit-link",
 	]
 
 	const handleEdit = (id: string) => {
+		if (id.startsWith("edit-link-")) {
+			const linkId = parseInt(id.replace("edit-link-", ""), 10)
+			const link = user?.external_links.find((l) => l.id === linkId)
+			if (link) {
+				setSelectedLink(link)
+				setActivePanel("edit-link")
+			}
+			return
+		}
 		if (INLINE_PANELS.includes(id)) {
 			setActivePanel(id)
 		} else {
 			onOpenDialog(id)
 		}
+	}
+
+	const clearPanel = () => {
+		setActivePanel(null)
+		setSelectedLink(null)
 	}
 
 	const rightContent =
@@ -996,6 +1014,8 @@ function ProfileView({
 			<EditLocationPanel onBack={() => setActivePanel(null)} />
 		) : activePanel === "add-link" ? (
 			<AddExternalLinkPanel onBack={() => setActivePanel(null)} />
+		) : activePanel === "edit-link" && selectedLink ? (
+			<EditExternalLinkPanel link={selectedLink} onBack={clearPanel} />
 		) : (
 			<EditProfilePanel onOpenDialog={handleEdit} />
 		)
