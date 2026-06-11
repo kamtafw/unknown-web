@@ -537,8 +537,48 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 	)
 }
 
+function ExternalLinksDialog({
+	open,
+	onClose,
+	links,
+}: {
+	open: boolean
+	onClose: () => void
+	links: ExternalLink[]
+}) {
+	return (
+		<SettingsDialog open={open} onClose={onClose} title="Links">
+			<div className="px-6 py-2">
+				{links.map((link, i) => (
+					<a
+						key={link.id}
+						href={link.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={cn(
+							"flex items-center gap-3 py-3.5 hover:bg-gray-50/60 transition-colors -mx-6 px-6",
+							i < links.length - 1 && "border-b border-gray-50",
+						)}
+					>
+						<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+							<Link size={14} color="#6A88D1" />
+						</div>
+						<div className="flex-1 min-w-0">
+							<p className="text-[13px] font-semibold text-gray-900 truncate">
+								{link.label || "Link"}
+							</p>
+							<p className="text-[12px] text-gray-400 truncate">{link.url}</p>
+						</div>
+					</a>
+				))}
+			</div>
+		</SettingsDialog>
+	)
+}
+
 function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
+	const [linksDialogOpen, setLinksDialogOpen] = useState(false)
 	if (!user) return null
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -602,19 +642,24 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 
 				{/* External links */}
 				{links.length > 0 && (
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
-						{links.map((link) => (
-							<a
-								key={link.id}
-								href={link.url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex items-center gap-1 text-[12.5px] text-primary font-medium hover:underline"
+					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px]">
+						<Link size={14} />
+						<a
+							href={links[0].url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-gray-700 font-medium truncate min-w-0 hover:underline"
+						>
+							{links[0].label || links[0].url}
+						</a>
+						{links.length > 1 && (
+							<button
+								onClick={() => setLinksDialogOpen(true)}
+								className="text-primary font-medium hover:underline shrink-0 whitespace-nowrap"
 							>
-								<Link size={12} />
-								{link.label || link.url}
-							</a>
-						))}
+								and {links.length - 1} more
+							</button>
+						)}
 					</div>
 				)}
 
@@ -646,6 +691,12 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					)}
 				</div>
 			</div>
+
+			<ExternalLinksDialog
+				open={linksDialogOpen}
+				onClose={() => setLinksDialogOpen(false)}
+				links={links}
+			/>
 		</div>
 	)
 }
@@ -741,6 +792,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
 	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
+	const isUpdatingLocation = useIsMutating({ mutationKey: updateProfileKeys.location }) > 0
 
 	if (!user) return null
 
@@ -907,6 +959,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					label="Locations"
 					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
 					onClick={() => onOpenDialog("edit-location")}
+					isPending={isUpdatingLocation}
 				/>
 			</div>
 
