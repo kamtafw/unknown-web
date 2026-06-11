@@ -1,4 +1,5 @@
-import axios,{ AxiosError,AxiosInstance,InternalAxiosRequestConfig } from "axios"
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios"
+import { toast } from "sonner"
 
 export const apiClient: AxiosInstance = axios.create({
 	withCredentials: true, // sends the HTTP-only cookies on every request
@@ -20,13 +21,23 @@ const AUTH_ROUTES = ["/api/auth/login", "/api/auth/signup", "/api/auth/verify-ot
 apiClient.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
-		const original = error.config as InternalAxiosRequestConfig & {
-			_retry?: boolean
+		const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+		const status = error.response?.status
+
+		// these don't produce a useful body — individual onError handlers can't help
+		if (status === 502 || status === 503 || status === 504) {
+			toast.error(
+				status === 503
+					? "AppsCombo is briefly unavailable. Hang tight."
+					: "Network error — please check your connection.",
+				{ id: "gateway-error", duration: 6000 },
+			)
+			return Promise.reject(error)
 		}
 
 		// only attempt a refresh on 401, and only once per request
 		if (
-			error.response?.status !== 401 ||
+			status !== 401 ||
 			original._retry ||
 			AUTH_ROUTES.some((route) => original.url?.includes(route))
 		) {

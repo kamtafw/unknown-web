@@ -1,8 +1,5 @@
 "use client"
 
-// TODO: location dropdown should initialize with current country and state; likewise external links
-// TODO: edit dropdown UI to match what's on signup
-
 import {
 	useAddExternalLink,
 	useDeleteExternalLink,
@@ -19,8 +16,17 @@ import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
 import { Country, ICountry, IState, State } from "country-state-city"
-import { ArrowLeft, Check, ChevronDown, Loader2, RefreshCw, Trash2, User } from "lucide-react"
-import { useRef, useState } from "react"
+import {
+	ArrowLeft,
+	Check,
+	ChevronDown,
+	Loader2,
+	RefreshCw,
+	Search,
+	Trash2,
+	User,
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 const BIO_MAX = 200
 const NAME_MAX = 20
@@ -100,6 +106,133 @@ function generateUsername(): string {
 	const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)]
 	const num = Math.floor(Math.random() * 9999)
 	return `${adj}_${noun}${num}`
+}
+
+interface SelectOption {
+	value: string
+	label: string
+	secondary?: string
+}
+
+function SearchableSelect({
+	options,
+	value,
+	onChange,
+	placeholder = "Select...",
+	disabled,
+	hasError,
+}: {
+	options: SelectOption[]
+	value: string
+	onChange: (value: string) => void
+	placeholder?: string
+	disabled?: boolean
+	hasError?: boolean
+}) {
+	const [open, setOpen] = useState(false)
+	const [search, setSearch] = useState("")
+	const containerRef = useRef<HTMLDivElement>(null)
+	const searchRef = useRef<HTMLInputElement>(null)
+
+	const selected = options.find((o) => o.value === value)
+	const filtered = search.trim()
+		? options.filter(
+				(o) =>
+					o.label.toLowerCase().includes(search.toLowerCase()) ||
+					(o.secondary && o.secondary.toLowerCase().includes(search.toLowerCase())),
+			)
+		: options
+
+	useEffect(() => {
+		if (!open) return
+		const handler = (e: MouseEvent) => {
+			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+				setOpen(false)
+				setSearch("")
+			}
+		}
+		document.addEventListener("mousedown", handler)
+		return () => document.removeEventListener("mousedown", handler)
+	}, [open])
+
+	useEffect(() => {
+		if (open) setTimeout(() => searchRef.current?.focus(), 0)
+	}, [open])
+
+	return (
+		<div className="relative" ref={containerRef}>
+			<button
+				type="button"
+				disabled={disabled}
+				onClick={() => !disabled && setOpen((v) => !v)}
+				className={cn(
+					"w-full flex items-center justify-between h-12 px-4 rounded-xl border transition-colors text-sm",
+					disabled
+						? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
+						: hasError
+							? "border-destructive"
+							: open
+								? "border-primary"
+								: "border-gray-200 hover:border-gray-300 bg-white cursor-pointer",
+				)}
+			>
+				<span className={cn(selected ? "text-gray-900" : "text-gray-400")}>
+					{selected ? selected.label : placeholder}
+				</span>
+				<ChevronDown
+					size={16}
+					className={cn(
+						"text-gray-400 transition-transform duration-150 shrink-0",
+						open && "rotate-180",
+					)}
+				/>
+			</button>
+
+			{open && (
+				<div className="absolute z-50 top-full mt-1 left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
+					<div className="p-2 border-b border-gray-100">
+						<div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-gray-50 border border-gray-200">
+							<Search size={13} className="text-gray-400 shrink-0" />
+							<input
+								ref={searchRef}
+								type="text"
+								placeholder="Search…"
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder:text-gray-400"
+							/>
+						</div>
+					</div>
+					<div className="max-h-56 overflow-y-auto">
+						{filtered.length === 0 ? (
+							<p className="px-4 py-3 text-sm text-gray-400 text-center">No results</p>
+						) : (
+							filtered.map((option) => (
+								<button
+									key={option.value}
+									type="button"
+									onClick={() => {
+										onChange(option.value)
+										setOpen(false)
+										setSearch("")
+									}}
+									className={cn(
+										"w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-left",
+										value === option.value ? "bg-primary/5 text-primary" : "text-gray-800",
+									)}
+								>
+									<span className="flex-1 truncate">{option.label}</span>
+									{option.secondary && (
+										<span className="text-gray-400 text-xs shrink-0">{option.secondary}</span>
+									)}
+								</button>
+							))
+						)}
+					</div>
+				</div>
+			)}
+		</div>
+	)
 }
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
@@ -610,59 +743,29 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-4">
 				<FieldWrapper label="Country" error={errors.country}>
-					<div
-						className={cn(
-							"relative flex items-center h-12 rounded-xl border transition-colors",
-							errors.country ? "border-destructive" : "border-gray-200 focus-within:border-primary",
-						)}
-					>
-						<select
-							value={countryIso}
-							onChange={(e) => handleCountryChange(e.target.value)}
-							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
-						>
-							<option value="">Select country</option>
-							{countries.map((c) => (
-								<option key={c.isoCode} value={c.isoCode}>
-									{c.name}
-								</option>
-							))}
-						</select>
-						<ChevronDown
-							size={16}
-							className="absolute right-4 text-gray-400 pointer-events-none shrink-0"
-						/>
-					</div>
+					<SearchableSelect
+						options={countries.map((c) => ({ value: c.isoCode, label: c.name }))}
+						value={countryIso}
+						onChange={(iso) => {
+							handleCountryChange(iso)
+						}}
+						placeholder="Select country"
+						hasError={!!errors.country}
+					/>
 				</FieldWrapper>
 
 				<FieldWrapper label="State" error={errors.state}>
-					<div
-						className={cn(
-							"relative flex items-center h-12 rounded-xl border transition-colors",
-							errors.state ? "border-destructive" : "border-gray-200 focus-within:border-primary",
-						)}
-					>
-						<select
-							value={stateIso}
-							onChange={(e) => {
-								setStateIso(e.target.value)
-								if (errors.state) setErrors((p) => ({ ...p, state: "" }))
-							}}
-							className="w-full h-full px-4 pr-10 text-sm bg-transparent outline-none appearance-none cursor-pointer text-gray-900"
-							disabled={!countryIso}
-						>
-							<option value="">Select state</option>
-							{states.map((s) => (
-								<option key={s.isoCode} value={s.isoCode}>
-									{s.name}
-								</option>
-							))}
-						</select>
-						<ChevronDown
-							size={16}
-							className="absolute right-4 text-gray-400 pointer-events-none shrink-0"
-						/>
-					</div>
+					<SearchableSelect
+						options={states.map((s) => ({ value: s.isoCode, label: s.name }))}
+						value={stateIso}
+						onChange={(iso) => {
+							setStateIso(iso)
+							if (errors.state) setErrors((p) => ({ ...p, state: "" }))
+						}}
+						placeholder="Select state"
+						disabled={!countryIso}
+						hasError={!!errors.state}
+					/>
 				</FieldWrapper>
 			</div>
 

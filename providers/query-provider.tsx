@@ -14,10 +14,17 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 					queries: {
 						// no retry on 401 — interceptor handles that
 						retry: (failureCount, error: unknown) => {
-							if ((error as { response?: { status: number } })?.response?.status === 401) {
-								return false
-							}
-							return failureCount < 2
+							const status = (error as { response?: { status: number } })?.response?.status
+							if (status === 401) return false
+							if (status && status > 400 && status < 500) return false // client errors: never retry
+							if (status && status >= 500) return failureCount < 1 // server errors: one retry
+							return failureCount < 2 // network errors: two retries
+						},
+						retryDelay: (attempt, error: unknown) => {
+							const status = (error as { response?: { status: number } })?.response?.status
+							// exponential backoff for server errors, capped at 8s
+							if (status && status >= 500) return Math.min(1000 * 2 ** attempt, 8000)
+							return 1000
 						},
 						staleTime: 10000 * 60 * 5,
 						refetchOnWindowFocus: false,
