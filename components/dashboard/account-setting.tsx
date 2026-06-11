@@ -1,12 +1,12 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
-import { cn } from "@/lib/utils"
 import { ArrowLeft, Eye, EyeOff, Lock, Phone } from "lucide-react"
 import { useState } from "react"
+import { DeleteAccount, LockShield, SimCards, TwoFALock } from "./account-setting-icons"
 
-// ─── Shared primitives ────────────────────────────────────────────────────────
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
@@ -24,11 +24,7 @@ function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 }
 
 function StickyFooter({ children }: { children: React.ReactNode }) {
-	return (
-		<div className="shrink-0 px-6 py-4 border-t border-gray-50 bg-white">
-			{children}
-		</div>
-	)
+	return <div className="shrink-0 px-6 py-4 border-t border-gray-50 bg-white">{children}</div>
 }
 
 function ActionButton({
@@ -58,164 +54,6 @@ function ActionButton({
 	)
 }
 
-// ─── SVG Illustrations ────────────────────────────────────────────────────────
-
-function ShieldIllustration() {
-	return (
-		<div className="flex justify-center py-8">
-			<svg width="90" height="98" viewBox="0 0 90 98" fill="none">
-				{/* shadow */}
-				<ellipse cx="45" cy="95" rx="24" ry="3.5" fill="#E5E7EB" />
-				{/* outer shield */}
-				<path
-					d="M45 4L7 21v28c0 24 17.5 45.5 38 52 20.5-6.5 38-28 38-52V21L45 4z"
-					fill="#6478B8"
-				/>
-				{/* inner shield */}
-				<path
-					d="M45 10L11 25v24c0 20 14.5 38.5 34 44.5 19.5-6 34-24.5 34-44.5V25L45 10z"
-					fill="#8FA3D8"
-				/>
-				{/* top-left shine */}
-				<path
-					d="M45 10L11 25v24c0 7 1.3 14 3.8 20.5L45 10z"
-					fill="white"
-					fillOpacity="0.18"
-				/>
-				{/* padlock body */}
-				<rect x="29" y="47" width="32" height="23" rx="5" fill="white" fillOpacity="0.96" />
-				{/* padlock shackle */}
-				<path
-					d="M34 47v-8.5a11 11 0 0122 0v8.5"
-					stroke="white"
-					strokeWidth="3.5"
-					fill="none"
-					strokeLinecap="round"
-					strokeOpacity="0.9"
-				/>
-				{/* keyhole */}
-				<circle cx="45" cy="57.5" r="4" fill="#6478B8" />
-				<rect x="43" y="60.5" width="4" height="5" rx="2" fill="#6478B8" />
-			</svg>
-		</div>
-	)
-}
-
-function TwoStepIllustration() {
-	return (
-		<div className="flex justify-center py-8">
-			<svg width="92" height="90" viewBox="0 0 92 90" fill="none">
-				{/* circular track top-right */}
-				<path
-					d="M46 10A36 36 0 0 1 82 46"
-					stroke="#F5B942"
-					strokeWidth="5.5"
-					strokeLinecap="round"
-				/>
-				{/* circular track top-left */}
-				<path
-					d="M46 10A36 36 0 0 0 10 46"
-					stroke="#F5B942"
-					strokeWidth="5.5"
-					strokeLinecap="round"
-				/>
-				{/* arrow head */}
-				<path
-					d="M79 33 L82 46 L70 42"
-					stroke="#F5B942"
-					strokeWidth="4.5"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					fill="none"
-				/>
-				{/* padlock body */}
-				<rect x="24" y="49" width="44" height="33" rx="7" fill="#7B93D4" />
-				{/* message badge on padlock */}
-				<rect x="31" y="56" width="30" height="19" rx="4" fill="#F5B942" />
-				{/* three dots */}
-				<circle cx="38" cy="65" r="2.5" fill="white" />
-				<circle cx="46" cy="65" r="2.5" fill="white" />
-				<circle cx="54" cy="65" r="2.5" fill="white" />
-				{/* shackle */}
-				<path
-					d="M33 49v-9a13 13 0 0126 0v9"
-					stroke="#6478B8"
-					strokeWidth="4.5"
-					fill="none"
-					strokeLinecap="round"
-				/>
-			</svg>
-		</div>
-	)
-}
-
-function SimCardsIllustration() {
-	return (
-		<div className="flex justify-center items-center gap-6 py-7">
-			{/* Active SIM – brand blue */}
-			<svg width="62" height="76" viewBox="0 0 62 76" fill="none">
-				<rect x="1" y="16" width="60" height="59" rx="5.5" fill="#7B93D4" />
-				<path d="M1 16L15 2H61V16H1Z" fill="#6478B8" />
-				<rect x="11" y="32" width="40" height="30" rx="3.5" fill="#6478B8" />
-				<rect x="15" y="36" width="12" height="22" rx="2" fill="#5567A5" fillOpacity="0.65" />
-				<rect x="31" y="36" width="16" height="10" rx="2" fill="#5567A5" fillOpacity="0.65" />
-				<rect x="31" y="49" width="16" height="9" rx="2" fill="#5567A5" fillOpacity="0.65" />
-			</svg>
-
-			{/* divider dots */}
-			<div className="flex gap-1.5 mt-5">
-				{[0, 1, 2].map((i) => (
-					<div key={i} className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-				))}
-			</div>
-
-			{/* New SIM – muted gray */}
-			<svg width="62" height="76" viewBox="0 0 62 76" fill="none">
-				<rect x="1" y="16" width="60" height="59" rx="5.5" fill="#B0BAC8" />
-				<path d="M1 16L15 2H61V16H1Z" fill="#9AA3B5" />
-				<rect x="11" y="32" width="40" height="30" rx="3.5" fill="#9AA3B5" />
-				<rect x="15" y="36" width="12" height="22" rx="2" fill="#8591A5" fillOpacity="0.65" />
-				<rect x="31" y="36" width="16" height="10" rx="2" fill="#8591A5" fillOpacity="0.65" />
-				<rect x="31" y="49" width="16" height="9" rx="2" fill="#8591A5" fillOpacity="0.65" />
-			</svg>
-		</div>
-	)
-}
-
-function DeleteIllustration() {
-	return (
-		<div className="flex justify-center py-7">
-			<div className="w-21 h-21 rounded-full bg-red-400 flex items-center justify-center">
-				<svg width="52" height="48" viewBox="0 0 52 48" fill="none">
-					{/* person head */}
-					<circle cx="17" cy="10" r="8.5" fill="white" />
-					{/* person body */}
-					<path
-						d="M2 42c0-9 6.7-15 15-15h6"
-						stroke="white"
-						strokeWidth="3.5"
-						strokeLinecap="round"
-						fill="none"
-					/>
-					{/* trash outline */}
-					<rect x="27" y="24" width="22" height="19" rx="3" stroke="white" strokeWidth="2.5" fill="none" />
-					{/* trash lid */}
-					<line x1="24" y1="24" x2="52" y2="24" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-					{/* lid handle */}
-					<line x1="32" y1="24" x2="32" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-					<line x1="44" y1="24" x2="44" y2="20" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-					{/* interior lines */}
-					<line x1="33" y1="30" x2="33" y2="39" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.85" />
-					<line x1="38" y1="30" x2="38" y2="39" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.85" />
-					<line x1="43" y1="30" x2="43" y2="39" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.85" />
-				</svg>
-			</div>
-		</div>
-	)
-}
-
-// ─── Radio item ───────────────────────────────────────────────────────────────
-
 function RadioItem({
 	value,
 	label,
@@ -226,7 +64,12 @@ function RadioItem({
 	description?: string
 }) {
 	return (
-		<div className="flex items-start gap-4 py-4 border-b border-gray-100 last:border-0">
+		<div
+			className={cn(
+				"flex gap-4 py-4 border-b border-gray-100 last:border-0",
+				description ? "items-start" : "items-center",
+			)}
+		>
 			<RadioGroup.Item
 				value={value}
 				className="shrink-0 w-5.5 h-5.5 rounded-full border-2 border-gray-300 mt-0.5 focus:outline-none data-[state=checked]:border-primary flex items-center justify-center transition-colors cursor-pointer"
@@ -234,16 +77,14 @@ function RadioItem({
 				<RadioGroup.Indicator className="block w-2.75 h-2.75 rounded-full bg-primary" />
 			</RadioGroup.Item>
 			<div className="flex-1 min-w-0">
-				<p className="text-[14.5px] font-semibold text-gray-900 leading-snug">{label}</p>
+				<p className="text-[13.5px] font-medium text-gray-900 leading-snug">{label}</p>
 				{description && (
-					<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+					<p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
 				)}
 			</div>
 		</div>
 	)
 }
-
-// ─── Panels ───────────────────────────────────────────────────────────────────
 
 export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true)
@@ -253,18 +94,17 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 			<PanelHeader title="Security Notifications" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<ShieldIllustration />
+				<div className="flex justify-center py-8">
+					<LockShield width={70} height={88} />
+				</div>
 
 				<div className="px-6">
-					{/* Section 1 */}
-					<h3 className="text-[16px] font-bold text-gray-900 mb-3">
-						Your chats and calls are private
-					</h3>
+					<h3 className="font-semibold text-gray-900 mb-3">Your chats and calls are private</h3>
 					<p className="text-[13.5px] text-gray-500 leading-relaxed mb-4">
-						End to end encryption keeps your personal messages and calls between your and the
-						people your choose. Not even Appscombo can read or listen to them, this include:
+						End to end encryption keeps your personal messages and calls between your and the people
+						your choose. Not even Appscombo can read or listen to them, this include:
 					</p>
-					<ul className="space-y-2.5 mb-4">
+					<ul className="space-y-2 mb-4">
 						{[
 							"Text and voice messages",
 							"Audio and voice call",
@@ -284,21 +124,20 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 
 					<hr className="border-gray-100 mb-6" />
 
-					{/* Section 2 */}
 					<div className="flex items-start justify-between gap-4 mb-3">
-						<h3 className="text-[15px] font-bold text-gray-900 flex-1 leading-snug">
+						<h3 className="text-[15px] font-semibold text-gray-900 flex-1 leading-snug">
 							Show security notification on this device
 						</h3>
 						<Switch.Root
 							checked={notificationsEnabled}
 							onCheckedChange={setNotificationsEnabled}
-							className="shrink-0 w-12 h-6 rounded-full bg-gray-200 data-[state=checked]:bg-green-500 transition-colors focus:outline-none mt-0.5 cursor-pointer"
+							className="shrink-0 w-12 h-6 rounded-full bg-gray-200 data-[state=checked]:bg-primary transition-colors focus:outline-none mt-0.5 cursor-pointer"
 						>
 							<Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-x-0.5 data-[state=checked]:translate-x-6" />
 						</Switch.Root>
 					</div>
 					<p className="text-[13px] text-gray-500 leading-relaxed mb-3">
-						Get notified when your security code changes for a contact's phone in an end-to-end
+						Get notified when your security code changes for a contact&apos;s phone in an end-to-end
 						encrypted chat, if you have multiple devices, this settings must be enabled on each
 						devices where you want to get notification
 					</p>
@@ -328,31 +167,25 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				<div className="px-6 pt-5 pb-8">
-					<h3 className="text-[15px] font-bold text-gray-900 mb-4">
-						Please select a problem
-					</h3>
+					<h3 className="text-sm font-semibold text-gray-900 mb-3">Please select a problem</h3>
 
-					<RadioGroup.Root
-						value={selected}
-						onValueChange={setSelected}
-						className="flex flex-col"
-					>
+					<RadioGroup.Root value={selected} onValueChange={setSelected} className="flex flex-col">
 						{PROBLEMS.map((p) => (
 							<RadioItem key={p} value={p} label={p} />
 						))}
 						<RadioItem value="other" label="Other" />
 					</RadioGroup.Root>
 
-					<div className="mt-6">
-						<h3 className="text-[15px] font-bold text-gray-900 mb-3">
+					<div className="mt-4">
+						<h3 className="text-sm font-semibold text-gray-900 mb-3">
 							Your feedback is very much appreciated
 						</h3>
 						<div className="relative">
 							<textarea
 								value={feedback}
 								onChange={(e) => setFeedback(e.target.value.slice(0, MAX))}
-								placeholder="Placeholder"
-								rows={4}
+								placeholder="Tell us more about the problem..."
+								rows={3}
 								className="w-full resize-none rounded-xl border border-primary/60 focus:border-primary px-4 py-3 pb-7 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-1 focus:ring-primary/20 transition-colors leading-relaxed"
 							/>
 							<span className="absolute bottom-3 right-3 text-xs text-gray-400 tabular-nums pointer-events-none">
@@ -396,7 +229,9 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 			<PanelHeader title="Two step verification" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<TwoStepIllustration />
+				<div className="flex justify-center py-8">
+					<TwoFALock width={80} height={78} />
+				</div>
 
 				<div className="px-6">
 					<p className="text-[13.5px] text-gray-500 leading-relaxed mb-2">
@@ -409,11 +244,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 
 					<hr className="border-gray-100 my-5" />
 
-					<RadioGroup.Root
-						value={method}
-						onValueChange={setMethod}
-						className="flex flex-col"
-					>
+					<RadioGroup.Root value={method} onValueChange={setMethod} className="flex flex-col">
 						{options.map((o) => (
 							<RadioItem key={o.value} {...o} />
 						))}
@@ -434,19 +265,21 @@ export function ChangePhonePanel({ onBack }: { onBack: () => void }) {
 			<PanelHeader title="Change phone number" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<SimCardsIllustration />
+				<div className="flex justify-center py-8">
+					<SimCards />
+				</div>
 
 				<div className="px-6 pt-2">
-					<h3 className="text-[15.5px] font-bold text-gray-900 mb-3 leading-snug">
+					<h3 className="text-[15.5px] font-semibold text-gray-900 mb-3 leading-snug">
 						Changing your phone number will migrate your account info, groups and settings.
 					</h3>
 					<p className="text-[13px] text-gray-500 leading-relaxed mb-2.5">
-						Before proceeding, please confirm that you are able to receive SMS or calls at your
-						new number.
+						Before proceeding, please confirm that you are able to receive SMS or calls at your new
+						number.
 					</p>
 					<p className="text-[13px] text-gray-500 leading-relaxed">
-						If you have both a new phone and a new number, first change your new number on your
-						old phone.
+						If you have both a new phone and a new number, first change your new number on your old
+						phone.
 					</p>
 				</div>
 			</div>
@@ -470,10 +303,12 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 			<PanelHeader title="Delete account" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<DeleteIllustration />
+				<div className="flex justify-center py-6.5">
+					<DeleteAccount width={80} height={80} />
+				</div>
 
 				<div className="px-6">
-					<h3 className="text-[15.5px] font-bold text-gray-900 mb-3">
+					<h3 className="text-[15.5px] font-semibold text-gray-900 mb-3">
 						If you delete this account
 					</h3>
 					<ul className="space-y-2 mb-6">
