@@ -1,12 +1,19 @@
 "use client"
 
+import { useSetPin } from "@/hooks/use-2fa"
+import { otpSchema } from "@/lib/schemas"
+import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
+import { OtpDefault } from "@/types/api"
+import * as Dialog from "@radix-ui/react-dialog"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
 import { ArrowLeft, Eye, EyeOff, Lock, Phone } from "lucide-react"
-import { useState } from "react"
+import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
+import { FormEvent, useState } from "react"
+import type { TwoFAMethod } from "../auth/two-factor-verification"
 import { DeleteAccount, LockShield, SimCards, TwoFALock } from "./account-setting-icons"
-
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
@@ -203,14 +210,127 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 	)
 }
 
-export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
-	const [method, setMethod] = useState("pin")
+const CODE_LENGTH = 6
+const METHOD_LABELS: Record<TwoFAMethod, string> = {
+	otp: "OTP",
+	pin: "PIN",
+	authenticator: "Authenticator App",
+}
 
-	const options = [
+function otpDefaultToMethod(otpDefault?: OtpDefault): TwoFAMethod {
+	if (otpDefault === "2fa") return "authenticator"
+	if (otpDefault === "pin") return "pin"
+	return "otp"
+}
+
+function StepDots({ step }: { step: 1 | 2 }) {
+	return (
+		<div className="flex items-center justify-center gap-1.5 mt-4">
+			{[1, 2].map((s) => (
+				<span
+					key={s}
+					className={cn(
+						"w-2 h-2 rounded-full transition-colors",
+						step === s ? "bg-primary" : "bg-gray-200",
+					)}
+				/>
+			))}
+		</div>
+	)
+}
+
+function PinOtpField({ autoFocus }: { autoFocus?: boolean }) {
+	return (
+		<OneTimePasswordField.Root
+			name="otp"
+			validationType="numeric"
+			autoComplete="one-time-code"
+			autoFocus={autoFocus}
+			className="flex gap-2 sm:gap-2.5 justify-center"
+			aria-label="6 digit PIN"
+		>
+			{Array.from({ length: CODE_LENGTH }).map((_, i) => (
+				<OneTimePasswordField.Input
+					key={i}
+					className="flex-1 min-w-0 max-w-12 h-12 sm:h-13 text-center text-lg font-semibold bg-gray-100 text-gray-900 rounded-xl border-2 border-transparent focus:outline-none focus:border-primary caret-primary transition-colors duration-150"
+				/>
+			))}
+			<OneTimePasswordField.HiddenInput />
+		</OneTimePasswordField.Root>
+	)
+}
+
+function ConfirmMethodDialog({
+	open,
+	onOpenChange,
+	methodLabel,
+	onConfirm,
+}: {
+	open: boolean
+	onOpenChange: (open: boolean) => void
+	methodLabel: string
+	onConfirm: () => void
+}) {
+	return (
+		<Dialog.Root open={open} onOpenChange={onOpenChange}>
+			<Dialog.Portal>
+				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Content
+					className="
+						fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60
+						w-[calc(100%-2rem)] max-w-100
+						bg-white rounded-3xl shadow-2xl px-6 py-7
+						focus:outline-none
+						data-[state=open]:animate-in data-[state=closed]:animate-out
+						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+					"
+				>
+					<Dialog.Title className="text-[15px] font-bold text-gray-900 leading-snug mb-8">
+						Confirm you want to use {methodLabel} Verification for 2FA
+					</Dialog.Title>
+					<Dialog.Description className="sr-only">
+						Confirm switching your two-step verification method
+					</Dialog.Description>
+
+					<div className="flex items-center justify-end gap-6">
+						<Dialog.Close asChild>
+							<button className="text-[14px] font-semibold text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+								Close
+							</button>
+						</Dialog.Close>
+						<button
+							onClick={onConfirm}
+							className="text-[14px] font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer"
+						>
+							Yes, Use {methodLabel}
+						</button>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	)
+}
+
+export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const setPin = useSetPin()
+
+	const [currentMethod] = useState<TwoFAMethod>(() => otpDefaultToMethod(user?.otp_default))
+	const [method, setMethod] = useState<TwoFAMethod>(currentMethod)
+	const [step, setStep] = useState<"select" | "create-pin" | "confirm-pin">("select")
+	const [confirmOpen, setConfirmOpen] = useState(false)
+	const [pin1, setPin1] = useState("")
+	const [pinError, setPinError] = useState<string | null>(null)
+
+	const isDirty = method !== currentMethod
+	const methodLabel = METHOD_LABELS[method]
+
+	const options: { value: TwoFAMethod; label: string; description: string }[] = [
 		{
 			value: "otp",
 			label: "Use OTP verification",
-			description: "You will receive OTP every time you try to login",
+			description: "You will receive OTP every time in your registered email when you try to login",
 		},
 		{
 			value: "pin",
@@ -223,6 +343,98 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 			description: "Make sure to have a google authenticator installed",
 		},
 	]
+
+	const handleBack = () => {
+		if (step === "confirm-pin") {
+			setPinError(null)
+			setStep("create-pin")
+		} else if (step === "create-pin") {
+			setPin1("")
+			setStep("select")
+		} else {
+			onBack()
+		}
+	}
+
+	const handleConfirmMethod = () => {
+		setConfirmOpen(false)
+		if (method === "pin") {
+			setStep("create-pin")
+		} else {
+			toast.info(`Switching to ${methodLabel} is coming soon`)
+		}
+	}
+
+	const handleCreatePinSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = otpSchema.safeParse(raw)
+		if (!result.success) return
+
+		setPin1(result.data.otp)
+		setStep("confirm-pin")
+	}
+
+	const handleConfirmPinSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = otpSchema.safeParse(raw)
+		if (!result.success) return
+
+		if (result.data.otp !== pin1) {
+			setPinError("PINs do not match. Please try again.")
+			return
+		}
+
+		setPin.mutate(pin1, {
+			onSuccess: (res) => {
+				if (res.success) onBack()
+			},
+		})
+	}
+
+	if (step === "create-pin" || step === "confirm-pin") {
+		const isConfirm = step === "confirm-pin"
+
+		return (
+			<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+				<PanelHeader title="Two step verification" onBack={handleBack} />
+
+				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
+					<Form.Root
+						key={step}
+						onSubmit={isConfirm ? handleConfirmPinSubmit : handleCreatePinSubmit}
+						className="flex flex-col gap-5"
+					>
+						<h3 className="text-center text-[15px] font-semibold text-gray-900 mb-1">
+							{isConfirm ? "Confirm your PIN" : "Create a 6 digit PIN that you can remember"}
+						</h3>
+
+						<Form.Field name="otp" className="flex flex-col gap-2">
+							<PinOtpField autoFocus />
+
+							<Form.Message
+								match={(v) => v.length > 0 && v.length < CODE_LENGTH}
+								className="text-center text-xs text-destructive"
+							>
+								Enter all {CODE_LENGTH} digits
+							</Form.Message>
+						</Form.Field>
+
+						<StepDots step={isConfirm ? 2 : 1} />
+
+						{pinError && <p className="text-center text-xs text-destructive">{pinError}</p>}
+
+						<Form.Submit asChild>
+							<ActionButton disabled={isConfirm && setPin.isPending}>
+								{isConfirm ? (setPin.isPending ? "Saving..." : "Create PIN") : "Next"}
+							</ActionButton>
+						</Form.Submit>
+					</Form.Root>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
@@ -244,7 +456,11 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 
 					<hr className="border-gray-100 my-5" />
 
-					<RadioGroup.Root value={method} onValueChange={setMethod} className="flex flex-col">
+					<RadioGroup.Root
+						value={method}
+						onValueChange={(v) => setMethod(v as TwoFAMethod)}
+						className="flex flex-col"
+					>
 						{options.map((o) => (
 							<RadioItem key={o.value} {...o} />
 						))}
@@ -253,8 +469,17 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 			</div>
 
 			<StickyFooter>
-				<ActionButton>Next</ActionButton>
+				<ActionButton onClick={() => setConfirmOpen(true)} disabled={!isDirty}>
+					Next
+				</ActionButton>
 			</StickyFooter>
+
+			<ConfirmMethodDialog
+				open={confirmOpen}
+				onOpenChange={setConfirmOpen}
+				methodLabel={methodLabel}
+				onConfirm={handleConfirmMethod}
+			/>
 		</div>
 	)
 }
