@@ -1,6 +1,7 @@
 "use client"
 
-import { useSetPin } from "@/hooks/use-2fa"
+import { useConfirmPassword, useGenerateTotp, useSetPin, useVerifyTotp } from "@/hooks/use-2fa"
+import { extractFirstError } from "@/lib/api-error"
 import { otpSchema } from "@/lib/schemas"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
@@ -9,9 +10,10 @@ import { OtpDefault } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
-import { ArrowLeft, Eye, EyeOff, Lock, Phone } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Phone } from "lucide-react"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent, useState } from "react"
+import { SuccessDialog } from "../auth/success-dialog"
 import type { TwoFAMethod } from "../auth/two-factor-verification"
 import { DeleteAccount, LockShield, SimCards, TwoFALock } from "./account-setting-icons"
 
@@ -286,8 +288,8 @@ function ConfirmMethodDialog({
 						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
 					"
 				>
-					<Dialog.Title className="text-[15px] font-bold text-gray-900 leading-snug mb-8">
-						Confirm you want to use {methodLabel} Verification for 2FA
+					<Dialog.Title className="text-[15px] font-semibold text-gray-900 leading-snug mb-8">
+						Confirm you want to use {methodLabel} verification for 2FA
 					</Dialog.Title>
 					<Dialog.Description className="sr-only">
 						Confirm switching your two-step verification method
@@ -295,15 +297,15 @@ function ConfirmMethodDialog({
 
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="text-[14px] font-semibold text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+							<button className="text-sm font-regular text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
 								Close
 							</button>
 						</Dialog.Close>
 						<button
 							onClick={onConfirm}
-							className="text-[14px] font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer"
+							className="text-sm font-medium text-primary hover:opacity-80 transition-opacity cursor-pointer"
 						>
-							Yes, Use {methodLabel}
+							Yes, use {methodLabel}
 						</button>
 					</div>
 				</Dialog.Content>
@@ -312,16 +314,234 @@ function ConfirmMethodDialog({
 	)
 }
 
+function ConfirmPasswordStep({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+	const confirmPassword = useConfirmPassword()
+	const [password, setPassword] = useState("")
+	const [showPassword, setShowPassword] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
+	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		if (!password || confirmPassword.isPending) return
+		setError(null)
+
+		confirmPassword.mutate(
+			{ password },
+			{
+				onSuccess: () => onSuccess(),
+				onError: (err) => setError(extractFirstError(err, "Incorrect password.")),
+			},
+		)
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Google Authenticator" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
+				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
+					<div>
+						<h3 className="text-[15px] font-bold text-gray-900 mb-1">Enter your password</h3>
+						<p className="text-[13px] text-gray-500 leading-relaxed">
+							To get started, first enter your AppsCombo password to confirm it&apos;s really you
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2">
+						<div
+							className={cn(
+								"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
+								error ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+							)}
+						>
+							<Lock size={16} className="text-gray-400 shrink-0" />
+							<input
+								type={showPassword ? "text" : "password"}
+								value={password}
+								onChange={(e) => {
+									setPassword(e.target.value)
+									if (error) setError(null)
+								}}
+								placeholder="Enter password"
+								autoFocus
+								className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+							/>
+							<button
+								type="button"
+								onClick={() => setShowPassword((v) => !v)}
+								className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+							>
+								{showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
+							</button>
+						</div>
+						{error && <p className="text-xs text-destructive">{error}</p>}
+					</div>
+
+					<Form.Submit asChild>
+						<ActionButton disabled={!password.trim() || confirmPassword.isPending}>
+							{confirmPassword.isPending ? (
+								<span className="flex items-center justify-center gap-2">
+									<Loader2 size={14} className="animate-spin" /> Confirming...
+								</span>
+							) : (
+								"Continue"
+							)}
+						</ActionButton>
+					</Form.Submit>
+				</Form.Root>
+			</div>
+		</div>
+	)
+}
+
+function ShowKeyStep({
+	onBack,
+	onContinue,
+	secret,
+	isLoading,
+}: {
+	onBack: () => void
+	onContinue: () => void
+	secret: string | null
+	isLoading: boolean
+}) {
+	const [copied, setCopied] = useState(false)
+
+	const handleCopy = () => {
+		if (!secret) return
+		navigator.clipboard
+			.writeText(secret)
+			.then(() => {
+				setCopied(true)
+				setTimeout(() => setCopied(false), 2000)
+			})
+			.catch(() => toast.error("Failed to copy. Please copy the key manually."))
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Google Authenticator" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+				<div className="flex flex-col items-center px-6 pt-8 gap-5">
+					<div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+						<span className="text-3xl font-bold text-gray-400 select-none">G</span>
+					</div>
+
+					<div className="text-center">
+						<p className="text-[15px] font-bold text-gray-900 mb-1">
+							Copy key and add to Google Authenticator
+						</p>
+						<p className="text-[13px] text-gray-500">(Google Authenticator)</p>
+					</div>
+
+					<div className="w-full flex items-center gap-3 px-4 h-12 rounded-xl border border-gray-200 bg-gray-50">
+						{isLoading || !secret ? (
+							<Loader2 size={14} className="animate-spin text-gray-400 mx-auto" />
+						) : (
+							<>
+								<span className="text-[13px] font-mono text-gray-800 break-all leading-relaxed flex-1">
+									{secret}
+								</span>
+								<button
+									type="button"
+									onClick={handleCopy}
+									className="text-[13px] font-semibold text-primary hover:opacity-70 transition-opacity shrink-0 whitespace-nowrap"
+								>
+									{copied ? "Copied!" : "Copy Key"}
+								</button>
+							</>
+						)}
+					</div>
+				</div>
+			</div>
+
+			<StickyFooter>
+				<ActionButton onClick={onContinue} disabled={isLoading || !secret}>
+					Continue
+				</ActionButton>
+			</StickyFooter>
+		</div>
+	)
+}
+
+function VerifyTotpStep({
+	onBack,
+	onSuccess,
+	isPending,
+	error,
+}: {
+	onBack: () => void
+	onSuccess: (code: string) => void
+	isPending: boolean
+	error: string | null
+}) {
+	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = otpSchema.safeParse(raw)
+		if (result.success) onSuccess(result.data.otp)
+	}
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Google Authenticator" onBack={onBack} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
+				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
+					<Form.Field name="otp" className="flex flex-col gap-2">
+						<PinOtpField autoFocus />
+
+						<Form.Message
+							match={(v) => v.length > 0 && v.length < CODE_LENGTH}
+							className="text-center text-xs text-destructive"
+						>
+							Enter all {CODE_LENGTH} digits
+						</Form.Message>
+					</Form.Field>
+
+					<p className="text-center text-[13px] text-gray-500 leading-relaxed">
+						Enter code generated in your google authenticator app
+					</p>
+
+					{error && <p className="text-center text-xs text-destructive">{error}</p>}
+
+					<Form.Submit asChild>
+						<ActionButton disabled={isPending}>
+							{isPending ? (
+								<span className="flex items-center justify-center gap-2">
+									<Loader2 size={14} className="animate-spin" /> Verifying...
+								</span>
+							) : (
+								"Continue"
+							)}
+						</ActionButton>
+					</Form.Submit>
+				</Form.Root>
+			</div>
+		</div>
+	)
+}
+
 export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const setPin = useSetPin()
+	const generateTotp = useGenerateTotp()
+	const verifyTotp = useVerifyTotp()
 
 	const [currentMethod] = useState<TwoFAMethod>(() => otpDefaultToMethod(user?.otp_default))
 	const [method, setMethod] = useState<TwoFAMethod>(currentMethod)
-	const [step, setStep] = useState<"select" | "create-pin" | "confirm-pin">("select")
+	const [step, setStep] = useState<
+		"select" | "create-pin" | "confirm-pin" | "confirm-password" | "show-key" | "verify-totp"
+	>("select")
 	const [confirmOpen, setConfirmOpen] = useState(false)
+	const [successOpen, setSuccessOpen] = useState(false)
+
 	const [pin1, setPin1] = useState("")
 	const [pinError, setPinError] = useState<string | null>(null)
+
+	const [totpSecret, setTotpSecret] = useState<string | null>(null)
+	const [totpError, setTotpError] = useState<string | null>(null)
 
 	const isDirty = method !== currentMethod
 	const methodLabel = METHOD_LABELS[method]
@@ -351,6 +571,16 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 		} else if (step === "create-pin") {
 			setPin1("")
 			setStep("select")
+		} else if (step === "verify-totp") {
+			setTotpError(null)
+			setStep("show-key")
+		} else if (step === "show-key") {
+			setTotpSecret(null)
+			setStep("confirm-password")
+		} else if (step === "confirm-password") {
+			// setPassword("")
+			// setPasswordError(null)
+			setStep("select")
 		} else {
 			onBack()
 		}
@@ -360,6 +590,8 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 		setConfirmOpen(false)
 		if (method === "pin") {
 			setStep("create-pin")
+		} else if (method === "authenticator") {
+			setStep("confirm-password")
 		} else {
 			toast.info(`Switching to ${methodLabel} is coming soon`)
 		}
@@ -391,6 +623,77 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 				if (res.success) onBack()
 			},
 		})
+	}
+
+	const handlePasswordConfirmed = () => {
+		setStep("show-key")
+
+		if (user?.email) {
+			generateTotp.mutate(
+				{ email: user.email },
+				{
+					onSuccess: (res) => {
+						if (res.success) setTotpSecret(res.data.secret)
+					},
+				},
+			)
+		}
+	}
+
+	const handleTotpVerified = (code: string) => {
+		if (!user?.email) return
+		setTotpError(null)
+
+		verifyTotp.mutate(
+			{ email: user.email, otp: code },
+			{
+				onSuccess: (res) => {
+					if (!res.success) return
+					setSuccessOpen(true)
+				},
+				onError: (err) => setTotpError(extractFirstError(err, "Invalid code. Please try again.")),
+			},
+		)
+	}
+
+	if (step === "confirm-password") {
+		return <ConfirmPasswordStep onBack={handleBack} onSuccess={handlePasswordConfirmed} />
+	}
+
+	if (step === "show-key") {
+		return (
+			<ShowKeyStep
+				onBack={handleBack}
+				onContinue={() => setStep("verify-totp")}
+				secret={totpSecret}
+				isLoading={generateTotp.isPending}
+			/>
+		)
+	}
+
+	if (step === "verify-totp") {
+		return (
+			<>
+				<VerifyTotpStep
+					onBack={handleBack}
+					isPending={verifyTotp.isPending}
+					error={totpError}
+					onSuccess={(code) => handleTotpVerified(code)}
+				/>
+
+				<SuccessDialog
+					open={successOpen}
+					onOpenChange={setSuccessOpen}
+					title="Two-step verification enabled"
+					description="Google Authenticator has been linked to your account."
+					actionLabel="Done"
+					onAction={() => {
+						setSuccessOpen(false)
+						onBack()
+					}}
+				/>
+			</>
+		)
 	}
 
 	if (step === "create-pin" || step === "confirm-pin") {

@@ -5,15 +5,11 @@ export function capitalize(text: string): string {
 }
 
 export function formatMessage(text: string): string {
-  const cleaned = text
-    .replace(/\.+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+	const cleaned = text.replace(/\.+/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
 
-  if (!cleaned) return "";
+	if (!cleaned) return ""
 
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+	return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
 }
 
 interface ApiErrorData {
@@ -40,4 +36,14 @@ export function extractOtpMessage(error: unknown): string {
 	const msg = extractMessage(error)
 	if (msg.toLowerCase() === "validation error") return "Invalid code. Please try again."
 	return msg
+}
+
+export function extractFirstError(error: unknown, fallback: string): string {
+	const err = error as AxiosError<{ message?: string; error?: Record<string, string[]> }>
+	const fieldErrors = err.response?.data?.error
+	if (fieldErrors) {
+		const first = Object.values(fieldErrors).flat()[0]
+		if (first) return String(first)
+	}
+	return extractMessage(error, fallback)
 }

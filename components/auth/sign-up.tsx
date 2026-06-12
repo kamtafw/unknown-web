@@ -381,7 +381,7 @@ export function SignUp({
 						</p>
 
 						<p className="text-sm text-gray-500 text-center leading-relaxed mt-3 sm:mt-5">
-							By signing in, you agree to our{" "}
+							By signing up, you agree to our{" "}
 							<button
 								type="button"
 								onClick={onTerms}
