@@ -385,4 +385,16 @@ export type UpdateLocationResponse = ApiResponse<{ country: string; state: strin
 export type AddExternalLinkResponse = ApiResponse<ExternalLink>
 export type UpdateExternalLinkResponse = ApiResponse<ExternalLink>
 
+export interface ConfirmTwoFaUser {
+	id: string
+	email: string
+	first_name: string | null
+	last_name: string | null
+	phone_number: string
+	profile_photo: string | null
+}
+
 export type SetPinResponse = ApiResponse<Record<string, never>>
+export type ConfirmPasswordResponse = ApiResponse<Record<string, never>>
+export type GenerateTotpResponse = ApiResponse<{ secret: string; otp_auth_url: string }>
+export type VerifyTotpResponse = ApiResponse<Record<string, never>>
