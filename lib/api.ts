@@ -7,6 +7,7 @@ import {
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
+	ConfirmPasswordResponse,
 	CreatePostPayload,
 	CreatePostResponse,
 	FeedResponse,
@@ -14,6 +15,7 @@ import {
 	FollowingsResponse,
 	FriendSuggestionsResponse,
 	FullUser,
+	GenerateTotpResponse,
 	InterestsPayload,
 	InterestsResponse,
 	LikeResponse,
@@ -42,6 +44,7 @@ import {
 	UserListResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
+	VerifyTotpResponse,
 } from "@/types/api"
 import { apiClient } from "./axios"
 
@@ -73,6 +76,12 @@ export const authApi = {
 	resetPassword: (payload: ResetPasswordPayload) =>
 		apiClient.post<ResetPasswordResponse>("/api/auth/reset-password", payload).then((r) => r.data),
 
+	generateTotp: (payload: { email: string }) =>
+		apiClient.post<GenerateTotpResponse>("/api/auth/generate-totp", payload).then((r) => r.data),
+
+	verifyTotp: (payload: { email: string; otp: string }) =>
+		apiClient.post<VerifyTotpResponse>("/api/auth/verify-totp", payload).then((r) => r.data),
+
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
 
@@ -87,6 +96,11 @@ export const userApi = {
 	completeProfile: (payload: CompleteProfilePayload) =>
 		apiClient
 			.post<CompleteProfileResponse>("/api/users/complete-profile", payload)
+			.then((r) => r.data),
+
+	confirmPassword: (payload: { password: string }) =>
+		apiClient
+			.post<ConfirmPasswordResponse>("/api/users/confirm-password", payload)
 			.then((r) => r.data),
 
 	updateProfilePhoto: async (file: File) => {
