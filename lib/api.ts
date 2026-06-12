@@ -26,6 +26,7 @@ import {
 	RepostResponse,
 	ResetPasswordPayload,
 	ResetPasswordResponse,
+	SetPinResponse,
 	SignupPayload,
 	UnknownResponse,
 	UpdateBioResponse,
@@ -170,6 +171,9 @@ export const userApi = {
 
 	unfollowUser: (payload: { followed_user: number }) =>
 		apiClient.post<UnknownResponse>("/api/users/unfollow", payload).then((r) => r.data),
+
+	setPin: (payload: { pin: string }) =>
+		apiClient.post<SetPinResponse>("/api/users/set-pin", payload).then((r) => r.data),
 }
 
 export const socialApi = {

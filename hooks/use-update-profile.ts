@@ -10,6 +10,7 @@ export const updateProfileKeys = {
 	name: ["update-profile", "name"],
 	username: ["update-profile", "username"],
 	bio: ["update-profile", "bio"],
+	location: ["update-profile", "location"],
 }
 
 export function useUpdatePhoto() {
@@ -333,6 +334,7 @@ export function useUpdateLocation() {
 	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
+		mutationKey: updateProfileKeys.location,
 		mutationFn: (payload: { country: string; state: string }) => userApi.updateLocation(payload),
 
 		onMutate: async (payload) => {

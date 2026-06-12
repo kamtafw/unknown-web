@@ -28,7 +28,6 @@ import {
 	Layers,
 	Link2,
 	Loader2,
-	Lock,
 	MapPin,
 	Monitor,
 	MoreHorizontal,
@@ -41,7 +40,15 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
+import type { ComponentType } from "react"
 import { ReactNode, useRef, useState } from "react"
+import {
+	ChangePhonePanel,
+	DeleteAccountPanel,
+	ReportProblemPanel,
+	SecurityNotificationsPanel,
+	TwoStepVerificationPanel,
+} from "./account-setting"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -151,12 +158,12 @@ const SECTIONS: Section[] = [
 				description: "Update the phone number linked to your account",
 				icon: <ChangePhone size={18} />,
 			},
-			{
-				id: "change-password",
-				label: "Change your password",
-				description: "Change your password at any time",
-				icon: <Lock size={18} />,
-			},
+			// {
+			// 	id: "change-password",
+			// 	label: "Change your password",
+			// 	description: "Change your password at any time",
+			// 	icon: <Lock size={18} />,
+			// },
 			{
 				id: "add-account",
 				label: "Add account",
@@ -178,8 +185,8 @@ const SECTIONS: Section[] = [
 			},
 			{
 				id: "deactivate",
-				label: "Deactivate your account",
-				description: "Find out how to deactivate your account",
+				label: "Delete your account",
+				description: "Find out how to delete your account",
 				icon: <UserX size={18} />,
 				destructive: true,
 			},
@@ -327,18 +334,21 @@ const SECTIONS: Section[] = [
 	},
 ]
 
+const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
+	"security-notifications": SecurityNotificationsPanel,
+	"two-step-verification": TwoStepVerificationPanel,
+	"report-problem": ReportProblemPanel,
+	"change-phone": ChangePhonePanel,
+	deactivate: DeleteAccountPanel,
+}
+
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "security-notifications", title: "Security notifications" },
-	{ id: "two-step-verification", title: "Two-step verification" },
-	{ id: "report-problem", title: "Report a problem" },
-	{ id: "change-phone", title: "Change phone number" },
 	{ id: "change-password", title: "Change your password" },
 	{ id: "add-account", title: "Add account" },
 	{ id: "time-zone", title: "Time zone" },
 	{ id: "logout", title: "Log out" },
-	{ id: "deactivate", title: "Deactivate your account" },
 	{ id: "last-seen", title: "Last seen & online" },
 	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
@@ -352,7 +362,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "app-language", title: "App language" },
 	{ id: "report", title: "Report a problem" },
 	{ id: "security", title: "Security advisories" },
-	// edit profile actions
 	{ id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
@@ -417,49 +426,49 @@ function SettingsDialog({
 	)
 }
 
-function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-	return (
-		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
-			<div className="px-6 py-5">
-				{/* Warning banner */}
-				<div className="flex items-start gap-3 p-3.5 bg-red-50 rounded-xl mb-5 border border-red-100">
-					<AlertCircle size={15} className="text-destructive shrink-0 mt-px" />
-					<p className="text-[12.5px] text-destructive leading-relaxed">
-						Deactivating your account is permanent and cannot be undone. All your content and data
-						will be permanently removed.
-					</p>
-				</div>
+// function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+// 	return (
+// 		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
+// 			<div className="px-6 py-5">
+// 				{/* Warning banner */}
+// 				<div className="flex items-start gap-3 p-3.5 bg-red-50 rounded-xl mb-5 border border-red-100">
+// 					<AlertCircle size={15} className="text-destructive shrink-0 mt-px" />
+// 					<p className="text-[12.5px] text-destructive leading-relaxed">
+// 						Deactivating your account is permanent and cannot be undone. All your content and data
+// 						will be permanently removed.
+// 					</p>
+// 				</div>
 
-				{/* Bullet points */}
-				<div className="space-y-2.5 mb-6">
-					{[
-						"Your profile, posts, and media will be permanently deleted",
-						"Your followers and following list will be removed",
-						"You will lose access to all messages and bookmarks",
-					].map((point) => (
-						<div key={point} className="flex items-start gap-2.5">
-							<div className="w-1 h-1 rounded-full bg-gray-400 mt-1.75 shrink-0" />
-							<p className="text-[12.5px] text-gray-600 leading-relaxed">{point}</p>
-						</div>
-					))}
-				</div>
+// 				{/* Bullet points */}
+// 				<div className="space-y-2.5 mb-6">
+// 					{[
+// 						"Your profile, posts, and media will be permanently deleted",
+// 						"Your followers and following list will be removed",
+// 						"You will lose access to all messages and bookmarks",
+// 					].map((point) => (
+// 						<div key={point} className="flex items-start gap-2.5">
+// 							<div className="w-1 h-1 rounded-full bg-gray-400 mt-1.75 shrink-0" />
+// 							<p className="text-[12.5px] text-gray-600 leading-relaxed">{point}</p>
+// 						</div>
+// 					))}
+// 				</div>
 
-				{/* Actions */}
-				<div className="flex gap-2.5">
-					<button
-						onClick={onClose}
-						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-					>
-						Keep my account
-					</button>
-					<button className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors">
-						Deactivate
-					</button>
-				</div>
-			</div>
-		</SettingsDialog>
-	)
-}
+// 				{/* Actions */}
+// 				<div className="flex gap-2.5">
+// 					<button
+// 						onClick={onClose}
+// 						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+// 					>
+// 						Keep my account
+// 					</button>
+// 					<button className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors">
+// 						Deactivate
+// 					</button>
+// 				</div>
+// 			</div>
+// 		</SettingsDialog>
+// 	)
+// }
 
 function ComingSoonDialog({
 	open,
@@ -537,8 +546,48 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 	)
 }
 
+function ExternalLinksDialog({
+	open,
+	onClose,
+	links,
+}: {
+	open: boolean
+	onClose: () => void
+	links: ExternalLink[]
+}) {
+	return (
+		<SettingsDialog open={open} onClose={onClose} title="Links">
+			<div className="px-6 py-2">
+				{links.map((link, i) => (
+					<a
+						key={link.id}
+						href={link.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={cn(
+							"flex items-center gap-3 py-3.5 hover:bg-gray-50/60 transition-colors -mx-6 px-6",
+							i < links.length - 1 && "border-b border-gray-50",
+						)}
+					>
+						<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+							<Link size={14} color="#6A88D1" />
+						</div>
+						<div className="flex-1 min-w-0">
+							<p className="text-[13px] font-semibold text-gray-900 truncate">
+								{link.label || "Link"}
+							</p>
+							<p className="text-[12px] text-gray-400 truncate">{link.url}</p>
+						</div>
+					</a>
+				))}
+			</div>
+		</SettingsDialog>
+	)
+}
+
 function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
+	const [linksDialogOpen, setLinksDialogOpen] = useState(false)
 	if (!user) return null
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -602,19 +651,24 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 
 				{/* External links */}
 				{links.length > 0 && (
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
-						{links.map((link) => (
-							<a
-								key={link.id}
-								href={link.url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex items-center gap-1 text-[12.5px] text-primary font-medium hover:underline"
+					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px]">
+						<Link size={14} />
+						<a
+							href={links[0].url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-gray-700 font-medium truncate min-w-0 hover:underline"
+						>
+							{links[0].label || links[0].url}
+						</a>
+						{links.length > 1 && (
+							<button
+								onClick={() => setLinksDialogOpen(true)}
+								className="text-primary font-medium hover:underline shrink-0 whitespace-nowrap"
 							>
-								<Link size={12} />
-								{link.label || link.url}
-							</a>
-						))}
+								and {links.length - 1} more
+							</button>
+						)}
 					</div>
 				)}
 
@@ -646,6 +700,12 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					)}
 				</div>
 			</div>
+
+			<ExternalLinksDialog
+				open={linksDialogOpen}
+				onClose={() => setLinksDialogOpen(false)}
+				links={links}
+			/>
 		</div>
 	)
 }
@@ -741,6 +801,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
 	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
+	const isUpdatingLocation = useIsMutating({ mutationKey: updateProfileKeys.location }) > 0
 
 	if (!user) return null
 
@@ -907,6 +968,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					label="Locations"
 					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
 					onClick={() => onOpenDialog("edit-location")}
+					isPending={isUpdatingLocation}
 				/>
 			</div>
 
@@ -1096,19 +1158,24 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 function SettingsListView({
 	activeSection,
 	mobileView,
+	activePanel,
 	onSectionSelect,
 	onProfileClick,
 	onOpenDialog,
+	onActivePanel,
 	onMobileBack,
 }: {
 	activeSection: SectionId
 	mobileView: "nav" | "panel"
+	activePanel: string | null
 	onSectionSelect: (id: SectionId) => void
 	onProfileClick: () => void
 	onOpenDialog: (id: string) => void
+	onActivePanel: (id: string | null) => void
 	onMobileBack: () => void
 }) {
 	const currentSection = SECTIONS.find((s) => s.id === activeSection)!
+	const ActivePanelComponent = activePanel ? PANEL_REGISTRY[activePanel] : null
 
 	return (
 		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
@@ -1171,65 +1238,77 @@ function SettingsListView({
 					mobileView === "nav" ? "hidden lg:flex" : "flex",
 				)}
 			>
-				{/* mobile back row */}
-				<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
-					<button
-						onClick={onMobileBack}
-						className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
-					>
-						<ArrowLeft size={15} className="text-gray-600" />
-					</button>
-					<span className="text-[14px] font-semibold text-gray-900">{currentSection.label}</span>
-				</div>
-
-				<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-gray-100 shrink-0">
-					<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
-					<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
-						{currentSection.description}
-					</p>
-				</div>
-
-				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-2">
-					{currentSection.items.map((item, i) => (
-						<button
-							key={item.id}
-							onClick={() => {
-								if (item.href) {
-									window.open(item.href, "_blank")
-									return
-								}
-								onOpenDialog(item.id)
-							}}
-							className={cn(
-								"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-gray-50/80 transition-colors text-left",
-								i < currentSection.items.length - 1 && "border-b border-gray-50",
-							)}
-						>
-							<span
-								className={cn(
-									"shrink-0 mt-0.5",
-									item.destructive ? "text-destructive" : "text-gray-500",
-								)}
+				{ActivePanelComponent ? (
+					<ActivePanelComponent onBack={() => onActivePanel(null)} />
+				) : (
+					<>
+						{/* mobile back row */}
+						<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
+							<button
+								onClick={onMobileBack}
+								className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
 							>
-								{item.icon}
+								<ArrowLeft size={15} className="text-gray-600" />
+							</button>
+							<span className="text-[14px] font-semibold text-gray-900">
+								{currentSection.label}
 							</span>
-							<div className="flex-1 min-w-0">
-								<p
+						</div>
+
+						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-gray-100 shrink-0">
+							<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
+							<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+								{currentSection.description}
+							</p>
+						</div>
+
+						<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-2">
+							{currentSection.items.map((item, i) => (
+								<button
+									key={item.id}
+									onClick={() => {
+										if (item.href) {
+											window.open(item.href, "_blank")
+											return
+										}
+										if (PANEL_REGISTRY[item.id]) {
+											onActivePanel(item.id)
+										} else {
+											onOpenDialog(item.id)
+										}
+									}}
 									className={cn(
-										"text-[13.5px] font-semibold leading-tight",
-										item.destructive ? "text-destructive" : "text-gray-900",
+										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-gray-50/80 transition-colors text-left",
+										i < currentSection.items.length - 1 && "border-b border-gray-50",
 									)}
 								>
-									{item.label}
-								</p>
-								<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
-									{item.description}
-								</p>
-							</div>
-							<ChevronRight size={14} className="text-gray-300 shrink-0 mt-0.5" />
-						</button>
-					))}
-				</div>
+									<span
+										className={cn(
+											"shrink-0 mt-0.5",
+											item.destructive ? "text-destructive" : "text-gray-500",
+										)}
+									>
+										{item.icon}
+									</span>
+									<div className="flex-1 min-w-0">
+										<p
+											className={cn(
+												"text-[13.5px] font-semibold leading-tight",
+												item.destructive ? "text-destructive" : "text-gray-900",
+											)}
+										>
+											{item.label}
+										</p>
+										<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+											{item.description}
+										</p>
+									</div>
+									<ChevronRight size={14} className="text-gray-300 shrink-0 mt-0.5" />
+								</button>
+							))}
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	)
@@ -1239,6 +1318,7 @@ export function Settings() {
 	const [view, setView] = useState<View>("settings")
 	const [activeSection, setActiveSection] = useState<SectionId>("verification")
 	const [mobileView, setMobileView] = useState<"nav" | "panel">("nav")
+	const [activePanel, setActivePanel] = useState<string | null>(null)
 	const [openDialog, setOpenDialog] = useState<string | null>(null)
 
 	const closeDialog = () => setOpenDialog(null)
@@ -1259,16 +1339,24 @@ export function Settings() {
 			<SettingsListView
 				activeSection={activeSection}
 				mobileView={mobileView}
+				activePanel={activePanel}
 				onSectionSelect={(id) => {
 					setActiveSection(id)
+					setActivePanel(null)
 					setMobileView("panel")
 				}}
 				onProfileClick={() => setView("profile")}
 				onOpenDialog={setOpenDialog}
-				onMobileBack={() => setMobileView("nav")}
+				onActivePanel={setActivePanel}
+				onMobileBack={() => {
+					if (activePanel) {
+						setActivePanel(null)
+					} else {
+						setMobileView("nav")
+					}
+				}}
 			/>
 			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
-			<DeactivateDialog open={openDialog === "deactivate"} onClose={closeDialog} />
 			{COMING_SOON.map(({ id, title }) => (
 				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 			))}
