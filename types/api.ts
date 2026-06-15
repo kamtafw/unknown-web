@@ -394,6 +394,7 @@ export interface ConfirmTwoFaUser {
 	profile_photo: string | null
 }
 
+export type ChangeOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>
 export type SetPinResponse = ApiResponse<Record<string, never>>
 export type ConfirmPasswordResponse = ApiResponse<Record<string, never>>
 export type GenerateTotpResponse = ApiResponse<{ secret: string; otp_auth_url: string }>

@@ -4,6 +4,7 @@ import {
 	AddExternalLinkResponse,
 	ApiResponse,
 	BookmarkResponse,
+	ChangeOtpDefaultResponse,
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
@@ -22,6 +23,7 @@ import {
 	LoginPayload,
 	LoginResponseData,
 	NullResponse,
+	OtpDefault,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
@@ -188,6 +190,11 @@ export const userApi = {
 
 	setPin: (payload: { pin: string }) =>
 		apiClient.post<SetPinResponse>("/api/users/set-pin", payload).then((r) => r.data),
+
+	changeOtpDefault: (payload: { otp_default: OtpDefault }) =>
+		apiClient
+			.post<ChangeOtpDefaultResponse>("/api/users/change-otp-default", payload)
+			.then((r) => r.data),
 }
 
 export const socialApi = {
