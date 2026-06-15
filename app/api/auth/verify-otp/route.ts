@@ -1,5 +1,5 @@
-import { DJANGO_API_URL } from "@/lib/server-config"
 import { setAuthCookies } from "@/lib/cookies"
+import { DJANGO_API_URL } from "@/lib/server-config"
 import { ApiResponse, FullUser, VerifyOtpResponseData } from "@/types/api"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 	})
 
 	const verifyJson: ApiResponse<
-		VerifyOtpResponseData & { access_token: string; refresh_token: string }
+		VerifyOtpResponseData & { access_token?: string; refresh_token?: string }
 	> = await verifyRes.json()
 
 	if (!verifyRes.ok || !verifyJson.success) {
@@ -25,36 +25,40 @@ export async function POST(req: NextRequest) {
 
 	const { access_token, refresh_token, otp_token } = verifyJson.data
 
-	await setAuthCookies(access_token, refresh_token)
+	// only set cookies when tokens are actually returned (need_tokens: false skips this)
+	if (access_token && refresh_token) {
+		await setAuthCookies(access_token, refresh_token)
 
-	const meRes = await fetch(`${DJANGO_API_URL}/users/me`, {
-		headers: {
-			Authorization: `Bearer ${access_token}`,
-			"Content-Type": "application/json",
-		},
-	})
+		const meRes = await fetch(`${DJANGO_API_URL}/users/me`, {
+			headers: {
+				Authorization: `Bearer ${access_token}`,
+				"Content-Type": "application/json",
+			},
+		})
 
-	const meJson: ApiResponse<FullUser> = await meRes.json()
+		const meJson: ApiResponse<FullUser> = await meRes.json()
 
-	if (!meRes.ok || !meJson.success) {
-		// token set but profile fetch failed — still a success for auth
-		// client can retry getMe separately
+		if (!meRes.ok || !meJson.success) {
+			return NextResponse.json(
+				{ success: true, message: verifyJson.message, data: { user: null, otp_token } },
+				{ status: 200 },
+			)
+		}
+
+		// return full user + otp_token
 		return NextResponse.json(
-			{ success: true, message: verifyJson.message, data: { user: null, otp_token } },
+			{
+				success: true,
+				message: verifyJson.message,
+				data: { user: meJson.data, otp_token },
+			},
 			{ status: 200 },
 		)
 	}
 
-	// return full user + otp_token
+	// no tokens (e.g. account-linking OTP flow)
 	return NextResponse.json(
-		{
-			success: true,
-			message: verifyJson.message,
-			data: {
-				user: meJson.data,
-				otp_token,
-			},
-		},
+		{ success: true, message: verifyJson.message, data: verifyJson.data },
 		{ status: 200 },
 	)
 }

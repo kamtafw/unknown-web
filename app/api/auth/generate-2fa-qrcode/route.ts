@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 	return new NextResponse(buffer, {
 		status: 200,
 		headers: {
-			"Content-Type": upstream.headers.get("content-type") ?? "image/png",
+			"Content-Type": upstream.headers.get("content-type") ?? "image/svg+xml",
 			"Cache-Control": "no-store",
 		},
 	})
