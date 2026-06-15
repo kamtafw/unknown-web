@@ -2,11 +2,14 @@ import {
 	AddCommentPayload,
 	AddCommentResponse,
 	AddExternalLinkResponse,
+	AddLinkedAccountResponse,
 	ApiResponse,
 	BookmarkResponse,
+	ChangeOtpDefaultResponse,
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
+	ConfirmLinkedAccountResponse,
 	ConfirmPasswordResponse,
 	CreatePostPayload,
 	CreatePostResponse,
@@ -19,9 +22,11 @@ import {
 	InterestsPayload,
 	InterestsResponse,
 	LikeResponse,
+	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
 	NullResponse,
+	OtpDefault,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
@@ -30,6 +35,7 @@ import {
 	ResetPasswordResponse,
 	SetPinResponse,
 	SignupPayload,
+	SwitchAccountResponse,
 	UnknownResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -188,6 +194,28 @@ export const userApi = {
 
 	setPin: (payload: { pin: string }) =>
 		apiClient.post<SetPinResponse>("/api/users/set-pin", payload).then((r) => r.data),
+
+	changeOtpDefault: (payload: { otp_default: OtpDefault }) =>
+		apiClient
+			.post<ChangeOtpDefaultResponse>("/api/users/change-otp-default", payload)
+			.then((r) => r.data),
+
+	getLinkedAccounts: () =>
+		apiClient.get<LinkedAccountsResponse>("/api/users/accounts").then((r) => r.data),
+
+	addLinkedAccount: (payload: { identifier: string; password: string }) =>
+		apiClient.post<AddLinkedAccountResponse>("/api/users/accounts", payload).then((r) => r.data),
+
+	confirmLinkedAccount: (id: number, payload: { otp_token: string }) =>
+		apiClient
+			.patch<ConfirmLinkedAccountResponse>(`/api/users/accounts/${id}`, payload)
+			.then((r) => r.data),
+
+	removeLinkedAccount: (id: number) =>
+		apiClient.delete<NullResponse>(`/api/users/accounts/${id}`).then((r) => r.data),
+
+	switchAccount: (payload: { linked_user_id: string }) =>
+		apiClient.post<SwitchAccountResponse>("/api/users/switch-account", payload).then((r) => r.data),
 }
 
 export const socialApi = {

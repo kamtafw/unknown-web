@@ -394,7 +394,45 @@ export interface ConfirmTwoFaUser {
 	profile_photo: string | null
 }
 
+export type ChangeOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>
 export type SetPinResponse = ApiResponse<Record<string, never>>
 export type ConfirmPasswordResponse = ApiResponse<Record<string, never>>
 export type GenerateTotpResponse = ApiResponse<{ secret: string; otp_auth_url: string }>
 export type VerifyTotpResponse = ApiResponse<Record<string, never>>
+
+export interface LinkedAccount {
+	id: number
+	first_name: string
+	last_name: string
+	username: string
+	email: string
+	phone_number: string
+	profile_photo: string
+	otp_default: OtpDefault
+	is_primary: boolean
+	created_at: string
+}
+
+export type LinkedAccountsResponse = ApiResponse<{ accounts: LinkedAccount[] }>
+
+export type AddLinkedAccountResponse = ApiResponse<{
+	id: number
+	user: {
+		pkid: number
+		id: string
+		email: string
+		username: string
+		first_name: string
+		last_name: string
+		phone_number: string
+		otp_default: OtpDefault
+		profile_photo: string
+		cover_photo: string
+	}
+	is_verified: boolean
+	created_at: string
+}>
+
+export type ConfirmLinkedAccountResponse = ApiResponse<Record<string, never>>
+
+export type SwitchAccountResponse = ApiResponse<{user:FullUser}>

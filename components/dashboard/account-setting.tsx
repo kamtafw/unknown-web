@@ -1,6 +1,12 @@
 "use client"
 
-import { useConfirmPassword, useGenerateTotp, useSetPin, useVerifyTotp } from "@/hooks/use-2fa"
+import {
+	useChangeOtpDefault,
+	useConfirmPassword,
+	useGenerateTotp,
+	useSetPin,
+	useVerifyTotp,
+} from "@/hooks/use-2fa"
 import { extractFirstError } from "@/lib/api-error"
 import { otpSchema } from "@/lib/schemas"
 import { toast } from "@/lib/toast"
@@ -11,11 +17,18 @@ import * as Dialog from "@radix-ui/react-dialog"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
 import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Phone } from "lucide-react"
+import Image from "next/image"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent, useState } from "react"
 import { SuccessDialog } from "../auth/success-dialog"
 import type { TwoFAMethod } from "../auth/two-factor-verification"
-import { DeleteAccount, LockShield, SimCards, TwoFALock } from "./account-setting-icons"
+import {
+	DeleteAccount,
+	GoogleAuthenticator,
+	LockShield,
+	SimCards,
+	TwoFALock,
+} from "./account-setting-icons"
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
@@ -398,11 +411,13 @@ function ShowKeyStep({
 	onBack,
 	onContinue,
 	secret,
+	email,
 	isLoading,
 }: {
 	onBack: () => void
 	onContinue: () => void
 	secret: string | null
+	email: string
 	isLoading: boolean
 }) {
 	const [copied, setCopied] = useState(false)
@@ -425,7 +440,7 @@ function ShowKeyStep({
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				<div className="flex flex-col items-center px-6 pt-8 gap-5">
 					<div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-						<span className="text-3xl font-bold text-gray-400 select-none">G</span>
+						<GoogleAuthenticator width={80} height={80} />
 					</div>
 
 					<div className="text-center">
@@ -453,6 +468,22 @@ function ShowKeyStep({
 							</>
 						)}
 					</div>
+
+					{!isLoading && secret && (
+						<div className="flex flex-col items-center gap-2 pt-1">
+							<p className="text-[12.5px] text-gray-500">Or scan with your camera</p>
+							<div className="w-40 h-40 rounded-xl border border-gray-200 bg-white p-2 overflow-hidden">
+								<Image
+									src={`/api/auth/generate-2fa-qrcode?email=${encodeURIComponent(email)}`}
+									alt="Scan to set up Google Authenticator"
+									width={150}
+									height={150}
+									priority
+									unoptimized
+								/>
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -525,6 +556,7 @@ function VerifyTotpStep({
 
 export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 	const user = useAuthStore((s) => s.user)
+	const changeOtpDefault = useChangeOtpDefault()
 	const setPin = useSetPin()
 	const generateTotp = useGenerateTotp()
 	const verifyTotp = useVerifyTotp()
@@ -649,6 +681,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 			{
 				onSuccess: (res) => {
 					if (!res.success) return
+					changeOtpDefault.mutate({ otp_default: "2fa" })
 					setSuccessOpen(true)
 				},
 				onError: (err) => setTotpError(extractFirstError(err, "Invalid code. Please try again.")),
@@ -666,6 +699,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 				onBack={handleBack}
 				onContinue={() => setStep("verify-totp")}
 				secret={totpSecret}
+				email={user?.email ?? ""}
 				isLoading={generateTotp.isPending}
 			/>
 		)

@@ -49,6 +49,7 @@ import {
 	SecurityNotificationsPanel,
 	TwoStepVerificationPanel,
 } from "./account-setting"
+import { AddAccountPanel } from "./add-account-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -339,6 +340,7 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"two-step-verification": TwoStepVerificationPanel,
 	"report-problem": ReportProblemPanel,
 	"change-phone": ChangePhonePanel,
+	"add-account": AddAccountPanel,
 	deactivate: DeleteAccountPanel,
 }
 
@@ -346,7 +348,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
 	{ id: "change-password", title: "Change your password" },
-	{ id: "add-account", title: "Add account" },
 	{ id: "time-zone", title: "Time zone" },
 	{ id: "logout", title: "Log out" },
 	{ id: "last-seen", title: "Last seen & online" },
