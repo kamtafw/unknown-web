@@ -12,7 +12,7 @@ const CreateNewPasswordPage = () => {
 	const pendingAuth = useAuthStore((s) => s.pendingAuth)
 
 	useEffect(() => {
-		if (!pendingAuth?.reset_otp && !resetPassword.isSuccess) {
+		if (!pendingAuth?.reset_otp_token && !resetPassword.isSuccess) {
 			router.replace("/forgot-password")
 		}
 	}, [pendingAuth, resetPassword.isSuccess, router])
