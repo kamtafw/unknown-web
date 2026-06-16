@@ -156,9 +156,6 @@ export function useForgotPassword() {
 }
 
 export function useResetPassword() {
-	const router = useRouter()
-	const clearPendingAuth = useAuthStore((s) => s.clearPendingAuth)
-
 	return useMutation({
 		mutationFn: (payload: { new_password: string; confirm_password: string }) => {
 			const pendingAuth = useAuthStore.getState().pendingAuth
@@ -170,11 +167,6 @@ export function useResetPassword() {
 		},
 		onSuccess: (res) => {
 			if (!res.success) return
-
-			// TODO: add a success toast
-			clearPendingAuth()
-
-			router.push("/sign-in")
 		},
 		onError: (error) => {
 			const axiosErr = error as AxiosError<{ error?: Record<string, string[]> }>
