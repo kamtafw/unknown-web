@@ -10,15 +10,17 @@ import {
 import { authApi } from "@/lib/api"
 import { extractFieldErrors, extractMessage } from "@/lib/api-error"
 import { otpSchema } from "@/lib/schemas"
+import { resolveMediaUrl } from "@/lib/server-config"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { LinkedAccount, OtpDefault } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Unlink } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Loader2, Plus } from "lucide-react"
 import { Avatar, Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent, useState } from "react"
 import { ResendButton } from "../shared/resend-button"
+import { Unlink } from "./account-setting-icons"
 
 type Step = "list" | "add-login" | "add-otp"
 
@@ -102,19 +104,25 @@ function RemoveDialog({
 						Remove <span className="font-semibold text-gray-800">@{account.username}</span> from
 						your linked accounts. You can add it again later.
 					</Dialog.Description>
-					<div className="flex gap-2.5">
+					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+							<button className="flex-1 text-sm font-semibold text-gray-600 hover:opacity-50 transition-colors cursor-pointer">
 								Cancel
 							</button>
 						</Dialog.Close>
 						<button
 							onClick={onConfirm}
 							disabled={isPending}
-							className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+							className="flex-1 text-sm text-destructive font-semibold hover:opacity-80 disabled:opacity-50 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
 						>
-							{isPending && <Loader2 size={12} className="animate-spin" />}
-							Remove
+							{isPending ? (
+								<>
+									<Loader2 size={12} className="animate-spin" />
+									Removing...
+								</>
+							) : (
+								"Remove"
+							)}
 						</button>
 					</div>
 				</Dialog.Content>
@@ -162,7 +170,7 @@ function AccountsListView({
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				{isLoading ? (
 					<div className="flex flex-col gap-1 px-4 pt-4">
-						{[0, 1].map((i) => (
+						{[0, 1, 2].map((i) => (
 							<div key={i} className="flex items-center gap-3 px-2 py-3.5 animate-pulse">
 								<div className="w-11 h-11 rounded-full bg-gray-200 shrink-0" />
 								<div className="flex-1 space-y-1.5">
@@ -189,7 +197,7 @@ function AccountsListView({
 								>
 									<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden shrink-0">
 										<Avatar.Image
-											src={account.profile_photo}
+											src={resolveMediaUrl(account.profile_photo)}
 											alt={displayName}
 											className="w-full h-full object-cover"
 										/>
@@ -214,7 +222,7 @@ function AccountsListView({
 											title="Remove this account"
 											className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-destructive transition-colors shrink-0"
 										>
-											<Unlink size={16} />
+											<Unlink size={18} />
 										</button>
 									)}
 
