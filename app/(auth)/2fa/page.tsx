@@ -38,6 +38,7 @@ const TwoFAPage = () => {
 
 	const [email] = useState(() => pendingAuth?.email ?? "")
 	const [otp_default] = useState(() => pendingAuth?.otp_default ?? "otp")
+	const [pre_auth_token] = useState(() => pendingAuth?.pre_auth_token)
 	const [availableMethods] = useState<TwoFAMethod[]>(() => [
 		...(pendingAuth?.is_2fa_enabled ? (["authenticator"] as TwoFAMethod[]) : []),
 		"otp",
@@ -87,6 +88,7 @@ const TwoFAPage = () => {
 					type: methodToApiType(method),
 					need_tokens: true,
 					need_otp_token: true,
+					pre_auth_token: pre_auth_token ?? undefined,
 				})
 			}}
 			onResend={(method) => {

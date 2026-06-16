@@ -32,7 +32,7 @@ export function useLogin() {
 			}
 
 			const user = res.data.user
-			setPendingAuth(user)
+			setPendingAuth(user, res.data.pre_auth_token)
 
 			/**
 			 * routing rule:
@@ -94,13 +94,13 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 
 	return useMutation({
 		mutationFn: (payload: VerifyOtpPayload) => authApi.verifyOtp(payload),
-		onSuccess: async (res, vars) => {
+		onSuccess: async (res) => {
 			if (!res.success) return
 
 			if (flow === "reset") {
 				useAuthStore.setState((state) => ({
 					pendingAuth: state.pendingAuth
-						? { ...state.pendingAuth, reset_otp: vars.otp }
+						? { ...state.pendingAuth, reset_otp_token: res.data.otp_token }
 						: state.pendingAuth,
 				}))
 				toast.success("Code verified! Set your new password.")
@@ -164,7 +164,7 @@ export function useResetPassword() {
 			const pendingAuth = useAuthStore.getState().pendingAuth
 			return authApi.resetPassword({
 				email: pendingAuth!.email,
-				otp: pendingAuth!.reset_otp!,
+				otp_token: pendingAuth!.reset_otp_token!,
 				...payload,
 			})
 		},

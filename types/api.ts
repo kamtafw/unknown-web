@@ -38,6 +38,7 @@ export interface LoginUser {
 
 export interface LoginResponseData {
 	user: LoginUser
+	pre_auth_token: string
 }
 
 /** full user shape from `/users/me` */
@@ -112,11 +113,12 @@ export interface VerifyOtpPayload {
 	type?: "otp" | "pin" | "2fa"
 	need_tokens?: boolean
 	need_otp_token?: boolean
+	pre_auth_token?: string
 }
 
 export interface ResetPasswordPayload {
 	email: string
-	otp: string
+	otp_token: string
 	new_password: string
 	confirm_password: string
 }
