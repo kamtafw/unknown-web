@@ -1,6 +1,6 @@
 "use client"
 
-import { authApi,userApi } from "@/lib/api"
+import { authApi, userApi } from "@/lib/api"
 import { extractMessage } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
@@ -8,9 +8,10 @@ import type {
 	FullUser,
 	LoginPayload,
 	SignupPayload,
-	VerifyOtpPayload
+	SwitchOtpDefaultPayload,
+	VerifyOtpPayload,
 } from "@/types/api"
-import { useMutation,useQuery,useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AxiosError } from "axios"
 import { useRouter } from "next/navigation"
 
@@ -125,6 +126,12 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 		onError: (error) => {
 			toast.error(extractMessage(error, "Invalid or expired code. Please try again."))
 		},
+	})
+}
+
+export function useSwitchOtpDefault() {
+	return useMutation({
+		mutationFn: (payload: SwitchOtpDefaultPayload) => authApi.switchOtpDefault(payload),
 	})
 }
 
