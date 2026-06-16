@@ -435,4 +435,11 @@ export type AddLinkedAccountResponse = ApiResponse<{
 
 export type ConfirmLinkedAccountResponse = ApiResponse<Record<string, never>>
 
-export type SwitchAccountResponse = ApiResponse<{user:FullUser}>
+export type SwitchAccountResponse = ApiResponse<{ user: FullUser }>
+
+export interface SwitchOtpDefaultPayload {
+	identifier: string
+	otp_default: OtpDefault
+}
+
+export type SwitchOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>

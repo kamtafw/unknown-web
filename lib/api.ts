@@ -36,6 +36,8 @@ import {
 	SetPinResponse,
 	SignupPayload,
 	SwitchAccountResponse,
+	SwitchOtpDefaultPayload,
+	SwitchOtpDefaultResponse,
 	UnknownResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -87,6 +89,11 @@ export const authApi = {
 
 	verifyTotp: (payload: { email: string; otp: string }) =>
 		apiClient.post<VerifyTotpResponse>("/api/auth/verify-totp", payload).then((r) => r.data),
+
+	switchOtpDefault: (payload: SwitchOtpDefaultPayload) =>
+		apiClient
+			.post<SwitchOtpDefaultResponse>("/api/auth/switch-otp-default", payload)
+			.then((r) => r.data),
 
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
