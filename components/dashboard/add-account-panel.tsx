@@ -18,7 +18,7 @@ import { LinkedAccount, OtpDefault } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus } from "lucide-react"
 import { Avatar, Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { FormEvent, useState } from "react"
+import { FormEvent, useEffect, useState } from "react"
 import { ResendButton } from "../shared/resend-button"
 import { Unlink } from "./account-setting-icons"
 
@@ -153,14 +153,18 @@ function AccountsListView({
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 	const [removeTarget, setRemoveTarget] = useState<LinkedAccount | null>(null)
 
-	const activeId = selectedId ?? currentAccount?.id ?? null
+	useEffect(() => {
+		if (currentAccount && selectedId === null) {
+			setSelectedId(currentAccount.id)
+		}
+	}, [currentAccount?.id])
+
+	const isSameAccount = selectedId === (currentAccount?.id ?? null)
+	const canSwitch = !isSameAccount && selectedId !== null && !switchAccount.isPending
 
 	const handleContinue = () => {
-		if (!activeId || activeId === currentAccount?.id) {
-			onBack()
-			return
-		}
-		switchAccount.mutate(String(activeId))
+		if (!canSwitch) return
+		switchAccount.mutate(String(selectedId))
 	}
 
 	return (
@@ -184,77 +188,107 @@ function AccountsListView({
 				) : (
 					<div className="py-2">
 						{accounts.map((account) => {
-							const isActive = activeId === account.id
+							const isSelected = selectedId === account.id
+							const isCurrent = account.id === currentAccount?.id
 							const displayName =
 								[account.first_name, account.last_name].filter(Boolean).join(" ") ||
 								account.username
 
 							return (
-								<div
+								<button
 									key={account.id}
 									onClick={() => setSelectedId(account.id)}
-									className="w-full flex items-center gap-3 px-6 py-3.5 hover:bg-gray-50 transition-colors text-left"
+									className={cn(
+										"w-full flex items-center gap-3 px-6 py-3.5 transition-colors text-left",
+										isSelected && !isCurrent ? "bg-primary/5" : "hover:bg-gray-50",
+									)}
 								>
-									<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden shrink-0">
-										<Avatar.Image
-											src={resolveMediaUrl(account.profile_photo)}
-											alt={displayName}
-											className="w-full h-full object-cover"
-										/>
-										<Avatar.Fallback className="w-full h-full bg-primary/20 text-primary text-sm font-bold flex items-center justify-center">
-											{getInitials(account.first_name, account.last_name)}
-										</Avatar.Fallback>
-									</Avatar.Root>
+									<div className="relative flex shrink-0">
+										<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden">
+											<Avatar.Image
+												src={resolveMediaUrl(account.profile_photo)}
+												alt={displayName}
+												className="w-full h-full object-cover"
+											/>
+											<Avatar.Fallback className="w-full h-full bg-primary/20 text-primary text-sm font-bold flex items-center justify-center">
+												{getInitials(account.first_name, account.last_name)}
+											</Avatar.Fallback>
+										</Avatar.Root>
+									</div>
 
 									<div className="flex-1 min-w-0">
-										<p className="text-[13.5px] font-semibold text-gray-900 truncate leading-tight">
-											@{account.username}
+										<div className="flex items-center gap-2 min-w-0">
+											<p className="text-[13.5px] font-semibold text-gray-900 truncate leading-tight">
+												@{account.username}
+											</p>
+											{isCurrent && (
+												<span className="shrink-0 text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full leading-none">
+													Active
+												</span>
+											)}
+										</div>
+										<p className="text-xs text-gray-500 truncate mt-0.5">
+											{account.phone_number || account.email}
 										</p>
-										<p className="text-xs text-gray-500 truncate mt-0.5">{account.phone_number}</p>
 									</div>
 
-									{account.id !== currentAccount?.id && (
-										<button
-											onClick={(e) => {
-												e.stopPropagation()
-												setRemoveTarget(account)
-											}}
-											title="Remove this account"
-											className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-destructive transition-colors shrink-0"
+									<div className="flex items-center gap-2 shrink-0">
+										{!isCurrent && (
+											<span
+												role="button"
+												tabIndex={0}
+												onClick={(e) => {
+													e.stopPropagation()
+													setRemoveTarget(account)
+												}}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.stopPropagation()
+														setRemoveTarget(account)
+													}
+												}}
+												title="Unlink account"
+												className="p-1.5 rounded-full hover:bg-red-50 text-gray-300 hover:text-destructive transition-colors"
+											>
+												<Unlink size={16} />
+											</span>
+										)}
+
+										<div
+											className={cn(
+												"w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center transition-all",
+												isSelected ? "bg-green-500 border-green-500" : "border-gray-300",
+											)}
 										>
-											<Unlink size={18} />
-										</button>
-									)}
-
-									<div
-										className={cn(
-											"w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-											isActive ? "bg-green-500 border-green-500" : "border-gray-300",
-										)}
-									>
-										{isActive && (
-											<svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-												<path
-													fillRule="evenodd"
-													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-													clipRule="evenodd"
-												/>
-											</svg>
-										)}
+											{isSelected && (
+												<svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+													<path
+														fillRule="evenodd"
+														d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+														clipRule="evenodd"
+													/>
+												</svg>
+											)}
+										</div>
 									</div>
-								</div>
+								</button>
 							)
 						})}
 
-						{/* Add another account */}
+						<div className="mx-6 my-2 border-t border-gray-100" />
+
+						{/* add another account */}
 						<button
 							onClick={onAddAccount}
 							className="w-full flex items-center gap-3 px-6 py-3.5 hover:bg-gray-50 transition-colors text-left"
 						>
-							<div className="w-11 h-11 rounded-full border-[1.5px] border-primary flex items-center justify-center shrink-0">
+							<div className="w-11 h-11 rounded-full border-[1.5px] border-dashed border-primary flex items-center justify-center shrink-0">
 								<Plus size={18} className="text-primary" />
 							</div>
-							<span className="text-[13.5px] font-semibold text-primary">Add Another account</span>
+							<div>
+								<p className="text-[13.5px] font-semibold text-primary">Add another account</p>
+								<p className="text-xs text-gray-400 mt-0.5">Sign in with a different account</p>
+							</div>
 						</button>
 					</div>
 				)}
@@ -263,15 +297,17 @@ function AccountsListView({
 			<div className="shrink-0 px-6 py-4 border-t border-gray-50">
 				<button
 					onClick={handleContinue}
-					disabled={switchAccount.isPending}
-					className="w-full h-12 rounded-full bg-primary text-white text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+					disabled={!canSwitch}
+					className="w-full h-12 rounded-full bg-primary text-white text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 				>
 					{switchAccount.isPending ? (
 						<>
 							<Loader2 size={14} className="animate-spin" /> Switching...
 						</>
+					) : isSameAccount ? (
+						"Already on this account"
 					) : (
-						"Continue"
+						"Switch to this account"
 					)}
 				</button>
 			</div>
@@ -282,11 +318,15 @@ function AccountsListView({
 				account={removeTarget}
 				isPending={removeAccount.isPending}
 				onConfirm={() => {
-					if (removeTarget) {
-						removeAccount.mutate(removeTarget.id, {
-							onSuccess: () => setRemoveTarget(null),
-						})
-					}
+					if (!removeTarget) return
+					removeAccount.mutate(removeTarget.id, {
+						onSuccess: () => {
+							if (selectedId === removeTarget.id) {
+								setSelectedId(currentAccount?.id ?? null)
+							}
+							setRemoveTarget(null)
+						},
+					})
 				}}
 			/>
 		</div>

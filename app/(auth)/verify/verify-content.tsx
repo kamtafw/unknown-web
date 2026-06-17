@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
-type Flow = "signup" | "signin" | "reset"
+type Flow = "signup" | "signin" | "reset" | "change"
 
 export function VerifyContent({ flow }: { flow: Flow }) {
 	const router = useRouter()

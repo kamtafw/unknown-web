@@ -87,7 +87,7 @@ export function useSignup() {
 	})
 }
 
-export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
+export function useVerifyOtp(flow: "signup" | "signin" | "reset" | "change") {
 	const router = useRouter()
 	const queryClient = useQueryClient()
 	const setUser = useAuthStore((s) => s.setUser)
@@ -97,14 +97,14 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 		onSuccess: async (res) => {
 			if (!res.success) return
 
-			if (flow === "reset") {
+			if (flow === "reset" || flow === "change") {
 				useAuthStore.setState((state) => ({
 					pendingAuth: state.pendingAuth
 						? { ...state.pendingAuth, reset_otp_token: res.data.otp_token }
 						: state.pendingAuth,
 				}))
 				toast.success("Code verified! Set your new password.")
-				router.push("/create-new-password")
+				if (flow === "reset") router.push("/create-new-password")
 				return
 			}
 
@@ -159,6 +159,7 @@ export function useResetPassword() {
 	return useMutation({
 		mutationFn: (payload: { new_password: string; confirm_password: string }) => {
 			const pendingAuth = useAuthStore.getState().pendingAuth
+			console.log("otp_token:", pendingAuth!.reset_otp_token)
 			return authApi.resetPassword({
 				email: pendingAuth!.email,
 				otp_token: pendingAuth!.reset_otp_token!,

@@ -168,7 +168,7 @@ export const userApi = {
 
 	updateExternalLink: (id: number, payload: { url: string; label: string }) =>
 		apiClient
-			.post<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
+			.patch<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
 			.then((r) => r.data),
 
 	deleteExternalLink: (id: number) =>

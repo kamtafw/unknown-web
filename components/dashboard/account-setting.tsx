@@ -7,8 +7,9 @@ import {
 	useSetPin,
 	useVerifyTotp,
 } from "@/hooks/use-2fa"
-import { extractFirstError } from "@/lib/api-error"
-import { otpSchema } from "@/lib/schemas"
+import { useResendOtp, useResetPassword, useVerifyOtp } from "@/hooks/use-auth"
+import { extractFirstError, extractOtpMessage } from "@/lib/api-error"
+import { createPasswordSchema, otpSchema } from "@/lib/schemas"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
@@ -16,12 +17,24 @@ import { OtpDefault } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
-import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Phone } from "lucide-react"
+import {
+	ArrowLeft,
+	Check,
+	CheckCircle2,
+	Circle,
+	Eye,
+	EyeOff,
+	Loader2,
+	Lock,
+	Mail,
+	Phone,
+} from "lucide-react"
 import Image from "next/image"
 import { Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
 import { FormEvent, useState } from "react"
 import { SuccessDialog } from "../auth/success-dialog"
 import type { TwoFAMethod } from "../auth/two-factor-verification"
+import { ResendButton } from "../shared/resend-button"
 import {
 	DeleteAccount,
 	GoogleAuthenticator,
@@ -116,13 +129,15 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 			<PanelHeader title="Security Notifications" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<div className="flex justify-center py-8">
+				<div className="flex justify-center py-6">
 					<LockShield width={70} height={88} />
 				</div>
 
 				<div className="px-6">
-					<h3 className="font-semibold text-gray-900 mb-3">Your chats and calls are private</h3>
-					<p className="text-[13.5px] text-gray-500 leading-relaxed mb-4">
+					<h3 className="text-[15px] font-semibold text-gray-900 mb-3">
+						Your chats and calls are private
+					</h3>
+					<p className="text-[13px] text-gray-500 leading-relaxed mb-4">
 						End to end encryption keeps your personal messages and calls between your and the people
 						your choose. Not even Appscombo can read or listen to them, this include:
 					</p>
@@ -134,13 +149,13 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 							"Location sharing",
 							"Status updates",
 						].map((item) => (
-							<li key={item} className="flex items-center gap-2.5 text-[13.5px] text-gray-600">
+							<li key={item} className="flex items-center gap-2.5 text-[13px] text-gray-600">
 								<span className="text-gray-400 text-base leading-none shrink-0">•</span>
 								{item}
 							</li>
 						))}
 					</ul>
-					<button className="text-[13.5px] font-semibold text-primary hover:underline block mb-7">
+					<button className="text-[13px] font-semibold text-primary hover:underline block mb-5">
 						Learn More
 					</button>
 
@@ -163,7 +178,7 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 						encrypted chat, if you have multiple devices, this settings must be enabled on each
 						devices where you want to get notification
 					</p>
-					<button className="text-[13.5px] font-semibold text-primary hover:underline block mb-10">
+					<button className="text-[13px] font-semibold text-primary hover:underline block mb-8">
 						Learn More
 					</button>
 				</div>
@@ -929,6 +944,428 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 					<div className="h-8" />
 				</div>
 			</div>
+		</div>
+	)
+}
+
+const PW_RULES = [
+	{ label: "8–12 characters", test: (v: string) => v.length >= 8 && v.length <= 12 },
+	{ label: "Special character", test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+	{ label: "Uppercase letter", test: (v: string) => /[A-Z]/.test(v) },
+	{ label: "Number", test: (v: string) => /\d/.test(v) },
+]
+
+function maskEmail(email: string): string {
+	const [local, domain] = email.split("@")
+	if (!local || !domain) return email
+	return `${local[0]}${"*".repeat(Math.min(local.length - 1, 4))}@${domain}`
+}
+
+type ChangePwStep = "confirm" | "otp" | "new-password"
+
+const STEP_ORDER: ChangePwStep[] = ["confirm", "otp", "new-password"]
+
+function ChangePasswordStepBar({ step }: { step: ChangePwStep }) {
+	const current = STEP_ORDER.indexOf(step) + 1
+
+	return (
+		<div className="flex items-center justify-center gap-2 py-4">
+			{STEP_ORDER.map((s, i) => {
+				const n = i + 1
+				const done = n < current
+				const active = n === current
+
+				return (
+					<div key={s} className="flex items-center gap-2">
+						<div
+							className={cn(
+								"w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300",
+								done
+									? "bg-primary text-white"
+									: active
+										? "bg-primary text-white ring-[3px] ring-primary/20"
+										: "bg-gray-100 text-gray-400",
+							)}
+						>
+							{done ? <Check size={13} strokeWidth={3} /> : n}
+						</div>
+						{i < STEP_ORDER.length - 1 && (
+							<div
+								className={cn(
+									"w-10 h-0.5 rounded-full transition-all duration-500",
+									done ? "bg-primary" : "bg-gray-100",
+								)}
+							/>
+						)}
+					</div>
+				)
+			})}
+		</div>
+	)
+}
+
+export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const confirmPassword = useConfirmPassword()
+	const verifyOtp = useVerifyOtp("change")
+	const resetPassword = useResetPassword()
+	const resendOtp = useResendOtp()
+
+	const [email] = useState(() => user?.email ?? "")
+
+	const [step, setStep] = useState<ChangePwStep>("confirm")
+
+	const [currentPassword, setCurrentPassword] = useState("")
+	const [currentPasswordError, setCurrentPasswordError] = useState<string | null>(null)
+	const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+	const [newPassword, setNewPassword] = useState("")
+	const [showNewPassword, setShowNewPassword] = useState(false)
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+	const [newPasswordError, setNewPasswordError] = useState<string | null>(null)
+	const [otpError, setOtpError] = useState<string | null>(null)
+	const [successOpen, setSuccessOpen] = useState(false)
+
+	if (!email) return null
+
+	const handleConfirmPasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		if (!currentPassword || confirmPassword.isPending) return
+		setCurrentPasswordError(null)
+
+		confirmPassword.mutate(
+			{ password: currentPassword },
+			{
+				onSuccess: () => {
+					resendOtp.mutate(email)
+					setStep("otp")
+				},
+				onError: (err) => setCurrentPasswordError(extractFirstError(err, "Incorrect password.")),
+			},
+		)
+	}
+
+	const handleVerifyOtpSubmit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = otpSchema.safeParse(raw)
+		if (result.success) {
+			verifyOtp.mutate(
+				{
+					email: email,
+					otp: result.data.otp,
+					need_tokens: false,
+					need_otp_token: true,
+				},
+				{
+					onSuccess: () => setStep("new-password"),
+					onError: (err) => setOtpError(extractOtpMessage(err)),
+				},
+			)
+		}
+	}
+
+	const handleNewPasswordSubmit = async (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault()
+		const raw = Object.fromEntries(new FormData(e.currentTarget))
+		const result = createPasswordSchema.safeParse(raw)
+
+		if (result.data?.password !== result.data?.confirm) {
+			setNewPasswordError("Passwords do not match.")
+			return
+		}
+
+		if (result.success) {
+			console.log("CALLING reset password")
+			resetPassword.mutate({
+				new_password: result.data.password,
+				confirm_password: result.data.confirm,
+			})
+		}
+	}
+
+	const handleBack = () => {
+		if (step === "otp") {
+			setOtpError(null)
+			setStep("confirm")
+		} else if (step === "new-password") {
+			setNewPasswordError(null)
+			setStep("otp")
+		} else {
+			onBack()
+		}
+	}
+
+	const allRulesPass = PW_RULES.every((r) => r.test(newPassword))
+
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<PanelHeader title="Change Password" onBack={handleBack} />
+			<ChangePasswordStepBar step={step} />
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+				{/* step 1: confirm current password */}
+				{step === "confirm" && (
+					<div className="px-6 pt-2 pb-8 flex flex-col gap-5">
+						<div className="flex flex-col items-center gap-3 py-4">
+							<div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+								<Lock size={28} className="text-primary" strokeWidth={1.75} />
+							</div>
+							<div className="text-center">
+								<p className="font-semibold text-gray-900">Verify it&apos;s you</p>
+								<p className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">
+									Enter your current password to continue
+								</p>
+							</div>
+						</div>
+
+						<Form.Root onSubmit={handleConfirmPasswordSubmit} className="flex flex-col gap-4">
+							<Form.Field name="password" className="flex flex-col gap-1.5">
+								<Form.Label className="text-sm font-medium text-gray-800">
+									Current Password
+								</Form.Label>
+								<div
+									className={cn(
+										"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
+										currentPasswordError
+											? "border-destructive"
+											: "border-gray-200 focus-within:border-primary",
+									)}
+								>
+									<Lock size={16} className="text-gray-400 shrink-0" />
+									<Form.Control asChild>
+										<input
+											type={showCurrentPassword ? "text" : "password"}
+											value={currentPassword}
+											onChange={(e) => {
+												setCurrentPassword(e.target.value)
+												if (currentPasswordError) setCurrentPasswordError(null)
+											}}
+											placeholder="Enter current password"
+											autoFocus
+											autoComplete="current-password"
+											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+										/>
+									</Form.Control>
+									<button
+										type="button"
+										onClick={() => setShowCurrentPassword((v) => !v)}
+										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+									>
+										{showCurrentPassword ? <Eye size={15} /> : <EyeOff size={15} />}
+									</button>
+								</div>
+								{currentPasswordError && (
+									<p className="text-xs text-destructive">{currentPasswordError}</p>
+								)}
+							</Form.Field>
+
+							<Form.Submit asChild>
+								<ActionButton disabled={!currentPassword.trim() || confirmPassword.isPending}>
+									{confirmPassword.isPending ? (
+										<span className="flex items-center justify-center gap-2">
+											<Loader2 size={14} className="animate-spin" /> Verifying...
+										</span>
+									) : (
+										"Continue"
+									)}
+								</ActionButton>
+							</Form.Submit>
+						</Form.Root>
+					</div>
+				)}
+
+				{/* step 2: OTP verification */}
+				{step === "otp" && (
+					<div className="px-6 pt-2 pb-8 flex flex-col gap-5">
+						<div className="flex flex-col items-center gap-3 py-4">
+							<div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center">
+								<Mail size={28} className="text-amber-500" strokeWidth={1.75} />
+							</div>
+							<div className="text-center">
+								<p className="font-semibold text-gray-900">Check your email</p>
+								<p className="text-[13px] text-gray-500 mt-0.5">We sent a 6-digit code to</p>
+								<p className="text-[13px] font-semibold text-gray-800 mt-0.5">
+									{user?.email ? maskEmail(user.email) : "your email"}
+								</p>
+							</div>
+						</div>
+
+						<Form.Root onSubmit={handleVerifyOtpSubmit} className="flex flex-col gap-5">
+							<Form.Field name="otp" className="flex flex-col gap-3">
+								<OneTimePasswordField.Root
+									name="otp"
+									validationType="numeric"
+									autoComplete="one-time-code"
+									autoFocus
+									className="flex gap-1.5 justify-center"
+									aria-label="Verification code"
+								>
+									{Array.from({ length: 6 }).map((_, i) => (
+										<OneTimePasswordField.Input
+											key={i}
+											className="
+											flex-1 min-w-0
+											max-w-11 h-12
+											text-center text-lg font-semibold
+											bg-gray-200 text-gray-900 rounded-xl
+											border-2 border-transparent
+											focus:outline-none focus:border-primary
+											caret-primary transition-colors"
+										/>
+									))}
+									<OneTimePasswordField.HiddenInput />
+								</OneTimePasswordField.Root>
+
+								<Form.Message
+									match={(v) => v.length > 0 && v.length < 6}
+									className="text-center text-xs text-destructive"
+								>
+									Enter all 6 digits
+								</Form.Message>
+							</Form.Field>
+
+							{otpError && <p className="text-center text-xs text-destructive">{otpError}</p>}
+
+							<Form.Submit asChild>
+								<ActionButton disabled={verifyOtp.isPending}>
+									{verifyOtp.isPending ? (
+										<span className="flex items-center justify-center gap-2">
+											<Loader2 size={14} className="animate-spin" /> Verifying...
+										</span>
+									) : (
+										"Continue"
+									)}
+								</ActionButton>
+							</Form.Submit>
+
+							<ResendButton onResend={() => resendOtp.mutate(email)} />
+						</Form.Root>
+					</div>
+				)}
+
+				{/* step 3: new password */}
+				{step === "new-password" && (
+					<div className="px-6 pt-2 pb-8 flex flex-col gap-5">
+						<div className="py-2">
+							<p className="font-semibold text-gray-900">Create new password</p>
+							<p className="text-[13px] text-gray-500 mt-0.5">
+								Make it strong and different from your previous one
+							</p>
+						</div>
+
+						<Form.Root onSubmit={handleNewPasswordSubmit} className="flex flex-col gap-4">
+							<Form.Field name="password" className="flex flex-col gap-2">
+								<Form.Label className="text-sm font-medium text-gray-800">New Password</Form.Label>
+								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-gray-200 focus-within:border-primary transition-colors">
+									<Lock size={15} className="text-gray-400 shrink-0" />
+									<Form.Control asChild>
+										<input
+											type={showNewPassword ? "text" : "password"}
+											name="password"
+											value={newPassword}
+											onChange={(e) => setNewPassword(e.target.value)}
+											placeholder="Enter new password"
+											autoFocus
+											autoComplete="new-password"
+											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+										/>
+									</Form.Control>
+									<button
+										type="button"
+										onClick={() => setShowNewPassword((v) => !v)}
+										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+									>
+										{showNewPassword ? <Eye size={15} /> : <EyeOff size={15} />}
+									</button>
+								</div>
+
+								{newPassword.length > 0 && (
+									<div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-1 pl-0.5">
+										{PW_RULES.map(({ label, test }) => {
+											const passes = test(newPassword)
+											return (
+												<div key={label} className="flex items-center gap-1.5">
+													{passes ? (
+														<CheckCircle2
+															size={13}
+															className="text-primary shrink-0"
+															strokeWidth={2.5}
+														/>
+													) : (
+														<Circle size={13} className="text-gray-300 shrink-0" strokeWidth={2} />
+													)}
+													<span
+														className={cn(
+															"text-[11px] leading-tight",
+															passes ? "text-gray-700" : "text-gray-400",
+														)}
+													>
+														{label}
+													</span>
+												</div>
+											)
+										})}
+									</div>
+								)}
+							</Form.Field>
+
+							<Form.Field name="confirm" className="flex flex-col gap-2">
+								<Form.Label className="text-sm font-medium text-gray-800">
+									Confirm Password
+								</Form.Label>
+								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-gray-200 focus-within:border-primary transition-colors">
+									<Lock size={15} className="text-gray-400 shrink-0" />
+									<Form.Control asChild>
+										<input
+											type={showConfirmPassword ? "text" : "password"}
+											name="confirm"
+											placeholder="Re-enter new password"
+											autoComplete="new-password"
+											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+										/>
+									</Form.Control>
+									<button
+										type="button"
+										onClick={() => setShowConfirmPassword((v) => !v)}
+										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+									>
+										{showConfirmPassword ? <Eye size={15} /> : <EyeOff size={15} />}
+									</button>
+								</div>
+							</Form.Field>
+
+							{newPasswordError && (
+								<p className="text-xs text-destructive text-center">{newPasswordError}</p>
+							)}
+
+							<Form.Submit asChild>
+								<ActionButton disabled={resetPassword.isPending || !allRulesPass}>
+									{resetPassword.isPending ? (
+										<span className="flex items-center justify-center gap-2">
+											<Loader2 size={14} className="animate-spin" />
+											Changing password...
+										</span>
+									) : (
+										"Change Password"
+									)}
+								</ActionButton>
+							</Form.Submit>
+						</Form.Root>
+					</div>
+				)}
+			</div>
+
+			<SuccessDialog
+				open={successOpen}
+				onOpenChange={setSuccessOpen}
+				title="Password changed!"
+				description="Your password has been updated. Use it the next time you sign in."
+				actionLabel="Done"
+				onAction={() => {
+					setSuccessOpen(false)
+					onBack()
+				}}
+			/>
 		</div>
 	)
 }
