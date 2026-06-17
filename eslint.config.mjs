@@ -16,6 +16,7 @@ const eslintConfig = [
 		files: [
 			"hooks/use-otp-cooldown.ts",
 			"components/auth/create-new-password.tsx",
+			"components/dashboard/add-account-panel.tsx",
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
 		],

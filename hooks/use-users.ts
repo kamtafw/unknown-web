@@ -27,7 +27,7 @@ export function useFollowers() {
 
 export function useFollowings() {
 	return useQuery({
-		queryKey: usersKeys.followers,
+		queryKey: usersKeys.followings,
 		queryFn: userApi.getFollowings,
 	})
 }

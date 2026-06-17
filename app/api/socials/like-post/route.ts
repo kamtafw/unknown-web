@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO_API_URL}/socials/post/comment`, {
+	const upstream = await fetch(`${DJANGO_API_URL}/socials/post/like`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
