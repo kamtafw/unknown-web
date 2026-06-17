@@ -98,11 +98,24 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset" | "change") {
 			if (!res.success) return
 
 			if (flow === "reset" || flow === "change") {
-				useAuthStore.setState((state) => ({
-					pendingAuth: state.pendingAuth
-						? { ...state.pendingAuth, reset_otp_token: res.data.otp_token }
-						: state.pendingAuth,
-				}))
+				useAuthStore.setState((state) => {
+					const pending = state.pendingAuth
+					const authedUser = state.user
+
+					const newPending = pending
+						? { ...pending, reset_otp_token: res.data.otp_token }
+						: authedUser
+							? {
+									email: authedUser.email,
+									otp_default: authedUser.otp_default,
+									is_2fa_enabled: authedUser.is_2fa_enabled,
+									is_pin_enabled: authedUser.is_pin_enabled,
+									reset_otp_token: res.data.otp_token,
+								}
+							: null
+
+					return { pendingAuth: newPending }
+				})
 				toast.success("Code verified! Set your new password.")
 				if (flow === "reset") router.push("/create-new-password")
 				return
@@ -168,6 +181,7 @@ export function useResetPassword() {
 		},
 		onSuccess: (res) => {
 			if (!res.success) return
+			useAuthStore.setState({ pendingAuth: null })
 		},
 		onError: (error) => {
 			const axiosErr = error as AxiosError<{ error?: Record<string, string[]> }>
