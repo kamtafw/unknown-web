@@ -10,6 +10,14 @@ const PUBLIC_ROUTES = [
 	"/2fa",
 	"/terms",
 	"/privacy-policy",
+	"/about",
+	"/advertising",
+	"/legal-notice",
+	"/account-deletion",
+	"/account-recovery",
+	"/support",
+	"/contact",
+	"/safety-report",
 ]
 const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friend-suggestions"]
 const ADMIN_ROUTES = ["/admin"]
