@@ -1075,11 +1075,14 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 		}
 
 		if (result.success) {
-			console.log("CALLING reset password")
-			resetPassword.mutate({
-				new_password: result.data.password,
-				confirm_password: result.data.confirm,
-			})
+			resetPassword.mutate(
+				{ new_password: result.data.password, confirm_password: result.data.confirm },
+				{
+					onSuccess: (res) => {
+						if (res?.success) setSuccessOpen(true)
+					},
+				},
+			)
 		}
 	}
 
