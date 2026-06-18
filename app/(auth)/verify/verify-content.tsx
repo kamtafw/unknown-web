@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
-type Flow = "signup" | "signin" | "reset"
+type Flow = "signup" | "signin" | "reset" | "change"
 
 export function VerifyContent({ flow }: { flow: Flow }) {
 	const router = useRouter()
@@ -19,6 +19,7 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 	const resendOtp = useResendOtp()
 
 	const [email] = useState(() => pendingAuth?.email ?? "")
+	const [pre_auth_token] = useState(() => pendingAuth?.pre_auth_token)
 
 	useEffect(() => {
 		if (!pendingAuth && !isAuthenticated && !verifyOtp.isSuccess) router.replace("/sign-in")
@@ -40,7 +41,8 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 						otp: code,
 						type: "otp",
 						need_tokens: flow !== "reset",
-						need_otp_token: flow !== "reset",
+						need_otp_token: true,
+						pre_auth_token: pre_auth_token ?? undefined,
 					})
 				}
 				onResend={() => resendOtp.mutate(email)}

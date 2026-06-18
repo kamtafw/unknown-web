@@ -38,6 +38,7 @@ export interface LoginUser {
 
 export interface LoginResponseData {
 	user: LoginUser
+	pre_auth_token: string
 }
 
 /** full user shape from `/users/me` */
@@ -112,11 +113,12 @@ export interface VerifyOtpPayload {
 	type?: "otp" | "pin" | "2fa"
 	need_tokens?: boolean
 	need_otp_token?: boolean
+	pre_auth_token?: string
 }
 
 export interface ResetPasswordPayload {
 	email: string
-	otp: string
+	otp_token: string
 	new_password: string
 	confirm_password: string
 }
@@ -394,7 +396,71 @@ export interface ConfirmTwoFaUser {
 	profile_photo: string | null
 }
 
+export type ChangeOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>
 export type SetPinResponse = ApiResponse<Record<string, never>>
 export type ConfirmPasswordResponse = ApiResponse<Record<string, never>>
 export type GenerateTotpResponse = ApiResponse<{ secret: string; otp_auth_url: string }>
 export type VerifyTotpResponse = ApiResponse<Record<string, never>>
+
+export interface LinkedAccount {
+	id: number
+	first_name: string
+	last_name: string
+	username: string
+	email: string
+	phone_number: string
+	profile_photo: string
+	otp_default: OtpDefault
+	is_primary: boolean
+	created_at: string
+}
+
+export type LinkedAccountsResponse = ApiResponse<{ accounts: LinkedAccount[] }>
+
+export type AddLinkedAccountResponse = ApiResponse<{
+	id: number
+	user: {
+		pkid: number
+		id: string
+		email: string
+		username: string
+		first_name: string
+		last_name: string
+		phone_number: string
+		otp_default: OtpDefault
+		profile_photo: string
+		cover_photo: string
+	}
+	is_verified: boolean
+	created_at: string
+}>
+
+export type ConfirmLinkedAccountResponse = ApiResponse<Record<string, never>>
+
+export type SwitchAccountResponse = ApiResponse<{ user: FullUser }>
+
+export interface SwitchOtpDefaultPayload {
+	identifier: string
+	otp_default: OtpDefault
+}
+
+export type SwitchOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>
+
+export type DeleteAccountReason = "privacy" | "not_useful" | "technical" | "other"
+
+export interface DeleteAccountRequest {
+	id: number
+	email: string
+	is_verified: boolean
+	reason: string
+	feedback: string | null
+	deletion_due_date: string | null
+	created_at: string
+}
+
+export type InitiateDeleteAccountResponse = ApiResponse<{
+	request: DeleteAccountRequest
+	otp_token: string
+}>
+
+export type ConfirmDeleteAccountResponse = ApiResponse<{ request: DeleteAccountRequest }>

@@ -89,7 +89,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 				<Avatar.Fallback
 					className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
 				>
-					{user ? getInitials(user.first_name, user.last_name) : "?"}
+					{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
 				</Avatar.Fallback>
 			</Avatar.Root>
 

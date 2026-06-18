@@ -2,11 +2,15 @@ import {
 	AddCommentPayload,
 	AddCommentResponse,
 	AddExternalLinkResponse,
+	AddLinkedAccountResponse,
 	ApiResponse,
 	BookmarkResponse,
+	ChangeOtpDefaultResponse,
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
+	ConfirmDeleteAccountResponse,
+	ConfirmLinkedAccountResponse,
 	ConfirmPasswordResponse,
 	CreatePostPayload,
 	CreatePostResponse,
@@ -16,12 +20,15 @@ import {
 	FriendSuggestionsResponse,
 	FullUser,
 	GenerateTotpResponse,
+	InitiateDeleteAccountResponse,
 	InterestsPayload,
 	InterestsResponse,
 	LikeResponse,
+	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
 	NullResponse,
+	OtpDefault,
 	PostDetailResponse,
 	PostStatsResponse,
 	RepostPayload,
@@ -30,6 +37,9 @@ import {
 	ResetPasswordResponse,
 	SetPinResponse,
 	SignupPayload,
+	SwitchAccountResponse,
+	SwitchOtpDefaultPayload,
+	SwitchOtpDefaultResponse,
 	UnknownResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -82,6 +92,11 @@ export const authApi = {
 	verifyTotp: (payload: { email: string; otp: string }) =>
 		apiClient.post<VerifyTotpResponse>("/api/auth/verify-totp", payload).then((r) => r.data),
 
+	switchOtpDefault: (payload: SwitchOtpDefaultPayload) =>
+		apiClient
+			.post<SwitchOtpDefaultResponse>("/api/auth/switch-otp-default", payload)
+			.then((r) => r.data),
+
 	logout: () => apiClient.post("/api/auth/logout").then((r) => r.data),
 }
 
@@ -110,6 +125,7 @@ export const userApi = {
 		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
 			"/api/users/update-profile-photo",
 			formData,
+			{ timeout: 1000 * 60 * 2 },
 		)
 		return res.data
 	},
@@ -120,6 +136,7 @@ export const userApi = {
 		const res = await apiClient.patch<UpdateCoverPhotoResponse>(
 			"/api/users/update-cover-photo",
 			formData,
+			{ timeout: 1000 * 60 * 2 },
 		)
 		return res.data
 	},
@@ -155,7 +172,7 @@ export const userApi = {
 
 	updateExternalLink: (id: number, payload: { url: string; label: string }) =>
 		apiClient
-			.post<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
+			.patch<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
 			.then((r) => r.data),
 
 	deleteExternalLink: (id: number) =>
@@ -188,6 +205,38 @@ export const userApi = {
 
 	setPin: (payload: { pin: string }) =>
 		apiClient.post<SetPinResponse>("/api/users/set-pin", payload).then((r) => r.data),
+
+	changeOtpDefault: (payload: { otp_default: OtpDefault }) =>
+		apiClient
+			.post<ChangeOtpDefaultResponse>("/api/users/change-otp-default", payload)
+			.then((r) => r.data),
+
+	getLinkedAccounts: () =>
+		apiClient.get<LinkedAccountsResponse>("/api/users/accounts").then((r) => r.data),
+
+	addLinkedAccount: (payload: { identifier: string; password: string }) =>
+		apiClient.post<AddLinkedAccountResponse>("/api/users/accounts", payload).then((r) => r.data),
+
+	confirmLinkedAccount: (id: number, payload: { otp_token: string }) =>
+		apiClient
+			.patch<ConfirmLinkedAccountResponse>(`/api/users/accounts/${id}`, payload)
+			.then((r) => r.data),
+
+	removeLinkedAccount: (id: number) =>
+		apiClient.delete<NullResponse>(`/api/users/accounts/${id}`).then((r) => r.data),
+
+	switchAccount: (payload: { linked_user_id: string }) =>
+		apiClient.post<SwitchAccountResponse>("/api/users/switch-account", payload).then((r) => r.data),
+
+	initiateDeleteAccount: (payload: { email: string; password: string }) =>
+		apiClient
+			.post<InitiateDeleteAccountResponse>("/api/users/delete-account", payload)
+			.then((r) => r.data),
+
+	confirmDeleteAccount: (payload: { otp_token: string; reason: string; feedback?: string }) =>
+		apiClient
+			.post<ConfirmDeleteAccountResponse>("/api/users/delete-account/confirm", payload)
+			.then((r) => r.data),
 }
 
 export const socialApi = {
@@ -239,7 +288,9 @@ export const socialApi = {
 		formData.append("file", file)
 		formData.append("folder", "post")
 
-		const res = await apiClient.post<UploadMediaResponse>("/api/socials/upload-media", formData)
+		const res = await apiClient.post<UploadMediaResponse>("/api/socials/upload-media", formData, {
+			timeout: 1000 * 60 * 2,
+		})
 		return res.data.data.media_urls
 	},
 }

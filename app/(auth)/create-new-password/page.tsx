@@ -10,18 +10,23 @@ const CreateNewPasswordPage = () => {
 	const router = useRouter()
 	const resetPassword = useResetPassword()
 	const pendingAuth = useAuthStore((s) => s.pendingAuth)
+	const clearPendingAuth = useAuthStore((s) => s.clearPendingAuth)
 
 	useEffect(() => {
-		if (!pendingAuth?.reset_otp && !resetPassword.isSuccess) {
+		if (!pendingAuth?.reset_otp_token && !resetPassword.isSuccess) {
 			router.replace("/forgot-password")
 		}
 	}, [pendingAuth, resetPassword.isSuccess, router])
+
 	return (
 		<CreateNewPassword
 			isPending={resetPassword.isPending}
 			isSuccess={resetPassword.isSuccess}
 			onSubmit={(payload) => resetPassword.mutate(payload)}
-			onDone={() => router.push("/sign-in")}
+			onDone={() => {
+				clearPendingAuth()
+				router.push("/sign-in")
+			}}
 		/>
 	)
 }

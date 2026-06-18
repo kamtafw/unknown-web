@@ -1,16 +1,17 @@
 "use client"
 
-import { authApi,userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { authApi, userApi } from "@/lib/api"
+import { extractMessage, showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
 	FullUser,
 	LoginPayload,
 	SignupPayload,
-	VerifyOtpPayload
+	SwitchOtpDefaultPayload,
+	VerifyOtpPayload,
 } from "@/types/api"
-import { useMutation,useQuery,useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AxiosError } from "axios"
 import { useRouter } from "next/navigation"
 
@@ -31,7 +32,7 @@ export function useLogin() {
 			}
 
 			const user = res.data.user
-			setPendingAuth(user)
+			setPendingAuth(user, res.data.pre_auth_token)
 
 			/**
 			 * routing rule:
@@ -59,7 +60,7 @@ export function useLogin() {
 			}
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Invalid email or password. Please try again."))
+			showMutationErrorToast(error, "Invalid email or password. Please try again.")
 		},
 	})
 }
@@ -86,24 +87,37 @@ export function useSignup() {
 	})
 }
 
-export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
+export function useVerifyOtp(flow: "signup" | "signin" | "reset" | "change") {
 	const router = useRouter()
 	const queryClient = useQueryClient()
 	const setUser = useAuthStore((s) => s.setUser)
 
 	return useMutation({
 		mutationFn: (payload: VerifyOtpPayload) => authApi.verifyOtp(payload),
-		onSuccess: async (res, vars) => {
+		onSuccess: async (res) => {
 			if (!res.success) return
 
-			if (flow === "reset") {
-				useAuthStore.setState((state) => ({
-					pendingAuth: state.pendingAuth
-						? { ...state.pendingAuth, reset_otp: vars.otp }
-						: state.pendingAuth,
-				}))
+			if (flow === "reset" || flow === "change") {
+				useAuthStore.setState((state) => {
+					const pending = state.pendingAuth
+					const authedUser = state.user
+
+					const newPending = pending
+						? { ...pending, reset_otp_token: res.data.otp_token }
+						: authedUser
+							? {
+									email: authedUser.email,
+									otp_default: authedUser.otp_default,
+									is_2fa_enabled: authedUser.is_2fa_enabled,
+									is_pin_enabled: authedUser.is_pin_enabled,
+									reset_otp_token: res.data.otp_token,
+								}
+							: null
+
+					return { pendingAuth: newPending }
+				})
 				toast.success("Code verified! Set your new password.")
-				router.push("/create-new-password")
+				if (flow === "reset") router.push("/create-new-password")
 				return
 			}
 
@@ -123,8 +137,14 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset") {
 			}
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Invalid or expired code. Please try again."))
+			showMutationErrorToast(error, "Invalid or expired code. Please try again.")
 		},
+	})
+}
+
+export function useSwitchOtpDefault() {
+	return useMutation({
+		mutationFn: (payload: SwitchOtpDefaultPayload) => authApi.switchOtpDefault(payload),
 	})
 }
 
@@ -143,31 +163,24 @@ export function useForgotPassword() {
 			router.push("/verify?flow=reset")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Email does not exist in our database."))
+			showMutationErrorToast(error, "Email does not exist in our database.")
 		},
 	})
 }
 
 export function useResetPassword() {
-	const router = useRouter()
-	const clearPendingAuth = useAuthStore((s) => s.clearPendingAuth)
-
 	return useMutation({
 		mutationFn: (payload: { new_password: string; confirm_password: string }) => {
 			const pendingAuth = useAuthStore.getState().pendingAuth
 			return authApi.resetPassword({
 				email: pendingAuth!.email,
-				otp: pendingAuth!.reset_otp!,
+				otp_token: pendingAuth!.reset_otp_token!,
 				...payload,
 			})
 		},
 		onSuccess: (res) => {
 			if (!res.success) return
-
-			// TODO: add a success toast
-			clearPendingAuth()
-
-			router.push("/sign-in")
+			useAuthStore.setState({ pendingAuth: null })
 		},
 		onError: (error) => {
 			const axiosErr = error as AxiosError<{ error?: Record<string, string[]> }>
@@ -175,7 +188,7 @@ export function useResetPassword() {
 			if (fieldErrors) {
 				toast.error(Object.values(fieldErrors).flat()[0] || "Password reset failed.")
 			} else {
-				toast.error(extractMessage(error, "Password reset failed. Please try again."))
+				showMutationErrorToast(error, "Password reset failed. Please try again.")
 			}
 		},
 	})
@@ -193,7 +206,7 @@ export function useCompleteProfile() {
 			router.push("/interests")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Couldn't save your profile. Please try again."))
+			showMutationErrorToast(error, "Couldn't save your profile. Please try again.")
 		},
 	})
 }
@@ -205,7 +218,7 @@ export function useResendOtp() {
 			toast.success("New code sent to your email")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Couldn't resend code. Try again shortly."))
+			showMutationErrorToast(error, "Couldn't resend code. Try again shortly.")
 		},
 	})
 }

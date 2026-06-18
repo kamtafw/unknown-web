@@ -28,6 +28,7 @@ import {
 	Layers,
 	Link2,
 	Loader2,
+	Lock,
 	MapPin,
 	Monitor,
 	MoreHorizontal,
@@ -43,12 +44,14 @@ import { Avatar } from "radix-ui"
 import type { ComponentType } from "react"
 import { ReactNode, useRef, useState } from "react"
 import {
+	ChangePasswordPanel,
 	ChangePhonePanel,
 	DeleteAccountPanel,
 	ReportProblemPanel,
 	SecurityNotificationsPanel,
 	TwoStepVerificationPanel,
 } from "./account-setting"
+import { AddAccountPanel } from "./add-account-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -158,12 +161,12 @@ const SECTIONS: Section[] = [
 				description: "Update the phone number linked to your account",
 				icon: <ChangePhone size={18} />,
 			},
-			// {
-			// 	id: "change-password",
-			// 	label: "Change your password",
-			// 	description: "Change your password at any time",
-			// 	icon: <Lock size={18} />,
-			// },
+			{
+				id: "change-password",
+				label: "Change your password",
+				description: "Change your password at any time",
+				icon: <Lock size={18} />,
+			},
 			{
 				id: "add-account",
 				label: "Add account",
@@ -335,18 +338,18 @@ const SECTIONS: Section[] = [
 ]
 
 const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
+	"change-password": ChangePasswordPanel,
 	"security-notifications": SecurityNotificationsPanel,
 	"two-step-verification": TwoStepVerificationPanel,
 	"report-problem": ReportProblemPanel,
 	"change-phone": ChangePhonePanel,
+	"add-account": AddAccountPanel,
 	deactivate: DeleteAccountPanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "change-password", title: "Change your password" },
-	{ id: "add-account", title: "Add account" },
 	{ id: "time-zone", title: "Time zone" },
 	{ id: "logout", title: "Log out" },
 	{ id: "last-seen", title: "Last seen & online" },
@@ -362,7 +365,7 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "app-language", title: "App language" },
 	{ id: "report", title: "Report a problem" },
 	{ id: "security", title: "Security advisories" },
-	{ id: "edit-email", title: "Email" },
+	// { id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
 

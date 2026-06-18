@@ -8,7 +8,8 @@ interface PendingAuth {
 	otp_default: OtpDefault
 	is_2fa_enabled: boolean
 	is_pin_enabled: boolean
-	reset_otp?: string
+	reset_otp_token?: string
+	pre_auth_token?: string
 }
 
 interface PhotoVersions {
@@ -21,7 +22,7 @@ interface AuthStore {
 	isAuthenticated: boolean
 	pendingAuth: PendingAuth | null
 	photoVersions: PhotoVersions
-	setPendingAuth: (data: LoginUser) => void
+	setPendingAuth: (data: LoginUser, pre_auth_token?: string) => void
 	setUser: (data: FullUser) => void
 	bumpPhotoVersion: (type: keyof PhotoVersions) => void
 	clearPendingAuth: () => void
@@ -46,13 +47,14 @@ export const useAuthStore = create<AuthStore>()(
 			pendingAuth: null,
 			photoVersions: { profile: 0, cover: 0 },
 
-			setPendingAuth: (loginUser) =>
+			setPendingAuth: (loginUser, pre_auth_token) =>
 				set({
 					pendingAuth: {
 						email: loginUser.email,
 						otp_default: loginUser.otp_default,
 						is_2fa_enabled: loginUser.is_2fa_enabled,
 						is_pin_enabled: loginUser.is_pin_enabled,
+						pre_auth_token,
 					},
 				}),
 

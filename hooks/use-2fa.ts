@@ -1,10 +1,31 @@
 import { authApi, userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import { FullUser } from "@/types/api"
+import { FullUser, OtpDefault } from "@/types/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
+
+export function useChangeOtpDefault() {
+	const qc = useQueryClient()
+	const setUser = useAuthStore((s) => s.setUser)
+
+	return useMutation({
+		mutationFn: (payload: { otp_default: OtpDefault }) => userApi.changeOtpDefault(payload),
+
+		onSuccess: (data) => {
+			if (!data.success) return
+			const patch = { otp_default: data.data.otp_default }
+			qc.setQueryData<FullUser>(authKeys.me, (old) => (old ? { ...old, ...patch } : old))
+			const user = useAuthStore.getState().user
+			if (user) setUser({ ...user, ...patch })
+		},
+
+		onError: (error) => {
+			showMutationErrorToast(error, "Failed to update default verification method")
+		},
+	})
+}
 
 export function useSetPin() {
 	const qc = useQueryClient()
@@ -23,7 +44,7 @@ export function useSetPin() {
 		},
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to set your PIN. Please try again."))
+			showMutationErrorToast(error, "Failed to set your PIN. Please try again.")
 		},
 	})
 }
@@ -38,7 +59,7 @@ export function useGenerateTotp() {
 	return useMutation({
 		mutationFn: (payload: { email: string }) => authApi.generateTotp(payload),
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to generate your authenticator key."))
+			showMutationErrorToast(error, "Failed to generate your authenticator key.")
 		},
 	})
 }
