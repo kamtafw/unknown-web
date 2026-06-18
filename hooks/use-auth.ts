@@ -172,7 +172,6 @@ export function useResetPassword() {
 	return useMutation({
 		mutationFn: (payload: { new_password: string; confirm_password: string }) => {
 			const pendingAuth = useAuthStore.getState().pendingAuth
-			console.log("otp_token:", pendingAuth!.reset_otp_token)
 			return authApi.resetPassword({
 				email: pendingAuth!.email,
 				otp_token: pendingAuth!.reset_otp_token!,

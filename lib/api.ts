@@ -9,6 +9,7 @@ import {
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
+	ConfirmDeleteAccountResponse,
 	ConfirmLinkedAccountResponse,
 	ConfirmPasswordResponse,
 	CreatePostPayload,
@@ -19,6 +20,7 @@ import {
 	FriendSuggestionsResponse,
 	FullUser,
 	GenerateTotpResponse,
+	InitiateDeleteAccountResponse,
 	InterestsPayload,
 	InterestsResponse,
 	LikeResponse,
@@ -223,6 +225,16 @@ export const userApi = {
 
 	switchAccount: (payload: { linked_user_id: string }) =>
 		apiClient.post<SwitchAccountResponse>("/api/users/switch-account", payload).then((r) => r.data),
+
+	initiateDeleteAccount: (payload: { email: string; password: string }) =>
+		apiClient
+			.post<InitiateDeleteAccountResponse>("/api/users/delete-account", payload)
+			.then((r) => r.data),
+
+	confirmDeleteAccount: (payload: { otp_token: string; reason: string; feedback?: string }) =>
+		apiClient
+			.post<ConfirmDeleteAccountResponse>("/api/users/delete-account/confirm", payload)
+			.then((r) => r.data),
 }
 
 export const socialApi = {
