@@ -1,5 +1,5 @@
 import { userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
@@ -24,7 +24,7 @@ export function useSaveInterests() {
 			router.push("/friend-suggestions")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Couldn't save your interests. Please try again."))
+			showMutationErrorToast(error, "Couldn't save your interests. Please try again.")
 		},
 	})
 }

@@ -445,3 +445,22 @@ export interface SwitchOtpDefaultPayload {
 }
 
 export type SwitchOtpDefaultResponse = ApiResponse<{ otp_default: OtpDefault }>
+
+export type DeleteAccountReason = "privacy" | "not_useful" | "technical" | "other"
+
+export interface DeleteAccountRequest {
+	id: number
+	email: string
+	is_verified: boolean
+	reason: string
+	feedback: string | null
+	deletion_due_date: string | null
+	created_at: string
+}
+
+export type InitiateDeleteAccountResponse = ApiResponse<{
+	request: DeleteAccountRequest
+	otp_token: string
+}>
+
+export type ConfirmDeleteAccountResponse = ApiResponse<{ request: DeleteAccountRequest }>

@@ -1,5 +1,5 @@
 import { userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
@@ -36,8 +36,8 @@ export function useConfirmLinkedAccount() {
 			qc.invalidateQueries({ queryKey: linkedAccountsKeys.list })
 			toast.success("Account linked successfully")
 		},
-		onError: (err) => {
-			toast.error(extractMessage(err, "Failed to confirm account. Please try again."))
+		onError: (error) => {
+			showMutationErrorToast(error, "Failed to confirm account. Please try again.")
 		},
 	})
 }
@@ -51,8 +51,8 @@ export function useRemoveLinkedAccount() {
 			qc.invalidateQueries({ queryKey: linkedAccountsKeys.list })
 			toast.success("Account removed")
 		},
-		onError: (err) => {
-			toast.error(extractMessage(err, "Failed to remove account"))
+		onError: (error) => {
+			showMutationErrorToast(error, "Failed to remove account")
 		},
 	})
 }
@@ -77,8 +77,8 @@ export function useSwitchAccount() {
 			toast.success(`Switched to @${user.username}`)
 			router.push("/home")
 		},
-		onError: (err) => {
-			toast.error(extractMessage(err, "Failed to switch account. Please try again."))
+		onError: (error) => {
+			showMutationErrorToast(error, "Failed to switch account. Please try again.")
 		},
 	})
 }

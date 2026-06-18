@@ -3,6 +3,7 @@ import { toast } from "sonner"
 
 export const apiClient: AxiosInstance = axios.create({
 	withCredentials: true, // sends the HTTP-only cookies on every request
+	timeout: 1000 * 20,
 })
 
 let isRefreshing = false
@@ -22,10 +23,37 @@ apiClient.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
 		const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+
+		/** mark so hook-level onError handlers skip their own toast */
+		const markHandled = () => {
+			;(error as AxiosError & { _interceptorHandled: boolean })._interceptorHandled = true
+		}
+
+		// timeout (ECONNABORTED / signal abort)
+		if (error.code === "ECONNABORTED" || error.code === "ERR_CANCELLED") {
+			markHandled()
+			toast.error("Request timed out — please check your connection and try again.", {
+				id: "request-timeout",
+				duration: 6000,
+			})
+			return Promise.reject(error)
+		}
+
+		// pure network error (DNS failure, server unreachable, etc.)
+		if (!error.response) {
+			markHandled()
+			toast.error("Network error — please check your connection.", {
+				id: "network-error",
+				duration: 6000,
+			})
+			return Promise.reject(error)
+		}
+
 		const status = error.response?.status
 
-		// these don't produce a useful body — individual onError handlers can't help
+		// gateway errors
 		if (status === 502 || status === 503 || status === 504) {
+			markHandled()
 			toast.error(
 				status === 503
 					? "AppsCombo is briefly unavailable. Hang tight."

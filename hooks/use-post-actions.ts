@@ -69,11 +69,7 @@ export function useLikePost() {
 				snapshots.detail = detailPrev
 				snapshots.pkid = current.pkid
 
-				console.log("DETAIL KEY", JSON.stringify(detailKey))
-				console.log("CURRENT POST", JSON.stringify(current))
-				console.log("DETAIL PREV", JSON.stringify(detailPrev))
-				console.log("PATCH", JSON.stringify(patch))
-
+				
 				if (detailPrev) qc.setQueryData<Post>(detailKey, { ...detailPrev, ...patch })
 
 				// qc.getQueriesData<Post>({ queryKey: ["post", "detail"] }).forEach(([key, cached]) => {
@@ -152,11 +148,6 @@ export function useBookmarkPost() {
 
 				snapshots.detail = detailPrev
 				snapshots.pkid = current.pkid
-
-				console.log("DETAIL KEY", JSON.stringify(detailKey))
-				console.log("CURRENT POST", JSON.stringify(current))
-				console.log("DETAIL PREV", JSON.stringify(detailPrev))
-				console.log("PATCH", JSON.stringify(patch))
 
 				if (detailPrev) qc.setQueryData<Post>(detailKey, { ...detailPrev, ...patch })
 
