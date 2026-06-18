@@ -125,6 +125,7 @@ export const userApi = {
 		const res = await apiClient.patch<UpdateProfilePhotoResponse>(
 			"/api/users/update-profile-photo",
 			formData,
+			{ timeout: 1000 * 60 * 2 },
 		)
 		return res.data
 	},
@@ -135,6 +136,7 @@ export const userApi = {
 		const res = await apiClient.patch<UpdateCoverPhotoResponse>(
 			"/api/users/update-cover-photo",
 			formData,
+			{ timeout: 1000 * 60 * 2 },
 		)
 		return res.data
 	},
@@ -286,7 +288,9 @@ export const socialApi = {
 		formData.append("file", file)
 		formData.append("folder", "post")
 
-		const res = await apiClient.post<UploadMediaResponse>("/api/socials/upload-media", formData)
+		const res = await apiClient.post<UploadMediaResponse>("/api/socials/upload-media", formData, {
+			timeout: 1000 * 60 * 2,
+		})
 		return res.data.data.media_urls
 	},
 }

@@ -8,7 +8,7 @@ import {
 	useSwitchAccount,
 } from "@/hooks/use-linked-accounts"
 import { authApi } from "@/lib/api"
-import { extractFieldErrors, extractMessage } from "@/lib/api-error"
+import { extractFieldErrors, extractMessage, showMutationErrorToast } from "@/lib/api-error"
 import { otpSchema } from "@/lib/schemas"
 import { resolveMediaUrl } from "@/lib/server-config"
 import { toast } from "@/lib/toast"
@@ -360,12 +360,12 @@ function AddLoginStep({
 					if (!res.success) return
 					onSuccess(res.data.id, res.data.user.email, res.data.user.otp_default)
 				},
-				onError: (err) => {
-					const fieldErrs = extractFieldErrors(err)
+				onError: (error) => {
+					const fieldErrs = extractFieldErrors(error)
 					if (Object.keys(fieldErrs).length) {
 						setErrors(fieldErrs)
 					} else {
-						toast.error(extractMessage(err, "Failed to add account. Check your credentials."))
+						showMutationErrorToast(error, "Failed to add account. Check your credentials.")
 					}
 				},
 			},

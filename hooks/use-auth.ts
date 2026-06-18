@@ -1,7 +1,7 @@
 "use client"
 
 import { authApi, userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { extractMessage, showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
@@ -60,7 +60,7 @@ export function useLogin() {
 			}
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Invalid email or password. Please try again."))
+			showMutationErrorToast(error, "Invalid email or password. Please try again.")
 		},
 	})
 }
@@ -137,7 +137,7 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset" | "change") {
 			}
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Invalid or expired code. Please try again."))
+			showMutationErrorToast(error, "Invalid or expired code. Please try again.")
 		},
 	})
 }
@@ -163,7 +163,7 @@ export function useForgotPassword() {
 			router.push("/verify?flow=reset")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Email does not exist in our database."))
+			showMutationErrorToast(error, "Email does not exist in our database.")
 		},
 	})
 }
@@ -188,7 +188,7 @@ export function useResetPassword() {
 			if (fieldErrors) {
 				toast.error(Object.values(fieldErrors).flat()[0] || "Password reset failed.")
 			} else {
-				toast.error(extractMessage(error, "Password reset failed. Please try again."))
+				showMutationErrorToast(error, "Password reset failed. Please try again.")
 			}
 		},
 	})
@@ -206,7 +206,7 @@ export function useCompleteProfile() {
 			router.push("/interests")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Couldn't save your profile. Please try again."))
+			showMutationErrorToast(error, "Couldn't save your profile. Please try again.")
 		},
 	})
 }
@@ -218,7 +218,7 @@ export function useResendOtp() {
 			toast.success("New code sent to your email")
 		},
 		onError: (error) => {
-			toast.error(extractMessage(error, "Couldn't resend code. Try again shortly."))
+			showMutationErrorToast(error, "Couldn't resend code. Try again shortly.")
 		},
 	})
 }

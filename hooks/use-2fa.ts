@@ -1,5 +1,5 @@
 import { authApi, userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser, OtpDefault } from "@/types/api"
@@ -22,7 +22,7 @@ export function useChangeOtpDefault() {
 		},
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to update default verification method"))
+			showMutationErrorToast(error, "Failed to update default verification method")
 		},
 	})
 }
@@ -44,7 +44,7 @@ export function useSetPin() {
 		},
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to set your PIN. Please try again."))
+			showMutationErrorToast(error, "Failed to set your PIN. Please try again.")
 		},
 	})
 }
@@ -59,7 +59,7 @@ export function useGenerateTotp() {
 	return useMutation({
 		mutationFn: (payload: { email: string }) => authApi.generateTotp(payload),
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to generate your authenticator key."))
+			showMutationErrorToast(error, "Failed to generate your authenticator key.")
 		},
 	})
 }

@@ -1,4 +1,5 @@
 import type { AxiosError } from "axios"
+import { toast } from "./toast"
 
 export function capitalize(text: string): string {
 	return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())
@@ -46,4 +47,14 @@ export function extractFirstError(error: unknown, fallback: string): string {
 		if (first) return String(first)
 	}
 	return extractMessage(error, fallback)
+}
+
+/**
+ * shows a toast only if the error wasn't already handled by the axios interceptor;
+ * use this instead of `toast.error(extractMessage(err, fallback))` inside mutation
+ * `onError` callbacks to prevent double-toasting on timeout/network failures
+ */
+export function showMutationErrorToast(error: unknown, fallback: string): void {
+	if ((error as { _interceptorHandled?: boolean })?._interceptorHandled) return
+	toast.error(extractMessage(error, fallback))
 }

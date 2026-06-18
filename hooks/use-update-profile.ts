@@ -1,9 +1,9 @@
 import { userApi } from "@/lib/api"
-import { extractMessage } from "@/lib/api-error"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
-import { useMutation,useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
 
 export const updateProfileKeys = {
@@ -39,7 +39,7 @@ export function useUpdatePhoto() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update profile photo"))
+			showMutationErrorToast(error, "Failed to update profile photo")
 		},
 
 		onSuccess: (data) => {
@@ -91,7 +91,7 @@ export function useUpdateCoverPhoto() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update cover photo"))
+			showMutationErrorToast(error, "Failed to update cover photo")
 		},
 
 		onSuccess: (data) => {
@@ -144,7 +144,7 @@ export function useUpdateName() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update name"))
+			showMutationErrorToast(error, "Failed to update name")
 		},
 
 		onSuccess: (data) => {
@@ -185,7 +185,7 @@ export function useUpdateUsername() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update username"))
+			showMutationErrorToast(error, "Failed to update username")
 		},
 
 		onSuccess: (data) => {
@@ -230,7 +230,7 @@ export function useUpdateBio() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update bio"))
+			showMutationErrorToast(error, "Failed to update bio")
 		},
 
 		onSuccess: (data) => {
@@ -273,7 +273,7 @@ export function useUpdateDob() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update date of birth"))
+			showMutationErrorToast(error, "Failed to update date of birth")
 		},
 
 		onSuccess: (data) => {
@@ -315,7 +315,7 @@ export function useUpdateDobVisibility() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update visibility setting"))
+			showMutationErrorToast(error, "Failed to update date-of-birth visibility")
 		},
 
 		onSuccess: (data) => {
@@ -354,7 +354,7 @@ export function useUpdateLocation() {
 		onError: (error, _vars, ctx) => {
 			if (ctx?.user) qc.setQueryData<FullUser>(authKeys.me, ctx.user)
 			if (ctx?.store) setUser(ctx.store)
-			toast.error(extractMessage(error, "Failed to update location"))
+			showMutationErrorToast(error, "Failed to update location")
 		},
 
 		onSuccess: (data) => {
@@ -378,7 +378,7 @@ export function useAddExternalLink() {
 		mutationFn: (payload: { url: string; label: string }) => userApi.addExternalLink(payload),
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to add link"))
+			showMutationErrorToast(error, "Failed to add link")
 		},
 
 		// No optimistic update for POST — we don't know the server-assigned id yet
@@ -406,7 +406,7 @@ export function useUpdateExternalLink() {
 			userApi.updateExternalLink(id, payload),
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to update link"))
+			showMutationErrorToast(error, "Failed to update link")
 		},
 
 		onSuccess: (data) => {
@@ -441,7 +441,7 @@ export function useDeleteExternalLink() {
 		mutationFn: (id: number) => userApi.deleteExternalLink(id),
 
 		onError: (error) => {
-			toast.error(extractMessage(error, "Failed to delete link"))
+			showMutationErrorToast(error, "Failed to delete link")
 		},
 
 		onSuccess: (_data, id) => {
