@@ -136,9 +136,6 @@ export function useVerifyOtp(flow: "signup" | "signin" | "reset" | "change") {
 				router.push("/home")
 			}
 		},
-		onError: (error) => {
-			showMutationErrorToast(error, "Invalid or expired code. Please try again.")
-		},
 	})
 }
 
@@ -154,7 +151,7 @@ export function useForgotPassword() {
 	return useMutation({
 		mutationFn: (email: string) => authApi.forgotPassword(email),
 		onSuccess: (res, email) => {
-			if (!res.success) return // TODO: add an error toast
+			if (!res.success) return
 
 			useAuthStore.setState({
 				pendingAuth: { email, otp_default: "email", is_2fa_enabled: false, is_pin_enabled: false },
@@ -180,7 +177,6 @@ export function useResetPassword() {
 		},
 		onSuccess: (res) => {
 			if (!res.success) return
-			useAuthStore.setState({ pendingAuth: null })
 		},
 		onError: (error) => {
 			const axiosErr = error as AxiosError<{ error?: Record<string, string[]> }>
