@@ -1,30 +1,8 @@
 "use client"
 
-import {
-	Activity,
-	Book,
-	Building2,
-	ChevronRight,
-	Clock,
-	CreditCard,
-	Info,
-	Mail,
-	MessageCircle,
-	Search,
-	Shield,
-	UserCog,
-} from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-
-const CATEGORIES = [
-	{ icon: UserCog, label: "Account & Login", href: "#account" },
-	{ icon: Shield, label: "Privacy & Security", href: "#privacy" },
-	{ icon: MessageCircle, label: "Messaging & Communities", href: "#messaging" },
-	{ icon: Book, label: "Content & Posts", href: "#content" },
-	{ icon: Building2, label: "Events & Business", href: "#business" },
-	{ icon: CreditCard, label: "Payments & Billing", href: "#payments" },
-]
 
 const FAQS = [
 	{
@@ -226,78 +204,122 @@ const RESOURCES = [
 	{ label: "Advertising Policies", href: "/advertising" },
 ]
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<section className="mb-10 sm:mb-12">
+			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			{children}
+		</section>
+	)
+}
+
+function P({ children }: { children: React.ReactNode }) {
+	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+}
+
+function Divider() {
+	return <hr className="border-gray-100 my-8 sm:my-10" />
+}
+
 export function Support() {
 	const [openIndex, setOpenIndex] = useState<string | null>(null)
 
 	return (
 		<>
 			{/* Hero */}
-			<section className="bg-gray-50 py-12 sm:py-16 px-4 border-b border-gray-100">
-				<div className="max-w-3xl mx-auto text-center">
-					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-4">
-						Help Center
+			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+				<div className="max-w-3xl mx-auto">
+					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
+						Help center
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-5">How can we help?</h1>
-					<div className="relative max-w-lg mx-auto">
-						<Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-						<input
-							type="text"
-							placeholder="Search help articles…"
-							className="w-full h-12 pl-11 pr-4 bg-white border border-gray-200 rounded-full text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-primary transition-colors shadow-sm"
-						/>
-					</div>
+					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+						How can we help?
+					</h1>
+					<p className="text-gray-500 leading-relaxed max-w-2xl mb-6">
+						Welcome to the AppsCombo Support Center. We&apos;re committed to helping you get the
+						most out of AppsCombo — whether you need assistance with your account, privacy settings,
+						messaging, events, business pages, payments, or reporting an issue.
+					</p>
+					<input
+						type="text"
+						placeholder="Search help articles…"
+						className="w-full max-w-md h-11 px-0 border-b border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
+					/>
 				</div>
 			</section>
 
-			<div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 sm:py-16 space-y-14">
-				{/* Categories */}
-				<section>
-					<h2 className="text-xl font-bold text-gray-900 mb-6">Browse by topic</h2>
-					<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-						{CATEGORIES.map(({ icon: Icon, label, href }) => (
-							<a
-								key={label}
-								href={href}
-								className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl hover:bg-primary/5 hover:border-primary/20 border border-gray-100 transition-colors"
-							>
-								<div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm">
-									<Icon size={16} className="text-primary" />
-								</div>
-								<span className="text-[13px] font-semibold text-gray-800">{label}</span>
-							</a>
-						))}
-					</div>
-				</section>
+			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+				<Section title="Contact support">
+					<P>If you need assistance, our support team is ready to help.</P>
+					<p className="text-[13px] text-gray-500 leading-relaxed">
+						Customer support:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						<br />
+						Technical support:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						<br />
+						Account recovery:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						<br />
+						Privacy & data requests:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						<br />
+						Safety & abuse reports:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						<br />
+						Business & advertising:{" "}
+						<a href="mailto:business@appscombo.com" className="text-primary hover:underline">
+							business@appscombo.com
+						</a>
+						<br />
+						Developer & API support:{" "}
+						<a href="mailto:developers@appscombo.com" className="text-primary hover:underline">
+							developers@appscombo.com
+						</a>
+					</p>
+				</Section>
+
+				<Divider />
 
 				{/* FAQ */}
-				<section>
-					<h2 className="text-xl font-bold text-gray-900 mb-8">Frequently asked questions</h2>
+				<section className="mb-10 sm:mb-12">
+					<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-8">
+						Frequently asked questions
+					</h2>
 					<div className="space-y-10">
 						{FAQS.map(({ section, items }) => (
 							<div key={section}>
 								<h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
 									{section}
 								</h3>
-								<div className="space-y-2">
+								<div className="divide-y divide-gray-100 border-t border-b border-gray-100">
 									{items.map(({ q, a }, i) => {
 										const key = `${section}-${i}`
 										const isOpen = openIndex === key
 										return (
-											<div key={q} className="border border-gray-100 rounded-2xl overflow-hidden">
+											<div key={q}>
 												<button
 													onClick={() => setOpenIndex(isOpen ? null : key)}
-													className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
+													className="w-full flex items-center justify-between py-4 text-left"
 												>
-													<span className="text-[14px] font-semibold text-gray-900 pr-4">{q}</span>
+													<span className="text-[13.5px] font-medium text-gray-900 pr-4">{q}</span>
 													<ChevronRight
-														size={15}
+														size={14}
 														className={`text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
 													/>
 												</button>
 												{isOpen && (
-													<div className="px-5 pb-5 border-t border-gray-50">
-														<p className="text-sm text-gray-500 leading-relaxed pt-4">{a}</p>
-													</div>
+													<p className="text-[13px] text-gray-500 leading-relaxed pb-4 pr-6">{a}</p>
 												)}
 											</div>
 										)
@@ -308,98 +330,63 @@ export function Support() {
 					</div>
 				</section>
 
-				{/* Safety, Accessibility, Status */}
-				<section className="grid sm:grid-cols-3 gap-5">
-					<div className="bg-gray-50 rounded-2xl p-5">
-						<div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm mb-3">
-							<Shield size={16} className="text-primary" />
-						</div>
-						<h3 className="text-[13.5px] font-bold text-gray-900 mb-1.5">Safety Center</h3>
-						<p className="text-xs text-gray-500 leading-relaxed">
-							Report harassment, bullying, hate speech, fraud, scams, impersonation, threats, or
-							illegal content. Reports are reviewed by our moderation and safety teams.
-						</p>
-					</div>
-					<div className="bg-gray-50 rounded-2xl p-5">
-						<div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm mb-3">
-							<Info size={16} className="text-primary" />
-						</div>
-						<h3 className="text-[13.5px] font-bold text-gray-900 mb-1.5">Accessibility</h3>
-						<p className="text-xs text-gray-500 leading-relaxed">
-							We strive to provide an inclusive experience for all users. Reach out to
-							support@appscombo.com with accessibility feedback or challenges.
-						</p>
-					</div>
-					<div className="bg-gray-50 rounded-2xl p-5">
-						<div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm mb-3">
-							<Activity size={16} className="text-primary" />
-						</div>
-						<h3 className="text-[13.5px] font-bold text-gray-900 mb-1.5">Service Status</h3>
-						<p className="text-xs text-gray-500 leading-relaxed">
-							Check the status of AppsCombo services, maintenance schedules, or outages at{" "}
-							<span className="text-primary font-medium">status.appscombo.com</span>.
-						</p>
-					</div>
-				</section>
+				<Divider />
 
-				{/* Resources */}
-				<section>
-					<h2 className="text-xl font-bold text-gray-900 mb-5">Resources</h2>
-					<div className="flex flex-wrap gap-2.5">
-						{RESOURCES.map((r) => (
-							<Link
-								key={r.label}
-								href={r.href}
-								className="text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-100 rounded-full px-4 py-2 transition-colors"
-							>
-								{r.label}
-							</Link>
-						))}
-					</div>
-				</section>
-
-				{/* Contact directory */}
-				<section>
-					<h2 className="text-xl font-bold text-gray-900 mb-2">Still need help?</h2>
-					<p className="text-sm text-gray-500 mb-6 flex items-center gap-1.5">
-						<Clock size={13} /> Support available 24 hours a day, 7 days a week.
+				<Section title="Safety, accessibility & status">
+					<p className="text-[13px] text-gray-500 leading-relaxed mb-3">
+						<span className="text-gray-800 font-medium">Safety Center —</span> report harassment,
+						bullying, hate speech, fraud, scams, impersonation, threats, or illegal content. Reports
+						are reviewed by our moderation and safety teams.
 					</p>
-					<div className="grid sm:grid-cols-2 gap-3">
+					<p className="text-[13px] text-gray-500 leading-relaxed mb-3">
+						<span className="text-gray-800 font-medium">Accessibility —</span> we strive to provide
+						an inclusive experience for all users. Reach out to support@appscombo.com with
+						accessibility feedback or challenges.
+					</p>
+					<p className="text-[13px] text-gray-500 leading-relaxed">
+						<span className="text-gray-800 font-medium">Service status —</span> check the status of
+						AppsCombo services, maintenance schedules, or outages at status.appscombo.com.
+					</p>
+				</Section>
+
+				<Divider />
+
+				<Section title="Resources">
+					<p className="text-[13px] text-gray-500 leading-relaxed">
+						{RESOURCES.map((r, i) => (
+							<span key={r.href}>
+								<Link href={r.href} className="text-primary hover:underline">
+									{r.label}
+								</Link>
+								{i < RESOURCES.length - 1 && " · "}
+							</span>
+						))}
+					</p>
+				</Section>
+
+				<Divider />
+
+				<Section title="Still need help?">
+					<P>Support available 24 hours a day, 7 days a week.</P>
+					<div className="grid sm:grid-cols-2 gap-x-8 gap-y-1 mb-6">
 						{CONTACTS.map(({ label, email }) => (
-							<a
-								key={label}
-								href={`mailto:${email}`}
-								className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl hover:bg-primary/5 border border-gray-100 transition-colors"
-							>
-								<Mail size={14} className="text-primary shrink-0" />
-								<div className="min-w-0">
-									<p className="text-[12.5px] font-semibold text-gray-800">{label}</p>
-									<p className="text-[11px] text-gray-500 truncate">{email}</p>
-								</div>
-							</a>
+							<p key={label} className="text-[13px] text-gray-500 leading-relaxed">
+								<span className="text-gray-700 font-medium">{label}</span> —{" "}
+								<a href={`mailto:${email}`} className="text-primary hover:underline">
+									{email}
+								</a>
+							</p>
 						))}
 					</div>
-				</section>
+					<Link
+						href="/contact"
+						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors"
+					>
+						Contact support
+					</Link>
+				</Section>
 
-				{/* Contact CTA */}
-				<section className="bg-gray-50 rounded-2xl p-6 sm:p-8">
-					<div className="sm:flex items-center justify-between gap-6">
-						<div className="mb-4 sm:mb-0">
-							<h3 className="text-[15px] font-bold text-gray-900 mb-1">
-								Didn&rsquo;t find your answer?
-							</h3>
-							<p className="text-sm text-gray-500">
-								Our support team typically responds within 24 hours.
-							</p>
-						</div>
-						<Link
-							href="/contact"
-							className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors shrink-0"
-						>
-							Contact support
-						</Link>
-					</div>
-				</section>
+				<p className="text-center text-xs text-gray-400 pt-2">AppsCombo — Connect. Engage. Grow.</p>
 			</div>
 		</>
 	)

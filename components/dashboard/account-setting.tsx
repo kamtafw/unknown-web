@@ -1353,6 +1353,7 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 				{
 					email: email,
 					otp: result.data.otp,
+					email_only: true,
 					need_tokens: false,
 					need_otp_token: true,
 				},

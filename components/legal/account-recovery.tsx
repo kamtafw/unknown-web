@@ -1,303 +1,311 @@
-import {
-	ChevronRight,
-	Fingerprint,
-	HeadphonesIcon,
-	Lock,
-	Mail,
-	Phone,
-	ShieldCheck,
-} from "lucide-react"
 import Link from "next/link"
 
-const METHODS = [
-	{
-		icon: Lock,
-		title: "Reset your password",
-		desc: "If you still have access to your registered email or phone number, this is the fastest recovery option.",
-		steps: [
-			"Visit the AppsCombo login page.",
-			'Select "Forgot Password."',
-			"Enter your registered email, phone number, or username.",
-			"Follow the instructions sent to your recovery method.",
-			"Create a new password and sign in.",
-		],
-	},
-	{
-		icon: Mail,
-		title: "Recover with email verification",
-		desc: "If your account is associated with an active email address, verify ownership to restore access.",
-		steps: [
-			'Select "Recover Account."',
-			"Enter your email address.",
-			"Verify ownership through the email verification link.",
-			"Follow the recovery instructions. Links may expire after a limited period.",
-		],
-	},
-	{
-		icon: Phone,
-		title: "Recover with phone verification",
-		desc: "If your account is linked to a mobile number, receive a one-time code via SMS.",
-		steps: [
-			'Select "Recover Account."',
-			"Enter your phone number.",
-			"Receive and enter a one-time verification code.",
-			"Follow the instructions to restore access.",
-		],
-	},
-	{
-		icon: HeadphonesIcon,
-		title: "Recover a compromised account",
-		desc: "If you believe your account was hacked or accessed without permission, act immediately.",
-		steps: [
-			"Change your password if you can still sign in.",
-			"Log out of all active sessions.",
-			"Enable two-factor authentication.",
-			"If locked out, contact our Security Team with your username, registered email/phone, and a description of the issue.",
-		],
-	},
-]
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<section className="mb-10 sm:mb-12">
+			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			{children}
+		</section>
+	)
+}
 
-const RECOVERY_INFO = [
-	{
-		title: "Personal information",
-		items: ["Full name", "Username", "Registered email address", "Registered phone number"],
-	},
-	{
-		title: "Account information",
-		items: [
-			"Approximate date of account creation",
-			"Previous passwords (if known)",
-			"Recent login locations",
-			"Devices used to access the account",
-		],
-	},
-	{
-		title: "Additional verification",
-		items: [
-			"Identification documents (where required)",
-			"Screenshots of error messages",
-			"Evidence of unauthorized activity",
-		],
-	},
-]
+function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<div className="mt-5">
+			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			{children}
+		</div>
+	)
+}
 
-const PROTECT_TIPS = [
-	"Enable two-factor authentication",
-	"Use a strong, unique password",
-	"Review active sessions regularly",
-	"Keep your recovery email and phone number current",
-]
+function P({ children }: { children: React.ReactNode }) {
+	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+}
 
-const COMMON_ISSUES = [
-	{
-		q: "How long does account recovery take?",
-		a: "Most automated recovery requests are processed immediately. Manual recovery requiring investigation or identity verification typically takes 24–72 hours; complex cases may need additional review time.",
-	},
-	{
-		q: "Can I recover a deleted account?",
-		a: "Accounts scheduled for deletion may be recoverable during the grace period. Permanently deleted accounts generally cannot be restored.",
-	},
-	{
-		q: "What if I no longer have access to my email and phone number?",
-		a: "You may still recover your account through identity verification and manual review by our security team.",
-	},
-	{
-		q: "Why was my recovery request denied?",
-		a: "Requests may be denied if we cannot verify account ownership, or if submitted information is incomplete or inconsistent.",
-	},
-	{
-		q: "I'm unable to complete two-factor authentication.",
-		a: "Try your recovery codes, an alternate verification method, or an approved backup device. If none are available, contact support@appscombo.com for manual verification.",
-	},
-]
+function UL({ children }: { children: React.ReactNode }) {
+	return (
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+			{children}
+		</ul>
+	)
+}
 
-const CONTACTS = [
-	{ label: "Account Recovery Support", email: "recovery@appscombo.com" },
-	{ label: "Security Team", email: "security@appscombo.com" },
-	{ label: "General Support", email: "support@appscombo.com" },
-]
+function OL({ children }: { children: React.ReactNode }) {
+	return (
+		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+			{children}
+		</ol>
+	)
+}
+
+function Divider() {
+	return <hr className="border-gray-100 my-8 sm:my-10" />
+}
 
 export function AccountRecovery() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="bg-gray-50 py-12 sm:py-16 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Account
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Account recovery</h1>
-					<p className="text-gray-500 leading-relaxed max-w-xl">
-						Locked out of your AppsCombo account? Whether you&apos;ve forgotten your password, lost
-						access to your email or phone, or suspect unauthorized access, follow the steps below to
-						regain access securely.
+					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+						Account recovery
+					</h1>
+					<p className="text-gray-500 leading-relaxed max-w-2xl">
+						At AppsCombo, we understand how important your account is. Whether you&apos;ve forgotten
+						your password, lost access to your email or phone number, suspect unauthorized access,
+						or are unable to sign in for any reason, we&apos;re here to help you recover your
+						account securely.
 					</p>
 				</div>
 			</section>
 
-			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16 space-y-14">
-				{/* Recovery methods */}
-				<div className="space-y-8">
-					{METHODS.map(({ icon: Icon, title, desc, steps }) => (
-						<div key={title} className="border border-gray-100 rounded-2xl p-6 sm:p-8">
-							<div className="flex items-center gap-3 mb-3">
-								<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-									<Icon size={18} className="text-primary" />
-								</div>
-								<h2 className="text-[16px] font-bold text-gray-900">{title}</h2>
-							</div>
-							<p className="text-sm text-gray-500 leading-relaxed mb-5">{desc}</p>
-							<ol className="space-y-3">
-								{steps.map((step, i) => (
-									<li key={i} className="flex items-start gap-3">
-										<span className="text-xs font-bold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">
-											{i + 1}
-										</span>
-										<p className="text-sm text-gray-600 leading-relaxed">{step}</p>
-									</li>
-								))}
-							</ol>
-						</div>
-					))}
-				</div>
+			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+				<Section title="Common account access issues">
+					<P>You may need account recovery assistance if:</P>
+					<UL>
+						<li>You forgot your password</li>
+						<li>You no longer have access to your email address or phone number</li>
+						<li>Your account was hacked or compromised</li>
+						<li>You are unable to complete two-factor authentication</li>
+						<li>Your account has been locked for security reasons</li>
+						<li>You believe someone else has access to your account</li>
+						<li>You cannot verify your identity using standard methods</li>
+					</UL>
+				</Section>
 
-				{/* Identity verification / locked accounts */}
-				<div className="grid sm:grid-cols-2 gap-8">
-					<div>
-						<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-							<Fingerprint size={18} className="text-primary" />
-						</div>
-						<h2 className="text-[16px] font-bold text-gray-900 mb-2">
-							Identity verification recovery
-						</h2>
-						<p className="text-sm text-gray-500 leading-relaxed">
-							If you no longer have access to your registered email or phone number, we may require
-							additional verification — such as government-issued identification, confirmation of
-							account ownership details, or security questions — to protect against unauthorized
-							access.
-						</p>
-					</div>
-					<div>
-						<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-							<ShieldCheck size={18} className="text-primary" />
-						</div>
-						<h2 className="text-[16px] font-bold text-gray-900 mb-2">
-							Locked or disabled accounts
-						</h2>
-						<p className="text-sm text-gray-500 leading-relaxed">
-							Accounts may be temporarily restricted for security concerns, suspicious login
-							activity, or Terms of Service violations. If you believe your account was restricted
-							in error, you may submit an appeal through the recovery process.
-						</p>
-					</div>
-				</div>
+				<Divider />
 
-				{/* Info required */}
-				<div>
-					<h2 className="text-xl font-bold text-gray-900 mb-2">
-						Information required for recovery
-					</h2>
-					<p className="text-sm text-gray-500 leading-relaxed mb-6">
-						To help us verify ownership, you may be asked to provide the following.
+				<Section title="Recovery options">
+					<SubSection title="Option 1 — Reset your password">
+						<P>
+							If you still have access to your registered email address or phone number, this is the
+							fastest option.
+						</P>
+						<OL>
+							<li>Visit the AppsCombo login page</li>
+							<li>Select Forgot Password</li>
+							<li>Enter your registered email, phone number, or username</li>
+							<li>Follow the instructions sent to your recovery method</li>
+							<li>Create a new password</li>
+							<li>Sign in using your updated credentials</li>
+						</OL>
+					</SubSection>
+
+					<SubSection title="Option 2 — Recover using email verification">
+						<OL>
+							<li>Select Recover Account</li>
+							<li>Enter your email address</li>
+							<li>Verify ownership through the email verification link</li>
+							<li>Follow the recovery instructions</li>
+						</OL>
+						<P>For security reasons, verification links may expire after a limited period.</P>
+					</SubSection>
+
+					<SubSection title="Option 3 — Recover using phone verification">
+						<OL>
+							<li>Select Recover Account</li>
+							<li>Enter your phone number</li>
+							<li>Receive and enter a one-time verification code</li>
+							<li>Follow the instructions to restore access</li>
+						</OL>
+						<P>Standard carrier charges may apply.</P>
+					</SubSection>
+
+					<SubSection title="Option 4 — Recover a compromised account">
+						<P>
+							If you believe your account has been hacked, accessed without permission, or otherwise
+							compromised, immediately:
+						</P>
+						<UL>
+							<li>Change your password if possible</li>
+							<li>Log out of all active sessions</li>
+							<li>Enable two-factor authentication</li>
+							<li>Review account activity and security settings</li>
+						</UL>
+						<P>
+							If you cannot access the account, contact the Security Team at{" "}
+							<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+								support@appscombo.com
+							</a>{" "}
+							with your username, registered email and phone number (if available), approximate
+							account creation date, and a description of the issue.
+						</P>
+					</SubSection>
+
+					<SubSection title="Option 5 — Identity verification recovery">
+						<P>
+							If you no longer have access to your registered email address or phone number, we may
+							require identity verification, which can include:
+						</P>
+						<UL>
+							<li>Government-issued identification</li>
+							<li>Verification of previous account activity</li>
+							<li>Confirmation of account ownership details</li>
+							<li>Security questions where applicable</li>
+						</UL>
+					</SubSection>
+				</Section>
+
+				<Divider />
+
+				<Section title="Two-factor authentication recovery">
+					<P>
+						If you are unable to access your two-factor authentication method, recovery options
+						include recovery codes, alternate verification methods, approved backup devices, or
+						manual verification by our security team. If none of these options are available,
+						contact{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
+						.
+					</P>
+				</Section>
+
+				<Divider />
+
+				<Section title="Locked or disabled accounts">
+					<P>
+						Accounts may be temporarily restricted or disabled for reasons including security
+						concerns, suspicious login activity, violation of Terms of Service, Community Guidelines
+						violations, or identity verification requirements. If you believe your account was
+						restricted in error, you may submit an appeal through the recovery process.
+					</P>
+				</Section>
+
+				<Divider />
+
+				<Section title="Information required for recovery requests">
+					<P>To help us verify ownership, you may be asked to provide:</P>
+					<SubSection title="Personal information">
+						<UL>
+							<li>Full name</li>
+							<li>Username</li>
+							<li>Registered email address</li>
+							<li>Registered phone number</li>
+						</UL>
+					</SubSection>
+					<SubSection title="Account information">
+						<UL>
+							<li>Date of account creation (approximate)</li>
+							<li>Previous passwords (if known)</li>
+							<li>Recent login locations</li>
+							<li>Devices used to access the account</li>
+						</UL>
+					</SubSection>
+					<SubSection title="Additional verification">
+						<UL>
+							<li>Identification documents (where required)</li>
+							<li>Screenshots of error messages</li>
+							<li>Evidence of unauthorized activity</li>
+						</UL>
+					</SubSection>
+					<P>Providing accurate information helps us process your request more efficiently.</P>
+				</Section>
+
+				<Divider />
+
+				<Section title="Protecting your account">
+					<P>Once access has been restored, we strongly recommend:</P>
+					<UL>
+						<li>Enabling two-factor authentication for an additional layer of security</li>
+						<li>
+							Using a strong, unique password — with uppercase and lowercase letters, numbers, and
+							special characters, not reused across platforms
+						</li>
+						<li>Reviewing active sessions regularly and removing any unfamiliar devices</li>
+						<li>Keeping your email address and phone number current</li>
+					</UL>
+				</Section>
+
+				<Divider />
+
+				<Section title="Recovery request processing times">
+					<P>
+						Most automated recovery requests are processed immediately. Manual recovery requests
+						requiring investigation or identity verification typically take 24–72 hours, though more
+						complex cases may require additional review time.
+					</P>
+				</Section>
+
+				<Divider />
+
+				<Section title="Privacy and security">
+					<P>
+						Information submitted during the recovery process is used solely to verify account
+						ownership, prevent unauthorized access, protect user accounts, and comply with legal and
+						regulatory obligations. For more information, review our{" "}
+						<Link href="/privacy-policy" className="text-primary hover:underline">
+							Privacy Policy
+						</Link>
+						.
+					</P>
+				</Section>
+
+				<Divider />
+
+				<Section title="Frequently asked questions">
+					<SubSection title="How long does account recovery take?">
+						<P>
+							Most recovery requests are resolved within 24–72 hours, depending on the complexity of
+							the case.
+						</P>
+					</SubSection>
+					<SubSection title="Can I recover a deleted account?">
+						<P>
+							Accounts scheduled for deletion may be recoverable during the grace period.
+							Permanently deleted accounts generally cannot be restored.
+						</P>
+					</SubSection>
+					<SubSection title="What if I no longer have access to my email and phone number?">
+						<P>
+							You may still recover your account through identity verification and manual review.
+						</P>
+					</SubSection>
+					<SubSection title="Why was my recovery request denied?">
+						<P>
+							Requests may be denied if we cannot verify account ownership or if submitted
+							information is incomplete or inconsistent.
+						</P>
+					</SubSection>
+				</Section>
+
+				<Divider />
+
+				<Section title="Contact the recovery team">
+					<p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+						Account Recovery Support:{" "}
+						<a href="mailto:recovery@appscombo.com" className="text-primary hover:underline">
+							recovery@appscombo.com
+						</a>
+						<br />
+						Security Team:{" "}
+						<a href="mailto:security@appscombo.com" className="text-primary hover:underline">
+							security@appscombo.com
+						</a>
+						<br />
+						General Support:{" "}
+						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
+							support@appscombo.com
+						</a>
 					</p>
-					<div className="grid sm:grid-cols-3 gap-6">
-						{RECOVERY_INFO.map(({ title, items }) => (
-							<div key={title}>
-								<h3 className="text-[13px] font-bold text-gray-900 mb-2.5">{title}</h3>
-								<ul className="space-y-1.5">
-									{items.map((i) => (
-										<li
-											key={i}
-											className="flex items-start gap-2 text-xs text-gray-500 leading-relaxed"
-										>
-											<span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
-											{i}
-										</li>
-									))}
-								</ul>
-							</div>
-						))}
-					</div>
-				</div>
-
-				{/* Protect your account + processing time */}
-				<div className="grid sm:grid-cols-2 gap-8">
-					<div className="bg-gray-50 rounded-2xl p-6">
-						<h2 className="text-[15px] font-bold text-gray-900 mb-3">
-							Once access is restored, protect your account
-						</h2>
-						<ul className="space-y-2">
-							{PROTECT_TIPS.map((t) => (
-								<li key={t} className="flex items-start gap-2 text-sm text-gray-600">
-									<span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-									{t}
-								</li>
-							))}
-						</ul>
-					</div>
-					<div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
-						<h2 className="text-[15px] font-bold text-gray-900 mb-2">Processing times</h2>
-						<p className="text-sm text-gray-600 leading-relaxed mb-3">
-							Most automated recovery requests are processed immediately. Manual requests requiring
-							investigation or identity verification typically take:
-						</p>
-						<p className="text-2xl font-bold text-primary">24–72 hours</p>
-						<p className="text-xs text-gray-500 mt-1">
-							More complex cases may require additional time.
-						</p>
-					</div>
-				</div>
-
-				{/* Common issues */}
-				<div>
-					<h2 className="text-xl font-bold text-gray-900 mb-6">Common issues</h2>
-					<div className="space-y-4">
-						{COMMON_ISSUES.map(({ q, a }) => (
-							<details key={q} className="group border border-gray-100 rounded-2xl">
-								<summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-									<span className="text-[14px] font-semibold text-gray-900">{q}</span>
-									<ChevronRight
-										size={15}
-										className="text-gray-400 group-open:rotate-90 transition-transform shrink-0 ml-4"
-									/>
-								</summary>
-								<p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{a}</p>
-							</details>
-						))}
-					</div>
-				</div>
-
-				{/* Contact */}
-				<div>
-					<h2 className="text-xl font-bold text-gray-900 mb-5">Contact the recovery team</h2>
-					<div className="grid sm:grid-cols-3 gap-3">
-						{CONTACTS.map(({ label, email }) => (
-							<a
-								key={label}
-								href={`mailto:${email}`}
-								className="flex flex-col gap-1 p-4 bg-gray-50 rounded-xl hover:bg-primary/5 border border-gray-100 transition-colors"
-							>
-								<span className="text-[13px] font-semibold text-gray-800">{label}</span>
-								<span className="text-[12px] text-primary">{email}</span>
-							</a>
-						))}
-					</div>
-				</div>
-
-				{/* Support CTA */}
-				<div className="bg-gray-50 rounded-2xl p-6 sm:p-8 text-center">
-					<h3 className="text-[15px] font-bold text-gray-900 mb-2">Still can&#39;t get in?</h3>
-					<p className="text-sm text-gray-500 mb-5">
-						Our recovery specialists will review your request and contact you with further
-						instructions.
-					</p>
+					<P>
+						Our goal is to help legitimate account owners regain access as quickly and securely as
+						possible while protecting the safety and privacy of all AppsCombo users. If you&apos;re
+						having trouble accessing your account, don&apos;t worry — our team is ready to assist.
+					</P>
 					<Link
 						href="/support"
-						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors"
+						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors mt-2"
 					>
 						Contact support
 					</Link>
-				</div>
+				</Section>
+
+				<p className="text-center text-xs text-gray-400 pt-2">AppsCombo — Connect. Engage. Grow.</p>
 			</div>
 		</>
 	)

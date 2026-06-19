@@ -15,12 +15,6 @@ function toMethod(otp_default: string): TwoFAMethod {
 	return "otp"
 }
 
-function methodToApiType(method: TwoFAMethod): "otp" | "pin" | "2fa" {
-	if (method === "authenticator") return "2fa"
-	if (method === "pin") return "pin"
-	return "otp"
-}
-
 function methodToOtpDefault(method: TwoFAMethod): OtpDefault {
 	if (method === "authenticator") return "2fa"
 	if (method === "pin") return "pin"
@@ -86,7 +80,6 @@ const TwoFAPage = () => {
 					{
 						email: email,
 						otp: code,
-						otp_default: methodToApiType(method),
 						need_tokens: true,
 						need_otp_token: true,
 						pre_auth_token: pre_auth_token ?? undefined,
