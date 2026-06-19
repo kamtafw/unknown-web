@@ -1,44 +1,142 @@
 "use client"
 
-import { AlertTriangle, CheckCircle, Loader2, Phone } from "lucide-react"
+import { AlertTriangle,CheckCircle,Loader2,Phone } from "lucide-react"
 import { useState } from "react"
-import { LegalWrapper } from "./legal-wrapper"
 
 const VIOLATION_TYPES = [
 	"Harassment or bullying",
 	"Hate speech or discrimination",
-	"Spam or scam",
-	"Misinformation or fake news",
-	"Sexual content involving minors",
-	"Violent or graphic content",
+	"Threats of violence",
+	"Fraud or scam",
+	"Impersonation or fake account",
+	"Spam",
+	"Child safety concern",
 	"Intellectual property violation",
-	"Self-harm or suicide content",
-	"Terrorism or extremism",
-	"Impersonation",
+	"Privacy violation",
+	"Misinformation",
+	"Dangerous organizations",
+	"Account compromise",
 	"Other",
 ]
 
 const PROCESS_STEPS = [
 	{
 		step: "1",
-		title: "Report received",
-		desc: "Your report is logged and assigned a case ID immediately.",
+		title: "Review",
+		desc: "Our systems and safety teams review the report you submitted.",
 	},
 	{
 		step: "2",
-		title: "Content review",
-		desc: "Our moderation team reviews the content within 48 hours.",
+		title: "Investigation",
+		desc: "We evaluate the content involved, user history, platform activity, and policy violations.",
 	},
 	{
 		step: "3",
-		title: "Action taken",
-		desc: "If a violation is found, we remove content and may restrict or ban the account.",
+		title: "Action",
+		desc: "We may remove content, restrict visibility, issue warnings, suspend, or remove accounts.",
 	},
 	{
 		step: "4",
-		title: "Notification",
-		desc: "If you provided your email, we notify you of the outcome.",
+		title: "Escalation",
+		desc: "Matters may be escalated to legal authorities where required by law.",
 	},
+]
+
+const REPORT_TYPES = [
+	{
+		title: "Harassment & Bullying",
+		desc: "Repeated unwanted contact, personal attacks, threatening messages, organized harassment, and cyberbullying.",
+	},
+	{
+		title: "Hate Speech & Discrimination",
+		desc: "Content promoting hatred, discrimination, or violence based on race, ethnicity, gender, religion, disability, or other protected characteristics.",
+	},
+	{
+		title: "Fraud, Scams & Deceptive Activity",
+		desc: "Investment scams, phishing, fake giveaways, identity theft, financial fraud, and unauthorized fundraising.",
+	},
+	{
+		title: "Impersonation & Fake Accounts",
+		desc: "Accounts pretending to be individuals, businesses, organizations, public figures, or government entities.",
+	},
+	{
+		title: "Child Safety & Protection",
+		desc: "Zero tolerance for child exploitation, abuse, or grooming. These reports receive the highest priority.",
+	},
+	{
+		title: "Threats & Dangerous Behavior",
+		desc: "Credible threats, violent extremism, criminal activity, dangerous challenges, and organized harmful behavior.",
+	},
+	{
+		title: "Privacy Violations",
+		desc: "Unauthorized sharing of personal information, confidential records, sensitive data, or private images.",
+	},
+	{
+		title: "Intellectual Property Violations",
+		desc: "Copyright infringement, trademark infringement, unauthorized content use, and brand impersonation.",
+	},
+]
+
+const SAFETY_MEASURES = [
+	{
+		title: "Security Features",
+		items: [
+			"Secure authentication",
+			"Two-factor authentication",
+			"Login monitoring",
+			"Fraud detection",
+			"Device verification",
+		],
+	},
+	{
+		title: "Content Protection",
+		items: [
+			"Automated moderation systems",
+			"Harmful content detection",
+			"Spam prevention systems",
+			"Abuse detection tools",
+		],
+	},
+	{
+		title: "Community Safety",
+		items: [
+			"User blocking tools",
+			"Privacy controls",
+			"Reporting systems",
+			"Community moderation tools",
+		],
+	},
+]
+
+const SAFETY_TIPS = [
+	{
+		title: "Protect Your Account",
+		items: [
+			"Use a strong password",
+			"Enable two-factor authentication",
+			"Avoid sharing login credentials",
+			"Review active sessions regularly",
+		],
+	},
+	{
+		title: "Protect Your Privacy",
+		items: [
+			"Adjust privacy settings",
+			"Limit public information",
+			"Be cautious with personal details",
+		],
+	},
+	{
+		title: "Stay Alert",
+		items: ["Verify suspicious messages", "Avoid unknown links", "Report scams immediately"],
+	},
+]
+
+const SAFETY_CONTACTS = [
+	{ label: "Safety Team", email: "safety@appscombo.com" },
+	{ label: "Security Team", email: "security@appscombo.com" },
+	{ label: "Legal Department", email: "legal@appscombo.com" },
+	{ label: "General Support", email: "support@appscombo.com" },
 ]
 
 type FormState = "idle" | "loading" | "success"
@@ -63,7 +161,7 @@ export function SafetyReport() {
 	}
 
 	return (
-		<LegalWrapper>
+		<>
 			{/* Hero */}
 			<section className="bg-gray-50 py-12 sm:py-16 px-4 border-b border-gray-100">
 				<div className="max-w-3xl mx-auto">
@@ -71,11 +169,12 @@ export function SafetyReport() {
 						Trust & Safety
 					</p>
 					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-						Report harmful content
+						Building a safer AppsCombo community
 					</h1>
 					<p className="text-gray-500 leading-relaxed max-w-xl">
-						AppsCombo takes safety seriously. Use this form to report content that violates our
-						community guidelines. All reports are reviewed by our moderation team.
+						The safety, security, and well-being of our users are among our highest priorities. Use
+						this form to report content that violates our community guidelines — all reports are
+						reviewed by our moderation team.
 					</p>
 				</div>
 			</section>
@@ -89,8 +188,9 @@ export function SafetyReport() {
 							For immediate danger or emergencies
 						</p>
 						<p className="text-sm text-gray-600">
-							If you or someone else is in immediate danger, please contact your local emergency
-							services. This form is not monitored in real time.{" "}
+							If you or someone else is in immediate danger, contact local emergency services
+							immediately. This form is reviewed as quickly as possible, but is not monitored in
+							real time.{" "}
 							<a
 								href="tel:199"
 								className="text-red-500 font-semibold inline-flex items-center gap-1"
@@ -112,7 +212,7 @@ export function SafetyReport() {
 								<h2 className="text-xl font-bold text-gray-900 mb-2">Report submitted</h2>
 								<p className="text-sm text-gray-500 max-w-xs leading-relaxed mb-2">
 									Thank you for helping keep AppsCombo safe. Our moderation team will review your
-									report within 48 hours.
+									report.
 								</p>
 								{form.email && (
 									<p className="text-xs text-gray-400">
@@ -220,7 +320,9 @@ export function SafetyReport() {
 
 					{/* What happens next */}
 					<div className="sm:col-span-2">
-						<h3 className="text-[15px] font-bold text-gray-900 mb-5">What happens next</h3>
+						<h3 className="text-[15px] font-bold text-gray-900 mb-5">
+							What happens after you report
+						</h3>
 						<div className="space-y-5">
 							{PROCESS_STEPS.map(({ step, title, desc }) => (
 								<div key={step} className="flex gap-4">
@@ -237,12 +339,86 @@ export function SafetyReport() {
 						<div className="mt-8 bg-gray-50 rounded-2xl p-4">
 							<p className="text-[12px] text-gray-500 leading-relaxed">
 								In-app reports (via the three-dot menu on any post or profile) are processed faster
-								as they carry additional context automatically.
+								as they carry additional context automatically. If you believe an enforcement action
+								was taken in error, you may request a review through Support.
 							</p>
 						</div>
 					</div>
 				</div>
+
+				{/* Types of reports */}
+				<section className="mt-20">
+					<h2 className="text-xl font-bold text-gray-900 mb-6">Types of safety reports</h2>
+					<div className="grid sm:grid-cols-2 gap-5">
+						{REPORT_TYPES.map(({ title, desc }) => (
+							<div key={title} className="border border-gray-100 rounded-2xl p-5">
+								<h3 className="text-[14px] font-bold text-gray-900 mb-1.5">{title}</h3>
+								<p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+							</div>
+						))}
+					</div>
+				</section>
+
+				{/* Platform safety measures */}
+				<section className="mt-16">
+					<h2 className="text-xl font-bold text-gray-900 mb-6">Platform safety measures</h2>
+					<div className="grid sm:grid-cols-3 gap-6">
+						{SAFETY_MEASURES.map(({ title, items }) => (
+							<div key={title}>
+								<h3 className="text-[13.5px] font-bold text-gray-900 mb-3">{title}</h3>
+								<ul className="space-y-1.5">
+									{items.map((i) => (
+										<li key={i} className="flex items-center gap-2 text-xs text-gray-500">
+											<span className="w-1 h-1 rounded-full bg-primary shrink-0" />
+											{i}
+										</li>
+									))}
+								</ul>
+							</div>
+						))}
+					</div>
+				</section>
+
+				{/* Safety tips */}
+				<section className="mt-16">
+					<h2 className="text-xl font-bold text-gray-900 mb-6">Safety tips for users</h2>
+					<div className="grid sm:grid-cols-3 gap-6">
+						{SAFETY_TIPS.map(({ title, items }) => (
+							<div key={title} className="bg-gray-50 rounded-2xl p-5">
+								<h3 className="text-[13.5px] font-bold text-gray-900 mb-3">{title}</h3>
+								<ul className="space-y-1.5">
+									{items.map((i) => (
+										<li key={i} className="flex items-center gap-2 text-xs text-gray-500">
+											<span className="w-1 h-1 rounded-full bg-primary shrink-0" />
+											{i}
+										</li>
+									))}
+								</ul>
+							</div>
+						))}
+					</div>
+				</section>
+
+				{/* Contact */}
+				<section className="mt-16">
+					<h2 className="text-xl font-bold text-gray-900 mb-2">Contact the safety team</h2>
+					<p className="text-sm text-gray-500 mb-6">
+						Every report helps us improve the safety and integrity of AppsCombo.
+					</p>
+					<div className="grid sm:grid-cols-2 gap-3">
+						{SAFETY_CONTACTS.map(({ label, email }) => (
+							<a
+								key={label}
+								href={`mailto:${email}`}
+								className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl hover:bg-primary/5 border border-gray-100 transition-colors"
+							>
+								<span className="text-[13px] font-semibold text-gray-800">{label}</span>
+								<span className="text-[12px] text-primary">{email}</span>
+							</a>
+						))}
+					</div>
+				</section>
 			</div>
-		</LegalWrapper>
+		</>
 	)
 }

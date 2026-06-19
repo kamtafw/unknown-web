@@ -1,18 +1,112 @@
 "use client"
 
-import { CheckCircle, Clock, Loader2, Mail } from "lucide-react"
+import {
+  BadgeCheck,
+  Briefcase,
+  Building2,
+  CheckCircle,
+  Clock,
+  Code2,
+  HeartHandshake,
+  Loader2,
+  Mail,
+  Megaphone,
+  Newspaper,
+  Scale,
+  ShieldAlert,
+  UserCog,
+  Wrench,
+} from "lucide-react"
 import { useState } from "react"
-import { LegalWrapper } from "./legal-wrapper"
 
 const CATEGORIES = [
-	"General inquiry",
-	"Technical support",
-	"Account issue",
-	"Business partnership",
-	"Press & media",
+	"General Inquiry",
+	"Customer Support",
+	"Technical Support",
+	"Account Recovery",
+	"Privacy Request",
+	"Safety Report",
+	"Business Inquiry",
 	"Advertising",
-	"Legal",
+	"Partnership",
+	"Media Request",
+	"Legal Inquiry",
 	"Other",
+]
+
+const TEAMS = [
+	{
+		icon: Mail,
+		label: "General Inquiries",
+		email: "info@appscombo.com",
+		desc: "Questions, feedback, or general information about AppsCombo.",
+	},
+	{
+		icon: UserCog,
+		label: "Customer Support",
+		email: "support@appscombo.com",
+		desc: "Account access, password resets, profile management, messaging.",
+	},
+	{
+		icon: Wrench,
+		label: "Technical Support",
+		email: "support@appscombo.com",
+		desc: "Bugs and technical issues — include device, OS, and app version.",
+	},
+	{
+		icon: ShieldAlert,
+		label: "Account Recovery",
+		email: "recovery@appscombo.com",
+		desc: "Lost access or believe your account has been compromised.",
+	},
+	{
+		icon: BadgeCheck,
+		label: "Privacy & Data Protection",
+		email: "privacy@appscombo.com",
+		desc: "Data access, correction, deletion requests, and privacy concerns.",
+	},
+	{
+		icon: ShieldAlert,
+		label: "Safety & Abuse Reporting",
+		email: "support@appscombo.com",
+		desc: "Harassment, hate speech, impersonation, fraud, or scams.",
+	},
+	{
+		icon: Briefcase,
+		label: "Business & Advertising",
+		email: "business@appscombo.com",
+		desc: "Advertising campaigns, brand partnerships, sponsored content.",
+	},
+	{
+		icon: HeartHandshake,
+		label: "Partnerships",
+		email: "partnerships@appscombo.com",
+		desc: "Technology integrations, collaborations, strategic alliances.",
+	},
+	{
+		icon: Megaphone,
+		label: "Creator Support",
+		email: "creators@appscombo.com",
+		desc: "Support and collaboration opportunities for creators.",
+	},
+	{
+		icon: Newspaper,
+		label: "Media & Press",
+		email: "press@appscombo.com",
+		desc: "Interviews, press releases, and public relations inquiries.",
+	},
+	{
+		icon: Scale,
+		label: "Legal Department",
+		email: "legal@appscombo.com",
+		desc: "Legal notices, intellectual property, and compliance matters.",
+	},
+	{
+		icon: Code2,
+		label: "Developer Support",
+		email: "support@appscombo.com",
+		desc: "API access, integrations, and developer-related questions.",
+	},
 ]
 
 type FormState = "idle" | "loading" | "success"
@@ -27,26 +121,52 @@ export function Contact() {
 		e.preventDefault()
 		if (!canSubmit) return
 		setState("loading")
-		// Simulate API call
 		await new Promise((r) => setTimeout(r, 1200))
 		setState("success")
 	}
 
 	return (
-		<LegalWrapper>
+		<>
 			{/* Hero */}
 			<section className="bg-gray-50 py-12 sm:py-16 px-4 border-b border-gray-100">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
-						Get in touch
+						We&rsquo;d love to hear from you
 					</p>
 					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Contact us</h1>
 					<p className="text-gray-500 leading-relaxed max-w-xl">
-						Have a question, feedback, or need help with something? Fill in the form and we will get
-						back to you as soon as possible.
+						Whether you have a question, need assistance, want to report an issue, explore
+						partnership opportunities, or simply share feedback — our team is here to help, around
+						the clock.
 					</p>
 				</div>
 			</section>
+
+			{/* Team directory */}
+			<div className="max-w-5xl mx-auto px-4 sm:px-8 py-12 sm:py-16 border-b border-gray-100">
+				<h2 className="text-xl font-bold text-gray-900 mb-1">Reach the right team</h2>
+				<p className="text-sm text-gray-500 mb-8">
+					Routing your message to the right inbox gets you a faster response.
+				</p>
+				<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+					{TEAMS.map(({ icon: Icon, label, email, desc }) => (
+						<a
+							key={label}
+							href={`mailto:${email}`}
+							className="flex flex-col gap-2.5 p-4 bg-gray-50 rounded-2xl hover:bg-primary/5 border border-transparent hover:border-primary/20 transition-colors"
+						>
+							<div className="flex items-center gap-2.5">
+								<div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm">
+									<Icon size={15} className="text-primary" />
+								</div>
+								<span className="text-[13.5px] font-semibold text-gray-900">{label}</span>
+							</div>
+							<p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+							<span className="text-xs font-medium text-primary">{email}</span>
+						</a>
+					))}
+				</div>
+			</div>
 
 			<div className="max-w-5xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
 				<div className="grid sm:grid-cols-3 gap-10 sm:gap-16">
@@ -56,7 +176,7 @@ export function Contact() {
 							<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
 								<Mail size={18} className="text-primary" />
 							</div>
-							<h3 className="text-[14px] font-bold text-gray-900 mb-1">Email</h3>
+							<h3 className="text-[14px] font-bold text-gray-900 mb-1">Send a message</h3>
 							<a href="mailto:hello@appscombo.com" className="text-sm text-primary hover:underline">
 								hello@appscombo.com
 							</a>
@@ -65,20 +185,31 @@ export function Contact() {
 							<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
 								<Clock size={18} className="text-primary" />
 							</div>
-							<h3 className="text-[14px] font-bold text-gray-900 mb-1">Response time</h3>
-							<p className="text-sm text-gray-500">We aim to reply within 1–2 business days.</p>
+							<h3 className="text-[14px] font-bold text-gray-900 mb-1">Support hours</h3>
+							<p className="text-sm text-gray-500">
+								Customer support is available 24 hours a day, 7 days a week.
+							</p>
+						</div>
+						<div>
+							<div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+								<Building2 size={18} className="text-primary" />
+							</div>
+							<h3 className="text-[14px] font-bold text-gray-900 mb-1">Headquarters</h3>
+							<p className="text-sm text-gray-500 leading-relaxed">
+								8 The Green, Ste A, Kent, Dover, DE, 19901, United States
+							</p>
 						</div>
 						<div className="bg-gray-50 rounded-2xl p-4">
 							<p className="text-[12.5px] text-gray-500 leading-relaxed">
-								For urgent account or safety issues, please use our{" "}
+								For urgent safety or account-security matters, please use our{" "}
+								<a href="/safety-report" className="text-primary hover:underline font-medium">
+									safety report
+								</a>{" "}
+								or{" "}
 								<a href="/support" className="text-primary hover:underline font-medium">
 									support page
 								</a>{" "}
-								or submit a{" "}
-								<a href="/safety-report" className="text-primary hover:underline font-medium">
-									safety report
-								</a>
-								.
+								directly.
 							</p>
 						</div>
 					</div>
@@ -92,8 +223,8 @@ export function Contact() {
 								</div>
 								<h2 className="text-xl font-bold text-gray-900 mb-2">Message sent!</h2>
 								<p className="text-gray-500 text-sm max-w-sm leading-relaxed">
-									Thanks for reaching out. We will review your message and get back to you within
-									1–2 business days.
+									Thanks for reaching out. Our team will review your message and respond as quickly
+									as possible.
 								</p>
 								<button
 									onClick={() => {
@@ -193,6 +324,6 @@ export function Contact() {
 					</div>
 				</div>
 			</div>
-		</LegalWrapper>
+		</>
 	)
 }

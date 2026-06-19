@@ -73,33 +73,6 @@ export function Sidebar() {
 					Logout
 				</button>
 			</div>
-
-			{/* Footer links */}
-			<div className="px-4 pb-4 pt-1">
-				<div className="flex flex-wrap gap-x-3 gap-y-1.5">
-					{[
-						["About", "/about"],
-						["Advertising", "/advertising"],
-						["Support", "/support"],
-						["Contact", "/contact"],
-						["Safety", "/safety-report"],
-						["Legal Notice", "/legal-notice"],
-						["Terms", "/terms"],
-						["Privacy", "/privacy-policy"],
-					].map(([label, href]) => (
-						<Link
-							key={href}
-							href={href}
-							className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
-						>
-							{label}
-						</Link>
-					))}
-				</div>
-				<p className="text-[10px] text-gray-300 mt-2">
-					© {new Date().getFullYear()} AppsCombo Inc.
-				</p>
-			</div>
 		</aside>
 	)
 }
