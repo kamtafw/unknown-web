@@ -493,7 +493,7 @@ function AddOtpStep({
 			const verifyRes = await authApi.verifyOtp({
 				email,
 				otp: result.data.otp,
-				type: method.type,
+				// email_only:true,
 				need_tokens: false,
 				need_otp_token: true,
 			})
