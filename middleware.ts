@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { COOKIE } from "./lib/cookies"
+import { DJANGO_API_URL } from "./lib/server-config"
 
 const PUBLIC_ROUTES = [
 	"/sign-in",
@@ -55,14 +56,31 @@ function isSameOriginRequest(req: NextRequest) {
 	return originUrl.host === host
 }
 
-async function refreshAuth(req: NextRequest, refreshToken: string) {
-	const refreshRes = await fetch(new URL("/api/auth/refresh", req.url), {
-		method: "POST",
-		headers: { Cookie: `${COOKIE.REFRESH}=${refreshToken}` },
-	})
+// function changed so this middleware stops calling itself and have it calling
+// Django and set cookies itself; on Vercel this is invisible plumbing
+// and basically always works; on Coolify, the container sits behind Traefik
+// and this fetch has to go: container → out to the internet → DNS resolve the
+// domain → back into Traefik → back into the same container (or another replica)
+async function refreshAuth(refreshToken: string) {
+	try {
+		const res = await fetch(`${DJANGO_API_URL}/auth/token/refresh`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ refresh: refreshToken }),
+			signal: AbortSignal.timeout(8000),
+		})
 
-	if (!refreshRes.ok) return null
-	return refreshRes.headers.getSetCookie()
+		const json = await res.json().catch(() => null)
+		if (!res.ok || !json?.success) return null
+
+		return {
+			access_token: json.data.access_token as string,
+			refresh_token: (json.data.refresh_token as string) ?? refreshToken,
+		}
+	} catch (error) {
+		console.error("[middleware] token refresh failed:", error)
+		return null
+	}
 }
 
 function clearAndRedirectToSignIn(req: NextRequest) {
@@ -100,14 +118,26 @@ export async function middleware(req: NextRequest) {
 	}
 
 	if ((!accessToken || isTokenExpired(accessToken)) && refreshToken) {
-		const setCookies = await refreshAuth(req, refreshToken)
-		if (!setCookies) return clearAndRedirectToSignIn(req)
+		const refreshed = await refreshAuth(refreshToken)
+		if (!refreshed) return clearAndRedirectToSignIn(req)
 
 		const res = isPublic ? NextResponse.redirect(new URL("/home", req.url)) : NextResponse.next()
-		setCookies.forEach((cookie) => {
-			res.headers.append("Set-Cookie", cookie)
-		})
+		const isProd = process.env.NODE_ENV === "production"
 
+		res.cookies.set(COOKIE.ACCESS, refreshed.access_token, {
+			httpOnly: true,
+			secure: isProd,
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60,
+		})
+		res.cookies.set(COOKIE.REFRESH, refreshed.refresh_token, {
+			httpOnly: true,
+			secure: isProd,
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60 * 24 * 7,
+		})
 		return res
 	}
 
