@@ -110,7 +110,7 @@ export interface SignupPayload {
 export interface VerifyOtpPayload {
 	email: string
 	otp: string
-	type?: "otp" | "pin" | "2fa"
+	email_only?: boolean
 	need_tokens?: boolean
 	need_otp_token?: boolean
 	pre_auth_token?: string

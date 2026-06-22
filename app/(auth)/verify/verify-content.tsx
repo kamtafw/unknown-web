@@ -39,7 +39,7 @@ export function VerifyContent({ flow }: { flow: Flow }) {
 					verifyOtp.mutate({
 						email: email,
 						otp: code,
-						type: "otp",
+						email_only: flow === "reset",
 						need_tokens: flow !== "reset",
 						need_otp_token: true,
 						pre_auth_token: pre_auth_token ?? undefined,

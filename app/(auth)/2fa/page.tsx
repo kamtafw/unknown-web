@@ -2,7 +2,7 @@
 
 import { TwoFactorVerification, TwoFAMethod } from "@/components/auth/two-factor-verification"
 import { useResendOtp, useSwitchOtpDefault, useVerifyOtp } from "@/hooks/use-auth"
-import { extractFieldErrors, extractMessage } from "@/lib/api-error"
+import { extractFieldErrors, extractMessage, extractOtpMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
 import { OtpDefault } from "@/types/api"
 import { useRouter } from "next/navigation"
@@ -12,12 +12,6 @@ import { toast } from "sonner"
 function toMethod(otp_default: string): TwoFAMethod {
 	if (otp_default === "2fa") return "authenticator"
 	if (otp_default === "pin") return "pin"
-	return "otp"
-}
-
-function methodToApiType(method: TwoFAMethod): "otp" | "pin" | "2fa" {
-	if (method === "authenticator") return "2fa"
-	if (method === "pin") return "pin"
 	return "otp"
 }
 
@@ -82,14 +76,21 @@ const TwoFAPage = () => {
 					}
 				}
 
-				verifyOtp.mutate({
-					email: email,
-					otp: code,
-					type: methodToApiType(method),
-					need_tokens: true,
-					need_otp_token: true,
-					pre_auth_token: pre_auth_token ?? undefined,
-				})
+				verifyOtp.mutate(
+					{
+						email: email,
+						otp: code,
+						need_tokens: true,
+						need_otp_token: true,
+						pre_auth_token: pre_auth_token ?? undefined,
+					},
+					{
+						onError: (error) => {
+							setIsProcessing(false)
+							toast.error(extractOtpMessage(error))
+						},
+					},
+				)
 			}}
 			onResend={(method) => {
 				if (method === "otp") resendOtp.mutate(email)

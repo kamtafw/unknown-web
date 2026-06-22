@@ -1,3 +1,4 @@
+import { Footer } from "@/components/shared/footer"
 import Image from "next/image"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
 			{/* page content */}
 			<main className="flex-1">{children}</main>
+
+			{/* footer */}
+			<Footer />
 		</div>
 	)
 }

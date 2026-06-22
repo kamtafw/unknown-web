@@ -1,8 +1,6 @@
 "use client"
 
 import { AlignLeft, X } from "lucide-react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 const SECTIONS = [
@@ -101,8 +99,6 @@ function NavItem({
 }
 
 export default function Terms() {
-	const router = useRouter()
-
 	const [activeId, setActiveId] = useState("s1")
 	const [tocOpen, setTocOpen] = useState(false)
 	const contentRef = useRef<HTMLDivElement>(null)
@@ -150,34 +146,7 @@ export default function Terms() {
 	}, [])
 
 	return (
-		<div className="min-h-screen bg-white text-gray-900">
-			{/* Header */}
-			<header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between">
-				<div className="flex items-center gap-1 min-w-0">
-					<Image
-						src="/logo.svg"
-						alt="App Combo"
-						width={180}
-						height={35}
-						className="mr-1 sm:mr-2 object-contain w-28 sm:w-44 h-auto shrink-0 cursor-pointer"
-						priority
-						onClick={() => router.push("/sign-in")}
-					/>
-					<span className="font-semibold text-sm sm:text-xl text-primary tracking-tight truncate">
-						Terms & Conditions
-					</span>
-				</div>
-
-				<div className="flex items-center gap-2 shrink-0">
-					<button className="hidden sm:block text-xs text-gray-500 border border-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-50 transition-colors">
-						Archive
-					</button>
-					<button className="hidden sm:block text-xs text-gray-500 border border-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-50 transition-colors">
-						Download PDF
-					</button>
-				</div>
-			</header>
-
+		<>
 			<div className="flex">
 				{/* Desktop sidebar nav */}
 				<nav className="hidden lg:block w-84 xl:w-96 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto px-16 py-8 border-r border-gray-100 scrollbar-hide">
@@ -875,7 +844,7 @@ export default function Terms() {
 					</div>
 				</div>
 			)}
-		</div>
+		</>
 	)
 }
 
