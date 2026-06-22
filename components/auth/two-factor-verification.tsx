@@ -166,7 +166,7 @@ export function TwoFactorVerification({
 							<Form.Submit asChild>
 								<button
 									disabled={isPending}
-									className="w-full h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+									className="w-full h-12 sm:h-13 rounded-full text-white text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
 								>
 									{isPending ? (
 										<>

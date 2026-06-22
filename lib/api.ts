@@ -172,7 +172,7 @@ export const userApi = {
 
 	updateExternalLink: (id: number, payload: { url: string; label: string }) =>
 		apiClient
-			.patch<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
+			.put<UpdateExternalLinkResponse>(`/api/users/external-links/${id}`, payload)
 			.then((r) => r.data),
 
 	deleteExternalLink: (id: number) =>

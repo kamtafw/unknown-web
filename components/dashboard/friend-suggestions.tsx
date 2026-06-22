@@ -7,10 +7,20 @@ import {
 } from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
 import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
+import { cn } from "@/lib/utils"
 import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { Avatar, ScrollArea } from "radix-ui"
 import { useEffect, useRef, useState } from "react"
+
+function flattenSuggestions(users: SuggestionUser[]) {
+	const seen = new Set<number>()
+	return users.filter((u) => {
+		if (seen.has(u.pkid)) return false
+		seen.add(u.pkid)
+		return true
+	})
+}
 
 function getInitials(first: string, last: string) {
 	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
@@ -100,11 +110,12 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 			<button
 				onClick={isFollowed ? handleUnfollow : handleFollow}
-				className={
+				className={cn(
+					"shrink-0 text-xs font-semibold py-1.5 rounded-full min-w-22 text-center transition-colors cursor-pointer disabled:opacity-50",
 					isFollowed
-						? "text-xs font-semibold px-4 py-1.5 rounded-full border border-primary text-gray-600 hover:border-primary hover:text-primary transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
-						: "text-xs font-semibold px-4 py-1.5 rounded-full bg-primary text-white hover:bg-primary/80 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
-				}
+						? "border border-primary text-gray-600 hover:text-primary"
+						: "bg-primary text-white hover:bg-primary/80",
+				)}
 			>
 				{isFollowed ? "Following" : user.followsYou ? "Follow Back" : "Follow"}
 			</button>
@@ -127,7 +138,7 @@ function SkeletonRow() {
 
 export function FriendSuggestions() {
 	const { data, isLoading } = useFriendSuggestions()
-	const users = data?.data.results ?? []
+	const users = flattenSuggestions(data?.data.results ?? [])
 
 	return (
 		<aside className="w-md shrink-0 flex flex-col bg-white rounded-t-2xl overflow-hidden">

@@ -1,6 +1,7 @@
-import { DJANGO_API_URL } from "@/lib/server-config"
-import { NextRequest, NextResponse } from "next/server"
 import { getAccessToken } from "@/lib/cookies"
+import { DJANGO_API_URL } from "@/lib/server-config"
+import { proxyJson } from "@/lib/server-fetch"
+import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
 	const body = await req.json()
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	const upstream = await fetch(`${DJANGO_API_URL}/socials/post/like`, {
+	return proxyJson(`${DJANGO_API_URL}/socials/post/like-post`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
@@ -18,7 +19,4 @@ export async function POST(req: NextRequest) {
 		},
 		body: JSON.stringify(body),
 	})
-
-	const json = await upstream.json()
-	return NextResponse.json(json, { status: 200 })
 }
