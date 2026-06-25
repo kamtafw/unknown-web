@@ -37,6 +37,9 @@ import {
 	ResetPasswordResponse,
 	SetPinResponse,
 	SignupPayload,
+	SocialAccountsResponse,
+	SocialLinkResponse,
+	SocialUnlinkResponse,
 	SwitchAccountResponse,
 	SwitchOtpDefaultPayload,
 	SwitchOtpDefaultResponse,
@@ -236,6 +239,19 @@ export const userApi = {
 	confirmDeleteAccount: (payload: { otp_token: string; reason: string; feedback?: string }) =>
 		apiClient
 			.post<ConfirmDeleteAccountResponse>("/api/users/delete-account/confirm", payload)
+			.then((r) => r.data),
+
+	getSocialAccounts: () =>
+		apiClient.get<SocialAccountsResponse>("/api/users/social-accounts").then((r) => r.data),
+
+	initiateSocialLink: (linkUrl: string) =>
+		apiClient
+			.get<SocialLinkResponse>("/api/users/social-accounts/link", { params: { linkUrl } })
+			.then((r) => r.data),
+
+	unlinkSocialAccount: (unlinkUrl: string) =>
+		apiClient
+			.delete<SocialUnlinkResponse>("/api/users/social-accounts/unlink", { params: { unlinkUrl } })
 			.then((r) => r.data),
 }
 

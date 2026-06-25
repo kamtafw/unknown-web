@@ -1,9 +1,9 @@
-import "./globals.css"
 import { QueryProvider } from "@/providers/query-provider"
 import type { Metadata } from "next"
 import { Work_Sans } from "next/font/google"
 import type { ReactNode } from "react"
 import { Toaster } from "sonner"
+import "./globals.css"
 
 const workSans = Work_Sans({
 	subsets: ["latin"],
@@ -14,7 +14,7 @@ const workSans = Work_Sans({
 })
 
 export const metadata: Metadata = {
-	title: "AppsCombo",
+	title: { template: "%s | AppsCombo", default: "AppsCombo" },
 	description: "Social media network",
 }
 

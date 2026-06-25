@@ -1,5 +1,6 @@
-import { DJANGO_API_URL } from "@/lib/server-config"
 import { getAccessToken } from "@/lib/cookies"
+import { DJANGO_API_URL } from "@/lib/server-config"
+import { proxyJson } from "@/lib/server-fetch"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
@@ -8,11 +9,8 @@ export async function GET(req: NextRequest) {
 	if (!accessToken)
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 
-	const upstream = await fetch(`${DJANGO_API_URL}/users/list${req.nextUrl.search}`, {
+	return proxyJson(`${DJANGO_API_URL}/users/list${req.nextUrl.search}`, {
 		headers: { Authorization: `Bearer ${accessToken}` },
 		cache: "no-store",
 	})
-
-	const json = await upstream.json()
-	return NextResponse.json(json, { status: upstream.status })
 }

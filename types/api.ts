@@ -464,3 +464,15 @@ export type InitiateDeleteAccountResponse = ApiResponse<{
 }>
 
 export type ConfirmDeleteAccountResponse = ApiResponse<{ request: DeleteAccountRequest }>
+
+export interface SocialAccount {
+	platform: string
+	linked: boolean
+	user_id: string | null
+	platform_url: string
+	platform_login_url: string
+}
+
+export type SocialAccountsResponse = ApiResponse<{ linked_accounts: SocialAccount[] }>
+export type SocialLinkResponse = ApiResponse<{ redirect_url: string }>
+export type SocialUnlinkResponse = ApiResponse<{ platform: string }>
