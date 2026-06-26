@@ -9,6 +9,7 @@ import {
 } from "@/hooks/use-2fa"
 import { useLogout, useResendOtp, useResetPassword, useVerifyOtp } from "@/hooks/use-auth"
 import { useConfirmDeleteAccount, useInitiateDeleteAccount } from "@/hooks/use-delete-account"
+import { useReportProblem } from "@/hooks/use-report"
 import {
 	extractFieldErrors,
 	extractFirstError,
@@ -19,7 +20,7 @@ import { createPasswordSchema, otpSchema } from "@/lib/schemas"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { DeleteAccountReason, OtpDefault } from "@/types/api"
+import { DeleteAccountReason, OtpDefault, ProblemType } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as RadioGroup from "@radix-ui/react-radio-group"
 import * as Switch from "@radix-ui/react-switch"
@@ -196,15 +197,46 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 }
 
 export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
-	const PROBLEMS = [
-		"App crashes or freezes frequently",
-		"Unable to send or receive messages",
-		"Media files not loading or uploading",
-		"Notification issues or delays",
+	const reportProblem = useReportProblem()
+
+	const PROBLEMS: { value: ProblemType; label: string; description: string }[] = [
+		{
+			value: "bug",
+			label: "App crashes or freezes frequently",
+			description: "Something broke or behaved unexpectedly",
+		},
+		{
+			value: "performance",
+			label: "Slow or laggy experience",
+			description: "Media, feeds, or actions feel sluggish",
+		},
+		{
+			value: "ui",
+			label: "Display or layout issue",
+			description: "Something looks wrong or off-screen",
+		},
+		{
+			value: "feature",
+			label: "Feature request or suggestion",
+			description: "Something you'd like to see added",
+		},
 	]
-	const [selected, setSelected] = useState("")
+
+	const [selected, setSelected] = useState<ProblemType | "">("")
 	const [feedback, setFeedback] = useState("")
 	const MAX = 200
+
+	const handleSubmit = () => {
+		if (!selected || reportProblem.isPending) return
+		reportProblem.mutate(
+			{ problem_type: selected, feedback: feedback.trim() || undefined },
+			{
+				onSuccess: (data) => {
+					if (data.success) onBack()
+				},
+			},
+		)
+	}
 
 	return (
 		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
@@ -212,18 +244,22 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				<div className="px-6 pt-5 pb-8">
-					<h3 className="text-sm font-semibold text-gray-900 mb-3">Please select a problem</h3>
+					<h3 className="text-sm font-semibold text-gray-900 mb-3">What&apos;s the issue?</h3>
 
-					<RadioGroup.Root value={selected} onValueChange={setSelected} className="flex flex-col">
+					<RadioGroup.Root
+						value={selected}
+						onValueChange={(v) => setSelected(v as ProblemType)}
+						className="flex flex-col"
+					>
 						{PROBLEMS.map((p) => (
-							<RadioItem key={p} value={p} label={p} />
+							<RadioItem key={p.value} value={p.value} label={p.label} />
 						))}
 						<RadioItem value="other" label="Other" />
 					</RadioGroup.Root>
 
-					<div className="mt-4">
+					<div className="mt-5">
 						<h3 className="text-sm font-semibold text-gray-900 mb-3">
-							Your feedback is very much appreciated
+							Additional details <span className="text-gray-400 font-normal">(optional)</span>
 						</h3>
 						<div className="relative">
 							<textarea
@@ -240,7 +276,15 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 					</div>
 
 					<div className="mt-6">
-						<ActionButton disabled={!selected}>Submit</ActionButton>
+						<ActionButton disabled={!selected || reportProblem.isPending} onClick={handleSubmit}>
+							{reportProblem.isPending ? (
+								<span className="flex items-center justify-center gap-2">
+									<Loader2 size={14} className="animate-spin" /> Submitting…
+								</span>
+							) : (
+								"Submit"
+							)}
+						</ActionButton>
 					</div>
 				</div>
 			</div>

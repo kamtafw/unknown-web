@@ -27,11 +27,11 @@ export function useUnlinkSocialAccount() {
 	const qc = useQueryClient()
 
 	return useMutation({
-		mutationFn: (unlinkUrl: string) => userApi.unlinkSocialAccount(unlinkUrl),
-		onSuccess: (data, platform) => {
+		mutationFn: ({ unlinkUrl }: { platform: string; unlinkUrl: string }) =>
+			userApi.unlinkSocialAccount(unlinkUrl),
+		onSuccess: (data, { platform }) => {
 			if (!data.success) return
 
-			// optimistic cache patch — no refetch needed
 			qc.setQueryData<SocialAccountsResponse>(socialAccountsKey, (old) => {
 				if (!old?.data?.linked_accounts) return old
 				return {

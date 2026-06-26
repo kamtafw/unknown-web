@@ -476,3 +476,8 @@ export interface SocialAccount {
 export type SocialAccountsResponse = ApiResponse<{ linked_accounts: SocialAccount[] }>
 export type SocialLinkResponse = ApiResponse<{ redirect_url: string }>
 export type SocialUnlinkResponse = ApiResponse<{ platform: string }>
+
+export type ProblemType = "bug" | "performance" | "feature" | "ui"
+export type ReportProblemResponse = ApiResponse<{
+	report: { problem_type: ProblemType; feedback: string }
+}>
