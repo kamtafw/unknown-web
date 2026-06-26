@@ -1,15 +1,10 @@
 "use client"
 
-import {
-	useInitiateSocialLink,
-	useSocialAccounts,
-	useUnlinkSocialAccount,
-} from "@/hooks/use-social-accounts"
-import { toast } from "@/lib/toast"
+import { useSocialAccounts, useUnlinkSocialAccount } from "@/hooks/use-social-accounts"
 import { SocialAccount } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ArrowLeft, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 function FacebookIcon({ size = 20 }: { size?: number }) {
 	return (
@@ -158,31 +153,40 @@ function PlatformRow({ account, isLinking, isUnlinking, onLink, onUnlink }: Plat
 					)}
 				</div>
 				<p className="text-[12px] text-gray-500 mt-0.5">
-					{account.linked
-						? account.user_id
-							? `ID: ${account.user_id}`
-							: "Connected"
-						: "Not connected"}
+					{account.linked ? "Connected" : "Not connected"}
 				</p>
 			</div>
 
-			{account.linked ? (
+			{!account.linked ? (
 				<button
-					onClick={onUnlink}
-					disabled={isUnlinking}
-					className="shrink-0 text-xs font-semibold px-3.5 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-destructive hover:text-destructive transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
-				>
-					{isUnlinking ? <Loader2 size={12} className="animate-spin" /> : "Unlink"}
-				</button>
-			) : (
-				<button
-					onClick={onLink}
+					onClick={() => onLink()}
 					disabled={isLinking}
 					className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
 				>
 					{isLinking ? <Loader2 size={11} className="animate-spin" /> : <ExternalLink size={11} />}
 					{isLinking ? "Opening…" : "Link"}
 				</button>
+			) : (
+				<div className="flex items-center gap-2">
+					{/* open linked profile */}
+					{account.platform_url && (
+						<button
+							onClick={() => window.open(account.platform_url, "_blank", "noopener,noreferrer")}
+							className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-green-50 text-green-700 hover:bg-green-100 transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap"
+						>
+							<ExternalLink size={11} />
+							Open
+						</button>
+					)}
+					{/* unlink */}
+					<button
+						onClick={onUnlink}
+						disabled={isUnlinking}
+						className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-red-50 text-destructive hover:border-destructive hover:text-destructive transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+					>
+						{isUnlinking ? <Loader2 size={12} className="animate-spin" /> : "Unlink"}
+					</button>
+				</div>
 			)}
 		</div>
 	)
@@ -191,10 +195,21 @@ function PlatformRow({ account, isLinking, isUnlinking, onLink, onUnlink }: Plat
 export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 	const { data, isLoading, refetch } = useSocialAccounts()
 	const unlink = useUnlinkSocialAccount()
-	const initiateLink = useInitiateSocialLink()
 
+	const [openingPlatform, setOpeningPlatform] = useState<string | null>(null)
 	const [unlinkTarget, setUnlinkTarget] = useState<string | null>(null)
-	const [linkingPlatform, setLinkingPlatform] = useState<string | null>(null)
+	const tabRef = useRef<Window | null>(null)
+	const channelRef = useRef<BroadcastChannel | null>(null)
+	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+	const cleanup = () => {
+		if (pollRef.current) {
+			clearInterval(pollRef.current)
+		}
+		channelRef.current?.close()
+		pollRef.current = null
+		channelRef.current = null
+	}
 
 	const accounts = data?.data?.linked_accounts ?? []
 
@@ -206,20 +221,46 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 		return () => document.removeEventListener("visibilitychange", onVisible)
 	}, [refetch])
 
-	const handleLink = async (account: SocialAccount) => {
-		setLinkingPlatform(account.platform)
-		try {
-			const res = await initiateLink.mutateAsync(account.platform_login_url)
-			if (res.success && res.data?.redirect_url) {
-				window.open(res.data.redirect_url, "_blank", "noopener,noreferrer")
-			} else {
-				toast.error("Could not initiate connection. Please try again.")
-			}
-		} catch {
-			// onError in the mutation handles the toast
-		} finally {
-			setLinkingPlatform(null)
+	const handleLink = (account: SocialAccount) => {
+		cleanup()
+
+		const callbackUrl = `${window.location.origin}/social-callback`
+		const loginUrl = new URL(account.platform_login_url)
+		loginUrl.searchParams.set("redirect_uri", callbackUrl)
+
+		setOpeningPlatform(account.platform)
+
+		const tab = window.open(loginUrl.toString(), "_blank")
+		tabRef.current = tab
+
+		// BroadcastChannel: callback page posts SOCIAL_AUTH_COMPLETE → we close the tab here
+		const channel = new BroadcastChannel("appscombo_social_auth")
+		channelRef.current = channel
+
+		channel.onmessage = async (event) => {
+			if (event.data?.type !== "SOCIAL_AUTH_COMPLETE") return
+			cleanup()
+			tabRef.current?.close()
+			tabRef.current = null
+			setOpeningPlatform(null)
+			await refetch()
 		}
+
+		pollRef.current = setInterval(() => {
+			if (!tabRef.current || tabRef.current.closed) {
+				cleanup()
+				setOpeningPlatform(null)
+				refetch()
+			}
+		}, 1000)
+
+		setTimeout(
+			() => {
+				cleanup()
+				setOpeningPlatform(null)
+			},
+			1000 * 60 * 5,
+		)
 	}
 
 	const handleUnlink = () => {
@@ -253,7 +294,7 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 							<PlatformRow
 								key={account.platform}
 								account={account}
-								isLinking={linkingPlatform === account.platform}
+								isLinking={openingPlatform === account.platform}
 								isUnlinking={unlink.isPending && unlink.variables === account.platform}
 								onLink={() => handleLink(account)}
 								onUnlink={() => setUnlinkTarget(account.platform)}
@@ -262,7 +303,7 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 
 				<div className="mx-6 my-2 border-t border-gray-100" />
 
-				{/* Footer note */}
+				{/* footer note */}
 				{!isLoading && accounts.length > 0 && (
 					<p className="px-6 py-4 text-[12px] text-gray-400 leading-relaxed">
 						Disconnecting a social account won&apos;t delete your AppsCombo account or the data
