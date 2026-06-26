@@ -31,12 +31,17 @@ import {
 	OtpDefault,
 	PostDetailResponse,
 	PostStatsResponse,
+	ProblemType,
+	ReportProblemResponse,
 	RepostPayload,
 	RepostResponse,
 	ResetPasswordPayload,
 	ResetPasswordResponse,
 	SetPinResponse,
 	SignupPayload,
+	SocialAccountsResponse,
+	SocialLinkResponse,
+	SocialUnlinkResponse,
 	SwitchAccountResponse,
 	SwitchOtpDefaultPayload,
 	SwitchOtpDefaultResponse,
@@ -237,6 +242,22 @@ export const userApi = {
 		apiClient
 			.post<ConfirmDeleteAccountResponse>("/api/users/delete-account/confirm", payload)
 			.then((r) => r.data),
+
+	getSocialAccounts: () =>
+		apiClient.get<SocialAccountsResponse>("/api/users/social-accounts").then((r) => r.data),
+
+	initiateSocialLink: (linkUrl: string) =>
+		apiClient
+			.get<SocialLinkResponse>("/api/users/social-accounts/link", { params: { linkUrl } })
+			.then((r) => r.data),
+
+	unlinkSocialAccount: (unlinkUrl: string) =>
+		apiClient
+			.delete<SocialUnlinkResponse>("/api/users/social-accounts/unlink", { params: { unlinkUrl } })
+			.then((r) => r.data),
+
+	reportProblem: (payload: { problem_type: ProblemType; feedback?: string }) =>
+		apiClient.post<ReportProblemResponse>("/api/users/report-problem", payload).then((r) => r.data),
 }
 
 export const socialApi = {

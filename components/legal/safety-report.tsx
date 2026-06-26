@@ -1,24 +1,3 @@
-"use client"
-
-import { CheckCircle, Loader2 } from "lucide-react"
-import { useState } from "react"
-
-const VIOLATION_TYPES = [
-	"Harassment or bullying",
-	"Hate speech or discrimination",
-	"Threats of violence",
-	"Fraud or scam",
-	"Impersonation or fake account",
-	"Spam",
-	"Child safety concern",
-	"Intellectual property violation",
-	"Privacy violation",
-	"Misinformation",
-	"Dangerous organizations",
-	"Account compromise",
-	"Other",
-]
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
@@ -61,27 +40,7 @@ function Divider() {
 	return <hr className="border-gray-100 my-8 sm:my-10" />
 }
 
-type FormState = "idle" | "loading" | "success"
-
 export function SafetyReport() {
-	const [form, setForm] = useState({
-		violationType: "",
-		contentUrl: "",
-		description: "",
-		email: "",
-	})
-	const [state, setState] = useState<FormState>("idle")
-
-	const canSubmit = form.violationType && form.description
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-		if (!canSubmit) return
-		setState("loading")
-		await new Promise((r) => setTimeout(r, 1400))
-		setState("success")
-	}
-
 	return (
 		<>
 			{/* Hero */}
@@ -102,21 +61,6 @@ export function SafetyReport() {
 			</section>
 
 			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
-				{/* Emergency notice */}
-				<div className="border-l-2 border-destructive pl-4 mb-12">
-					<p className="text-[13px] font-semibold text-gray-900 mb-1">
-						For immediate danger or emergencies
-					</p>
-					<p className="text-[13px] text-gray-500 leading-relaxed">
-						If you or someone else is in immediate danger, contact local emergency services
-						immediately — this form is reviewed as quickly as possible, but is not monitored in real
-						time. Emergency (Nigeria):{" "}
-						<a href="tel:199" className="text-primary hover:underline">
-							199
-						</a>
-					</p>
-				</div>
-
 				<Section title="Our commitment to safety">
 					<P>AppsCombo is committed to:</P>
 					<UL>
@@ -345,121 +289,6 @@ export function SafetyReport() {
 							<li>Report scams immediately</li>
 						</UL>
 					</SubSection>
-				</Section>
-
-				<Divider />
-
-				<Section title="Submit a report">
-					{state === "success" ? (
-						<div className="flex flex-col items-center justify-center py-14 text-center">
-							<CheckCircle size={28} className="text-primary mb-4" />
-							<h3 className="text-base font-bold text-gray-900 mb-2">Report submitted</h3>
-							<p className="text-sm text-gray-500 max-w-xs leading-relaxed mb-2">
-								Thank you for helping keep AppsCombo safe. Our moderation team will review your
-								report.
-							</p>
-							{form.email && (
-								<p className="text-xs text-gray-400">
-									We will notify you at <strong>{form.email}</strong>.
-								</p>
-							)}
-							<button
-								onClick={() => {
-									setForm({ violationType: "", contentUrl: "", description: "", email: "" })
-									setState("idle")
-								}}
-								className="mt-6 text-sm font-semibold text-primary hover:underline"
-							>
-								Submit another report
-							</button>
-						</div>
-					) : (
-						<form onSubmit={handleSubmit} className="space-y-5">
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">
-									Type of violation <span className="text-destructive">*</span>
-								</label>
-								<select
-									value={form.violationType}
-									onChange={(e) => setForm((f) => ({ ...f, violationType: e.target.value }))}
-									required
-									className="h-11 px-0 border-b border-gray-200 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
-								>
-									<option value="" disabled>
-										Select violation type…
-									</option>
-									{VIOLATION_TYPES.map((v) => (
-										<option key={v} value={v}>
-											{v}
-										</option>
-									))}
-								</select>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">
-									URL of reported content{" "}
-									<span className="text-gray-400 font-normal">(optional but recommended)</span>
-								</label>
-								<input
-									type="url"
-									value={form.contentUrl}
-									onChange={(e) => setForm((f) => ({ ...f, contentUrl: e.target.value }))}
-									placeholder="https://appscombo.com/posts/..."
-									className="h-11 px-0 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
-								/>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">
-									Description <span className="text-destructive">*</span>
-								</label>
-								<textarea
-									value={form.description}
-									onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-									placeholder="Please describe the issue in detail. Include usernames, dates, or any context that may help our review team…"
-									rows={5}
-									required
-									className="px-0 py-2 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors resize-none leading-relaxed"
-								/>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">
-									Your email{" "}
-									<span className="text-gray-400 font-normal">
-										(optional — for outcome notification)
-									</span>
-								</label>
-								<input
-									type="email"
-									value={form.email}
-									onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-									placeholder="you@example.com"
-									className="h-11 px-0 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
-								/>
-							</div>
-
-							<button
-								type="submit"
-								disabled={!canSubmit || state === "loading"}
-								className="w-full h-12 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-							>
-								{state === "loading" ? (
-									<>
-										<Loader2 size={15} className="animate-spin" /> Submitting…
-									</>
-								) : (
-									"Submit report"
-								)}
-							</button>
-
-							<p className="text-[11px] text-gray-400 leading-relaxed">
-								Reports are anonymous unless you provide your email. False or malicious reports may
-								result in action against your account.
-							</p>
-						</form>
-					)}
 				</Section>
 
 				<Divider />

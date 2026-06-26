@@ -80,6 +80,7 @@ import {
 	TwoStepVerification,
 	Verification,
 } from "./settings-icons"
+import { SocialAccountsPanel } from "./social-accounts-panel"
 
 type SectionId =
 	| "verification"
@@ -172,6 +173,12 @@ const SECTIONS: Section[] = [
 				label: "Add account",
 				description: "Add and switch between multiple accounts",
 				icon: <AddAccount size={18} />,
+			},
+			{
+				id: "social-accounts",
+				label: "Link social accounts",
+				description: "Connect your Facebook, X, LinkedIn and more to your profile",
+				icon: <Link2 size={18} />,
 			},
 			{
 				id: "time-zone",
@@ -344,6 +351,7 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"report-problem": ReportProblemPanel,
 	"change-phone": ChangePhonePanel,
 	"add-account": AddAccountPanel,
+	"social-accounts": SocialAccountsPanel,
 	deactivate: DeleteAccountPanel,
 }
 

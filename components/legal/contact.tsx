@@ -1,23 +1,3 @@
-"use client"
-
-import { CheckCircle, Loader2 } from "lucide-react"
-import { useState } from "react"
-
-const CATEGORIES = [
-	"General Inquiry",
-	"Customer Support",
-	"Technical Support",
-	"Account Recovery",
-	"Privacy Request",
-	"Safety Report",
-	"Business Inquiry",
-	"Advertising",
-	"Partnership",
-	"Media Request",
-	"Legal Inquiry",
-	"Other",
-]
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
@@ -52,22 +32,7 @@ function Divider() {
 	return <hr className="border-gray-100 my-8 sm:my-10" />
 }
 
-type FormState = "idle" | "loading" | "success"
-
 export function Contact() {
-	const [form, setForm] = useState({ name: "", email: "", category: "", subject: "", message: "" })
-	const [state, setState] = useState<FormState>("idle")
-
-	const canSubmit = form.name && form.email && form.category && form.subject && form.message
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-		if (!canSubmit) return
-		setState("loading")
-		await new Promise((r) => setTimeout(r, 1200))
-		setState("success")
-	}
-
 	return (
 		<>
 			{/* Hero */}
@@ -273,114 +238,6 @@ export function Contact() {
 					<SubSection title="Business hours">
 						<P>Customer support is available 24 hours a day, 7 days a week.</P>
 					</SubSection>
-				</Section>
-
-				<Divider />
-
-				<Section title="Send us a message">
-					{state === "success" ? (
-						<div className="flex flex-col items-center justify-center py-14 text-center">
-							<CheckCircle size={28} className="text-primary mb-4" />
-							<h3 className="text-base font-bold text-gray-900 mb-2">Message sent!</h3>
-							<p className="text-sm text-gray-500 max-w-sm leading-relaxed">
-								Thanks for reaching out. Our team will review your message and respond as quickly as
-								possible.
-							</p>
-							<button
-								onClick={() => {
-									setForm({ name: "", email: "", category: "", subject: "", message: "" })
-									setState("idle")
-								}}
-								className="mt-6 text-sm font-semibold text-primary hover:underline"
-							>
-								Send another message
-							</button>
-						</div>
-					) : (
-						<form onSubmit={handleSubmit} className="space-y-5">
-							<div className="grid sm:grid-cols-2 gap-5">
-								<div className="flex flex-col gap-1.5">
-									<label className="text-sm font-medium text-gray-800">Full name</label>
-									<input
-										type="text"
-										value={form.name}
-										onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-										placeholder="Your full name"
-										required
-										className="h-11 px-0 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
-									/>
-								</div>
-								<div className="flex flex-col gap-1.5">
-									<label className="text-sm font-medium text-gray-800">Email address</label>
-									<input
-										type="email"
-										value={form.email}
-										onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-										placeholder="you@example.com"
-										required
-										className="h-11 px-0 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
-									/>
-								</div>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">Category</label>
-								<select
-									value={form.category}
-									onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-									required
-									className="h-11 px-0 border-b border-gray-200 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
-								>
-									<option value="" disabled>
-										Select a category…
-									</option>
-									{CATEGORIES.map((c) => (
-										<option key={c} value={c}>
-											{c}
-										</option>
-									))}
-								</select>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">Subject</label>
-								<input
-									type="text"
-									value={form.subject}
-									onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-									placeholder="Brief description of your inquiry"
-									required
-									className="h-11 px-0 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors"
-								/>
-							</div>
-
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-gray-800">Message</label>
-								<textarea
-									value={form.message}
-									onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-									placeholder="Please include as much detail as possible…"
-									rows={5}
-									required
-									className="px-0 py-2 border-b border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-primary bg-transparent transition-colors resize-none leading-relaxed"
-								/>
-							</div>
-
-							<button
-								type="submit"
-								disabled={!canSubmit || state === "loading"}
-								className="w-full h-12 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-							>
-								{state === "loading" ? (
-									<>
-										<Loader2 size={15} className="animate-spin" /> Sending…
-									</>
-								) : (
-									"Send message"
-								)}
-							</button>
-						</form>
-					)}
 				</Section>
 
 				<Divider />

@@ -3,19 +3,16 @@ import { DJANGO_API_URL } from "@/lib/server-config"
 import { proxyJson } from "@/lib/server-fetch"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-	const { id } = await params
+export async function POST(req: NextRequest) {
+	const body = await req.json()
 	const accessToken = await getAccessToken()
 
-	if (!accessToken) {
+	if (!accessToken)
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
-	}
 
-	return proxyJson(`${DJANGO_API_URL}/socials/post/${id}/stats/all`, {
-		headers: {
-			Authorization: `Bearer ${accessToken}`,
-			"Content-Type": "application/json",
-		},
-		cache: "no-store",
+	return proxyJson(`${DJANGO_API_URL}/users/report-problem`, {
+		method: "POST",
+		headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+		body: JSON.stringify(body),
 	})
 }
