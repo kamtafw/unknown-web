@@ -198,18 +198,7 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 
 	const [openingPlatform, setOpeningPlatform] = useState<string | null>(null)
 	const [unlinkTarget, setUnlinkTarget] = useState<string | null>(null)
-	const tabRef = useRef<Window | null>(null)
-	const channelRef = useRef<BroadcastChannel | null>(null)
-	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-	const cleanup = () => {
-		if (pollRef.current) {
-			clearInterval(pollRef.current)
-		}
-		channelRef.current?.close()
-		pollRef.current = null
-		channelRef.current = null
-	}
+	const popupRef = useRef<Window | null>(null)
 
 	const accounts = data?.data?.linked_accounts ?? []
 
@@ -222,45 +211,31 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 	}, [refetch])
 
 	const handleLink = (account: SocialAccount) => {
-		cleanup()
-
 		const callbackUrl = `${window.location.origin}/social-callback`
 		const loginUrl = new URL(account.platform_login_url)
 		loginUrl.searchParams.set("redirect_uri", callbackUrl)
 
 		setOpeningPlatform(account.platform)
 
-		const tab = window.open(loginUrl.toString(), "_blank")
-		tabRef.current = tab
+		const w = 600
+		const h = 700
+		const left = Math.round((window.screen.width - w) / 2)
+		const top = Math.round((window.screen.height - h) / 2)
+		const features = `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
+		const popup = window.open(loginUrl.toString(), "oauth_popup", features)
 
-		// BroadcastChannel: callback page posts SOCIAL_AUTH_COMPLETE → we close the tab here
-		const channel = new BroadcastChannel("appscombo_social_auth")
-		channelRef.current = channel
+		popupRef.current = popup
 
-		channel.onmessage = async (event) => {
-			if (event.data?.type !== "SOCIAL_AUTH_COMPLETE") return
-			cleanup()
-			tabRef.current?.close()
-			tabRef.current = null
-			setOpeningPlatform(null)
-			await refetch()
-		}
-
-		pollRef.current = setInterval(() => {
-			if (!tabRef.current || tabRef.current.closed) {
-				cleanup()
+		// poll every 500ms; when Django redirects to the callback page,
+		// it closes itself, and we detect that here
+		const interval = setInterval(async () => {
+			if (!popup || popup.closed) {
+				clearInterval(interval)
 				setOpeningPlatform(null)
-				refetch()
+				popupRef.current = null
+				await refetch()
 			}
-		}, 1000)
-
-		setTimeout(
-			() => {
-				cleanup()
-				setOpeningPlatform(null)
-			},
-			1000 * 60 * 5,
-		)
+		}, 500)
 	}
 
 	const handleUnlink = () => {
@@ -270,9 +245,12 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 
 		const unlinkUrl = account.platform_login_url.replace(/\/link$/, "/unlink")
 
-		unlink.mutate(unlinkUrl, {
-			onSuccess: () => setUnlinkTarget(null),
-		})
+		unlink.mutate(
+			{ platform: unlinkTarget, unlinkUrl },
+			{
+				onSuccess: () => setUnlinkTarget(null),
+			},
+		)
 	}
 
 	const unlinkConfig = unlinkTarget ? PLATFORM_CONFIG[unlinkTarget] : null
@@ -295,7 +273,7 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 								key={account.platform}
 								account={account}
 								isLinking={openingPlatform === account.platform}
-								isUnlinking={unlink.isPending && unlink.variables === account.platform}
+								isUnlinking={unlink.isPending && unlink.variables.platform === account.platform}
 								onLink={() => handleLink(account)}
 								onUnlink={() => setUnlinkTarget(account.platform)}
 							/>
