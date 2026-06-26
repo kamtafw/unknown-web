@@ -6,6 +6,7 @@ import {
 	ApiResponse,
 	BookmarkResponse,
 	ChangeOtpDefaultResponse,
+	ChangeTimezoneResponse,
 	CommentsResponse,
 	CompleteProfilePayload,
 	CompleteProfileResponse,
@@ -45,6 +46,8 @@ import {
 	SwitchAccountResponse,
 	SwitchOtpDefaultPayload,
 	SwitchOtpDefaultResponse,
+	TimezoneListResponse,
+	TimezonePreferenceResponse,
 	UnknownResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -258,6 +261,21 @@ export const userApi = {
 
 	reportProblem: (payload: { problem_type: ProblemType; feedback?: string }) =>
 		apiClient.post<ReportProblemResponse>("/api/users/report-problem", payload).then((r) => r.data),
+
+	getTimezonePreference: () =>
+		apiClient
+			.get<TimezonePreferenceResponse>("/api/users/timezone/preferences")
+			.then((r) => r.data),
+
+	getAvailableTimezones: (locale = "en") =>
+		apiClient
+			.get<TimezoneListResponse>(`/api/users/timezone/list-available?locale=${locale}`)
+			.then((r) => r.data),
+
+	changeTimezone: (payload: { timezone: string }) =>
+		apiClient
+			.post<ChangeTimezoneResponse>("/api/users/timezone/change", payload)
+			.then((r) => r.data),
 }
 
 export const socialApi = {

@@ -481,3 +481,12 @@ export type ProblemType = "bug" | "performance" | "feature" | "ui"
 export type ReportProblemResponse = ApiResponse<{
 	report: { problem_type: ProblemType; feedback: string }
 }>
+
+export interface TimezoneEntry {
+	value: string
+	label: string
+}
+
+export type TimezonePreferenceResponse = ApiResponse<{ id: number; timezone: string }>
+export type TimezoneListResponse = ApiResponse<{ timezones: TimezoneEntry[] }>
+export type ChangeTimezoneResponse = ApiResponse<{ id: number; timezone: string }>
