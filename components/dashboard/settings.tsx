@@ -53,6 +53,7 @@ import {
 	TwoStepVerificationPanel,
 } from "./account-setting"
 import { AddAccountPanel } from "./add-account-panel"
+import { BlockedAccountsPanel } from "./blocked-accounts-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -355,6 +356,7 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"add-account": AddAccountPanel,
 	"social-accounts": SocialAccountsPanel,
 	"time-zone": TimeZonePanel,
+	blocked: BlockedAccountsPanel,
 	deactivate: DeleteAccountPanel,
 }
 
@@ -362,7 +364,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
 	{ id: "last-seen", title: "Last seen & online" },
-	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
 	{ id: "push-notifs", title: "Push notifications" },
 	{ id: "message-tones", title: "Message tones" },

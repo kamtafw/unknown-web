@@ -490,3 +490,19 @@ export interface TimezoneEntry {
 export type TimezonePreferenceResponse = ApiResponse<{ id: number; timezone: string }>
 export type TimezoneListResponse = ApiResponse<{ timezones: TimezoneEntry[] }>
 export type ChangeTimezoneResponse = ApiResponse<{ id: number; timezone: string }>
+
+export interface BlockedUser {
+	pkid: number
+	id: string
+	email: string
+	username: string
+	first_name: string
+	last_name: string
+	phone_number: string
+	otp_default: OtpDefault
+	profile_photo: string
+	cover_photo: string
+}
+
+export type BlockedUsersResponse = ApiResponse<PaginatedResponse<BlockedUser>>
+export type UnblockUsersResponse = ApiResponse<{ unblocked_ids: number[] }>

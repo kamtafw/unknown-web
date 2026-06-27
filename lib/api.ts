@@ -4,6 +4,7 @@ import {
 	AddExternalLinkResponse,
 	AddLinkedAccountResponse,
 	ApiResponse,
+	BlockedUsersResponse,
 	BookmarkResponse,
 	ChangeOtpDefaultResponse,
 	ChangeTimezoneResponse,
@@ -48,6 +49,7 @@ import {
 	SwitchOtpDefaultResponse,
 	TimezoneListResponse,
 	TimezonePreferenceResponse,
+	UnblockUsersResponse,
 	UnknownResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -275,6 +277,14 @@ export const userApi = {
 	changeTimezone: (payload: { timezone: string }) =>
 		apiClient
 			.post<ChangeTimezoneResponse>("/api/users/timezone/change", payload)
+			.then((r) => r.data),
+
+	getBlockedUsers: () =>
+		apiClient.get<BlockedUsersResponse>("/api/users/privacy/blocked-users").then((r) => r.data),
+
+	unblockUsers: (userIds: number[]) =>
+		apiClient
+			.post<UnblockUsersResponse>("/api/users/privacy/unblock-users", { user_ids: userIds })
 			.then((r) => r.data),
 }
 
