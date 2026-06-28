@@ -73,7 +73,7 @@ export function TwoFactorVerification({
 	return (
 		<div className="flex justify-center pt-10 sm:pt-20 px-4 pb-10">
 			<div className="w-full max-w-110 sm:max-w-2xl">
-				{/* Mobile back */}
+				{/* mobile back */}
 				<button
 					type="button"
 					onClick={onBack}
@@ -84,7 +84,7 @@ export function TwoFactorVerification({
 				</button>
 
 				<div className="flex items-start gap-16">
-					{/* Desktop back */}
+					{/* desktop back */}
 					<div className="hidden sm:block mt-1 shrink-0">
 						<button
 							type="button"
@@ -129,7 +129,7 @@ export function TwoFactorVerification({
 						<p className="text-sm text-muted-foreground mb-5 sm:mb-6">{current.subtitle}</p>
 
 						<Form.Root key={otpKey} onSubmit={handleSubmit} className="flex flex-col gap-5">
-							<Form.Field name="otp" className="flex flex-col gap-2">
+							<Form.Field name="otp" className="flex flex-col gap-3">
 								<OneTimePasswordField.Root
 									name="otp"
 									validationType="numeric"
@@ -143,7 +143,7 @@ export function TwoFactorVerification({
 											key={i}
 											className="
 													flex-1 min-w-0
-													w-12 sm:w-15.5 h-12 sm:h-15.5
+													h-12 sm:h-15.5 w-12 sm:w-15.5
 													text-center text-lg sm:text-xl font-semibold
 													bg-muted text-foreground rounded-xl
 													border-2 border-transparent

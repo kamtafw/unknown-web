@@ -40,7 +40,6 @@ export function shortAddress(address: string) {
 		.split(",")
 		.map((s) => s.trim())
 		.filter(Boolean)
-	// e.g. "Jos, Plateau, Nigeria" → grab 2nd-to-last and last
 	return parts.slice(-3, -1).join(", ")
 }
 
@@ -81,7 +80,6 @@ function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 			replyCount: original.replies.length,
 		}
 	}
-
 	return {
 		message: original.content_text,
 		mediaUrls: original.post_media?.map((m) => m.external_url) ?? [],
@@ -110,7 +108,7 @@ export function UserAvatar({
 				className="w-full h-full object-cover"
 			/>
 			<Avatar.Fallback
-				className={`w-full h-full bg-primary/45 text-accent ${txt} font-semibold flex items-center justify-center`}
+				className={`w-full h-full bg-primary/45 text-primary-foreground ${txt} font-semibold flex items-center justify-center`}
 			>
 				{getInitials(first ?? "John", last ?? "Doe")}
 			</Avatar.Fallback>
@@ -139,7 +137,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	return (
 		<div
 			className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${
-				count === 1 ? "grid-cols-1" : count === 2 ? "grid-cols-2" : "grid-cols-2"
+				count === 1 ? "grid-cols-1" : "grid-cols-2"
 			}`}
 		>
 			{visible.map((url, i) => {
@@ -148,10 +146,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 				const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
 				const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
 				return (
-					<div
-						key={i}
-						className={`relative overflow-hidden bg-gray-200 ${spanClass} ${aspectClass}`}
-					>
+					<div key={i} className={`relative overflow-hidden bg-muted ${spanClass} ${aspectClass}`}>
 						{type === "video" ? (
 							<video src={url} controls className="w-full h-full object-cover" />
 						) : type === "audio" ? (
@@ -163,7 +158,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 						)}
 						{isLast && (
 							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-								<span className="text-accent text-2xl font-semibold">+{overflow}</span>
+								<span className="text-white text-2xl font-semibold">+{overflow}</span>
 							</div>
 						)}
 					</div>
@@ -184,7 +179,10 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 	const handleNavigate = () => router.push(`/posts/${comment.post}?comment=${comment.id}`)
 
 	return (
-		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+		<div
+			onClick={handleNavigate}
+			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
+		>
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={comment.user.profile_photo}
@@ -192,20 +190,18 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 					last={comment.user.last_name}
 					size="sm"
 				/>
-				<div className="flex min-w-0 items-center gap-1.5 text-xs text-gray-400 flex-wrap">
-					<span className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
+				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 						{fullname}
 					</span>
-					<span className="text-gray-500">@{comment.user.username}</span>
+					<span className="text-muted-foreground">@{comment.user.username}</span>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
 			</div>
-
 			{!!message && (
-				<p className="text-[13px] text-gray-700 leading-relaxed">{renderText(message)}</p>
+				<p className="text-[13px] text-foreground leading-relaxed">{renderText(message)}</p>
 			)}
-
 			<MediaGrid urls={mediaUrls} />
 		</div>
 	)
@@ -221,7 +217,10 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
 
 	return (
-		<div onClick={handleNavigate} className="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
+		<div
+			onClick={handleNavigate}
+			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
+		>
 			<div className="flex items-center gap-2 mb-2">
 				<UserAvatar
 					src={post.user.profile_photo}
@@ -229,20 +228,20 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 					last={post.user.last_name}
 					size="sm"
 				/>
-				<div className="flex min-w-0 items-center gap-1.5 text-xs text-gray-400 flex-wrap">
-					<span className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
+				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 						{fullname}
 					</span>
-					<span className="text-gray-500">@{post.user.username}</span>
+					<span className="text-muted-foreground">@{post.user.username}</span>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
 			</div>
-
 			{!!post.content_text && (
-				<p className="text-[13px] text-gray-700 leading-relaxed">{renderText(post.content_text)}</p>
+				<p className="text-[13px] text-foreground leading-relaxed">
+					{renderText(post.content_text)}
+				</p>
 			)}
-
 			<MediaGrid urls={mediaUrls} />
 		</div>
 	)
@@ -266,9 +265,7 @@ function ActionBar({
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
-
 	const isOwn = post.user.pkid === user?.pkid
-
 	const repost = useRepost()
 	const [reposted, setReposted] = useState(repostedByMe)
 	const [reposts, setReposts] = useState(initReposts)
@@ -282,7 +279,7 @@ function ActionBar({
 	}
 
 	return (
-		<div className="flex items-center mt-4 text-gray-400">
+		<div className="flex items-center mt-4 text-muted-foreground">
 			<div className="flex flex-1 flex-row items-center gap-5">
 				<button
 					onClick={() => likePost.mutate(post.id)}
@@ -323,7 +320,6 @@ function ActionBar({
 						bookmarked={post.bookmarked_by_me}
 					/>
 				</button>
-
 				{isOwn && <StatsButton postId={post.id} />}
 			</div>
 		</div>
@@ -354,12 +350,12 @@ export function RepostButton({
 			items={[
 				{
 					label: reposted ? "Undo repost" : "Repost",
-					icon: <Repost size={20} color="#6A7282" />,
+					icon: <Repost size={20} color="currentColor" />,
 					onSelect: onRepost,
 				},
 				{
 					label: "Quote",
-					icon: <Quote size={20} color="#6A7282" />,
+					icon: <Quote size={20} color="currentColor" />,
 					onSelect: onQuote,
 				},
 			]}
@@ -380,7 +376,7 @@ export function ShareButton({ postId, size }: { postId: string; size?: number })
 				},
 				{
 					label: "Share to followers",
-					icon: <Users size={18} color="#6A7282" className="shrink-0" />,
+					icon: <Users size={18} className="shrink-0" />,
 					onSelect: () => console.log("TODO: share to followers", postId),
 				},
 			]}
@@ -397,7 +393,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Views",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_views : "?"}
 				</span>
 			),
@@ -405,7 +401,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Watch time",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.watch_time : "?"}
 				</span>
 			),
@@ -413,7 +409,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Reactions",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_reactions : "?"}
 				</span>
 			),
@@ -421,7 +417,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Comments",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_comments : "?"}
 				</span>
 			),
@@ -429,7 +425,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Reposts",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_reposts : "?"}
 				</span>
 			),
@@ -437,7 +433,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Shares",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_shares : "?"}
 				</span>
 			),
@@ -445,7 +441,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 		{
 			label: "Bookmarks",
 			icon: (
-				<span className="text-sm font-semibold text-gray-900">
+				<span className="text-sm font-semibold text-foreground">
 					{data && !isLoading ? data.total_bookmarks : "?"}
 				</span>
 			),
@@ -545,7 +541,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 		<ActionDropdown
 			trigger={<MoreHorizontal size={18} />}
 			items={isOwn ? ownItems : otherItems}
-			clsName="text-gray-400 hover:text-gray-600 shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
+			clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
 		/>
 	)
 }
@@ -585,11 +581,11 @@ export function PostCard({ post }: { post: Post }) {
 	const handleNavigate = () => router.push(`/posts/${displayPost.pkid}`)
 
 	return (
-		<article className="px-5 py-5 border-b border-gray-100 last:border-b-0">
+		<article className="px-5 py-5 border-b border-border last:border-b-0">
 			{unquotedRepost && (
 				<div
 					onClick={handleNavigate}
-					className="flex items-center gap-1.5 mb-3 text-xs text-gray-400 font-medium"
+					className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground font-medium cursor-pointer"
 				>
 					<Repost size={13} />
 					{isMyRepost ? "You" : repostName} reposted
@@ -604,9 +600,11 @@ export function PostCard({ post }: { post: Post }) {
 						last={displayPost.user.last_name}
 					/>
 					<div className="flex-1 min-w-0">
-						<span className="font-semibold text-sm text-gray-900">{fullname}</span>{" "}
-						<span className="text-gray-500 text-[13.5px]">@{displayPost.user.username}</span>
-						<div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 overflow-hidden whitespace-nowrap">
+						<span className="font-semibold text-sm text-foreground">{fullname}</span>{" "}
+						<span className="text-muted-foreground text-[13.5px]">
+							@{displayPost.user.username}
+						</span>
+						<div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground overflow-hidden whitespace-nowrap">
 							<span className="shrink-0">{timeAgo}</span>
 							{address && (
 								<>
@@ -624,7 +622,9 @@ export function PostCard({ post }: { post: Post }) {
 
 				<div className="mt-2.5">
 					{!!displayText && (
-						<p className="text-[13.5px] text-gray-800 leading-relaxed">{renderText(displayText)}</p>
+						<p className="text-[13.5px] text-foreground leading-relaxed">
+							{renderText(displayText)}
+						</p>
 					)}
 
 					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}

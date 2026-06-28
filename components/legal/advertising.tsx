@@ -3,7 +3,7 @@ import Link from "next/link"
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -12,26 +12,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border my-8 sm:my-10" />
 }
 
 const CONTACTS = [
@@ -45,15 +45,15 @@ export function Advertising() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Advertise on AppsCombo
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						Reach the right audience. Grow your brand. Drive results.
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						AppsCombo is a next-generation social platform that connects people, communities,
 						creators, professionals, organizations, and businesses worldwide. Whether you&apos;re
 						looking to increase brand awareness, generate leads, drive sales, promote events,
@@ -62,7 +62,7 @@ export function Advertising() {
 					</p>
 					<Link
 						href="/contact"
-						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors mt-6"
+						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 transition-colors mt-6"
 					>
 						Talk to our sales team
 					</Link>
@@ -147,35 +147,35 @@ export function Advertising() {
 					<P>AppsCombo supports multiple advertising formats:</P>
 					<UL>
 						<li>
-							<span className="text-gray-700 font-medium">Image ads</span> — high-quality visuals
+							<span className="text-foreground font-medium">Image ads</span> — high-quality visuals
 							for products, services, and announcements
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Video ads</span> — engaging storytelling
+							<span className="text-foreground font-medium">Video ads</span> — engaging storytelling
 							and promotional experiences
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Carousel ads</span> — multiple products,
+							<span className="text-foreground font-medium">Carousel ads</span> — multiple products,
 							services, features, or offers in one ad
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Sponsored content</span> — native
+							<span className="text-foreground font-medium">Sponsored content</span> — native
 							advertisements integrated into the user experience
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Story ads</span> — full-screen, immersive
+							<span className="text-foreground font-medium">Story ads</span> — full-screen, immersive
 							advertising experiences
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Event ads</span> — drive registrations,
+							<span className="text-foreground font-medium">Event ads</span> — drive registrations,
 							ticket sales, and attendance
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Lead generation ads</span> — capture
+							<span className="text-foreground font-medium">Lead generation ads</span> — capture
 							customer information directly on AppsCombo
 						</li>
 						<li>
-							<span className="text-gray-700 font-medium">Website traffic ads</span> — drive users
+							<span className="text-foreground font-medium">Website traffic ads</span> — drive users
 							to external sites and landing pages
 						</li>
 					</UL>
@@ -206,7 +206,7 @@ export function Advertising() {
 						</P>
 					</SubSection>
 					<P>
-						<span className="text-gray-700 font-medium">Custom audiences: </span>
+						<span className="text-foreground font-medium">Custom audiences: </span>
 						advertisers may be able to create audiences using customer lists and approved data
 						sources, subject to applicable laws and privacy regulations.
 					</P>
@@ -300,15 +300,15 @@ export function Advertising() {
 				<Divider />
 
 				<section className="text-center pt-2">
-					<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+					<h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
 						Start advertising today
 					</h2>
-					<p className="text-sm text-gray-500 leading-relaxed max-w-lg mx-auto mb-7">
+					<p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mb-7">
 						Reach more people. Build stronger relationships. Grow your impact.
 					</p>
 					<div className="flex flex-col items-center gap-1 text-sm mb-8">
 						{CONTACTS.map(({ label, email }, i) => (
-							<span key={label} className="text-gray-500">
+							<span key={label} className="text-muted-foreground">
 								{label}{" "}
 								<a href={`mailto:${email}`} className="text-primary hover:underline">
 									{email}
@@ -317,7 +317,7 @@ export function Advertising() {
 							</span>
 						))}
 					</div>
-					<p className="text-xs text-gray-400">AppsCombo — Connect. Engage. Grow.</p>
+					<p className="text-xs text-muted-foreground">AppsCombo — Connect. Engage. Grow.</p>
 				</section>
 			</div>
 		</>

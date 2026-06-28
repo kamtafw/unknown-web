@@ -9,15 +9,15 @@ import { PostCard } from "./post-card"
 
 function PostSkeleton() {
 	return (
-		<div className="px-5 py-5 border-b border-gray-100 animate-pulse">
+		<div className="px-5 py-5 border-b border-border animate-pulse">
 			<div className="flex gap-3">
-				<div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+				<div className="w-10 h-10 rounded-full bg-muted shrink-0" />
 				<div className="flex-1 space-y-2">
-					<div className="h-3 bg-gray-200 rounded-full w-2/5" />
-					<div className="h-3 bg-gray-200 rounded-full w-1/4" />
-					<div className="h-3 bg-gray-200 rounded-full w-full mt-4" />
-					<div className="h-3 bg-gray-200 rounded-full w-5/6" />
-					<div className="h-44 bg-gray-200 rounded-2xl mt-3" />
+					<div className="h-3 bg-muted rounded-full w-2/5" />
+					<div className="h-3 bg-muted rounded-full w-1/4" />
+					<div className="h-3 bg-muted rounded-full w-full mt-4" />
+					<div className="h-3 bg-muted rounded-full w-5/6" />
+					<div className="h-44 bg-muted rounded-2xl mt-3" />
 				</div>
 			</div>
 		</div>
@@ -68,12 +68,16 @@ function FeedContent({
 		)
 
 	if (isError) {
-		return <p className="px-5 py-16 text-center text-[13px] text-gray-500">Failed to load posts.</p>
+		return (
+			<p className="px-5 py-16 text-center text-[13px] text-muted-foreground">
+				Failed to load posts.
+			</p>
+		)
 	}
 
 	if (!posts.length) {
 		return (
-			<p className="px-5 py-16 text-center text-[13px] text-gray-500">
+			<p className="px-5 py-16 text-center text-[13px] text-muted-foreground">
 				{feedType === "following" ? "Follow some people to see their posts here." : "No posts yet."}
 			</p>
 		)
@@ -91,7 +95,7 @@ function FeedContent({
 				</div>
 			)}
 			{!hasNextPage && posts.length > 0 && (
-				<p className="text-center text-[11px] text-gray-400 py-8">•</p>
+				<p className="text-center text-[11px] text-muted-foreground/50 py-8">•</p>
 			)}
 		</>
 	)
@@ -159,9 +163,9 @@ export function Feed() {
 	return (
 		<Tabs.Root
 			defaultValue="for-you"
-			className="flex-1 min-w-0 flex flex-col bg-white rounded-t-2xl border border-gray-100 min-h-0 overflow-hidden pb-0"
+			className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden pb-0"
 		>
-			<div className="bg-white px-2 rounded-t-2xl border-b border-gray-100 shrink-0">
+			<div className="bg-card px-2 rounded-t-2xl border-b border-border shrink-0">
 				<Tabs.List className="flex">
 					{(["for-you", "following"] as const).map((tab) => (
 						<Tabs.Trigger
@@ -169,8 +173,8 @@ export function Feed() {
 							value={tab}
 							className="
                 group flex-1 py-4 text-[13.5px] font-medium transition-colors relative
-                text-gray-400 hover:text-gray-700
-                data-[state=active]:text-gray-900
+                text-muted-foreground hover:text-foreground
+                data-[state=active]:text-foreground
                 focus:outline-none
               "
 						>

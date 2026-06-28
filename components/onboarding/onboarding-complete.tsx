@@ -1,35 +1,35 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 
 interface OnboardingCompleteProps {
-  username?: string
+	username?: string
 }
 
 export function OnboardingComplete({ username }: OnboardingCompleteProps) {
-  const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter")
+	const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter")
 
-  useEffect(() => {
-    const hold = setTimeout(() => setPhase("hold"), 600)
-    const exit = setTimeout(() => setPhase("exit"), 1800)
-    return () => {
-      clearTimeout(hold)
-      clearTimeout(exit)
-    }
-  }, [])
+	useEffect(() => {
+		const hold = setTimeout(() => setPhase("hold"), 600)
+		const exit = setTimeout(() => setPhase("exit"), 1800)
+		return () => {
+			clearTimeout(hold)
+			clearTimeout(exit)
+		}
+	}, [])
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white"
-      style={{
-        animation:
-          phase === "exit"
-            ? "onboarding-fade-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards"
-            : undefined,
-      }}
-    >
-      <style>{`
+	return (
+		<div
+			className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
+			style={{
+				animation:
+					phase === "exit"
+						? "onboarding-fade-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards"
+						: undefined,
+			}}
+		>
+			<style>{`
         @keyframes onboarding-logo-in {
           from { opacity: 0; transform: scale(0.8) translateY(8px); }
           to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -62,38 +62,35 @@ export function OnboardingComplete({ username }: OnboardingCompleteProps) {
         }
       `}</style>
 
-      <div className="flex flex-col items-center gap-6 px-8 text-center">
-        {/* Logo */}
-        <div className="logo-anim">
-          <Image
-            src="/logo.svg"
-            alt="AppsCombo"
-            width={160}
-            height={40}
-            className="object-contain"
-            priority
-          />
-        </div>
+			<div className="flex flex-col items-center gap-6 px-8 text-center">
+				{/* Logo */}
+				<div className="logo-anim">
+					<Image
+						src="/logo.svg"
+						alt="AppsCombo"
+						width={160}
+						height={40}
+						className="object-contain"
+						priority
+					/>
+				</div>
 
-        {/* Welcome text */}
-        <div className="text-anim">
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-            {username ? `Welcome, ${username}! 🎉` : "Welcome aboard! 🎉"}
-          </h1>
-        </div>
+				{/* Welcome text */}
+				<div className="text-anim">
+					<h1 className="text-2xl font-bold text-foreground leading-tight">
+						{username ? `Welcome, ${username}! 🎉` : "Welcome aboard! 🎉"}
+					</h1>
+				</div>
 
-        <p className="sub-anim text-sm text-gray-500 max-w-xs leading-relaxed">
-          Your feed is getting personalised. This will only take a moment.
-        </p>
+				<p className="sub-anim text-sm text-muted-foreground max-w-xs leading-relaxed">
+					Your feed is getting personalised. This will only take a moment.
+				</p>
 
-        {/* Progress bar */}
-        <div className="sub-anim w-48 h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="bar-anim h-full rounded-full"
-            style={{ width: 0, background: "#6A88D1" }}
-          />
-        </div>
-      </div>
-    </div>
-  )
+				{/* Progress bar */}
+				<div className="sub-anim w-48 h-1 bg-muted rounded-full overflow-hidden">
+					<div className="bar-anim h-full rounded-full bg-primary" style={{ width: 0 }} />
+				</div>
+			</div>
+		</div>
+	)
 }

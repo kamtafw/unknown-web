@@ -3,7 +3,7 @@ import Link from "next/link"
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -12,41 +12,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border-100 my-8 sm:my-10" />
 }
 
 export function About() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border-100">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						About AppsCombo
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						Connecting people, communities, businesses, and opportunities
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						AppsCombo is a next-generation social networking platform designed to help people
 						connect, communicate, collaborate, and build meaningful relationships in an increasingly
 						digital world. We believe social media should be more than likes, follows, and endless
@@ -54,7 +54,7 @@ export function About() {
 						share experiences, build businesses, attend events, learn new skills, and create lasting
 						connections.
 					</p>
-					<p className="text-gray-700 font-medium leading-relaxed max-w-2xl mt-4">
+					<p className="text-muted-foreground font-medium leading-relaxed max-w-2xl mt-4">
 						AppsCombo was created with a simple mission: to bring people, communities, businesses,
 						creators, professionals, and organizations together on one powerful platform.
 					</p>
@@ -286,21 +286,21 @@ export function About() {
 				<Divider />
 
 				<section className="text-center pt-2">
-					<h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+					<h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
 						Join the AppsCombo community
 					</h2>
-					<p className="text-sm text-gray-500 leading-relaxed max-w-lg mx-auto mb-7">
+					<p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mb-7">
 						Whether you&apos;re here to connect, learn, create, collaborate, promote your business,
 						organize events, or discover new opportunities — together, we are building a smarter,
 						more connected future.
 					</p>
 					<Link
 						href="/sign-up"
-						className="inline-flex items-center h-11 px-7 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors"
+						className="inline-flex items-center h-11 px-7 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 transition-colors"
 					>
 						Create an account
 					</Link>
-					<p className="text-xs text-gray-400 mt-8">AppsCombo — Connect. Engage. Grow.</p>
+					<p className="text-xs text-muted-foreground mt-8">AppsCombo — Connect. Engage. Grow.</p>
 				</section>
 			</div>
 		</>
