@@ -85,8 +85,8 @@ function PhoneField({ onChange, onBlur, hasError }: PhoneFieldProps) {
 			<div
 				className={`flex items-center h-12 sm:h-12.5 rounded-xl border bg-muted transition-all ${
 					hasError
-						? "border-2 border-destructive"
-						: "border-input focus-within:bg-card focus-within:border-2 focus-within:border-primary"
+						? "border-destructive ring-1 ring-destructive"
+						: "border-input focus-within:bg-card focus-within:border-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
 				}`}
 			>
 				<div className="flex items-center gap-1 pl-3.5 h-full">
@@ -249,7 +249,7 @@ export function SignUp({
 								<Form.Label className="text-sm font-medium text-foreground">
 									Email Address
 								</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted focus-within:bg-card focus-within:border-2 focus-within:border-primary transition-all data-invalid:border-2 data-invalid:border-destructive">
+								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
 									<span className="text-muted-foreground shrink-0">
 										<Email />
 									</span>
@@ -305,7 +305,7 @@ export function SignUp({
 								<Form.Label className="text-sm font-medium text-foreground">
 									Create Password
 								</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted focus-within:bg-card focus-within:border-2 focus-within:border-primary transition-all">
+								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
 									<PasswordToggleField.Root>
 										<span className="text-muted-foreground shrink-0">
 											<Padlock />

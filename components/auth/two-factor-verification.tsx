@@ -148,7 +148,7 @@ export function TwoFactorVerification({
 													text-center text-lg sm:text-xl font-semibold
 													bg-muted text-foreground rounded-xl
 													border-2 border-transparent
-													focus:outline-none focus:border-primary focus:bg-card
+													focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary
 													caret-primary transition-all duration-150
 												"
 											/>
