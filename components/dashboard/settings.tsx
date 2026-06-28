@@ -16,7 +16,6 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
-	AlertCircle,
 	ArrowLeft,
 	Bell,
 	Camera,
@@ -153,12 +152,6 @@ const SECTIONS: Section[] = [
 				label: "Two-step verification",
 				description: "Secure your account with two-step verification",
 				icon: <TwoStepVerification size={18} />,
-			},
-			{
-				id: "report-problem",
-				label: "Report a problem",
-				description: "Report bugs, issues, or unexpected behaviour",
-				icon: <ReportProblem size={18} />,
 			},
 			{
 				id: "change-phone",
@@ -321,8 +314,8 @@ const SECTIONS: Section[] = [
 			{
 				id: "report-problem",
 				label: "Report a problem",
-				description: "Let us know if something isn't working",
-				icon: <AlertCircle size={18} />,
+				description: "Report bugs, issues, or unexpected behaviour",
+				icon: <ReportProblem size={18} />,
 			},
 			{
 				id: "terms",
@@ -775,7 +768,9 @@ function EditRow({
 			</span>
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
-					<span className="text-[12.5px] text-muted-foreground truncate max-w-40 text-right">{value}</span>
+					<span className="text-[12.5px] text-muted-foreground truncate max-w-40 text-right">
+						{value}
+					</span>
 					{onClick ? (
 						isPending ? (
 							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
