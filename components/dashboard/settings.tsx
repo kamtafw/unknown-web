@@ -1,5 +1,7 @@
 "use client"
 
+import LegalPrivacyPolicy from "@/components/legal/privacy-policy"
+import LegalTerms from "@/components/legal/terms"
 import { useLogout } from "@/hooks/use-auth"
 import {
 	updateProfileKeys,
@@ -23,7 +25,6 @@ import {
 	CreditCard,
 	Database,
 	FileText,
-	Fingerprint,
 	Globe,
 	HardDrive,
 	Layers,
@@ -318,30 +319,22 @@ const SECTIONS: Section[] = [
 		icon: <Support size={20} />,
 		items: [
 			{
-				id: "report",
+				id: "report-problem",
 				label: "Report a problem",
 				description: "Let us know if something isn't working",
 				icon: <AlertCircle size={18} />,
 			},
 			{
-				id: "security",
-				label: "Security advisories",
-				description: "View security-related announcements",
-				icon: <Fingerprint size={18} />,
-			},
-			{
 				id: "terms",
-				label: "Terms of Service",
-				description: "Read our Terms of Service",
+				label: "Terms & Conditions",
+				description: "Read our Terms & Conditions",
 				icon: <FileText size={18} />,
-				href: "/terms",
 			},
 			{
 				id: "privacy-policy",
 				label: "Privacy Policy",
 				description: "Read our Privacy Policy",
 				icon: <FileText size={18} />,
-				href: "/privacy-policy",
 			},
 		],
 	},
@@ -358,6 +351,8 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"time-zone": TimeZonePanel,
 	blocked: BlockedAccountsPanel,
 	deactivate: DeleteAccountPanel,
+	terms: TermsSettingsPanel,
+	"privacy-policy": PrivacyPolicySettingsPanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
@@ -373,8 +368,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "storage-usage", title: "Storage usage" },
 	{ id: "network-usage", title: "Network usage" },
 	{ id: "app-language", title: "App language" },
-	{ id: "report", title: "Report a problem" },
-	{ id: "security", title: "Security advisories" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
 
@@ -586,6 +579,46 @@ function ExternalLinksDialog({
 				))}
 			</div>
 		</SettingsDialog>
+	)
+}
+
+function TermsSettingsPanel({ onBack }: { onBack: () => void }) {
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-gray-900 text-[15.5px]">Terms & Conditions</h2>
+			</div>
+			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
+				<LegalTerms />
+			</div>
+		</div>
+	)
+}
+
+function PrivacyPolicySettingsPanel({ onBack }: { onBack: () => void }) {
+	return (
+		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-gray-900 text-[15.5px]">Privacy Policy</h2>
+			</div>
+			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
+				<LegalPrivacyPolicy />
+			</div>
+		</div>
 	)
 }
 

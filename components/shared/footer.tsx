@@ -15,20 +15,20 @@ const LINKS = [
 
 export function Footer() {
 	return (
-		<footer className="py-6 px-4 border-t border-gray-100 mt-auto">
+		<footer className="py-6 px-4 border-t border-border mt-auto">
 			<div className="max-w-4xl mx-auto">
 				<nav className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-3">
 					{LINKS.map(({ label, href }) => (
 						<Link
 							key={href}
 							href={href}
-							className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+							className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
 						>
 							{label}
 						</Link>
 					))}
 				</nav>
-				<p className="text-center text-[11px] text-gray-300">
+				<p className="text-center text-[11px] text-muted-foreground/50">
 					© {new Date().getFullYear()} AppsCombo Inc. All rights reserved.
 				</p>
 			</div>

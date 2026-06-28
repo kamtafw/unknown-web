@@ -10,16 +10,16 @@ export function ResendButton({ onResend }: { onResend: () => void }) {
 	}
 
 	return (
-		<p className="text-center text-sm text-gray-500">
+		<p className="text-center text-sm text-muted-foreground">
 			I didn&apos;t receive any code{" "}
 			<button
 				type="button"
 				onClick={handleClick}
 				disabled={isActive}
 				className={cn(
-					"font-medium focus:outline-none transition-colors",
+					"font-medium focus:outline-none transition-all",
 					isActive
-						? "text-gray-400 cursor-not-allowed tabular-nums"
+						? "text-muted-foreground/60 cursor-not-allowed tabular-nums"
 						: "text-primary hover:underline cursor-pointer",
 				)}
 			>
