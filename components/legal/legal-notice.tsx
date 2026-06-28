@@ -141,7 +141,7 @@ All official legal notices intended for AppsCombo should be directed to the Lega
 ]
 
 function P({ children }: { children: ReactNode }) {
-	return <p className="text-sm text-gray-600 leading-relaxed mb-3 last:mb-0">{children}</p>
+	return <p className="text-sm text-muted-foreground leading-relaxed mb-3 last:mb-0">{children}</p>
 }
 
 function ParagraphBlock({ content }: { content: string }) {
@@ -155,7 +155,7 @@ function ParagraphBlock({ content }: { content: string }) {
 					return (
 						<ul
 							key={i}
-							className="list-disc pl-5 mb-3 last:mb-0 text-sm text-gray-600 leading-relaxed space-y-1"
+							className="list-disc pl-5 mb-3 last:mb-0 text-sm text-muted-foreground leading-relaxed space-y-1"
 						>
 							{lines.map((l, j) => (
 								<li key={j}>{l.replace(/^•\s*/, "")}</li>
@@ -185,16 +185,16 @@ export function LegalNotice() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="bg-gray-50 py-12 sm:py-16 px-4 border-b border-gray-100">
+			<section className="bg-background py-12 sm:py-16 px-4 border-b border-border">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">Legal</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Legal Notice</h1>
-					<p className="text-sm text-gray-400">Last updated: {lastUpdated}</p>
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">Legal Notice</h1>
+					<p className="text-sm text-foreground">Last updated: {lastUpdated}</p>
 				</div>
 			</section>
 
 			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
-				<p className="text-gray-600 leading-relaxed mb-10">
+				<p className="text-muted-foreground leading-relaxed mb-10">
 					This Legal Notice provides important information regarding the ownership, operation, legal
 					responsibilities, intellectual property rights, regulatory compliance, and legal contact
 					procedures relating to the AppsCombo platform, website, mobile applications, APIs, and
@@ -205,15 +205,15 @@ export function LegalNotice() {
 				<div className="space-y-10">
 					{SECTIONS.map(({ title, content }) => (
 						<div key={title} className="border-t border-gray-100 pt-8">
-							<h2 className="text-[17px] font-bold text-gray-900 mb-4">{title}</h2>
+							<h2 className="text-[17px] font-bold text-foreground mb-4">{title}</h2>
 							<ParagraphBlock content={content} />
 						</div>
 					))}
 				</div>
 
-				<div className="mt-12 bg-gray-50 rounded-2xl p-6">
-					<p className="text-sm text-gray-600 leading-relaxed">
-						<span className="font-semibold text-gray-900">AppsCombo</span> — Building a trusted
+				<div className="mt-12 bg-card rounded-2xl p-6">
+					<p className="text-sm text-muted-foreground leading-relaxed">
+						<span className="font-semibold text-foreground">AppsCombo</span> — Building a trusted
 						platform where people, communities, creators, businesses, and organizations connect,
 						engage, and grow together. For legal matters, reach our team at{" "}
 						<a href="mailto:legal@appscombo.com" className="text-primary hover:underline">

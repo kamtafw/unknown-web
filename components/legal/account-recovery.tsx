@@ -3,7 +3,7 @@ import Link from "next/link"
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -12,19 +12,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
@@ -32,29 +32,29 @@ function UL({ children }: { children: React.ReactNode }) {
 
 function OL({ children }: { children: React.ReactNode }) {
 	return (
-		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ol>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border100 my-8 sm:my-10" />
 }
 
 export function AccountRecovery() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border100">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Account
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						Account recovery
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						At AppsCombo, we understand how important your account is. Whether you&apos;ve forgotten
 						your password, lost access to your email or phone number, suspect unauthorized access,
 						or are unable to sign in for any reason, we&apos;re here to help you recover your
@@ -276,7 +276,7 @@ export function AccountRecovery() {
 				<Divider />
 
 				<Section title="Contact the recovery team">
-					<p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+					<p className="text-[13px] text-muted-foreground leading-relaxed mb-6">
 						Account Recovery Support:{" "}
 						<a href="mailto:recovery@appscombo.com" className="text-primary hover:underline">
 							recovery@appscombo.com
@@ -299,13 +299,13 @@ export function AccountRecovery() {
 					</P>
 					<Link
 						href="/support"
-						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 transition-colors mt-2"
+						className="inline-flex items-center h-11 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 transition-colors mt-2"
 					>
 						Contact support
 					</Link>
 				</Section>
 
-				<p className="text-center text-xs text-gray-400 pt-2">AppsCombo — Connect. Engage. Grow.</p>
+				<p className="text-center text-xs text-muted-foreground pt-2">AppsCombo — Connect. Engage. Grow.</p>
 			</div>
 		</>
 	)

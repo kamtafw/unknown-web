@@ -403,11 +403,11 @@ function SettingsDialog({
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-white rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
+				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-card rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
 					{/* Header */}
-					<div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+					<div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border shrink-0">
 						<div className="pr-4 min-w-0">
-							<Dialog.Title className="font-bold text-gray-900 text-[15.5px] leading-tight">
+							<Dialog.Title className="font-bold text-foreground text-[15.5px] leading-tight">
 								{title}
 							</Dialog.Title>
 							{description && (
@@ -417,7 +417,7 @@ function SettingsDialog({
 							)}
 						</div>
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors shrink-0 mt-0.5">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors shrink-0 mt-0.5">
 								<X size={15} />
 							</button>
 						</Dialog.Close>
@@ -444,7 +444,7 @@ function LogoutDialog({ open, onClose }: { open: boolean; onClose: () => void })
 				<div className="flex gap-2.5">
 					<button
 						onClick={onClose}
-						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+						className="flex-1 h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent transition-colors"
 					>
 						Cancel
 					</button>
@@ -483,8 +483,8 @@ function ComingSoonDialog({
 					<Wrench size={20} className="text-primary" />
 				</div>
 				<div>
-					<p className="font-semibold text-gray-900 text-[13.5px]">In development</p>
-					<p className="text-[12.5px] text-gray-500 mt-1 leading-relaxed">
+					<p className="font-semibold text-foreground text-[13.5px]">In development</p>
+					<p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
 						This feature is currently being built. Check back soon!
 					</p>
 				</div>
@@ -532,8 +532,8 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 							i < rows.length - 1 && "border-b border-gray-50",
 						)}
 					>
-						<span className="text-[12.5px] text-gray-500 shrink-0">{row.label}</span>
-						<span className="text-[12.5px] font-medium text-gray-900 text-right ml-6 break-all">
+						<span className="text-[12.5px] text-muted-foreground shrink-0">{row.label}</span>
+						<span className="text-[12.5px] font-medium text-foreground text-right ml-6 break-all">
 							{row.value}
 						</span>
 					</div>
@@ -562,7 +562,7 @@ function ExternalLinksDialog({
 						target="_blank"
 						rel="noopener noreferrer"
 						className={cn(
-							"flex items-center gap-3 py-3.5 hover:bg-gray-50/60 transition-colors -mx-6 px-6",
+							"flex items-center gap-3 py-3.5 hover:bg-accent/60 transition-colors -mx-6 px-6",
 							i < links.length - 1 && "border-b border-gray-50",
 						)}
 					>
@@ -570,10 +570,10 @@ function ExternalLinksDialog({
 							<Link size={14} color="#6A88D1" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<p className="text-[13px] font-semibold text-gray-900 truncate">
+							<p className="text-[13px] font-semibold text-foreground truncate">
 								{link.label || "Link"}
 							</p>
-							<p className="text-[12px] text-gray-400 truncate">{link.url}</p>
+							<p className="text-[12px] text-muted-foreground truncate">{link.url}</p>
 						</div>
 					</a>
 				))}
@@ -584,16 +584,16 @@ function ExternalLinksDialog({
 
 function TermsSettingsPanel({ onBack }: { onBack: () => void }) {
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 				<button
 					onClick={onBack}
-					className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 					aria-label="Go back"
 				>
 					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
 				</button>
-				<h2 className="font-bold text-gray-900 text-[15.5px]">Terms & Conditions</h2>
+				<h2 className="font-bold text-foreground text-[15.5px]">Terms & Conditions</h2>
 			</div>
 			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
 				<LegalTerms />
@@ -604,16 +604,16 @@ function TermsSettingsPanel({ onBack }: { onBack: () => void }) {
 
 function PrivacyPolicySettingsPanel({ onBack }: { onBack: () => void }) {
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 				<button
 					onClick={onBack}
-					className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 					aria-label="Go back"
 				>
 					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
 				</button>
-				<h2 className="font-bold text-gray-900 text-[15.5px]">Privacy Policy</h2>
+				<h2 className="font-bold text-foreground text-[15.5px]">Privacy Policy</h2>
 			</div>
 			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
 				<LegalPrivacyPolicy />
@@ -642,12 +642,12 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					{/* overlaid controls */}
 					<button
 						onClick={onBack}
-						className="absolute top-4 left-4 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+						className="absolute top-4 left-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
 					>
-						<ArrowLeft size={15} className="text-gray-700" />
+						<ArrowLeft size={15} className="text-foreground" />
 					</button>
-					<button className="absolute top-4 right-4 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors">
-						<MoreHorizontal size={15} className="text-gray-700" />
+					<button className="absolute top-4 right-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-accent transition-colors">
+						<MoreHorizontal size={15} className="text-foreground" />
 					</button>
 				</div>
 
@@ -666,7 +666,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 			</div>
 
 			<div className="px-5 pt-12 pb-8">
-				<h2 className="text-[18px] font-bold text-gray-900 leading-tight">{displayName}</h2>
+				<h2 className="text-[18px] font-bold text-foreground leading-tight">{displayName}</h2>
 				<p className="text-[13px] text-gray-500 mt-0.5">@{user.username}</p>
 
 				{/* Stats */}
@@ -677,14 +677,14 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 						{ label: "Followers", value: user.follower_count ?? 0 },
 					].map(({ label, value }) => (
 						<div key={label} className="flex flex-1 flex-col">
-							<span className="text-[15px] font-bold text-gray-900">{formatCount(value)}</span>
+							<span className="text-[15px] font-bold text-foreground">{formatCount(value)}</span>
 							<span className="text-[13px] text-gray-500">{label}</span>
 						</div>
 					))}
 				</div>
 
 				{/* Bio */}
-				{bio && <p className="text-[13px] text-gray-700 leading-relaxed mb-3">{bio}</p>}
+				{bio && <p className="text-[13px] text-foreground leading-relaxed mb-3">{bio}</p>}
 
 				{/* External links */}
 				{links.length > 0 && (
@@ -694,7 +694,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 							href={links[0].url}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-gray-700 font-medium truncate min-w-0 hover:underline"
+							className="text-foreground font-medium truncate min-w-0 hover:underline"
 						>
 							{links[0].label || links[0].url}
 						</a>
@@ -714,7 +714,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					{(user.country || user.state) && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<Location size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								{[user.state, user.country].filter(Boolean).join(", ")}
 							</span>
 						</div>
@@ -722,7 +722,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					{user.date_joined && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<Calendar size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
 							</span>
 						</div>
@@ -730,7 +730,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					{user.dob && (
 						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
 							<Calendar size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								Born {formatDob(user.dob, user.dob_visibility)}
 							</span>
 						</div>
@@ -763,19 +763,19 @@ function EditRow({
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors text-left"
+			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-accent/60 transition-colors text-left"
 		>
 			<span
 				className={cn(
 					"text-[13px] font-medium shrink-0",
-					destructive ? "text-destructive" : "text-gray-700",
+					destructive ? "text-destructive" : "text-foreground",
 				)}
 			>
 				{label}
 			</span>
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
-					<span className="text-[12.5px] text-gray-400 truncate max-w-40 text-right">{value}</span>
+					<span className="text-[12.5px] text-muted-foreground truncate max-w-40 text-right">{value}</span>
 					{onClick ? (
 						isPending ? (
 							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
@@ -800,17 +800,17 @@ function ToggleRow({
 }) {
 	return (
 		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50">
-			<span className="text-[13px] font-medium text-gray-700">{label}</span>
+			<span className="text-[13px] font-medium text-foreground">{label}</span>
 			<div
 				onClick={onToggle}
 				className={cn(
 					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors",
-					enabled ? "bg-primary" : "bg-gray-300",
+					enabled ? "bg-primary" : "bg-muted-foreground/30",
 				)}
 			>
 				<div
 					className={cn(
-						"w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+						"w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200",
 						enabled ? "translate-x-4" : "translate-x-0",
 					)}
 				/>
@@ -900,13 +900,13 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
 
 	return (
-		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
-			<div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-				<h2 className="text-[16px] font-bold text-gray-900">Edit profile</h2>
+		<div className="border-l border-border h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
+			<div className="px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<h2 className="text-[16px] font-bold text-foreground">Edit profile</h2>
 			</div>
 
 			{/* photo section */}
-			<div className="p-1 border-b border-gray-100 shrink-0">
+			<div className="p-1 border-b border-border shrink-0">
 				<div className="relative">
 					{/* cover thumbnail */}
 					<button
@@ -969,7 +969,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 			{/* About You */}
 			<div className="pt-4">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
 					About You
 				</p>
 				<EditRow
@@ -1011,12 +1011,12 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 			{/* Links */}
 			<div className="pt-4 pb-8">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
 					Link
 				</p>
 				<button
 					onClick={() => onOpenDialog("add-link")}
-					className="w-full flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors text-left"
+					className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left"
 				>
 					<div className="w-7 h-7 rounded-full border-[1.5px] border-primary flex items-center justify-center shrink-0">
 						<Plus size={13} className="text-primary" />
@@ -1027,14 +1027,14 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					<button
 						key={link.id}
 						onClick={() => onOpenDialog(`edit-link-${link.id}`)}
-						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50"
+						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left border-t border-gray-50"
 					>
-						<div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+						<div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
 							<Link2 size={13} className="text-gray-500" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<p className="text-[13px] font-medium text-gray-900">{link.label}</p>
-							<p className="text-[11.5px] text-gray-400 truncate">{link.url}</p>
+							<p className="text-[13px] font-medium text-foreground">{link.label}</p>
+							<p className="text-[11.5px] text-muted-foreground truncate">{link.url}</p>
 						</div>
 						<ChevronRight size={13} className="text-gray-300 shrink-0" />
 					</button>
@@ -1120,11 +1120,11 @@ function ProfileView({
 		)
 
 	return (
-		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
+		<div className="flex flex-1 h-full min-h-0 bg-card rounded-t-2xl border border-border overflow-hidden">
 			{/* left: public profile */}
 			<div className="flex-1 min-w-0 flex flex-col">
 				{/* mobile tab switcher */}
-				<div className="lg:hidden flex shrink-0 border-b border-gray-100">
+				<div className="lg:hidden flex shrink-0 border-b border-border">
 					{(["profile", "edit"] as const).map((tab) => (
 						<button
 							key={tab}
@@ -1169,7 +1169,7 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center gap-3.5 px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left shrink-0"
+			className="w-full flex items-center gap-3.5 px-5 py-4 border-b border-border hover:bg-accent transition-colors text-left shrink-0"
 		>
 			<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden shrink-0">
 				<Avatar.Image
@@ -1182,12 +1182,12 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 				</Avatar.Fallback>
 			</Avatar.Root>
 			<div className="flex-1 min-w-0">
-				<p className="text-[13.5px] font-bold text-gray-900 truncate leading-tight">
+				<p className="text-[13.5px] font-bold text-foreground truncate leading-tight">
 					{displayName}
 				</p>
 				{bio && <p className="text-xs text-gray-500 truncate mt-0.5">{bio}</p>}
 			</div>
-			<ChevronRight size={15} className="text-gray-400 shrink-0" />
+			<ChevronRight size={15} className="text-muted-foreground shrink-0" />
 		</button>
 	)
 }
@@ -1215,17 +1215,17 @@ function SettingsListView({
 	const ActivePanelComponent = activePanel ? PANEL_REGISTRY[activePanel] : null
 
 	return (
-		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
+		<div className="flex flex-1 h-full min-h-0 bg-card rounded-t-2xl border border-border overflow-hidden">
 			{/* left nav */}
 			<nav
 				className={cn(
-					"w-full lg:w-[40%] shrink-0 border-r border-gray-100 flex-col overflow-hidden",
+					"w-full lg:w-[40%] shrink-0 border-r border-border flex-col overflow-hidden",
 					mobileView === "panel" ? "hidden lg:flex" : "flex",
 				)}
 			>
 				{/* Fixed header */}
-				<div className="flex items-center px-5 pt-4.5 pb-3.5 border-b border-gray-100 shrink-0 bg-white">
-					<h1 className="text-[17px] font-bold text-gray-900">Settings</h1>
+				<div className="flex items-center px-5 pt-4.5 pb-3.5 border-b border-border shrink-0 bg-card">
+					<h1 className="text-[17px] font-bold text-foreground">Settings</h1>
 				</div>
 
 				{/* Profile card */}
@@ -1241,7 +1241,7 @@ function SettingsListView({
 								onClick={() => onSectionSelect(section.id)}
 								className={cn(
 									"w-full flex items-center gap-3 px-5 py-4 text-left transition-colors border-b border-gray-50 last:border-0:",
-									isActive ? "bg-gray-100/80" : "hover:bg-gray-50",
+									isActive ? "bg-accent/80" : "hover:bg-accent",
 								)}
 							>
 								<div
@@ -1253,14 +1253,14 @@ function SettingsListView({
 									{section.icon}
 								</div>
 								<div className="flex-1 min-w-0">
-									<p className="text-[13.5px] font-semibold text-gray-900 leading-tight">
+									<p className="text-[13.5px] font-semibold text-foreground leading-tight">
 										{section.label}
 									</p>
 									<p className="text-xs text-gray-500 mt-0.5 truncate">{section.description}</p>
 								</div>
 								<ChevronRight
 									size={14}
-									className={cn("shrink-0", isActive ? "text-gray-400" : "text-gray-300")}
+									className={cn("shrink-0", isActive ? "text-muted-foreground" : "text-gray-300")}
 								/>
 							</button>
 						)
@@ -1280,20 +1280,20 @@ function SettingsListView({
 				) : (
 					<>
 						{/* mobile back row */}
-						<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
+						<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-border shrink-0">
 							<button
 								onClick={onMobileBack}
-								className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+								className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 							>
 								<ArrowLeft size={15} className="text-gray-600" />
 							</button>
-							<span className="text-[14px] font-semibold text-gray-900">
+							<span className="text-[14px] font-semibold text-foreground">
 								{currentSection.label}
 							</span>
 						</div>
 
-						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-gray-100 shrink-0">
-							<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
+						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-border shrink-0">
+							<h2 className="text-[16.5px] font-bold text-foreground">{currentSection.label}</h2>
 							<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
 								{currentSection.description}
 							</p>
@@ -1315,7 +1315,7 @@ function SettingsListView({
 										}
 									}}
 									className={cn(
-										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-gray-50/80 transition-colors text-left",
+										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-accent/80 transition-colors text-left",
 										i < currentSection.items.length - 1 && "border-b border-gray-50",
 									)}
 								>
@@ -1331,7 +1331,7 @@ function SettingsListView({
 										<p
 											className={cn(
 												"text-[13.5px] font-semibold leading-tight",
-												item.destructive ? "text-destructive" : "text-gray-900",
+												item.destructive ? "text-destructive" : "text-foreground",
 											)}
 										>
 											{item.label}

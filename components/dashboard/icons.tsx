@@ -3,15 +3,17 @@ interface IconProps {
 	width?: number
 	size?: number
 	color?: string
+	className?: string
 }
 
-export function Social({ size = 24, color = "#101828" }: IconProps) {
+export function Social({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -26,13 +28,14 @@ export function Social({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Message({ height = 25, width = 29, color = "#101828" }: IconProps) {
+export function Message({ height = 25, width = 29, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={width}
 			height={height}
 			viewBox="0 0 29 25"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -47,13 +50,14 @@ export function Message({ height = 25, width = 29, color = "#101828" }: IconProp
 	)
 }
 
-export function Event({ size = 25, color = "#101828" }: IconProps) {
+export function Event({ size = 25, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 25 25"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -64,13 +68,14 @@ export function Event({ size = 25, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Marketplace({ size = 25, color = "#101828" }: IconProps) {
+export function Marketplace({ size = 25, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 25 25"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -113,13 +118,14 @@ export function Marketplace({ size = 25, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Home({ size = 24, color = "#101828" }: IconProps) {
+export function Home({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -135,13 +141,14 @@ export function Home({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Settings({ size = 24, color = "#101828" }: IconProps) {
+export function Settings({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -159,13 +166,14 @@ export function Settings({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Bookmark({ size = 24, color = "#101828" }: IconProps) {
+export function Bookmark({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -181,13 +189,14 @@ export function Bookmark({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function AI({ size = 24, color = "#101828" }: IconProps) {
+export function AI({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<rect
@@ -221,13 +230,14 @@ export function AI({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Invite({ size = 24, color = "#101828" }: IconProps) {
+export function Invite({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -252,13 +262,14 @@ export function Invite({ size = 24, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Add({ size = 20, color = "#101828" }: IconProps) {
+export function Add({ size = 20, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 20 20"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -273,13 +284,14 @@ export function Add({ size = 20, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Logout({ size = 24, color = "#EA5757" }: IconProps) {
+export function Logout({ size = 24, color = "#EA5757", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path

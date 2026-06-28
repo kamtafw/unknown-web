@@ -3,7 +3,7 @@ import Link from "next/link"
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -12,19 +12,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
@@ -32,29 +32,29 @@ function UL({ children }: { children: React.ReactNode }) {
 
 function OL({ children }: { children: React.ReactNode }) {
 	return (
-		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ol>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border my-8 sm:my-10" />
 }
 
 export function AccountDeletion() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Account
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						Delete your account
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						At AppsCombo, we respect your right to control your personal information and manage your
 						account. This page explains how to permanently delete your AppsCombo account, what
 						happens after deletion, and how your information is handled during the process. Please
@@ -65,10 +65,10 @@ export function AccountDeletion() {
 
 			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
 				<div className="border-l-2 border-destructive pl-4 mb-12">
-					<p className="text-[13px] font-semibold text-gray-900 mb-2">
+					<p className="text-[13px] font-semibold text-foreground mb-2">
 						Before you delete your account
 					</p>
-					<p className="text-[13px] text-gray-500 leading-relaxed mb-2">
+					<p className="text-[13px] text-muted-foreground leading-relaxed mb-2">
 						When your account is deleted:
 					</p>
 					<UL>
@@ -83,7 +83,7 @@ export function AccountDeletion() {
 							services
 						</li>
 					</UL>
-					<p className="text-[13px] text-gray-500 leading-relaxed">
+					<p className="text-[13px] text-muted-foreground leading-relaxed">
 						Once the deletion process is completed, your account cannot be recovered.
 					</p>
 				</div>
@@ -236,7 +236,7 @@ export function AccountDeletion() {
 				<Divider />
 
 				<Section title="Need help?">
-					<p className="text-[13px] text-gray-500 leading-relaxed">
+					<p className="text-[13px] text-muted-foreground leading-relaxed">
 						Account Deletion Team:{" "}
 						<a href="mailto:support@appscombo.com" className="text-primary hover:underline">
 							support@appscombo.com
@@ -269,25 +269,25 @@ export function AccountDeletion() {
 				<Divider />
 
 				<section className="text-center pt-2">
-					<p className="text-sm text-gray-500 leading-relaxed max-w-lg mx-auto mb-6">
+					<p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mb-6">
 						We&apos;re grateful that you chose to be part of the AppsCombo community. Should you
 						decide to return in the future, you&apos;re always welcome to create a new account.
 					</p>
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						<Link
 							href="/sign-in"
-							className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-destructive text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+							className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
 						>
 							Proceed to account deletion
 						</Link>
 						<Link
 							href="/support"
-							className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+							className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-border text-sm font-semibold text-foreground hover:bg-accent transition-colors"
 						>
 							Contact support
 						</Link>
 					</div>
-					<p className="text-xs text-gray-400 mt-8">AppsCombo — Connect. Engage. Grow.</p>
+					<p className="text-xs text-muted-foreground mt-8">AppsCombo — Connect. Engage. Grow.</p>
 				</section>
 			</div>
 		</>

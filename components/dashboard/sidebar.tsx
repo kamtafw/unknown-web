@@ -19,13 +19,11 @@ const NAV_ITEMS = [
 export function Sidebar() {
 	const pathname = usePathname()
 	const logout = useLogout()
-
 	const [createOpen, setCreateOpen] = useState(false)
 
 	return (
-		<aside className="w-80 shrink-0 flex flex-col bg-white rounded-2xl overflow-hidden mb-5">
-			{/* Nav */}
-			<nav className="flex flex-col p-3 gap-3 flex-1">
+		<aside className="w-80 shrink-0 flex flex-col bg-card rounded-2xl overflow-hidden mb-5 border border-border">
+			<nav className="flex flex-col p-3 gap-1 flex-1">
 				{NAV_ITEMS.map(({ label, icon: Icon, href }) => {
 					const active = pathname === href
 					return (
@@ -35,24 +33,23 @@ export function Sidebar() {
 							className={cn(
 								"flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-150",
 								active
-									? "bg-primary text-white shadow-sm shadow-primary/25"
-									: "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+									? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+									: "text-muted-foreground hover:bg-accent hover:text-foreground",
 							)}
 						>
-							<Icon color={active ? "#FFFFFF" : undefined} />
+							<Icon color={active ? "currentColor" : undefined} />
 							{label}
 						</Link>
 					)
 				})}
 			</nav>
 
-			<div className="mx-4 border-t border-gray-100" />
+			<div className="mx-4 border-t border-border" />
 
-			{/* Create Post */}
 			<div className="mt-3 p-3 flex-1">
 				<button
 					onClick={() => setCreateOpen(true)}
-					className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-primary font-semibold text-sm py-3 px-5 rounded-full transition-colors cursor-pointer"
+					className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent/80 text-primary font-semibold text-sm py-3 px-5 rounded-full transition-colors cursor-pointer"
 				>
 					<Add color="#6A88D1" />
 					Create Post
@@ -61,13 +58,12 @@ export function Sidebar() {
 
 			<CreatePostModal open={createOpen} onOpenChange={setCreateOpen} />
 
-			<div className="mx-4 border-t border-gray-100" />
+			<div className="mx-4 border-t border-border" />
 
-			{/* Logout */}
 			<div className="p-3">
 				<button
 					onClick={() => logout.mutate()}
-					className="w-full flex items-center gap-3 px-5 py-3 text-sm font-normal text-destructive hover:bg-red-50 rounded-2xl transition-colors"
+					className="w-full flex items-center gap-3 px-5 py-3 text-sm font-normal text-destructive hover:bg-destructive/10 rounded-2xl transition-colors"
 				>
 					<Logout />
 					Logout

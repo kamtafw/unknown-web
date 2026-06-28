@@ -35,7 +35,7 @@ export function OTPVerification({
 	return (
 		<div className="min-h-screen bg-background flex items-start justify-center pt-10 sm:pt-24 px-4 pb-10">
 			<div className="w-full max-w-110 sm:max-w-2xl">
-				{/* Mobile back */}
+				{/* mobile back */}
 				<button
 					type="button"
 					onClick={onBack}
@@ -46,7 +46,7 @@ export function OTPVerification({
 				</button>
 
 				<div className="flex items-start gap-16">
-					{/* Desktop back */}
+					{/* desktop back */}
 					<div className="hidden sm:block mt-1 shrink-0">
 						<button
 							type="button"

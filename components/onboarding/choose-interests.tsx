@@ -78,8 +78,8 @@ export function ChooseInterests({
 	return (
 		<div className="flex justify-center pt-10 sm:pt-15 px-4 pb-10">
 			<div className="w-full max-w-md">
-				<h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Choose your interest</h1>
-				<p className="text-[13px] sm:text-sm text-gray-500 mb-5 sm:mb-6">
+				<h1 className="text-xl sm:text-2xl font-bold text-foreground mb-1">Choose your interest</h1>
+				<p className="text-[13px] sm:text-sm text-muted-foreground mb-5 sm:mb-6">
 					Your feed will be personalised based on what you like
 				</p>
 
@@ -89,7 +89,7 @@ export function ChooseInterests({
 							{Array.from({ length: 10 }).map((_, i) => (
 								<div
 									key={i}
-									className="h-8 sm:h-9 rounded-full bg-gray-200"
+									className="h-8 sm:h-9 rounded-full bg-muted"
 									style={{ width: `${70 + (i % 4) * 20}px` }}
 								/>
 							))}
@@ -111,8 +111,8 @@ export function ChooseInterests({
 											transition-all duration-150 cursor-pointer
 											${
 												isOn
-													? "bg-primary text-white border-primary"
-													: "bg-white text-gray-800 border-gray-300 hover:border-primary"
+													? "bg-primary text-primary-foreground border-primary shadow-sm"
+													: "bg-card text-foreground border-border hover:border-primary hover:bg-accent"
 											}
 										`}
 									>
@@ -126,7 +126,7 @@ export function ChooseInterests({
 							<div className="flex justify-center mb-3 sm:mb-5">
 								<button
 									onClick={handleRefresh}
-									className="flex items-center gap-2 mx-auto text-[13px] sm:text-sm text-gray-500 hover:text-gray-900 transition-colors py-1.5 px-3 roundd-full hover:bg-gray-100"
+									className="flex items-center gap-2 mx-auto text-[13px] sm:text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5 px-3 rounded-full hover:bg-accent"
 								>
 									Refresh for more
 									<RefreshCw
@@ -142,14 +142,14 @@ export function ChooseInterests({
 				<div className="flex gap-3 mt-6 sm:mt-8">
 					<button
 						onClick={onSkip}
-						className="flex-1 h-12 sm:h-13 rounded-2xl text-sm font-semibold text-primary bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+						className="flex-1 h-12 sm:h-13 rounded-full text-sm font-semibold text-primary bg-muted hover:bg-accent transition-colors cursor-pointer"
 					>
 						Skip
 					</button>
 					<button
 						disabled={isPending}
 						onClick={() => onNext?.(Array.from(selected))}
-						className="flex-2 h-12 sm:h-13 rounded-2xl text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+						className="flex-2 h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
 					>
 						{isPending ? (
 							<>

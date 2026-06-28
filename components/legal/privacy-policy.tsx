@@ -67,8 +67,8 @@ function NavItem({
 				"block w-full text-left tracking-wide rounded-md transition-colors duration-150",
 				sub ? "pl-5 text-xs py-1.25" : "text-sm py-1.25 px-2",
 				active
-					? "text-gray-900 font-medium bg-gray-100"
-					: "text-gray-500 hover:text-gray-800 hover:bg-gray-50",
+					? "text-foreground font-medium bg-accent"
+					: "text-muted-foreground hover:text-foreground hover:bg-accent/50",
 			].join(" ")}
 		>
 			{label}
@@ -127,7 +127,7 @@ export default function PrivacyPolicy() {
 		<>
 			<div className="flex">
 				{/* Desktop sidebar nav */}
-				<nav className="hidden lg:block w-84 xl:w-96 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto px-16 py-8 border-r border-gray-100 scrollbar-hide">
+				<nav className="hidden lg:block w-84 xl:w-96 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto px-16 py-8 border-r border-border scrollbar-hide">
 					<div className="flex flex-col gap-0.75">
 						{SECTIONS.map(({ id, label, sub }) => (
 							<NavItem
@@ -152,19 +152,19 @@ export default function PrivacyPolicy() {
 						<h1 className="text-4xl sm:text-5xl lg:text-6xl text-primary font-bold tracking-tighter leading-[1.05] mb-3 sm:mb-4">
 							Privacy Policy
 						</h1>
-						<p className="text-[13px] sm:text-sm text-gray-500">
-							Effective Date: <span className="text-gray-800 font-medium">28 May, 2026</span>
+						<p className="text-[13px] sm:text-sm text-muted-foreground">
+							Effective Date: <span className="text-foreground font-medium">28 May, 2026</span>
 						</p>
-						<p className="text-[13px] sm:text-sm text-gray-500 mb-2 sm:mb-3">
-							Last Updated: <span className="text-gray-800 font-medium">28 May, 2026</span>
+						<p className="text-[13px] sm:text-sm text-muted-foreground mb-2 sm:mb-3">
+							Last Updated: <span className="text-foreground font-medium">28 May, 2026</span>
 						</p>
-						<p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-2 sm:mb-3">
+						<p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-2 sm:mb-3">
 							Welcome to AppsCombo (“AppsCombo,” “we,” “our,” or “us”). Your privacy is important to
 							us. This Privacy Policy explains how AppsCombo collects, uses, stores, shares, and
 							protects your information when you use our website, mobile applications, services,
 							products, and related features (collectively, the “Services”).{" "}
 						</p>
-						<p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed">
+						<p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed">
 							By using AppsCombo, you agree to the practices described in this Privacy Policy.
 						</p>
 					</div>
@@ -504,7 +504,7 @@ export default function PrivacyPolicy() {
 							please contact us at:
 						</P>
 						<P>
-							Email: <span className="text-gray-700 font-medium">privacy@appscombo.com</span>
+							Email: <span className="text-foreground font-medium">privacy@appscombo.com</span>
 							<br />
 							Website:{" "}
 							<a
@@ -515,7 +515,7 @@ export default function PrivacyPolicy() {
 							</a>
 							<br />
 							Address:{" "}
-							<span className="text-gray-700 font-medium">
+							<span className="text-foreground font-medium">
 								8 THE GREEN,STE A,KENT, DOVER, DE, 19901
 							</span>
 						</P>
@@ -552,7 +552,7 @@ export default function PrivacyPolicy() {
 			<div className="lg:hidden fixed bottom-6 right-4 z-40">
 				<button
 					onClick={() => setTocOpen(true)}
-					className="flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+					className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg shadow-primary/30 active:scale-95 transition-transform"
 				>
 					<AlignLeft size={15} />
 					Contents
@@ -562,20 +562,20 @@ export default function PrivacyPolicy() {
 			{tocOpen && (
 				<div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
 					<div
-						className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+						className="absolute inset-0 bg-muted backdrop-blur-sm"
 						onClick={() => setTocOpen(false)}
 					/>
 
-					<div className="relative bg-white rounded-t-3xl max-h-[78vh] flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+					<div className="relative bg-background rounded-t-3xl max-h-[78vh] flex flex-col animate-in slide-in-from-bottom-4 duration-300">
 						<div className="flex justify-center pt-3 pb-1 shrink-0">
-							<div className="w-10 h-1 bg-gray-300 rounded-full" />
+							<div className="w-10 h-1 bg-accent rounded-full" />
 						</div>
 
-						<div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
-							<h3 className="font-bold text-gray-900 text-base">Contents</h3>
+						<div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+							<h3 className="font-bold text-foreground">Contents</h3>
 							<button
 								onClick={() => setTocOpen(false)}
-								className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+								className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors"
 							>
 								<X size={18} />
 							</button>
@@ -588,10 +588,10 @@ export default function PrivacyPolicy() {
 									onClick={() => handleMobileNav(id)}
 									className={[
 										"w-full text-left rounded-xl px-3 py-2.5 transition-colors",
-										sub ? "pl-7 text-xs text-gray-500" : "text-sm font-medium",
+										sub ? "pl-7 text-xs text-muted-foreground" : "text-sm font-medium",
 										activeId === id
 											? "bg-primary/10 text-primary"
-											: "text-gray-700 hover:bg-gray-50",
+											: "text-foreground hover:bg-accent",
 									].join(" ")}
 								>
 									{label}
@@ -635,23 +635,23 @@ function SubSection({
 }) {
 	return (
 		<div id={id} className="mt-4 sm:mt-5 scroll-mt-20">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-6 sm:my-8" />
+	return <hr className="border-border my-6 sm:my-8" />
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
