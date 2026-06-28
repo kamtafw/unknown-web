@@ -97,17 +97,16 @@ export function TwoFactorVerification({
 					</div>
 
 					<div className="flex-1 max-w-110">
-						<div className="sm:bg-card sm:rounded-2xl sm:border sm:border-border sm:shadow-sm sm:px-8 sm:py-10">
-							{tabs.length > 1 && (
-								<div className="flex gap-1 sm:gap-1.5 bg-muted rounded-2xl p-1 mb-5 sm:mb-6">
-									{tabs.map((method) => {
-										const meta = METHOD_META[method]
-										return (
-											<button
-												key={method}
-												type="button"
-												onClick={() => handleSwitch(method)}
-												className={`
+						{tabs.length > 1 && (
+							<div className="flex gap-1 sm:gap-1.5 bg-muted rounded-2xl p-1 mb-5 sm:mb-6">
+								{tabs.map((method) => {
+									const meta = METHOD_META[method]
+									return (
+										<button
+											key={method}
+											type="button"
+											onClick={() => handleSwitch(method)}
+											className={`
 													flex-1 flex items-center justify-center gap-1 sm:gap-1.5
 													px-2 sm:px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold
 													transition-all duration-200
@@ -117,32 +116,32 @@ export function TwoFactorVerification({
 															: "text-muted-foreground hover:text-foreground"
 													}
 												`}
-											>
-												{meta.icon}
-												{meta.shortLabel}
-											</button>
-										)
-									})}
-								</div>
-							)}
+										>
+											{meta.icon}
+											{meta.shortLabel}
+										</button>
+									)
+								})}
+							</div>
+						)}
 
-							<h1 className="text-2xl font-bold text-foreground mb-1">Security Verification</h1>
-							<p className="text-sm text-muted-foreground mb-5 sm:mb-6">{current.subtitle}</p>
+						<h1 className="text-2xl font-bold text-foreground mb-1">Security Verification</h1>
+						<p className="text-sm text-muted-foreground mb-5 sm:mb-6">{current.subtitle}</p>
 
-							<Form.Root key={otpKey} onSubmit={handleSubmit} className="flex flex-col gap-5">
-								<Form.Field name="otp" className="flex flex-col gap-2">
-									<OneTimePasswordField.Root
-										name="otp"
-										validationType="numeric"
-										autoComplete="one-time-code"
-										autoFocus
-										className="flex gap-1.5 sm:gap-2.5"
-										aria-label={`${current.label} code`}
-									>
-										{Array.from({ length: CODE_LENGTH }).map((_, i) => (
-											<OneTimePasswordField.Input
-												key={i}
-												className="
+						<Form.Root key={otpKey} onSubmit={handleSubmit} className="flex flex-col gap-5">
+							<Form.Field name="otp" className="flex flex-col gap-2">
+								<OneTimePasswordField.Root
+									name="otp"
+									validationType="numeric"
+									autoComplete="one-time-code"
+									autoFocus
+									className="flex gap-1.5 sm:gap-2.5"
+									aria-label={`${current.label} code`}
+								>
+									{Array.from({ length: CODE_LENGTH }).map((_, i) => (
+										<OneTimePasswordField.Input
+											key={i}
+											className="
 													flex-1 min-w-0
 													w-12 sm:w-15.5 h-12 sm:h-15.5
 													text-center text-lg sm:text-xl font-semibold
@@ -151,69 +150,66 @@ export function TwoFactorVerification({
 													focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary
 													caret-primary transition-all duration-150
 												"
-											/>
+										/>
+									))}
+									<OneTimePasswordField.HiddenInput />
+								</OneTimePasswordField.Root>
+
+								<Form.Message
+									match={(v) => v.length > 0 && v.length < CODE_LENGTH}
+									className="text-xs text-destructive"
+								>
+									Enter all {CODE_LENGTH} digits
+								</Form.Message>
+							</Form.Field>
+
+							<Form.Submit asChild>
+								<button
+									disabled={isPending}
+									className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
+								>
+									{isPending ? (
+										<>
+											<Loader2 size={15} className="animate-spin" />
+											Verifying...
+										</>
+									) : (
+										"Verify Code"
+									)}
+								</button>
+							</Form.Submit>
+
+							{activeMethod === "otp" && <ResendButton onResend={() => onResend?.(activeMethod)} />}
+
+							{fallbacks.length > 0 && (
+								<div>
+									<p className="text-sm text-muted-foreground mb-3">
+										{activeMethod === "authenticator"
+											? "If Google Authenticator fails, use instead:"
+											: "Use another method instead:"}
+									</p>
+									<div className="flex flex-col gap-2 sm:gap-2.5">
+										{fallbacks.map((method) => (
+											<button
+												key={method}
+												type="button"
+												onClick={() => handleSwitch(method)}
+												className="flex items-center justify-between w-full px-4 h-13 rounded-xl bg-muted hover:bg-accent text-sm font-medium text-foreground transition-colors group"
+											>
+												<span className="flex items-center gap-2.5 text-muted-foreground group-hover:text-foreground transition-colors">
+													{METHOD_META[method].icon}
+													Use {METHOD_META[method].label} instead
+												</span>
+												<ArrowRight
+													size={16}
+													className="text-muted-foreground group-hover:text-foreground transition-colors"
+												/>
+											</button>
 										))}
-										<OneTimePasswordField.HiddenInput />
-									</OneTimePasswordField.Root>
-
-									<Form.Message
-										match={(v) => v.length > 0 && v.length < CODE_LENGTH}
-										className="text-xs text-destructive"
-									>
-										Enter all {CODE_LENGTH} digits
-									</Form.Message>
-								</Form.Field>
-
-								<Form.Submit asChild>
-									<button
-										disabled={isPending}
-										className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold transition-all duration-200 bg-primary hover:bg-primary/85 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
-									>
-										{isPending ? (
-											<>
-												<Loader2 size={15} className="animate-spin" />
-												Verifying...
-											</>
-										) : (
-											"Verify Code"
-										)}
-									</button>
-								</Form.Submit>
-
-								{activeMethod === "otp" && (
-									<ResendButton onResend={() => onResend?.(activeMethod)} />
-								)}
-
-								{fallbacks.length > 0 && (
-									<div>
-										<p className="text-sm text-muted-foreground mb-3">
-											{activeMethod === "authenticator"
-												? "If Google Authenticator fails, use instead:"
-												: "Use another method instead:"}
-										</p>
-										<div className="flex flex-col gap-2 sm:gap-2.5">
-											{fallbacks.map((method) => (
-												<button
-													key={method}
-													type="button"
-													onClick={() => handleSwitch(method)}
-													className="flex items-center justify-between w-full px-4 h-13 rounded-xl bg-muted hover:bg-accent text-sm font-medium text-foreground transition-colors group"
-												>
-													<span className="flex items-center gap-2.5 text-muted-foreground group-hover:text-foreground transition-colors">
-														{METHOD_META[method].icon}
-														Use {METHOD_META[method].label} instead
-													</span>
-													<ArrowRight
-														size={16}
-														className="text-muted-foreground group-hover:text-foreground transition-colors"
-													/>
-												</button>
-											))}
-										</div>
 									</div>
-								)}
-							</Form.Root>
-						</div>
+								</div>
+							)}
+						</Form.Root>
 					</div>
 				</div>
 			</div>
