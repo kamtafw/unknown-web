@@ -3,15 +3,17 @@ interface IconProps {
 	width?: number
 	size?: number
 	color?: string
+	className?: string
 }
 
-export function Email({ size = 20, color = "#101828" }: IconProps) {
+export function Email({ size = 20, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 20 20"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -22,13 +24,14 @@ export function Email({ size = 20, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Phone({ size = 20, color = "#101828" }: IconProps) {
+export function Phone({ size = 20, color = "currentColor", className}: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 20 20"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -39,13 +42,14 @@ export function Phone({ size = 20, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Padlock({ size = 20, color = "#101828" }: IconProps) {
+export function Padlock({ size = 20, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 20 20"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -56,13 +60,14 @@ export function Padlock({ size = 20, color = "#101828" }: IconProps) {
 	)
 }
 
-export function Calendar({ size = 20, color = "#101828" }: IconProps) {
+export function Calendar({ size = 20, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 20 20"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path

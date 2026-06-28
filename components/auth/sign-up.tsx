@@ -85,8 +85,8 @@ function PhoneField({ onChange, onBlur, hasError }: PhoneFieldProps) {
 			<div
 				className={`flex items-center h-12 sm:h-12.5 rounded-xl border bg-muted transition-all ${
 					hasError
-						? "border-2 border-destructive"
-						: "border-input focus-within:bg-card focus-within:border-2 focus-within:border-primary"
+						? "border-destructive ring-1 ring-destructive"
+						: "border-input focus-within:bg-card focus-within:border-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
 				}`}
 			>
 				<div className="flex items-center gap-1 pl-3.5 h-full">
@@ -238,193 +238,179 @@ export function SignUp({
 		<>
 			<div className="flex justify-center pt-8 sm:pt-10 px-4 pb-10">
 				<div className="w-full max-w-110">
-					<div className="sm:bg-card sm:rounded-2xl sm:border sm:border-border sm:shadow-sm sm:px-8 sm:py-10">
-						<h1 className="text-2xl sm:text-[28px] text-center font-bold text-foreground mb-6 sm:mb-7">
-							Sign up to Appscombo
-						</h1>
+					<h1 className="text-2xl sm:text-[28px] text-center font-bold text-foreground mb-6 sm:mb-7">
+						Sign up to Appscombo
+					</h1>
 
-						<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
-							{/* Email */}
-							<Form.Field name="email" className="flex flex-col gap-1.5">
-								<Form.Label className="text-sm font-medium text-foreground">
-									Email Address
-								</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted focus-within:bg-card focus-within:border-2 focus-within:border-primary transition-all data-invalid:border-2 data-invalid:border-destructive">
+					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
+						{/* Email */}
+						<Form.Field name="email" className="flex flex-col gap-1.5">
+							<Form.Label className="text-sm font-medium text-foreground">Email Address</Form.Label>
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
+								<span className="text-muted-foreground shrink-0">
+									<Email />
+								</span>
+								<Form.Control asChild>
+									<input
+										type="email"
+										name="email"
+										placeholder="Enter your email address"
+										required
+										onBlur={() => markTouched("email")}
+										onChange={() => clearFieldError("email")}
+										className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
+									/>
+								</Form.Control>
+							</div>
+							<Form.Message
+								match={(value) => touched.email && value.trim().length === 0}
+								className="text-xs text-destructive"
+							>
+								Email is required
+							</Form.Message>
+							<Form.Message
+								match={(value) => emailInvalid(value)}
+								className="text-xs text-destructive"
+							>
+								Enter a valid email address
+							</Form.Message>
+							{apiErrors.email && !emailInvalid("valid@email.com") && touched.email && (
+								<p className="text-xs text-destructive">{formatMessage(apiErrors.email)}</p>
+							)}
+						</Form.Field>
+
+						{/* Phone */}
+						<div className="flex flex-col gap-1.5">
+							<label className="text-sm font-medium text-foreground">Phone Number</label>
+							<PhoneField
+								onChange={(fullNumber) => {
+									setPhone(fullNumber)
+									clearFieldError("phone")
+								}}
+								onBlur={() => markTouched("phone")}
+								hasError={phoneInvalid || !!apiErrors.phone}
+							/>
+							{phoneInvalid ? (
+								<p className="text-xs text-destructive">Enter a valid phone number</p>
+							) : apiErrors.phone ? (
+								<p className="text-xs text-destructive">{formatMessage(apiErrors.phone)}</p>
+							) : null}
+						</div>
+
+						{/* Password */}
+						<Form.Field name="password" className="flex flex-col gap-1.5">
+							<Form.Label className="text-sm font-medium text-foreground">
+								Create Password
+							</Form.Label>
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
+								<PasswordToggleField.Root>
 									<span className="text-muted-foreground shrink-0">
-										<Email />
+										<Padlock />
 									</span>
 									<Form.Control asChild>
-										<input
-											type="email"
-											name="email"
-											placeholder="Enter your email address"
+										<PasswordToggleField.Input
+											name="password"
+											placeholder="Create a strong password"
 											required
-											onBlur={() => markTouched("email")}
-											onChange={() => clearFieldError("email")}
+											minLength={8}
+											maxLength={12}
+											autoComplete="new-password"
+											value={password}
+											onChange={(e) => setPassword(e.target.value)}
+											onBlur={() => markTouched("password")}
 											className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 										/>
 									</Form.Control>
-								</div>
-								<Form.Message
-									match={(value) => touched.email && value.trim().length === 0}
-									className="text-xs text-destructive"
-								>
-									Email is required
-								</Form.Message>
-								<Form.Message
-									match={(value) => emailInvalid(value)}
-									className="text-xs text-destructive"
-								>
-									Enter a valid email address
-								</Form.Message>
-								{apiErrors.email && !emailInvalid("valid@email.com") && touched.email && (
-									<p className="text-xs text-destructive">{formatMessage(apiErrors.email)}</p>
-								)}
-							</Form.Field>
-
-							{/* Phone */}
-							<div className="flex flex-col gap-1.5">
-								<label className="text-sm font-medium text-foreground">Phone Number</label>
-								<PhoneField
-									onChange={(fullNumber) => {
-										setPhone(fullNumber)
-										clearFieldError("phone")
-									}}
-									onBlur={() => markTouched("phone")}
-									hasError={phoneInvalid || !!apiErrors.phone}
-								/>
-								{phoneInvalid ? (
-									<p className="text-xs text-destructive">Enter a valid phone number</p>
-								) : apiErrors.phone ? (
-									<p className="text-xs text-destructive">{formatMessage(apiErrors.phone)}</p>
-								) : null}
+									<PasswordToggleField.Toggle className="text-muted-foreground hover:text-foreground transition-colors shrink-0 focus:outline-none">
+										<PasswordToggleField.Icon
+											visible={<EyeOpenIcon />}
+											hidden={<EyeClosedIcon />}
+										/>
+									</PasswordToggleField.Toggle>
+								</PasswordToggleField.Root>
 							</div>
+							{passwordEmpty && <p className="text-xs text-destructive">Password is required</p>}
+							<ul className="flex flex-col gap-2 mt-1">
+								{RULES.map(({ label, test }) => {
+									const passed = test(password)
+									const failing = touched.password && !passed
+									return (
+										<li key={label} className="flex items-center gap-2">
+											{passed ? (
+												<CheckCircle2 size={15} className="text-primary shrink-0" strokeWidth={2} />
+											) : failing ? (
+												<XCircle size={15} className="text-destructive shrink-0" strokeWidth={2} />
+											) : (
+												<Circle
+													size={15}
+													className="text-muted-foreground/40 shrink-0"
+													strokeWidth={2}
+												/>
+											)}
+											<span
+												className={`text-[11px] leading-tight ${
+													passed
+														? "text-foreground/80"
+														: failing
+															? "text-destructive"
+															: "text-muted-foreground"
+												}`}
+											>
+												{label}
+											</span>
+										</li>
+									)
+								})}
+							</ul>
+						</Form.Field>
 
-							{/* Password */}
-							<Form.Field name="password" className="flex flex-col gap-1.5">
-								<Form.Label className="text-sm font-medium text-foreground">
-									Create Password
-								</Form.Label>
-								<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted focus-within:bg-card focus-within:border-2 focus-within:border-primary transition-all">
-									<PasswordToggleField.Root>
-										<span className="text-muted-foreground shrink-0">
-											<Padlock />
-										</span>
-										<Form.Control asChild>
-											<PasswordToggleField.Input
-												name="password"
-												placeholder="Create a strong password"
-												required
-												minLength={8}
-												maxLength={12}
-												autoComplete="new-password"
-												value={password}
-												onChange={(e) => setPassword(e.target.value)}
-												onBlur={() => markTouched("password")}
-												className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
-											/>
-										</Form.Control>
-										<PasswordToggleField.Toggle className="text-muted-foreground hover:text-foreground transition-colors shrink-0 focus:outline-none">
-											<PasswordToggleField.Icon
-												visible={<EyeOpenIcon />}
-												hidden={<EyeClosedIcon />}
-											/>
-										</PasswordToggleField.Toggle>
-									</PasswordToggleField.Root>
-								</div>
-								{passwordEmpty && (
-									<p className="text-xs text-destructive">Password is required</p>
+						<Form.Submit asChild>
+							<button
+								disabled={isPending}
+								className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
+							>
+								{isPending ? (
+									<>
+										<Loader2 size={15} className="animate-spin" />
+										Signing up...
+									</>
+								) : (
+									"Sign Up"
 								)}
-								<ul className="flex flex-col gap-2 mt-1">
-									{RULES.map(({ label, test }) => {
-										const passed = test(password)
-										const failing = touched.password && !passed
-										return (
-											<li key={label} className="flex items-center gap-2">
-												{passed ? (
-													<CheckCircle2
-														size={15}
-														className="text-primary shrink-0"
-														strokeWidth={2}
-													/>
-												) : failing ? (
-													<XCircle
-														size={15}
-														className="text-destructive shrink-0"
-														strokeWidth={2}
-													/>
-												) : (
-													<Circle
-														size={15}
-														className="text-muted-foreground/40 shrink-0"
-														strokeWidth={2}
-													/>
-												)}
-												<span
-													className={`text-[11px] leading-tight ${
-														passed
-															? "text-foreground/80"
-															: failing
-																? "text-destructive"
-																: "text-muted-foreground"
-													}`}
-												>
-													{label}
-												</span>
-											</li>
-										)
-									})}
-								</ul>
-							</Form.Field>
+							</button>
+						</Form.Submit>
 
-							<Form.Submit asChild>
-								<button
-									disabled={isPending}
-									className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
-								>
-									{isPending ? (
-										<>
-											<Loader2 size={15} className="animate-spin" />
-											Signing up...
-										</>
-									) : (
-										"Sign Up"
-									)}
-								</button>
-							</Form.Submit>
+						<p className="text-center text-sm text-muted-foreground">
+							Already a user?{" "}
+							<button
+								type="button"
+								onClick={onSignIn}
+								className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+							>
+								Sign in
+							</button>
+						</p>
 
-							<p className="text-center text-sm text-muted-foreground">
-								Already a user?{" "}
-								<button
-									type="button"
-									onClick={onSignIn}
-									className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
-								>
-									Sign in
-								</button>
-							</p>
-
-							<p className="text-sm text-muted-foreground text-center leading-relaxed mt-3 sm:mt-5">
-								By signing up, you agree to our{" "}
-								<button
-									type="button"
-									onClick={onTerms}
-									className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
-								>
-									Terms & Conditions
-								</button>
-								, and{" "}
-								<button
-									type="button"
-									onClick={onPrivacyPolicy}
-									className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
-								>
-									Privacy Policy
-								</button>
-								.
-							</p>
-						</Form.Root>
-					</div>
+						<p className="text-sm text-muted-foreground text-center leading-relaxed mt-3 sm:mt-5">
+							By signing up, you agree to our{" "}
+							<button
+								type="button"
+								onClick={onTerms}
+								className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+							>
+								Terms & Conditions
+							</button>
+							, and{" "}
+							<button
+								type="button"
+								onClick={onPrivacyPolicy}
+								className="text-primary font-semibold cursor-pointer hover:underline focus:outline-none"
+							>
+								Privacy Policy
+							</button>
+							.
+						</p>
+					</Form.Root>
 				</div>
 			</div>
 
