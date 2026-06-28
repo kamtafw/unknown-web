@@ -3,8 +3,8 @@ import Image from "next/image"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="flex flex-col bg-white min-h-screen">
-			<header className="px-4 sm:px-8 py-4 sm:py-5 border-b border-gray-100">
+		<div className="flex flex-col bg-background min-h-screen">
+			<header className="sticky top-0 z-10 px-4 sm:px-8 py-4 sm:py-5 border-b border-border bg-background/80 backdrop-blur-sm">
 				<div className="flex items-center gap-2">
 					<Image
 						src="/logo.svg"
@@ -17,10 +17,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 				</div>
 			</header>
 
-			{/* page content */}
 			<main className="flex-1">{children}</main>
 
-			{/* footer */}
 			<Footer />
 		</div>
 	)
