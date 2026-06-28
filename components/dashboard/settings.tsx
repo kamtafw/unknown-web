@@ -1,5 +1,6 @@
 "use client"
 
+import { useLogout } from "@/hooks/use-auth"
 import {
 	updateProfileKeys,
 	useUpdateCoverPhoto,
@@ -52,6 +53,7 @@ import {
 	TwoStepVerificationPanel,
 } from "./account-setting"
 import { AddAccountPanel } from "./add-account-panel"
+import { BlockedAccountsPanel } from "./blocked-accounts-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -81,6 +83,7 @@ import {
 	Verification,
 } from "./settings-icons"
 import { SocialAccountsPanel } from "./social-accounts-panel"
+import { TimeZonePanel } from "./timezone-panel"
 
 type SectionId =
 	| "verification"
@@ -352,16 +355,15 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"change-phone": ChangePhonePanel,
 	"add-account": AddAccountPanel,
 	"social-accounts": SocialAccountsPanel,
+	"time-zone": TimeZonePanel,
+	blocked: BlockedAccountsPanel,
 	deactivate: DeleteAccountPanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "time-zone", title: "Time zone" },
-	{ id: "logout", title: "Log out" },
 	{ id: "last-seen", title: "Last seen & online" },
-	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
 	{ id: "push-notifs", title: "Push notifications" },
 	{ id: "message-tones", title: "Message tones" },
@@ -373,7 +375,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "app-language", title: "App language" },
 	{ id: "report", title: "Report a problem" },
 	{ id: "security", title: "Security advisories" },
-	// { id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
 
@@ -437,49 +438,41 @@ function SettingsDialog({
 	)
 }
 
-// function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-// 	return (
-// 		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
-// 			<div className="px-6 py-5">
-// 				{/* Warning banner */}
-// 				<div className="flex items-start gap-3 p-3.5 bg-red-50 rounded-xl mb-5 border border-red-100">
-// 					<AlertCircle size={15} className="text-destructive shrink-0 mt-px" />
-// 					<p className="text-[12.5px] text-destructive leading-relaxed">
-// 						Deactivating your account is permanent and cannot be undone. All your content and data
-// 						will be permanently removed.
-// 					</p>
-// 				</div>
+function LogoutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+	const logout = useLogout()
 
-// 				{/* Bullet points */}
-// 				<div className="space-y-2.5 mb-6">
-// 					{[
-// 						"Your profile, posts, and media will be permanently deleted",
-// 						"Your followers and following list will be removed",
-// 						"You will lose access to all messages and bookmarks",
-// 					].map((point) => (
-// 						<div key={point} className="flex items-start gap-2.5">
-// 							<div className="w-1 h-1 rounded-full bg-gray-400 mt-1.75 shrink-0" />
-// 							<p className="text-[12.5px] text-gray-600 leading-relaxed">{point}</p>
-// 						</div>
-// 					))}
-// 				</div>
-
-// 				{/* Actions */}
-// 				<div className="flex gap-2.5">
-// 					<button
-// 						onClick={onClose}
-// 						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-// 					>
-// 						Keep my account
-// 					</button>
-// 					<button className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors">
-// 						Deactivate
-// 					</button>
-// 				</div>
-// 			</div>
-// 		</SettingsDialog>
-// 	)
-// }
+	return (
+		<SettingsDialog open={open} onClose={onClose} title="Log out">
+			<div className="px-6 py-5">
+				<p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+					Are you sure you want to log out of your account? You&apos;ll need to sign in again to
+					access AppsCombo.
+				</p>
+				<div className="flex gap-2.5">
+					<button
+						onClick={onClose}
+						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={() => logout.mutate()}
+						disabled={logout.isPending}
+						className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+					>
+						{logout.isPending ? (
+							<>
+								<Loader2 size={12} className="animate-spin" /> Logging out…
+							</>
+						) : (
+							"Log out"
+						)}
+					</button>
+				</div>
+			</div>
+		</SettingsDialog>
+	)
+}
 
 function ComingSoonDialog({
 	open,
@@ -1368,6 +1361,7 @@ export function Settings() {
 				}}
 			/>
 			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
+			<LogoutDialog open={openDialog === "logout"} onClose={closeDialog} />
 			{COMING_SOON.map(({ id, title }) => (
 				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 			))}
