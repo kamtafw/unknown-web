@@ -1,7 +1,7 @@
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -10,19 +10,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
@@ -30,29 +30,29 @@ function UL({ children }: { children: React.ReactNode }) {
 
 function OL({ children }: { children: React.ReactNode }) {
 	return (
-		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ol className="list-decimal pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ol>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border my-8 sm:my-10" />
 }
 
 export function SafetyReport() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Trust & safety
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						Building a safer AppsCombo community
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						At AppsCombo, the safety, security, and well-being of our users are among our highest
 						priorities. This Safety Report Center explains how users can report safety concerns, how
 						AppsCombo responds to reports, and the measures we take to protect our community.
@@ -184,7 +184,7 @@ export function SafetyReport() {
 					</SubSection>
 
 					<SubSection title="Contact the safety team">
-						<p className="text-[13px] text-gray-500 leading-relaxed">
+						<p className="text-[13px] text-muted-foreground leading-relaxed">
 							Safety reports:{" "}
 							<a href="mailto:safety@appscombo.com" className="text-primary hover:underline">
 								safety@appscombo.com
@@ -294,7 +294,7 @@ export function SafetyReport() {
 				<Divider />
 
 				<Section title="Contact the safety team">
-					<p className="text-[13px] text-gray-500 leading-relaxed">
+					<p className="text-[13px] text-muted-foreground leading-relaxed">
 						Safety team:{" "}
 						<a href="mailto:safety@appscombo.com" className="text-primary hover:underline">
 							safety@appscombo.com
@@ -317,7 +317,7 @@ export function SafetyReport() {
 					</p>
 				</Section>
 
-				<p className="text-center text-xs text-gray-400 pt-2">
+				<p className="text-center text-xs text-muted-foreground pt-2">
 					AppsCombo Safety Center — Safe. Secure. Trusted.
 				</p>
 			</div>

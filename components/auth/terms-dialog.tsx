@@ -10,25 +10,31 @@ interface TermsDialogProps {
 	onPrivacyPolicy: () => void
 }
 
-export function TermsDialog({ open, onOpenChange, onContinue,onTerms,onPrivacyPolicy }: TermsDialogProps) {
+export function TermsDialog({
+	open,
+	onOpenChange,
+	onContinue,
+	onTerms,
+	onPrivacyPolicy,
+}: TermsDialogProps) {
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
 			<Dialog.Portal>
-				<Dialog.Overlay className="fixed inset-0 bg-[#9FAABD]/60 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 				<Dialog.Content
 					className="
-            fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-            w-[calc(100%-2rem)] max-w-104
-						bg-white rounded-3xl shadow-lg
+						fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
+						w-[calc(100%-2rem)] max-w-104
+						bg-card rounded-3xl shadow-xl border border-border
 						px-5 sm:px-10 py-7 sm:py-10
-            focus:outline-none
-            data-[state=open]:animate-in data-[state=closed]:animate-out
-            data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
-            data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
-          "
+						focus:outline-none
+						data-[state=open]:animate-in data-[state=closed]:animate-out
+						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+					"
 				>
 					<Dialog.Close asChild>
-						<button className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none">
+						<button className="absolute top-3 right-3 sm:top-4 sm:right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-muted transition-colors focus:outline-none">
 							<XIcon size={18} />
 						</button>
 					</Dialog.Close>
@@ -49,7 +55,7 @@ export function TermsDialog({ open, onOpenChange, onContinue,onTerms,onPrivacyPo
 						Terms & Conditions, and Privacy Policy
 					</Dialog.Description>
 
-					<p className="text-sm text-gray-700 text-center leading-relaxed mb-5 sm:mb-6">
+					<p className="text-sm text-muted-foreground text-center leading-relaxed mb-5 sm:mb-6">
 						By signing up with AppsCombo, you have agreed to our{" "}
 						<button
 							type="button"
@@ -71,11 +77,7 @@ export function TermsDialog({ open, onOpenChange, onContinue,onTerms,onPrivacyPo
 
 					<button
 						onClick={onContinue}
-						className="
-              w-full h-12 sm:h-13 rounded-2xl text-sm text-white font-semibold
-              bg-primary hover:bg-primary/85 active:scale-[0.99]
-              transition-all duration-200 cursor-pointer
-            "
+						className="w-full h-12 sm:h-13 rounded-full text-sm text-primary-foreground font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 cursor-pointer shadow-sm"
 					>
 						Continue to sign up
 					</button>

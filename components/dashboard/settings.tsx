@@ -1,5 +1,8 @@
 "use client"
 
+import LegalPrivacyPolicy from "@/components/legal/privacy-policy"
+import LegalTerms from "@/components/legal/terms"
+import { useLogout } from "@/hooks/use-auth"
 import {
 	updateProfileKeys,
 	useUpdateCoverPhoto,
@@ -13,7 +16,6 @@ import * as Dialog from "@radix-ui/react-dialog"
 import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
-	AlertCircle,
 	ArrowLeft,
 	Bell,
 	Camera,
@@ -22,7 +24,6 @@ import {
 	CreditCard,
 	Database,
 	FileText,
-	Fingerprint,
 	Globe,
 	HardDrive,
 	Layers,
@@ -52,6 +53,7 @@ import {
 	TwoStepVerificationPanel,
 } from "./account-setting"
 import { AddAccountPanel } from "./add-account-panel"
+import { BlockedAccountsPanel } from "./blocked-accounts-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -81,6 +83,7 @@ import {
 	Verification,
 } from "./settings-icons"
 import { SocialAccountsPanel } from "./social-accounts-panel"
+import { TimeZonePanel } from "./timezone-panel"
 
 type SectionId =
 	| "verification"
@@ -149,12 +152,6 @@ const SECTIONS: Section[] = [
 				label: "Two-step verification",
 				description: "Secure your account with two-step verification",
 				icon: <TwoStepVerification size={18} />,
-			},
-			{
-				id: "report-problem",
-				label: "Report a problem",
-				description: "Report bugs, issues, or unexpected behaviour",
-				icon: <ReportProblem size={18} />,
 			},
 			{
 				id: "change-phone",
@@ -315,30 +312,22 @@ const SECTIONS: Section[] = [
 		icon: <Support size={20} />,
 		items: [
 			{
-				id: "report",
+				id: "report-problem",
 				label: "Report a problem",
-				description: "Let us know if something isn't working",
-				icon: <AlertCircle size={18} />,
-			},
-			{
-				id: "security",
-				label: "Security advisories",
-				description: "View security-related announcements",
-				icon: <Fingerprint size={18} />,
+				description: "Report bugs, issues, or unexpected behaviour",
+				icon: <ReportProblem size={18} />,
 			},
 			{
 				id: "terms",
-				label: "Terms of Service",
-				description: "Read our Terms of Service",
+				label: "Terms & Conditions",
+				description: "Read our Terms & Conditions",
 				icon: <FileText size={18} />,
-				href: "/terms",
 			},
 			{
 				id: "privacy-policy",
 				label: "Privacy Policy",
 				description: "Read our Privacy Policy",
 				icon: <FileText size={18} />,
-				href: "/privacy-policy",
 			},
 		],
 	},
@@ -352,16 +341,17 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"change-phone": ChangePhonePanel,
 	"add-account": AddAccountPanel,
 	"social-accounts": SocialAccountsPanel,
+	"time-zone": TimeZonePanel,
+	blocked: BlockedAccountsPanel,
 	deactivate: DeleteAccountPanel,
+	terms: TermsSettingsPanel,
+	"privacy-policy": PrivacyPolicySettingsPanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "switch-tier", title: "Switch tier" },
 	{ id: "manage-subscription", title: "Manage subscription" },
-	{ id: "time-zone", title: "Time zone" },
-	{ id: "logout", title: "Log out" },
 	{ id: "last-seen", title: "Last seen & online" },
-	{ id: "blocked", title: "Blocked accounts" },
 	{ id: "location-sharing", title: "Live location sharing" },
 	{ id: "push-notifs", title: "Push notifications" },
 	{ id: "message-tones", title: "Message tones" },
@@ -371,9 +361,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "storage-usage", title: "Storage usage" },
 	{ id: "network-usage", title: "Network usage" },
 	{ id: "app-language", title: "App language" },
-	{ id: "report", title: "Report a problem" },
-	{ id: "security", title: "Security advisories" },
-	// { id: "edit-email", title: "Email" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
 
@@ -408,22 +395,22 @@ function SettingsDialog({
 	return (
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
-				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-white rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
+				<Dialog.Overlay className="fixed inset-0 bg-black/50 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-card border border-border rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
 					{/* Header */}
-					<div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+					<div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border shrink-0">
 						<div className="pr-4 min-w-0">
-							<Dialog.Title className="font-bold text-gray-900 text-[15.5px] leading-tight">
+							<Dialog.Title className="font-bold text-foreground text-[15.5px] leading-tight">
 								{title}
 							</Dialog.Title>
 							{description && (
-								<Dialog.Description className="text-[12.5px] text-gray-500 mt-1 leading-relaxed">
+								<Dialog.Description className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
 									{description}
 								</Dialog.Description>
 							)}
 						</div>
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors shrink-0 mt-0.5">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors shrink-0 mt-0.5">
 								<X size={15} />
 							</button>
 						</Dialog.Close>
@@ -437,49 +424,41 @@ function SettingsDialog({
 	)
 }
 
-// function DeactivateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-// 	return (
-// 		<SettingsDialog open={open} onClose={onClose} title="Deactivate your account">
-// 			<div className="px-6 py-5">
-// 				{/* Warning banner */}
-// 				<div className="flex items-start gap-3 p-3.5 bg-red-50 rounded-xl mb-5 border border-red-100">
-// 					<AlertCircle size={15} className="text-destructive shrink-0 mt-px" />
-// 					<p className="text-[12.5px] text-destructive leading-relaxed">
-// 						Deactivating your account is permanent and cannot be undone. All your content and data
-// 						will be permanently removed.
-// 					</p>
-// 				</div>
+function LogoutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+	const logout = useLogout()
 
-// 				{/* Bullet points */}
-// 				<div className="space-y-2.5 mb-6">
-// 					{[
-// 						"Your profile, posts, and media will be permanently deleted",
-// 						"Your followers and following list will be removed",
-// 						"You will lose access to all messages and bookmarks",
-// 					].map((point) => (
-// 						<div key={point} className="flex items-start gap-2.5">
-// 							<div className="w-1 h-1 rounded-full bg-gray-400 mt-1.75 shrink-0" />
-// 							<p className="text-[12.5px] text-gray-600 leading-relaxed">{point}</p>
-// 						</div>
-// 					))}
-// 				</div>
-
-// 				{/* Actions */}
-// 				<div className="flex gap-2.5">
-// 					<button
-// 						onClick={onClose}
-// 						className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-// 					>
-// 						Keep my account
-// 					</button>
-// 					<button className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors">
-// 						Deactivate
-// 					</button>
-// 				</div>
-// 			</div>
-// 		</SettingsDialog>
-// 	)
-// }
+	return (
+		<SettingsDialog open={open} onClose={onClose} title="Log out">
+			<div className="px-6 py-5">
+				<p className="text-[13px] text-muted-foreground leading-relaxed mb-6">
+					Are you sure you want to log out of your account? You&apos;ll need to sign in again to
+					access AppsCombo.
+				</p>
+				<div className="flex gap-2.5">
+					<button
+						onClick={onClose}
+						className="flex-1 h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={() => logout.mutate()}
+						disabled={logout.isPending}
+						className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+					>
+						{logout.isPending ? (
+							<>
+								<Loader2 size={12} className="animate-spin" /> Logging out…
+							</>
+						) : (
+							"Log out"
+						)}
+					</button>
+				</div>
+			</div>
+		</SettingsDialog>
+	)
+}
 
 function ComingSoonDialog({
 	open,
@@ -497,8 +476,8 @@ function ComingSoonDialog({
 					<Wrench size={20} className="text-primary" />
 				</div>
 				<div>
-					<p className="font-semibold text-gray-900 text-[13.5px]">In development</p>
-					<p className="text-[12.5px] text-gray-500 mt-1 leading-relaxed">
+					<p className="font-semibold text-foreground text-[13.5px]">In development</p>
+					<p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
 						This feature is currently being built. Check back soon!
 					</p>
 				</div>
@@ -543,11 +522,11 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 						key={row.label}
 						className={cn(
 							"flex items-start justify-between py-3.5",
-							i < rows.length - 1 && "border-b border-gray-50",
+							i < rows.length - 1 && "border-b border-border/50",
 						)}
 					>
-						<span className="text-[12.5px] text-gray-500 shrink-0">{row.label}</span>
-						<span className="text-[12.5px] font-medium text-gray-900 text-right ml-6 break-all">
+						<span className="text-[12.5px] text-muted-foreground shrink-0">{row.label}</span>
+						<span className="text-[12.5px] font-medium text-foreground text-right ml-6 break-all">
 							{row.value}
 						</span>
 					</div>
@@ -576,23 +555,63 @@ function ExternalLinksDialog({
 						target="_blank"
 						rel="noopener noreferrer"
 						className={cn(
-							"flex items-center gap-3 py-3.5 hover:bg-gray-50/60 transition-colors -mx-6 px-6",
-							i < links.length - 1 && "border-b border-gray-50",
+							"flex items-center gap-3 py-3.5 hover:bg-accent/60 transition-colors -mx-6 px-6",
+							i < links.length - 1 && "border-b border-border/50",
 						)}
 					>
 						<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
 							<Link size={14} color="#6A88D1" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<p className="text-[13px] font-semibold text-gray-900 truncate">
+							<p className="text-[13px] font-semibold text-foreground truncate">
 								{link.label || "Link"}
 							</p>
-							<p className="text-[12px] text-gray-400 truncate">{link.url}</p>
+							<p className="text-[12px] text-muted-foreground truncate">{link.url}</p>
 						</div>
 					</a>
 				))}
 			</div>
 		</SettingsDialog>
+	)
+}
+
+function TermsSettingsPanel({ onBack }: { onBack: () => void }) {
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">Terms & Conditions</h2>
+			</div>
+			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
+				<LegalTerms />
+			</div>
+		</div>
+	)
+}
+
+function PrivacyPolicySettingsPanel({ onBack }: { onBack: () => void }) {
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">Privacy Policy</h2>
+			</div>
+			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [&_nav]:hidden!">
+				<LegalPrivacyPolicy />
+			</div>
+		</div>
 	)
 }
 
@@ -609,25 +628,25 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 		<div className="h-full overflow-y-auto [&::-webkit-scrollbar]:hidden">
 			{/* cover + avatar */}
 			<div className="relative">
-				<div className="h-48.75 w-full relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-blue-50">
+				<div className="h-48.75 w-full relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-primary/5">
 					{user.cover_photo ? (
 						<Image src={user.cover_photo} alt="Cover" fill className="object-cover" />
 					) : null}
 					{/* overlaid controls */}
 					<button
 						onClick={onBack}
-						className="absolute top-4 left-4 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+						className="absolute top-4 left-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-card transition-colors"
 					>
-						<ArrowLeft size={15} className="text-gray-700" />
+						<ArrowLeft size={15} className="text-foreground" />
 					</button>
-					<button className="absolute top-4 right-4 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors">
-						<MoreHorizontal size={15} className="text-gray-700" />
+					<button className="absolute top-4 right-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-card transition-colors">
+						<MoreHorizontal size={15} className="text-foreground" />
 					</button>
 				</div>
 
 				{/* profile avatar */}
 				<div className="absolute left-5 -bottom-8 z-10">
-					<div className="relative w-17 h-17 rounded-full border-[2.5px] border-white overflow-hidden bg-primary/20 shadow-md">
+					<div className="relative w-17 h-17 rounded-full border-[2.5px] border-card overflow-hidden bg-primary/20 shadow-md">
 						{user.profile_photo ? (
 							<Image src={user.profile_photo} alt={displayName} fill className="object-cover" />
 						) : (
@@ -640,8 +659,8 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 			</div>
 
 			<div className="px-5 pt-12 pb-8">
-				<h2 className="text-[18px] font-bold text-gray-900 leading-tight">{displayName}</h2>
-				<p className="text-[13px] text-gray-500 mt-0.5">@{user.username}</p>
+				<h2 className="text-[18px] font-bold text-foreground leading-tight">{displayName}</h2>
+				<p className="text-[13px] text-muted-foreground mt-0.5">@{user.username}</p>
 
 				{/* Stats */}
 				<div className="flex items-center gap-6 mt-3.5 mb-4">
@@ -651,24 +670,24 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 						{ label: "Followers", value: user.follower_count ?? 0 },
 					].map(({ label, value }) => (
 						<div key={label} className="flex flex-1 flex-col">
-							<span className="text-[15px] font-bold text-gray-900">{formatCount(value)}</span>
-							<span className="text-[13px] text-gray-500">{label}</span>
+							<span className="text-[15px] font-bold text-foreground">{formatCount(value)}</span>
+							<span className="text-[13px] text-muted-foreground">{label}</span>
 						</div>
 					))}
 				</div>
 
 				{/* Bio */}
-				{bio && <p className="text-[13px] text-gray-700 leading-relaxed mb-3">{bio}</p>}
+				{bio && <p className="text-[13px] text-foreground leading-relaxed mb-3">{bio}</p>}
 
 				{/* External links */}
 				{links.length > 0 && (
-					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px]">
+					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px] text-muted-foreground">
 						<Link size={14} />
 						<a
 							href={links[0].url}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-gray-700 font-medium truncate min-w-0 hover:underline"
+							className="text-primary font-medium truncate min-w-0 hover:underline"
 						>
 							{links[0].label || links[0].url}
 						</a>
@@ -686,25 +705,25 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				{/* Location + date joined */}
 				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Location size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								{[user.state, user.country].filter(Boolean).join(", ")}
 							</span>
 						</div>
 					)}
 					{user.date_joined && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Calendar size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
 							</span>
 						</div>
 					)}
 					{user.dob && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Calendar size={14} />
-							<span className="font-medium text-gray-700">
+							<span className="font-medium text-foreground">
 								Born {formatDob(user.dob, user.dob_visibility)}
 							</span>
 						</div>
@@ -737,24 +756,26 @@ function EditRow({
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors text-left"
+			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50 last:border-0 hover:bg-accent/60 transition-colors text-left"
 		>
 			<span
 				className={cn(
 					"text-[13px] font-medium shrink-0",
-					destructive ? "text-destructive" : "text-gray-700",
+					destructive ? "text-destructive" : "text-foreground",
 				)}
 			>
 				{label}
 			</span>
 			{value !== undefined && (
 				<div className="flex items-center gap-1.5 ml-4 min-w-0">
-					<span className="text-[12.5px] text-gray-400 truncate max-w-40 text-right">{value}</span>
+					<span className="text-[12.5px] text-muted-foreground truncate max-w-40 text-right">
+						{value}
+					</span>
 					{onClick ? (
 						isPending ? (
-							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
+							<Loader2 size={13} className="text-muted-foreground/40 shrink-0 animate-spin" />
 						) : (
-							<ChevronRight size={13} className="text-gray-300 shrink-0" />
+							<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
 						)
 					) : null}
 				</div>
@@ -773,18 +794,18 @@ function ToggleRow({
 	onToggle: () => void
 }) {
 	return (
-		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50">
-			<span className="text-[13px] font-medium text-gray-700">{label}</span>
+		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50">
+			<span className="text-[13px] font-medium text-foreground">{label}</span>
 			<div
 				onClick={onToggle}
 				className={cn(
-					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors",
-					enabled ? "bg-primary" : "bg-gray-300",
+					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors cursor-pointer",
+					enabled ? "bg-primary" : "bg-muted-foreground/30",
 				)}
 			>
 				<div
 					className={cn(
-						"w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+						"w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200",
 						enabled ? "translate-x-4" : "translate-x-0",
 					)}
 				/>
@@ -874,13 +895,13 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
 
 	return (
-		<div className="border-l border-gray-100 h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
-			<div className="px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-				<h2 className="text-[16px] font-bold text-gray-900">Edit profile</h2>
+		<div className="border-l border-border h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
+			<div className="px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<h2 className="text-[16px] font-bold text-foreground">Edit profile</h2>
 			</div>
 
 			{/* photo section */}
-			<div className="p-1 border-b border-gray-100 shrink-0">
+			<div className="p-1 border-b border-border shrink-0">
 				<div className="relative">
 					{/* cover thumbnail */}
 					<button
@@ -913,7 +934,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 						onClick={() => photoInputRef.current?.click()}
 						className="absolute left-3 -bottom-5 group"
 					>
-						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
+						<div className="relative w-12 h-12 rounded-full border-2 border-card overflow-hidden bg-primary/20 shadow-sm">
 							{user.profile_photo ? (
 								<Image src={user.profile_photo} alt={displayName} fill className="object-cover" />
 							) : (
@@ -943,7 +964,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 			{/* About You */}
 			<div className="pt-4">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
 					About You
 				</p>
 				<EditRow
@@ -985,12 +1006,12 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 
 			{/* Links */}
 			<div className="pt-4 pb-8">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
 					Link
 				</p>
 				<button
 					onClick={() => onOpenDialog("add-link")}
-					className="w-full flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors text-left"
+					className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left"
 				>
 					<div className="w-7 h-7 rounded-full border-[1.5px] border-primary flex items-center justify-center shrink-0">
 						<Plus size={13} className="text-primary" />
@@ -1001,16 +1022,16 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					<button
 						key={link.id}
 						onClick={() => onOpenDialog(`edit-link-${link.id}`)}
-						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50"
+						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left border-t border-border/50"
 					>
-						<div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-							<Link2 size={13} className="text-gray-500" />
+						<div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+							<Link2 size={13} className="text-muted-foreground" />
 						</div>
 						<div className="flex-1 min-w-0">
-							<p className="text-[13px] font-medium text-gray-900">{link.label}</p>
-							<p className="text-[11.5px] text-gray-400 truncate">{link.url}</p>
+							<p className="text-[13px] font-medium text-foreground">{link.label}</p>
+							<p className="text-[11.5px] text-muted-foreground truncate">{link.url}</p>
 						</div>
-						<ChevronRight size={13} className="text-gray-300 shrink-0" />
+						<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
 					</button>
 				))}
 			</div>
@@ -1094,18 +1115,18 @@ function ProfileView({
 		)
 
 	return (
-		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
+		<div className="flex flex-1 h-full min-h-0 bg-card rounded-t-2xl border border-border overflow-hidden">
 			{/* left: public profile */}
 			<div className="flex-1 min-w-0 flex flex-col">
 				{/* mobile tab switcher */}
-				<div className="lg:hidden flex shrink-0 border-b border-gray-100">
+				<div className="lg:hidden flex shrink-0 border-b border-border">
 					{(["profile", "edit"] as const).map((tab) => (
 						<button
 							key={tab}
 							onClick={() => setMobileTab(tab)}
 							className={cn(
 								"flex-1 py-3 text-[13px] font-medium capitalize transition-colors relative",
-								mobileTab === tab ? "text-primary" : "text-gray-500",
+								mobileTab === tab ? "text-primary" : "text-muted-foreground",
 							)}
 						>
 							{tab === "edit" ? "Edit Profile" : "Profile"}
@@ -1143,7 +1164,7 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center gap-3.5 px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left shrink-0"
+			className="w-full flex items-center gap-3.5 px-5 py-4 border-b border-border hover:bg-accent transition-colors text-left shrink-0"
 		>
 			<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden shrink-0">
 				<Avatar.Image
@@ -1156,12 +1177,12 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 				</Avatar.Fallback>
 			</Avatar.Root>
 			<div className="flex-1 min-w-0">
-				<p className="text-[13.5px] font-bold text-gray-900 truncate leading-tight">
+				<p className="text-[13.5px] font-bold text-foreground truncate leading-tight">
 					{displayName}
 				</p>
-				{bio && <p className="text-xs text-gray-500 truncate mt-0.5">{bio}</p>}
+				{bio && <p className="text-xs text-muted-foreground truncate mt-0.5">{bio}</p>}
 			</div>
-			<ChevronRight size={15} className="text-gray-400 shrink-0" />
+			<ChevronRight size={15} className="text-muted-foreground/40 shrink-0" />
 		</button>
 	)
 }
@@ -1189,17 +1210,17 @@ function SettingsListView({
 	const ActivePanelComponent = activePanel ? PANEL_REGISTRY[activePanel] : null
 
 	return (
-		<div className="flex flex-1 h-full min-h-0 bg-white rounded-t-2xl border border-gray-100 overflow-hidden">
+		<div className="flex flex-1 h-full min-h-0 bg-card rounded-t-2xl border border-border overflow-hidden">
 			{/* left nav */}
 			<nav
 				className={cn(
-					"w-full lg:w-[40%] shrink-0 border-r border-gray-100 flex-col overflow-hidden",
+					"w-full lg:w-[40%] shrink-0 border-r border-border flex-col overflow-hidden",
 					mobileView === "panel" ? "hidden lg:flex" : "flex",
 				)}
 			>
 				{/* Fixed header */}
-				<div className="flex items-center px-5 pt-4.5 pb-3.5 border-b border-gray-100 shrink-0 bg-white">
-					<h1 className="text-[17px] font-bold text-gray-900">Settings</h1>
+				<div className="flex items-center px-5 pt-4.5 pb-3.5 border-b border-border shrink-0 bg-card">
+					<h1 className="text-[17px] font-bold text-foreground">Settings</h1>
 				</div>
 
 				{/* Profile card */}
@@ -1214,27 +1235,32 @@ function SettingsListView({
 								key={section.id}
 								onClick={() => onSectionSelect(section.id)}
 								className={cn(
-									"w-full flex items-center gap-3 px-5 py-4 text-left transition-colors border-b border-gray-50 last:border-0:",
-									isActive ? "bg-gray-100/80" : "hover:bg-gray-50",
+									"w-full flex items-center gap-3 px-5 py-4 text-left transition-colors border-b border-border/50 last:border-0",
+									isActive ? "bg-accent/80" : "hover:bg-accent",
 								)}
 							>
 								<div
 									className={cn(
 										"w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
-										isActive ? "bg-primary/10 text-primary" : "bg-gray-50 text-gray-300",
+										isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground/60",
 									)}
 								>
 									{section.icon}
 								</div>
 								<div className="flex-1 min-w-0">
-									<p className="text-[13.5px] font-semibold text-gray-900 leading-tight">
+									<p className="text-[13.5px] font-semibold text-foreground leading-tight">
 										{section.label}
 									</p>
-									<p className="text-xs text-gray-500 mt-0.5 truncate">{section.description}</p>
+									<p className="text-xs text-muted-foreground mt-0.5 truncate">
+										{section.description}
+									</p>
 								</div>
 								<ChevronRight
 									size={14}
-									className={cn("shrink-0", isActive ? "text-gray-400" : "text-gray-300")}
+									className={cn(
+										"shrink-0",
+										isActive ? "text-muted-foreground" : "text-muted-foreground/40",
+									)}
 								/>
 							</button>
 						)
@@ -1254,21 +1280,21 @@ function SettingsListView({
 				) : (
 					<>
 						{/* mobile back row */}
-						<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
+						<div className="lg:hidden flex items-center gap-2 px-5 pt-4 pb-3 border-b border-border shrink-0">
 							<button
 								onClick={onMobileBack}
-								className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+								className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 							>
-								<ArrowLeft size={15} className="text-gray-600" />
+								<ArrowLeft size={15} className="text-muted-foreground" />
 							</button>
-							<span className="text-[14px] font-semibold text-gray-900">
+							<span className="text-[14px] font-semibold text-foreground">
 								{currentSection.label}
 							</span>
 						</div>
 
-						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-gray-100 shrink-0">
-							<h2 className="text-[16.5px] font-bold text-gray-900">{currentSection.label}</h2>
-							<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-border shrink-0">
+							<h2 className="text-[16.5px] font-bold text-foreground">{currentSection.label}</h2>
+							<p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">
 								{currentSection.description}
 							</p>
 						</div>
@@ -1289,14 +1315,14 @@ function SettingsListView({
 										}
 									}}
 									className={cn(
-										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-gray-50/80 transition-colors text-left",
-										i < currentSection.items.length - 1 && "border-b border-gray-50",
+										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-accent/80 transition-colors text-left",
+										i < currentSection.items.length - 1 && "border-b border-border/50",
 									)}
 								>
 									<span
 										className={cn(
 											"shrink-0 mt-0.5",
-											item.destructive ? "text-destructive" : "text-gray-500",
+											item.destructive ? "text-destructive" : "text-muted-foreground",
 										)}
 									>
 										{item.icon}
@@ -1305,16 +1331,16 @@ function SettingsListView({
 										<p
 											className={cn(
 												"text-[13.5px] font-semibold leading-tight",
-												item.destructive ? "text-destructive" : "text-gray-900",
+												item.destructive ? "text-destructive" : "text-foreground",
 											)}
 										>
 											{item.label}
 										</p>
-										<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+										<p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">
 											{item.description}
 										</p>
 									</div>
-									<ChevronRight size={14} className="text-gray-300 shrink-0 mt-0.5" />
+									<ChevronRight size={14} className="text-muted-foreground/40 shrink-0 mt-0.5" />
 								</button>
 							))}
 						</div>
@@ -1368,6 +1394,7 @@ export function Settings() {
 				}}
 			/>
 			<AccountInfoDialog open={openDialog === "account-info"} onClose={closeDialog} />
+			<LogoutDialog open={openDialog === "logout"} onClose={closeDialog} />
 			{COMING_SOON.map(({ id, title }) => (
 				<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 			))}

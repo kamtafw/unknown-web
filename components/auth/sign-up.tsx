@@ -83,29 +83,29 @@ function PhoneField({ onChange, onBlur, hasError }: PhoneFieldProps) {
 	return (
 		<div className="relative" ref={dropdownRef}>
 			<div
-				className={`flex items-center h-12 sm:h-12.5 rounded-xl border bg-white transition-colors ${
+				className={`flex items-center h-12 sm:h-12.5 rounded-xl border bg-muted transition-all ${
 					hasError
-						? "border-2 border-destructive"
-						: "border-gray-200 focus-within:border-2 focus-within:border-primary"
+						? "border-destructive ring-1 ring-destructive"
+						: "border-input focus-within:bg-card focus-within:border-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
 				}`}
 			>
 				<div className="flex items-center gap-1 pl-3.5 h-full">
-					<Phone />
-					{/* country selector trigger */}
+					<span className="text-muted-foreground shrink-0">
+						<Phone />
+					</span>
 					<button
 						type="button"
 						onClick={() => setDropdownOpen((v) => !v)}
-						className="flex items-center px-2 gap-1.5 border-gray-200 h-full shrink-0 hover:bg-gray-50 transition-colors"
+						className="flex items-center px-2 gap-1.5 border-border h-full shrink-0 hover:opacity-70 transition-opacity cursor-pointer"
 					>
-						<span className="text-sm font-medium text-gray-700">{selectedCountry.code}</span>
+						<span className="text-sm font-medium text-foreground">{selectedCountry.code}</span>
 						<ChevronDown
 							size={13}
-							className={`text-gray-400 transition-transform duration-150 ${dropdownOpen ? "rotate-180" : ""}`}
+							className={`text-muted-foreground transition-transform duration-150 ${dropdownOpen ? "rotate-180" : ""}`}
 						/>
 					</button>
 				</div>
 
-				{/* phone number input */}
 				<input
 					type="tel"
 					inputMode="numeric"
@@ -113,42 +113,42 @@ function PhoneField({ onChange, onBlur, hasError }: PhoneFieldProps) {
 					value={localNumber}
 					onChange={handleNumberChange}
 					onBlur={onBlur}
-					className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 bg-transparent outline-none"
+					className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 				/>
 			</div>
 
 			{dropdownOpen && (
-				<div className="absolute z-50 top-full mt-1 left-0 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
-					<div className="p-2 border-b border-gray-100">
-						<div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-gray-50 border border-gray-200">
-							<Search size={13} className="text-gray-400 shrink-0" />
+				<div className="absolute z-50 top-full mt-1 left-0 w-80 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+					<div className="p-2 border-b border-border">
+						<div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-muted border border-border">
+							<Search size={13} className="text-muted-foreground shrink-0" />
 							<input
 								ref={searchRef}
 								type="text"
 								placeholder="Search country or code…"
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder:text-gray-400"
+								className="flex-1 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
 							/>
 						</div>
 					</div>
 					<div className="max-h-56 overflow-y-auto">
 						{filtered.length === 0 ? (
-							<p className="px-4 py-3 text-sm text-gray-400 text-center">No results</p>
+							<p className="px-4 py-3 text-sm text-muted-foreground text-center">No results</p>
 						) : (
 							filtered.map((country) => (
 								<button
 									key={country.iso}
 									type="button"
 									onClick={() => handleCountrySelect(country)}
-									className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-left ${
+									className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors text-left ${
 										selectedCountry.iso === country.iso
 											? "bg-primary/5 text-primary"
-											: "text-gray-800"
+											: "text-foreground"
 									}`}
 								>
 									<span className="flex-1 truncate">{country.name}</span>
-									<span className="text-gray-400 text-xs shrink-0">{country.code}</span>
+									<span className="text-muted-foreground text-xs shrink-0">{country.code}</span>
 								</button>
 							))
 						)}
@@ -158,6 +158,7 @@ function PhoneField({ onChange, onBlur, hasError }: PhoneFieldProps) {
 		</div>
 	)
 }
+
 export interface SignUpFormData {
 	email: string
 	phone: string
@@ -188,7 +189,6 @@ export function SignUp({
 	const [phone, setPhone] = useState("")
 	const [showTerms, setShowTerms] = useState(false)
 
-	// track which fields have been blurred at least once
 	const [touched, setTouched] = useState({ email: false, phone: false, password: false })
 
 	const apiErrors = fieldErrors ?? {}
@@ -197,9 +197,7 @@ export function SignUp({
 		setTouched((prev) => ({ ...prev, [field]: true }))
 
 	const emailInvalid = (value: string) => touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-
 	const phoneInvalid = touched.phone && !/^\+\d{7,15}$/.test(phone)
-
 	const passwordEmpty = touched.password && password.length === 0
 
 	const RULES = [
@@ -238,18 +236,20 @@ export function SignUp({
 
 	return (
 		<>
-			<div className="flex justify-center pt-10 sm:pt-15 px-4 pb-10">
+			<div className="flex justify-center pt-8 sm:pt-10 px-4 pb-10">
 				<div className="w-full max-w-110">
-					<h1 className="text-2xl sm:text-[28px] text-center font-bold text-gray-900 mb-6 sm:mb-7">
+					<h1 className="text-2xl sm:text-[28px] text-center font-bold text-foreground mb-6 sm:mb-7">
 						Sign up to Appscombo
 					</h1>
 
 					<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
 						{/* Email */}
 						<Form.Field name="email" className="flex flex-col gap-1.5">
-							<Form.Label className="text-sm font-medium text-gray-800">Email Address</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
-								<Email />
+							<Form.Label className="text-sm font-medium text-foreground">Email Address</Form.Label>
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
+								<span className="text-muted-foreground shrink-0">
+									<Email />
+								</span>
 								<Form.Control asChild>
 									<input
 										type="email"
@@ -258,7 +258,7 @@ export function SignUp({
 										required
 										onBlur={() => markTouched("email")}
 										onChange={() => clearFieldError("email")}
-										className="flex-1 text-sm text-gray-900 placeholder:text-gray-500 bg-transparent outline-none"
+										className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 									/>
 								</Form.Control>
 							</div>
@@ -274,15 +274,14 @@ export function SignUp({
 							>
 								Enter a valid email address
 							</Form.Message>
-
 							{apiErrors.email && !emailInvalid("valid@email.com") && touched.email && (
 								<p className="text-xs text-destructive">{formatMessage(apiErrors.email)}</p>
 							)}
 						</Form.Field>
 
-						{/* Phone number */}
+						{/* Phone */}
 						<div className="flex flex-col gap-1.5">
-							<label className="text-sm font-medium text-gray-800">Phone Number</label>
+							<label className="text-sm font-medium text-foreground">Phone Number</label>
 							<PhoneField
 								onChange={(fullNumber) => {
 									setPhone(fullNumber)
@@ -300,10 +299,14 @@ export function SignUp({
 
 						{/* Password */}
 						<Form.Field name="password" className="flex flex-col gap-1.5">
-							<Form.Label className="text-sm font-medium text-gray-800">Create Password</Form.Label>
-							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors">
+							<Form.Label className="text-sm font-medium text-foreground">
+								Create Password
+							</Form.Label>
+							<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
 								<PasswordToggleField.Root>
-									<Padlock />
+									<span className="text-muted-foreground shrink-0">
+										<Padlock />
+									</span>
 									<Form.Control asChild>
 										<PasswordToggleField.Input
 											name="password"
@@ -315,10 +318,10 @@ export function SignUp({
 											value={password}
 											onChange={(e) => setPassword(e.target.value)}
 											onBlur={() => markTouched("password")}
-											className="flex-1 text-sm text-gray-900 placeholder:text-gray-500 bg-transparent outline-none"
+											className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 										/>
 									</Form.Control>
-									<PasswordToggleField.Toggle className="text-gray-400 hover:text-gray-600 transition-colors shrink-0 focus:outline-none">
+									<PasswordToggleField.Toggle className="text-muted-foreground hover:text-foreground transition-colors shrink-0 focus:outline-none">
 										<PasswordToggleField.Icon
 											visible={<EyeOpenIcon />}
 											hidden={<EyeClosedIcon />}
@@ -338,11 +341,19 @@ export function SignUp({
 											) : failing ? (
 												<XCircle size={15} className="text-destructive shrink-0" strokeWidth={2} />
 											) : (
-												<Circle size={15} className="text-gray-300 shrink-0" strokeWidth={2} />
+												<Circle
+													size={15}
+													className="text-muted-foreground/40 shrink-0"
+													strokeWidth={2}
+												/>
 											)}
 											<span
-												className={`text-[11px] text-xs leading-tight ${
-													passed ? "text-gray-700" : failing ? "text-destructive" : "text-gray-400"
+												className={`text-[11px] leading-tight ${
+													passed
+														? "text-foreground/80"
+														: failing
+															? "text-destructive"
+															: "text-muted-foreground"
 												}`}
 											>
 												{label}
@@ -356,7 +367,7 @@ export function SignUp({
 						<Form.Submit asChild>
 							<button
 								disabled={isPending}
-								className="w-full h-12 sm:h-13 rounded-full text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+								className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
 							>
 								{isPending ? (
 									<>
@@ -369,7 +380,7 @@ export function SignUp({
 							</button>
 						</Form.Submit>
 
-						<p className="text-center text-sm text-gray-500">
+						<p className="text-center text-sm text-muted-foreground">
 							Already a user?{" "}
 							<button
 								type="button"
@@ -380,7 +391,7 @@ export function SignUp({
 							</button>
 						</p>
 
-						<p className="text-sm text-gray-500 text-center leading-relaxed mt-3 sm:mt-5">
+						<p className="text-sm text-muted-foreground text-center leading-relaxed mt-3 sm:mt-5">
 							By signing up, you agree to our{" "}
 							<button
 								type="button"

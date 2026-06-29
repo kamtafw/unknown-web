@@ -1,7 +1,7 @@
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<section className="mb-10 sm:mb-12">
-			<h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mb-4">{title}</h2>
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
 			{children}
 		</section>
 	)
@@ -10,41 +10,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="mt-5">
-			<h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
 			{children}
 		</div>
 	)
 }
 
 function P({ children }: { children: React.ReactNode }) {
-	return <p className="text-[13px] sm:text-sm text-gray-500 leading-relaxed mb-3">{children}</p>
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
 }
 
 function UL({ children }: { children: React.ReactNode }) {
 	return (
-		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-gray-500 leading-relaxed space-y-1">
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
 			{children}
 		</ul>
 	)
 }
 
 function Divider() {
-	return <hr className="border-gray-100 my-8 sm:my-10" />
+	return <hr className="border-border my-8 sm:my-10" />
 }
 
 export function Contact() {
 	return (
 		<>
 			{/* Hero */}
-			<section className="py-14 sm:py-20 px-4 border-b border-gray-100">
+			<section className="py-14 sm:py-20 px-4 border-b border-border">
 				<div className="max-w-3xl mx-auto">
 					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
 						Contact us
 					</p>
-					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
 						We&apos;d love to hear from you
 					</h1>
-					<p className="text-gray-500 leading-relaxed max-w-2xl">
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
 						At AppsCombo, we&apos;re committed to creating meaningful connections and providing
 						exceptional support to our users, creators, businesses, communities, and partners around
 						the world. Whether you have a question, need assistance, want to report an issue,
@@ -247,7 +247,7 @@ export function Contact() {
 						Stay connected and keep up with the latest news, updates, product releases, and
 						community highlights on our official social channels.
 					</P>
-					<p className="text-[13px] text-gray-400">
+					<p className="text-[13px] text-muted-foreground">
 						Facebook · Instagram · X (Twitter) · LinkedIn · YouTube · TikTok
 						<br />
 						<span className="italic">(Official links coming soon.)</span>
@@ -267,7 +267,7 @@ export function Contact() {
 					</UL>
 				</Section>
 
-				<p className="text-center text-xs text-gray-400 pt-2">AppsCombo — Connect. Engage. Grow.</p>
+				<p className="text-center text-xs text-muted-foreground pt-2">AppsCombo — Connect. Engage. Grow.</p>
 			</div>
 		</>
 	)

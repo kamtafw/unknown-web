@@ -25,6 +25,7 @@ function flattenSuggestions(users: SuggestionUser[]) {
 function getInitials(first: string, last: string) {
 	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
+
 const AVATAR_COLORS = [
 	"bg-violet-200 text-violet-700",
 	"bg-blue-200 text-blue-700",
@@ -53,10 +54,8 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 	const handleFollow = () => {
 		if (isFollowed) return
-
 		setIsFollowed(true)
 		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.pkid), 5_000)
-
 		followUser.mutate(user.pkid, {
 			onError: () => {
 				setIsFollowed(user.youFollowThisUser)
@@ -70,14 +69,11 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 	const handleUnfollow = () => {
 		if (!isFollowed) return
-
 		setIsFollowed(false)
-
 		if (timerRef.current) {
 			clearTimeout(timerRef.current)
 			timerRef.current = null
 		}
-
 		unfollowUser.mutate(user.pkid, {
 			onError: () => {
 				setIsFollowed(user.youFollowThisUser)
@@ -93,19 +89,21 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 			<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
 				<Avatar.Image
 					src={user?.profile_photo ?? DEFAULT_PROFILE_PHOTO}
-					alt={user ? `${user.first_name} ${user.last_name}` : "unknown"}
+					alt={displayName}
 					className="w-full h-full object-cover"
 				/>
 				<Avatar.Fallback
 					className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
 				>
-					{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
+					{getInitials(user.first_name ?? "", user.last_name ?? "")}
 				</Avatar.Fallback>
 			</Avatar.Root>
 
 			<div className="flex-1 min-w-0">
-				<p className="text-sm font-semibold text-gray-900 truncate leading-tight">{displayName}</p>
-				<p className="text-xs text-gray-500 truncate">@{user.username}</p>
+				<p className="text-sm font-semibold text-foreground truncate leading-tight">
+					{displayName}
+				</p>
+				<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
 			</div>
 
 			<button
@@ -113,8 +111,8 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 				className={cn(
 					"shrink-0 text-xs font-semibold py-1.5 rounded-full min-w-22 text-center transition-colors cursor-pointer disabled:opacity-50",
 					isFollowed
-						? "border border-primary text-gray-600 hover:text-primary"
-						: "bg-primary text-white hover:bg-primary/80",
+						? "border border-primary text-muted-foreground hover:text-primary"
+						: "bg-primary text-primary-foreground hover:bg-primary/80",
 				)}
 			>
 				{isFollowed ? "Following" : user.followsYou ? "Follow Back" : "Follow"}
@@ -126,12 +124,12 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 function SkeletonRow() {
 	return (
 		<div className="flex items-center gap-3 py-2.5 animate-pulse">
-			<div className="w-9 h-9 rounded-full bg-gray-200 shrink-0" />
+			<div className="w-9 h-9 rounded-full bg-muted shrink-0" />
 			<div className="flex-1 space-y-1.5">
-				<div className="h-3 bg-gray-200 rounded-full w-3/4" />
-				<div className="h-3 bg-gray-200 rounded-full w-1/2" />
+				<div className="h-3 bg-muted rounded-full w-3/4" />
+				<div className="h-3 bg-muted rounded-full w-1/2" />
 			</div>
-			<div className="w-16 h-7 bg-gray-200 rounded-full" />
+			<div className="w-16 h-7 bg-muted rounded-full" />
 		</div>
 	)
 }
@@ -141,20 +139,20 @@ export function FriendSuggestions() {
 	const users = flattenSuggestions(data?.data.results ?? [])
 
 	return (
-		<aside className="w-md shrink-0 flex flex-col bg-white rounded-t-2xl overflow-hidden">
+		<aside className="w-md shrink-0 flex flex-col bg-card rounded-t-2xl overflow-hidden border border-border">
 			<div className="px-4 pt-4 pb-3 shrink-0">
-				<h2 className="font-bold text-gray-900 text-sm">Friend suggestions</h2>
+				<h2 className="font-bold text-foreground text-sm">Friend suggestions</h2>
 			</div>
 
-			<div className="mx-4 border-t border-gray-100 shrink-0" />
+			<div className="mx-4 border-t border-border shrink-0" />
 
 			<ScrollArea.Root className="flex-1 min-h-0 overflow-hidden">
 				<ScrollArea.Viewport className="w-full h-full">
-					<div className="flex flex-col px-3 py-1 divide-y divide-gray-50">
+					<div className="flex flex-col px-3 py-1 divide-y divide-border">
 						{isLoading ? (
 							[0, 1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)
 						) : users.length === 0 ? (
-							<p className="text-sm text-gray-500 py-4 px-1">No suggestions right now.</p>
+							<p className="text-sm text-muted-foreground py-4 px-1">No suggestions right now.</p>
 						) : (
 							users.map((u, i) => <Row key={u.id} user={u} index={i} />)
 						)}

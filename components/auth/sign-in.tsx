@@ -5,7 +5,7 @@ import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons"
 import { Loader2 } from "lucide-react"
 import { Form, unstable_PasswordToggleField as PasswordToggleField } from "radix-ui"
 import { FormEvent } from "react"
-import { EmailIcon, PadlockIcon } from "../shared/Icons"
+import { Email, Padlock } from "./icons"
 
 interface SignInProps {
 	onSignIn: (data: SignInValues) => void
@@ -34,25 +34,26 @@ export function SignIn({
 	}
 
 	return (
-		<div className="flex justify-center pt-10 sm:pt-15 px-4 pb-10">
+		<div className="flex justify-center pt-8 sm:pt-12 px-4 pb-10">
 			<div className="w-full max-w-110">
-				<h1 className="text-2xl sm:text-[28px] text-center font-bold text-gray-900 mb-6 sm:mb-7">
+				<h1 className="text-2xl sm:text-[28px] text-center font-bold text-foreground mb-6 sm:mb-7">
 					Sign in to AppsCombo
 				</h1>
 
 				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<Form.Field name="identifier" className="flex flex-col gap-1.5">
-						<Form.Label className="text-sm font-medium text-gray-800">Email or Phone</Form.Label>
-
-						<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
-							<EmailIcon />
+						<Form.Label className="text-sm font-medium text-foreground">Email or Phone</Form.Label>
+						<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
+							<span className="text-muted-foreground shrink-0">
+								<Email />
+							</span>
 							<Form.Control asChild>
 								<input
 									type="text"
 									name="identifier"
 									placeholder="Enter your email or phone number"
 									required
-									className="flex-1 text-sm text-gray-900 placeholder:text-gray-500 bg-transparent outline-none"
+									className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 								/>
 							</Form.Control>
 						</div>
@@ -72,25 +73,27 @@ export function SignIn({
 					</Form.Field>
 
 					<Form.Field name="password" className="flex flex-col gap-1.5">
-						<Form.Label className="text-sm font-medium text-gray-800">Password</Form.Label>
-
-						<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-gray-200 focus-within:border-2 focus-within:border-primary transition-colors data-invalid:border-destructive data-invalid:border-2">
+						<Form.Label className="text-sm font-medium text-foreground">Password</Form.Label>
+						<div className="flex items-center gap-2.5 px-3.5 h-12 sm:h-12.5 rounded-xl border border-input bg-muted transition-all focus-within:bg-card focus-within:border-primary focus-within:ring-1 focus-within:ring-primary has-data-invalid:border-destructive has-data-invalid:ring-1 has-data-invalid:ring-destructive">
 							<PasswordToggleField.Root>
-								<PadlockIcon />
+								<span className="text-muted-foreground shrink-0">
+									<Padlock />
+								</span>
 								<Form.Control asChild>
 									<PasswordToggleField.Input
 										name="password"
 										placeholder="Enter your password"
 										required
 										autoComplete="current-password"
-										className="flex-1 text-sm text-gray-900 placeholder:text-gray-500 bg-transparent outline-none"
+										className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 									/>
 								</Form.Control>
-								<PasswordToggleField.Toggle className="text-gray-400 hover:text-gray-600 transition-colors shrink-0 focus:outline-none">
+								<PasswordToggleField.Toggle className="text-muted-foreground hover:text-foreground transition-colors shrink-0 focus:outline-none">
 									<PasswordToggleField.Icon visible={<EyeOpenIcon />} hidden={<EyeClosedIcon />} />
 								</PasswordToggleField.Toggle>
 							</PasswordToggleField.Root>
 						</div>
+
 						<Form.Message match="valueMissing" className="text-xs text-destructive">
 							Password is required
 						</Form.Message>
@@ -100,7 +103,7 @@ export function SignIn({
 						<button
 							type="button"
 							onClick={onForgotPassword}
-							className="text-sm font-semibold text-primary cursor-pointer hover:underline focus:outline-none"
+							className="text-sm font-semibold text-primary hover:opacity-75 transition-opacity cursor-pointer focus:outline-none"
 						>
 							Forgot Password?
 						</button>
@@ -111,7 +114,7 @@ export function SignIn({
 					<Form.Submit asChild>
 						<button
 							disabled={isPending}
-							className="w-full h-12 sm:h-13 rounded-full text-white text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+							className="w-full h-12 sm:h-13 rounded-full text-primary-foreground text-sm font-semibold bg-primary hover:bg-primary/85 active:scale-[0.99] transition-all duration-200 mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-sm"
 						>
 							{isPending ? (
 								<>
@@ -124,7 +127,7 @@ export function SignIn({
 						</button>
 					</Form.Submit>
 
-					<p className="text-center text-sm text-gray-500">
+					<p className="text-center text-sm text-muted-foreground">
 						Not registered yet?{" "}
 						<button
 							type="button"
@@ -135,7 +138,7 @@ export function SignIn({
 						</button>
 					</p>
 
-					<p className="text-sm text-gray-500 text-center leading-relaxed mt-3 sm:mt-5">
+					<p className="text-sm text-muted-foreground text-center leading-relaxed mt-3 sm:mt-5">
 						By signing in, you agree to our{" "}
 						<button
 							type="button"

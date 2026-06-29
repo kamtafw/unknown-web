@@ -5,7 +5,7 @@ import { ReactNode } from "react"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
 	return (
-		<div className="h-screen flex flex-col overflow-hidden bg-gray-50/70">
+		<div className="h-screen flex flex-col overflow-hidden bg-background">
 			<DashboardAuthBootstrap />
 			<TopBar />
 
