@@ -3,15 +3,17 @@ interface IconProps {
 	width?: number
 	size?: number
 	color?: string
+	className?: string
 }
 
-export function Verification({ size = 24, color = "#1F2937" }: IconProps) {
+export function Verification({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -22,13 +24,14 @@ export function Verification({ size = 24, color = "#1F2937" }: IconProps) {
 	)
 }
 
-export function Account({ size = 24, color = "#292D32" }: IconProps) {
+export function Account({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -49,13 +52,14 @@ export function Account({ size = 24, color = "#292D32" }: IconProps) {
 	)
 }
 
-export function Privacy({ size = 24, color = "#292D32" }: IconProps) {
+export function Privacy({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -83,13 +87,14 @@ export function Privacy({ size = 24, color = "#292D32" }: IconProps) {
 	)
 }
 
-export function Alert({ size = 24, color = "#292D32" }: IconProps) {
+export function Alert({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -117,13 +122,14 @@ export function Alert({ size = 24, color = "#292D32" }: IconProps) {
 	)
 }
 
-export function Chat({ size = 24, color = "#111827" }: IconProps) {
+export function Chat({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -146,13 +152,14 @@ export function Chat({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function DataStorage({ size = 24, color = "#111827" }: IconProps) {
+export function DataStorage({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -187,13 +194,14 @@ export function DataStorage({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function Languages({ size = 24, color = "#111827" }: IconProps) {
+export function Languages({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -204,13 +212,14 @@ export function Languages({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function Support({ size = 24, color = "#111827" }: IconProps) {
+export function Support({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -221,13 +230,14 @@ export function Support({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function SecurityNotifications({ size = 24, color = "#111827" }: IconProps) {
+export function SecurityNotifications({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -242,13 +252,14 @@ export function SecurityNotifications({ size = 24, color = "#111827" }: IconProp
 	)
 }
 
-export function TwoStepVerification({ size = 24, color = "#111827" }: IconProps) {
+export function TwoStepVerification({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -259,13 +270,14 @@ export function TwoStepVerification({ size = 24, color = "#111827" }: IconProps)
 	)
 }
 
-export function ReportProblem({ size = 24, color = "#111827" }: IconProps) {
+export function ReportProblem({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -276,13 +288,14 @@ export function ReportProblem({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function ChangePhone({ size = 24, color = "#111827" }: IconProps) {
+export function ChangePhone({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -293,13 +306,14 @@ export function ChangePhone({ size = 24, color = "#111827" }: IconProps) {
 	)
 }
 
-export function AddAccount({ size = 24, color = "#292D32" }: IconProps) {
+export function AddAccount({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
@@ -334,13 +348,14 @@ export function AddAccount({ size = 24, color = "#292D32" }: IconProps) {
 	)
 }
 
-export function TimeZone({ size = 24, color = "#111827" }: IconProps) {
+export function TimeZone({ size = 24, color = "currentColor", className }: IconProps) {
 	return (
 		<svg
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
 			fill="none"
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 		>
 			<path
