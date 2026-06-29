@@ -257,7 +257,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 					className="
 						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
 						w-full max-w-150 max-h-[85vh]
-						bg-white rounded-2xl shadow-2xl
+						bg-card border border-border rounded-2xl shadow-2xl
 						flex flex-col
 						focus:outline-none
 						data-[state=open]:animate-in data-[state=closed]:animate-out
@@ -284,10 +284,10 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 								<PopoverContent
 									align="start"
 									sideOffset={6}
-									className="w-fit p-0 rounded-2xl border border-gray-100 shadow-xl"
+									className="w-fit p-0 rounded-2xl border border-border shadow-xl"
 								>
 									<div className="px-2.5 pt-4 pb-2">
-										<h3 className="font-bold text-gray-900 text-[15px] mb-3">Who can reply?</h3>
+										<h3 className="font-bold text-foreground text-[15px] mb-3">Who can reply?</h3>
 										<div className="flex flex-col">
 											{REPLY_OPTIONS.map((opt) => (
 												<button
@@ -296,19 +296,19 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 														setWhoCanReply(opt.value)
 														setReplyPickerOpen(false)
 													}}
-													className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+													className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-accent transition-colors"
 												>
 													<div className="flex items-center gap-3">
 														<div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
 															{opt.icon}
 														</div>
-														<span className="text-sm font-medium text-gray-900 pr-1.5">
+														<span className="text-sm font-medium text-foreground pr-1.5">
 															{opt.label}
 														</span>
 													</div>
 													{whoCanReply === opt.value && (
 														<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-															<Check size={11} className="text-white" strokeWidth={3} />
+															<Check size={11} className="text-primary-foreground" strokeWidth={3} />
 														</div>
 													)}
 												</button>
@@ -320,7 +320,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 						</div>
 
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
 								<X size={18} />
 							</button>
 						</Dialog.Close>
@@ -336,7 +336,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 										alt={myName}
 										className="w-full h-full object-cover"
 									/>
-									<Avatar.Fallback className="w-full h-full bg-primary/40 text-white text-sm font-semibold flex items-center justify-center">
+									<Avatar.Fallback className="w-full h-full bg-primary/40 text-primary-foreground text-sm font-semibold flex items-center justify-center">
 										{getInitials(user?.first_name ?? "", user?.last_name ?? "")}
 									</Avatar.Fallback>
 								</Avatar.Root>
@@ -354,7 +354,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 									placeholder="Add a comment"
 									rows={2}
 									autoFocus
-									className="w-full resize-none text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed"
+									className="w-full resize-none text-sm text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
 								/>
 
 								{/* Media grid */}
@@ -365,7 +365,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 										{mediaItems.map((item) => (
 											<div
 												key={item.id}
-												className="relative bg-gray-100 aspect-video rounded-lg overflow-hidden"
+												className="relative bg-muted aspect-video rounded-lg overflow-hidden"
 											>
 												{item.file.type.startsWith("video/") ? (
 													<video src={item.preview} className="w-full h-full object-cover" />
@@ -423,13 +423,13 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 
 								{/* Emoji picker */}
 								{showEmoji && (
-									<div className="mt-2 p-2 border border-gray-200 rounded-xl bg-white shadow-lg">
+									<div className="mt-2 p-2 border border-border rounded-xl bg-card shadow-lg">
 										<div className="grid grid-cols-10 gap-0.5">
 											{EMOJIS.map((e) => (
 												<button
 													key={e}
 													onClick={() => handleEmojiClick(e)}
-													className="w-8 h-8 text-lg rounded hover:bg-gray-100 flex items-center justify-center transition-colors"
+													className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
 												>
 													{e}
 												</button>
@@ -446,7 +446,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 shrink-0">
+					<div className="flex items-center justify-between px-4 py-3 border-t border-border shrink-0">
 						<div className="flex items-center gap-0.5">
 							{/* Media */}
 							<button
@@ -492,14 +492,14 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 
 						<div className="flex items-center gap-3">
 							{anyUploading && (
-								<span className="text-xs text-gray-400 flex items-center gap-1.5">
+								<span className="text-xs text-muted-foreground flex items-center gap-1.5">
 									<Loader2 size={12} className="animate-spin" /> Uploading…
 								</span>
 							)}
 							<button
 								onClick={handleSubmit}
 								disabled={anyUploading || repost.isPending}
-								className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+								className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
 							>
 								{repost.isPending ? "Posting…" : "Post"}
 							</button>

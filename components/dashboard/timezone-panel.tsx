@@ -11,15 +11,15 @@ import { useRef, useState } from "react"
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 			<button
 				onClick={onBack}
-				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+				className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 				aria-label="Back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 			</button>
-			<h2 className="font-bold text-gray-900">{title}</h2>
+			<h2 className="font-bold text-foreground">{title}</h2>
 		</div>
 	)
 }
@@ -35,7 +35,6 @@ export function TimeZonePanel({ onBack }: { onBack: () => void }) {
 
 	const currentTimezone = preferenceData?.data?.timezone ?? null
 	const timezones = tzData?.data?.timezones ?? []
-
 	const activeValue = selected ?? currentTimezone
 
 	const q = search.trim().toLowerCase()
@@ -55,28 +54,27 @@ export function TimeZonePanel({ onBack }: { onBack: () => void }) {
 	const isLoading = prefLoading || tzLoading
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Time Zone" onBack={onBack} />
 
-			{/* search */}
 			<div className="px-5 pt-4 pb-2 shrink-0">
 				{currentTimezone && !isLoading && (
-					<p className="text-[12px] text-gray-400 mb-2.5">
+					<p className="text-[12px] text-muted-foreground mb-2.5">
 						Current:{" "}
-						<span className="font-medium text-gray-600">
+						<span className="font-medium text-foreground">
 							{timezones.find((t) => t.value === currentTimezone)?.label ?? currentTimezone}
 						</span>
 					</p>
 				)}
-				<div className="flex items-center gap-2 px-3.5 h-10 rounded-xl border border-gray-200 focus-within:border-primary transition-colors bg-white">
-					<Search size={14} className="text-gray-400 shrink-0" />
+				<div className="flex items-center gap-2 px-3.5 h-10 rounded-xl border border-input focus-within:border-primary transition-colors bg-muted focus-within:bg-card">
+					<Search size={14} className="text-muted-foreground shrink-0" />
 					<input
 						ref={searchRef}
 						type="text"
 						placeholder="Search timezone…"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder:text-gray-400"
+						className="flex-1 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
 					/>
 				</div>
 			</div>
@@ -87,7 +85,7 @@ export function TimeZonePanel({ onBack }: { onBack: () => void }) {
 						<Loader2 size={20} className="animate-spin text-primary" />
 					</div>
 				) : filtered.length === 0 ? (
-					<p className="text-center text-sm text-gray-400 py-8">No timezones found</p>
+					<p className="text-center text-sm text-muted-foreground py-8">No timezones found</p>
 				) : (
 					<div className="py-1">
 						{filtered.map((tz) => {
@@ -98,19 +96,19 @@ export function TimeZonePanel({ onBack }: { onBack: () => void }) {
 									onClick={() => setSelected(tz.value)}
 									className={cn(
 										"w-full flex items-center justify-between gap-3 px-5 py-3 text-left transition-colors",
-										isActive ? "bg-primary/5" : "hover:bg-gray-50",
+										isActive ? "bg-primary/5" : "hover:bg-accent",
 									)}
 								>
 									<div className="min-w-0">
 										<p
 											className={cn(
 												"text-[13px] font-medium leading-tight truncate",
-												isActive ? "text-primary" : "text-gray-900",
+												isActive ? "text-primary" : "text-foreground",
 											)}
 										>
 											{tz.label}
 										</p>
-										<p className="text-[11px] text-gray-400 mt-0.5 truncate">{tz.value}</p>
+										<p className="text-[11px] text-muted-foreground mt-0.5 truncate">{tz.value}</p>
 									</div>
 									{isActive && (
 										<Check size={15} className="text-primary shrink-0" strokeWidth={2.5} />
@@ -122,11 +120,11 @@ export function TimeZonePanel({ onBack }: { onBack: () => void }) {
 				)}
 			</div>
 
-			<div className="shrink-0 px-5 py-4 border-t border-gray-50">
+			<div className="shrink-0 px-5 py-4 border-t border-border">
 				<button
 					onClick={handleSave}
 					disabled={!isDirty || changeTimezone.isPending}
-					className="w-full h-12 rounded-full bg-primary text-white text-[14px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+					className="w-full h-12 rounded-full bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 				>
 					{changeTimezone.isPending ? (
 						<>

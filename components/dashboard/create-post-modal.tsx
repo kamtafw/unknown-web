@@ -246,7 +246,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					className="
 						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
 						w-full max-w-140 max-h-[88vh]
-						bg-white rounded-2xl shadow-2xl
+						bg-card border border-border rounded-2xl shadow-2xl
 						flex flex-col
 						focus:outline-none
 						data-[state=open]:animate-in data-[state=closed]:animate-out
@@ -255,9 +255,9 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					"
 				>
 					<div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-						<Dialog.Title className="text-lg font-bold text-gray-900">Create post</Dialog.Title>
+						<Dialog.Title className="text-lg font-bold text-foreground">Create post</Dialog.Title>
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
 								<X size={18} />
 							</button>
 						</Dialog.Close>
@@ -274,14 +274,16 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 									alt={myName}
 									className="w-full h-full object-cover"
 								/>
-								<Avatar.Fallback className="w-full h-full bg-primary/40 text-white text-sm font-semibold flex items-center justify-center">
+								<Avatar.Fallback className="w-full h-full bg-primary/40 text-primary-foreground text-sm font-semibold flex items-center justify-center">
 									{getInitials(user?.first_name ?? "", user?.last_name ?? "")}
 								</Avatar.Fallback>
 							</Avatar.Root>
 
 							<div className="flex flex-col justify-center min-w-0">
-								<span className="text-sm font-semibold text-gray-900 leading-tight">{myName}</span>
-								<span className="text-xs text-gray-500">@{user?.username}</span>
+								<span className="text-sm font-semibold text-foreground leading-tight">
+									{myName}
+								</span>
+								<span className="text-xs text-muted-foreground">@{user?.username}</span>
 							</div>
 						</div>
 
@@ -296,7 +298,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 							placeholder="What's on your mind?"
 							rows={3}
 							autoFocus
-							className="w-full resize-none text-[15px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed mb-3"
+							className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed mb-3"
 						/>
 
 						{/* Media grid */}
@@ -319,7 +321,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 									return (
 										<div
 											key={item.id}
-											className={`relative bg-gray-100 overflow-hidden rounded-lg ${spanClass} ${aspect}`}
+											className={`relative bg-muted overflow-hidden rounded-lg ${spanClass} ${aspect}`}
 										>
 											{isVideo ? (
 												<video src={item.preview} className="w-full h-full object-cover" />
@@ -378,13 +380,13 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 
 						{/* Emoji picker */}
 						{showEmoji && (
-							<div className="mb-3 p-2 border border-gray-200 rounded-xl bg-white shadow-lg">
+							<div className="mb-3 p-2 border border-border rounded-xl bg-card shadow-lg">
 								<div className="grid grid-cols-10 gap-0.5">
 									{EMOJIS.map((e) => (
 										<button
 											key={e}
 											onClick={() => handleEmojiClick(e)}
-											className="w-8 h-8 text-lg rounded hover:bg-gray-100 flex items-center justify-center transition-colors"
+											className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
 										>
 											{e}
 										</button>
@@ -397,21 +399,21 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					<div className="px-5 pb-3 shrink-0">
 						<Popover open={replyPickerOpen} onOpenChange={setReplyPickerOpen}>
 							<PopoverTrigger asChild>
-								<button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-sm text-gray-600">
+								<button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted hover:bg-accent transition-colors text-sm text-muted-foreground">
 									<span className="shrink-0">{currentOption.icon}</span>
 									<span className="flex-1 text-left text-[13px]">Who can reply to this post?</span>
-									<ChevronDown size={14} className="text-gray-400 shrink-0" />
+									<ChevronDown size={14} className="text-muted-foreground shrink-0" />
 								</button>
 							</PopoverTrigger>
 
 							<PopoverContent
 								align="start"
 								sideOffset={6}
-								className="w-130 p-0 rounded-2xl border border-gray-100 shadow-xl"
+								className="w-130 p-0 rounded-2xl border border-border shadow-xl"
 							>
 								{/* Who can reply */}
 								<div className="px-3 pt-3 pb-4">
-									<h3 className="font-bold text-gray-900 text-[15px] mb-3">Who can reply?</h3>
+									<h3 className="font-bold text-foreground text-[15px] mb-3">Who can reply?</h3>
 									<div className="flex flex-col gap-0.5">
 										{REPLY_OPTIONS.map((opt) => (
 											<button
@@ -420,17 +422,17 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 													setWhoCanReply(opt.value)
 													setReplyPickerOpen(false)
 												}}
-												className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+												className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-accent transition-colors"
 											>
 												<div className="flex items-center gap-3">
 													<div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
 														{opt.icon}
 													</div>
-													<span className="text-sm font-medium text-gray-900">{opt.label}</span>
+													<span className="text-sm font-medium text-foreground">{opt.label}</span>
 												</div>
 												{whoCanReply === opt.value && (
 													<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-														<Check size={11} className="text-white" strokeWidth={3} />
+														<Check size={11} className="text-primary-foreground" strokeWidth={3} />
 													</div>
 												)}
 											</button>
@@ -441,7 +443,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 						</Popover>
 					</div>
 
-					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-gray-100">
+					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
 						<div className="flex items-center gap-0.5">
 							{/* Gallery */}
 							<button
@@ -485,7 +487,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 								disabled={fetchingLocation}
 								title={locationLabel ? "Remove location" : "Add live location"}
 								className={`p-2.5 rounded-full transition-colors disabled:opacity-50 ${
-									locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-gray-100"
+									locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-accent"
 								}`}
 							>
 								<MapPin size={20} />
@@ -496,7 +498,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 								onClick={() => setShowEmoji((v) => !v)}
 								title="Add emoji"
 								className={`p-2.5 rounded-full transition-colors ${
-									showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-gray-100"
+									showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-accent"
 								}`}
 							>
 								<Smile size={20} />
@@ -505,14 +507,14 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 
 						<div className="flex items-center gap-3">
 							{anyUploading && (
-								<span className="text-xs text-gray-400 flex items-center gap-1.5">
+								<span className="text-xs text-muted-foreground flex items-center gap-1.5">
 									<Loader2 size={12} className="animate-spin" /> Uploading…
 								</span>
 							)}
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit || createPost.isPending}
-								className="px-6 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
 							>
 								{createPost.isPending ? "Posting…" : "Post"}
 							</button>

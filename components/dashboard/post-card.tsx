@@ -136,9 +136,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 
 	return (
 		<div
-			className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${
-				count === 1 ? "grid-cols-1" : "grid-cols-2"
-			}`}
+			className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${count === 1 ? "grid-cols-1" : "grid-cols-2"}`}
 		>
 			{visible.map((url, i) => {
 				const type = mediaType(url)
@@ -154,7 +152,7 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 								<audio controls src={url} className="w-5/6" />
 							</div>
 						) : (
-							<Image src={url} alt="" fill={true} objectFit="cover" />
+							<Image src={url} alt="" fill={true} className="object-cover" />
 						)}
 						{isLast && (
 							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -176,11 +174,9 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
 		comment.user.username
 
-	const handleNavigate = () => router.push(`/posts/${comment.post}?comment=${comment.id}`)
-
 	return (
 		<div
-			onClick={handleNavigate}
+			onClick={() => router.push(`/posts/${comment.post}?comment=${comment.id}`)}
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
@@ -194,7 +190,7 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 						{fullname}
 					</span>
-					<span className="text-muted-foreground">@{comment.user.username}</span>
+					<span>@{comment.user.username}</span>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -214,11 +210,9 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
 
-	const handleNavigate = () => router.push(`/posts/${post.pkid}`)
-
 	return (
 		<div
-			onClick={handleNavigate}
+			onClick={() => router.push(`/posts/${post.pkid}`)}
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
@@ -232,7 +226,7 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 						{fullname}
 					</span>
-					<span className="text-muted-foreground">@{post.user.username}</span>
+					<span>@{post.user.username}</span>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -273,9 +267,7 @@ function ActionBar({
 	const handleRepost = () => {
 		setReposted((v) => !v)
 		setReposts((n) => (reposted ? n - 1 : n + 1))
-		if (!reposted) {
-			repost.mutate({ is_repost: true, original_post: post.id })
-		}
+		if (!reposted) repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -305,7 +297,6 @@ function ActionBar({
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
 				/>
-
 				<ShareButton postId={post.id} />
 			</div>
 
@@ -353,11 +344,7 @@ export function RepostButton({
 					icon: <Repost size={20} color="currentColor" />,
 					onSelect: onRepost,
 				},
-				{
-					label: "Quote",
-					icon: <Quote size={20} color="currentColor" />,
-					onSelect: onQuote,
-				},
+				{ label: "Quote", icon: <Quote size={20} color="currentColor" />, onSelect: onQuote },
 			]}
 			clsName="flex flex-1 flex-row items-center gap-1.5 rounded-full transition-colors cursor-pointer"
 		/>
@@ -517,7 +504,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 		{
 			label: `Follow @${post.user.username}`,
 			icon: <Connect />,
-			onSelect: () => console.log("TODO: unfollow", post.user.username),
+			onSelect: () => console.log("TODO: follow", post.user.username),
 		},
 		{
 			label: `Mute @${post.user.username}`,
@@ -533,7 +520,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 		{
 			label: "Request community note",
 			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: unfollow", post.id),
+			onSelect: () => console.log("TODO: community note", post.id),
 		},
 	]
 
@@ -557,7 +544,6 @@ export function PostCard({ post }: { post: Post }) {
 	const isMyRepost = post.user.pkid === user?.pkid
 
 	const displayPost = unquotedRepost ? (post.original_post as OriginalPost)! : post
-
 	const normalisedComment =
 		isCommentRepost && post.original_post ? normaliseCommentOriginal(post.original_post) : null
 	const displayText =
@@ -574,17 +560,14 @@ export function PostCard({ post }: { post: Post }) {
 		displayPost.user.username
 	const repostName =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
-
 	const timeAgo = useTimeAgo(displayPost.created_at)
 	const address = !isCommentRepost ? (displayPost.post_location?.[0]?.address ?? "") : ""
-
-	const handleNavigate = () => router.push(`/posts/${displayPost.pkid}`)
 
 	return (
 		<article className="px-5 py-5 border-b border-border last:border-b-0">
 			{unquotedRepost && (
 				<div
-					onClick={handleNavigate}
+					onClick={() => router.push(`/posts/${displayPost.pkid}`)}
 					className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground font-medium cursor-pointer"
 				>
 					<Repost size={13} />
@@ -592,7 +575,7 @@ export function PostCard({ post }: { post: Post }) {
 				</div>
 			)}
 
-			<div onClick={handleNavigate} className="cursor-pointer">
+			<div onClick={() => router.push(`/posts/${displayPost.pkid}`)} className="cursor-pointer">
 				<div className="flex items-start gap-3">
 					<UserAvatar
 						src={displayPost.user.profile_photo}
@@ -626,9 +609,7 @@ export function PostCard({ post }: { post: Post }) {
 							{renderText(displayText)}
 						</p>
 					)}
-
 					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
-
 					{!unquotedRepost && post.original_post && (
 						<div onClick={(e) => e.stopPropagation()}>
 							{isOriginalComment(post.original_post) ? (
