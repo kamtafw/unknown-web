@@ -395,8 +395,8 @@ function SettingsDialog({
 	return (
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
-				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-card rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
+				<Dialog.Overlay className="fixed inset-0 bg-black/50 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Content className="fixed left-1/2 top-[12%] -translate-x-1/2 z-50 w-full max-w-110 max-h-[78vh] bg-card border border-border rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 flex flex-col overflow-hidden">
 					{/* Header */}
 					<div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border shrink-0">
 						<div className="pr-4 min-w-0">
@@ -404,7 +404,7 @@ function SettingsDialog({
 								{title}
 							</Dialog.Title>
 							{description && (
-								<Dialog.Description className="text-[12.5px] text-gray-500 mt-1 leading-relaxed">
+								<Dialog.Description className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
 									{description}
 								</Dialog.Description>
 							)}
@@ -430,21 +430,21 @@ function LogoutDialog({ open, onClose }: { open: boolean; onClose: () => void })
 	return (
 		<SettingsDialog open={open} onClose={onClose} title="Log out">
 			<div className="px-6 py-5">
-				<p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+				<p className="text-[13px] text-muted-foreground leading-relaxed mb-6">
 					Are you sure you want to log out of your account? You&apos;ll need to sign in again to
 					access AppsCombo.
 				</p>
 				<div className="flex gap-2.5">
 					<button
 						onClick={onClose}
-						className="flex-1 h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent transition-colors"
+						className="flex-1 h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer"
 					>
 						Cancel
 					</button>
 					<button
 						onClick={() => logout.mutate()}
 						disabled={logout.isPending}
-						className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+						className="flex-1 h-10 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
 					>
 						{logout.isPending ? (
 							<>
@@ -522,7 +522,7 @@ function AccountInfoDialog({ open, onClose }: { open: boolean; onClose: () => vo
 						key={row.label}
 						className={cn(
 							"flex items-start justify-between py-3.5",
-							i < rows.length - 1 && "border-b border-gray-50",
+							i < rows.length - 1 && "border-b border-border/50",
 						)}
 					>
 						<span className="text-[12.5px] text-muted-foreground shrink-0">{row.label}</span>
@@ -556,7 +556,7 @@ function ExternalLinksDialog({
 						rel="noopener noreferrer"
 						className={cn(
 							"flex items-center gap-3 py-3.5 hover:bg-accent/60 transition-colors -mx-6 px-6",
-							i < links.length - 1 && "border-b border-gray-50",
+							i < links.length - 1 && "border-b border-border/50",
 						)}
 					>
 						<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -584,7 +584,7 @@ function TermsSettingsPanel({ onBack }: { onBack: () => void }) {
 					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 					aria-label="Go back"
 				>
-					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 				</button>
 				<h2 className="font-bold text-foreground text-[15.5px]">Terms & Conditions</h2>
 			</div>
@@ -604,7 +604,7 @@ function PrivacyPolicySettingsPanel({ onBack }: { onBack: () => void }) {
 					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 					aria-label="Go back"
 				>
-					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 				</button>
 				<h2 className="font-bold text-foreground text-[15.5px]">Privacy Policy</h2>
 			</div>
@@ -628,25 +628,25 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 		<div className="h-full overflow-y-auto [&::-webkit-scrollbar]:hidden">
 			{/* cover + avatar */}
 			<div className="relative">
-				<div className="h-48.75 w-full relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-blue-50">
+				<div className="h-48.75 w-full relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-primary/5">
 					{user.cover_photo ? (
 						<Image src={user.cover_photo} alt="Cover" fill className="object-cover" />
 					) : null}
 					{/* overlaid controls */}
 					<button
 						onClick={onBack}
-						className="absolute top-4 left-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-accent transition-colors"
+						className="absolute top-4 left-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-card transition-colors"
 					>
 						<ArrowLeft size={15} className="text-foreground" />
 					</button>
-					<button className="absolute top-4 right-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-accent transition-colors">
+					<button className="absolute top-4 right-4 w-8 h-8 bg-card/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-card transition-colors">
 						<MoreHorizontal size={15} className="text-foreground" />
 					</button>
 				</div>
 
 				{/* profile avatar */}
 				<div className="absolute left-5 -bottom-8 z-10">
-					<div className="relative w-17 h-17 rounded-full border-[2.5px] border-white overflow-hidden bg-primary/20 shadow-md">
+					<div className="relative w-17 h-17 rounded-full border-[2.5px] border-card overflow-hidden bg-primary/20 shadow-md">
 						{user.profile_photo ? (
 							<Image src={user.profile_photo} alt={displayName} fill className="object-cover" />
 						) : (
@@ -660,7 +660,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 
 			<div className="px-5 pt-12 pb-8">
 				<h2 className="text-[18px] font-bold text-foreground leading-tight">{displayName}</h2>
-				<p className="text-[13px] text-gray-500 mt-0.5">@{user.username}</p>
+				<p className="text-[13px] text-muted-foreground mt-0.5">@{user.username}</p>
 
 				{/* Stats */}
 				<div className="flex items-center gap-6 mt-3.5 mb-4">
@@ -671,7 +671,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 					].map(({ label, value }) => (
 						<div key={label} className="flex flex-1 flex-col">
 							<span className="text-[15px] font-bold text-foreground">{formatCount(value)}</span>
-							<span className="text-[13px] text-gray-500">{label}</span>
+							<span className="text-[13px] text-muted-foreground">{label}</span>
 						</div>
 					))}
 				</div>
@@ -681,13 +681,13 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 
 				{/* External links */}
 				{links.length > 0 && (
-					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px]">
+					<div className="flex flex-wrap items-center gap-1.5 mb-3 min-w-0 text-[12.5px] text-muted-foreground">
 						<Link size={14} />
 						<a
 							href={links[0].url}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-foreground font-medium truncate min-w-0 hover:underline"
+							className="text-primary font-medium truncate min-w-0 hover:underline"
 						>
 							{links[0].label || links[0].url}
 						</a>
@@ -705,7 +705,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 				{/* Location + date joined */}
 				<div className="flex items-center gap-8 flex-wrap">
 					{(user.country || user.state) && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Location size={14} />
 							<span className="font-medium text-foreground">
 								{[user.state, user.country].filter(Boolean).join(", ")}
@@ -713,7 +713,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 						</div>
 					)}
 					{user.date_joined && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Calendar size={14} />
 							<span className="font-medium text-foreground">
 								Joined {dayjs(user.date_joined).format("MMM, YYYY")}
@@ -721,7 +721,7 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 						</div>
 					)}
 					{user.dob && (
-						<div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+						<div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
 							<Calendar size={14} />
 							<span className="font-medium text-foreground">
 								Born {formatDob(user.dob, user.dob_visibility)}
@@ -756,7 +756,7 @@ function EditRow({
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-accent/60 transition-colors text-left"
+			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50 last:border-0 hover:bg-accent/60 transition-colors text-left"
 		>
 			<span
 				className={cn(
@@ -773,9 +773,9 @@ function EditRow({
 					</span>
 					{onClick ? (
 						isPending ? (
-							<Loader2 size={13} className="text-gray-300 shrink-0 animate-spin" />
+							<Loader2 size={13} className="text-muted-foreground/40 shrink-0 animate-spin" />
 						) : (
-							<ChevronRight size={13} className="text-gray-300 shrink-0" />
+							<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
 						)
 					) : null}
 				</div>
@@ -794,12 +794,12 @@ function ToggleRow({
 	onToggle: () => void
 }) {
 	return (
-		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-gray-50">
+		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50">
 			<span className="text-[13px] font-medium text-foreground">{label}</span>
 			<div
 				onClick={onToggle}
 				className={cn(
-					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors",
+					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors cursor-pointer",
 					enabled ? "bg-primary" : "bg-muted-foreground/30",
 				)}
 			>
@@ -934,7 +934,7 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 						onClick={() => photoInputRef.current?.click()}
 						className="absolute left-3 -bottom-5 group"
 					>
-						<div className="relative w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-primary/20 shadow-sm">
+						<div className="relative w-12 h-12 rounded-full border-2 border-card overflow-hidden bg-primary/20 shadow-sm">
 							{user.profile_photo ? (
 								<Image src={user.profile_photo} alt={displayName} fill className="object-cover" />
 							) : (
@@ -1022,16 +1022,16 @@ function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void
 					<button
 						key={link.id}
 						onClick={() => onOpenDialog(`edit-link-${link.id}`)}
-						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left border-t border-gray-50"
+						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left border-t border-border/50"
 					>
-						<div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center shrink-0">
-							<Link2 size={13} className="text-gray-500" />
+						<div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+							<Link2 size={13} className="text-muted-foreground" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<p className="text-[13px] font-medium text-foreground">{link.label}</p>
 							<p className="text-[11.5px] text-muted-foreground truncate">{link.url}</p>
 						</div>
-						<ChevronRight size={13} className="text-gray-300 shrink-0" />
+						<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
 					</button>
 				))}
 			</div>
@@ -1126,7 +1126,7 @@ function ProfileView({
 							onClick={() => setMobileTab(tab)}
 							className={cn(
 								"flex-1 py-3 text-[13px] font-medium capitalize transition-colors relative",
-								mobileTab === tab ? "text-primary" : "text-gray-500",
+								mobileTab === tab ? "text-primary" : "text-muted-foreground",
 							)}
 						>
 							{tab === "edit" ? "Edit Profile" : "Profile"}
@@ -1180,9 +1180,9 @@ function ProfileNavCard({ onClick }: { onClick: () => void }) {
 				<p className="text-[13.5px] font-bold text-foreground truncate leading-tight">
 					{displayName}
 				</p>
-				{bio && <p className="text-xs text-gray-500 truncate mt-0.5">{bio}</p>}
+				{bio && <p className="text-xs text-muted-foreground truncate mt-0.5">{bio}</p>}
 			</div>
-			<ChevronRight size={15} className="text-muted-foreground shrink-0" />
+			<ChevronRight size={15} className="text-muted-foreground/40 shrink-0" />
 		</button>
 	)
 }
@@ -1235,14 +1235,14 @@ function SettingsListView({
 								key={section.id}
 								onClick={() => onSectionSelect(section.id)}
 								className={cn(
-									"w-full flex items-center gap-3 px-5 py-4 text-left transition-colors border-b border-gray-50 last:border-0:",
+									"w-full flex items-center gap-3 px-5 py-4 text-left transition-colors border-b border-border/50 last:border-0",
 									isActive ? "bg-accent/80" : "hover:bg-accent",
 								)}
 							>
 								<div
 									className={cn(
 										"w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
-										isActive ? "bg-primary/10 text-primary" : "bg-gray-50 text-gray-300",
+										isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground/60",
 									)}
 								>
 									{section.icon}
@@ -1251,11 +1251,16 @@ function SettingsListView({
 									<p className="text-[13.5px] font-semibold text-foreground leading-tight">
 										{section.label}
 									</p>
-									<p className="text-xs text-gray-500 mt-0.5 truncate">{section.description}</p>
+									<p className="text-xs text-muted-foreground mt-0.5 truncate">
+										{section.description}
+									</p>
 								</div>
 								<ChevronRight
 									size={14}
-									className={cn("shrink-0", isActive ? "text-muted-foreground" : "text-gray-300")}
+									className={cn(
+										"shrink-0",
+										isActive ? "text-muted-foreground" : "text-muted-foreground/40",
+									)}
 								/>
 							</button>
 						)
@@ -1280,7 +1285,7 @@ function SettingsListView({
 								onClick={onMobileBack}
 								className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 							>
-								<ArrowLeft size={15} className="text-gray-600" />
+								<ArrowLeft size={15} className="text-muted-foreground" />
 							</button>
 							<span className="text-[14px] font-semibold text-foreground">
 								{currentSection.label}
@@ -1289,7 +1294,7 @@ function SettingsListView({
 
 						<div className="hidden lg:block px-7 pt-4.5 pb-4 border-b border-border shrink-0">
 							<h2 className="text-[16.5px] font-bold text-foreground">{currentSection.label}</h2>
-							<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+							<p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">
 								{currentSection.description}
 							</p>
 						</div>
@@ -1311,13 +1316,13 @@ function SettingsListView({
 									}}
 									className={cn(
 										"w-full flex items-start gap-4 px-7 py-3.75 hover:bg-accent/80 transition-colors text-left",
-										i < currentSection.items.length - 1 && "border-b border-gray-50",
+										i < currentSection.items.length - 1 && "border-b border-border/50",
 									)}
 								>
 									<span
 										className={cn(
 											"shrink-0 mt-0.5",
-											item.destructive ? "text-destructive" : "text-gray-500",
+											item.destructive ? "text-destructive" : "text-muted-foreground",
 										)}
 									>
 										{item.icon}
@@ -1331,11 +1336,11 @@ function SettingsListView({
 										>
 											{item.label}
 										</p>
-										<p className="text-[12.5px] text-gray-500 mt-0.5 leading-relaxed">
+										<p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">
 											{item.description}
 										</p>
 									</div>
-									<ChevronRight size={14} className="text-gray-300 shrink-0 mt-0.5" />
+									<ChevronRight size={14} className="text-muted-foreground/40 shrink-0 mt-0.5" />
 								</button>
 							))}
 						</div>
