@@ -32,17 +32,17 @@ function PanelHeader({
 	allSelected: boolean
 }) {
 	return (
-		<div className="shrink-0 border-b border-gray-100">
+		<div className="shrink-0 border-b border-border">
 			<div className="flex items-center gap-3 px-6 pt-5 pb-4">
 				<button
 					onClick={selectionMode ? onExitSelect : onBack}
-					className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors shrink-0"
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors shrink-0"
 					aria-label={selectionMode ? "Cancel selection" : "Go back"}
 				>
-					<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 				</button>
 
-				<h2 className="font-bold text-gray-900 text-[15.5px] flex-1 min-w-0 truncate transition-all duration-200">
+				<h2 className="font-bold text-foreground text-[15.5px] flex-1 min-w-0 truncate transition-all duration-200">
 					{selectionMode
 						? selectedCount > 0
 							? `${selectedCount} ${selectedCount === 1 ? "account" : "accounts"} selected`
@@ -69,7 +69,6 @@ function PanelHeader({
 				)}
 			</div>
 
-			{/* Selection mode hint bar */}
 			<div
 				className={cn(
 					"overflow-hidden transition-all duration-300",
@@ -119,17 +118,17 @@ function UnblockConfirmDialog({
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-white rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
-					<Dialog.Title className="font-bold text-gray-900 text-[15px] mb-1.5">
+				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+					<Dialog.Title className="font-bold text-foreground text-[15px] mb-1.5">
 						{title}
 					</Dialog.Title>
-					<Dialog.Description className="text-[13px] text-gray-500 leading-relaxed mb-6">
+					<Dialog.Description className="text-[13px] text-muted-foreground leading-relaxed mb-6">
 						{description}
 					</Dialog.Description>
 
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="flex-1 text-sm font-semibold text-gray-600 hover:opacity-50 transition-colors cursor-pointer">
+							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-50 transition-colors cursor-pointer">
 								Cancel
 							</button>
 						</Dialog.Close>
@@ -155,13 +154,13 @@ function UnblockConfirmDialog({
 
 function SkeletonRow() {
 	return (
-		<div className="flex items-center gap-3.5 px-6 py-4 animate-pulse border-b border-gray-50">
-			<div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+		<div className="flex items-center gap-3.5 px-6 py-4 animate-pulse border-b border-border/50">
+			<div className="w-10 h-10 rounded-full bg-muted shrink-0" />
 			<div className="flex-1 space-y-1.5">
-				<div className="h-3 bg-gray-200 rounded-full w-2/5" />
-				<div className="h-2.5 bg-gray-200 rounded-full w-1/4" />
+				<div className="h-3 bg-muted rounded-full w-2/5" />
+				<div className="h-2.5 bg-muted rounded-full w-1/4" />
 			</div>
-			<div className="h-7 w-16 bg-gray-200 rounded-full shrink-0" />
+			<div className="h-7 w-16 bg-muted rounded-full shrink-0" />
 		</div>
 	)
 }
@@ -171,7 +170,7 @@ function Checkbox({ checked }: { checked: boolean }) {
 		<div
 			className={cn(
 				"w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200",
-				checked ? "bg-primary border-primary" : "border-gray-300 bg-white",
+				checked ? "bg-primary border-primary" : "border-input bg-transparent",
 			)}
 		>
 			{checked && (
@@ -203,12 +202,10 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 	const allSelected = blockedUsers.length > 0 && selectedIds.size === blockedUsers.length
 
 	const enterSelectMode = () => setSelectionMode(true)
-
 	const exitSelectMode = () => {
 		setSelectionMode(false)
 		setSelectedIds(new Set())
 	}
-
 	const toggleSelect = (pkid: number) => {
 		setSelectedIds((prev) => {
 			const next = new Set(prev)
@@ -217,7 +214,6 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 			return next
 		})
 	}
-
 	const toggleSelectAll = () => {
 		setSelectedIds(allSelected ? new Set() : new Set(blockedUsers.map((u) => u.pkid)))
 	}
@@ -228,9 +224,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 			: confirmDialog.user
 				? [confirmDialog.user.pkid]
 				: []
-
 		if (!ids.length) return
-
 		unblockUsers.mutate(ids, {
 			onSuccess: () => {
 				setConfirmDialog({ open: false, user: null, isBulk: false })
@@ -240,7 +234,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden relative">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden relative">
 			<PanelHeader
 				onBack={onBack}
 				selectionMode={selectionMode}
@@ -252,15 +246,13 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 				allSelected={allSelected}
 			/>
 
-			{/* Scrollable list — extra bottom padding so content clears the action bar */}
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24">
 				{!isLoading && blockedUsers.length > 0 && !selectionMode && (
 					<>
-						<p className="px-6 pt-4 pb-3 text-xs text-gray-400 leading-relaxed">
+						<p className="px-6 pt-4 pb-3 text-xs text-muted-foreground leading-relaxed">
 							These accounts can&apos;t see your posts or find your profile.
 						</p>
-
-						<div className="mx-6 my-1 border-t border-gray-100" />
+						<div className="mx-6 my-1 border-t border-border" />
 					</>
 				)}
 
@@ -268,12 +260,12 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 					[0, 1, 2, 3].map((i) => <SkeletonRow key={i} />)
 				) : blockedUsers.length === 0 ? (
 					<div className="flex flex-col items-center justify-center px-6 py-16 text-center gap-4">
-						<div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center">
-							<ShieldOff size={24} className="text-gray-300" />
+						<div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center">
+							<ShieldOff size={24} className="text-muted-foreground/40" />
 						</div>
 						<div>
-							<p className="font-semibold text-gray-900 text-[13.5px]">No blocked accounts</p>
-							<p className="text-[12.5px] text-gray-500 mt-1 leading-relaxed max-w-50">
+							<p className="font-semibold text-foreground text-[13.5px]">No blocked accounts</p>
+							<p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed max-w-50">
 								Accounts you block will appear here and won&apos;t be able to interact with you.
 							</p>
 						</div>
@@ -284,7 +276,6 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 							const displayName =
 								[user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 							const isSelected = selectedIds.has(user.pkid)
-
 							return (
 								<div
 									key={user.id}
@@ -295,11 +286,10 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 										selectionMode && isSelected
 											? "bg-primary/5"
 											: selectionMode
-												? "hover:bg-gray-50/80 active:bg-gray-100"
+												? "hover:bg-accent active:bg-muted"
 												: "",
 									)}
 								>
-									{/* Checkbox — slides in when selection mode activates */}
 									<div
 										className={cn(
 											"overflow-hidden transition-all duration-200 shrink-0",
@@ -321,13 +311,14 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 									</Avatar.Root>
 
 									<div className="flex-1 min-w-0">
-										<p className="text-[13.5px] font-semibold text-gray-900 truncate leading-tight">
+										<p className="text-[13.5px] font-semibold text-foreground truncate leading-tight">
 											{displayName}
 										</p>
-										<p className="text-xs text-gray-500 truncate mt-0.5">@{user.username}</p>
+										<p className="text-xs text-muted-foreground truncate mt-0.5">
+											@{user.username}
+										</p>
 									</div>
 
-									{/* Single unblock button — hidden in selection mode */}
 									<div
 										className={cn(
 											"shrink-0 overflow-hidden transition-all duration-200",
@@ -339,7 +330,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 												e.stopPropagation()
 												setConfirmDialog({ open: true, user, isBulk: false })
 											}}
-											className="text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-primary hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
+											className="text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
 										>
 											Unblock
 										</button>
@@ -351,10 +342,10 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 				)}
 			</div>
 
-			{/* Bulk action bar — slides up from bottom when items are selected */}
+			{/* Bulk action bar */}
 			<div
 				className={cn(
-					"absolute bottom-0 inset-x-0 px-5 py-4 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center gap-3 transition-transform duration-300 ease-out",
+					"absolute bottom-0 inset-x-0 px-5 py-4 bg-card/95 backdrop-blur-sm border-t border-border flex items-center gap-3 transition-transform duration-300 ease-out",
 					selectionMode && selectedIds.size > 0 ? "translate-y-0" : "translate-y-full",
 				)}
 			>
@@ -362,13 +353,13 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 					<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
 						<Users size={14} className="text-primary" />
 					</div>
-					<p className="text-[13px] font-semibold text-gray-900 truncate">
+					<p className="text-[13px] font-semibold text-foreground truncate">
 						{selectedIds.size} {selectedIds.size === 1 ? "account" : "accounts"} selected
 					</p>
 				</div>
 				<button
 					onClick={() => setConfirmDialog({ open: true, user: null, isBulk: true })}
-					className="shrink-0 h-10 px-5 rounded-full bg-primary text-white text-[13px] font-semibold hover:bg-primary/85 transition-colors cursor-pointer"
+					className="shrink-0 h-10 px-5 rounded-full bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/85 transition-colors cursor-pointer"
 				>
 					Unblock
 				</button>
