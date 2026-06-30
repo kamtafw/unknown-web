@@ -19,6 +19,8 @@ import {
 	ArrowLeft,
 	Bell,
 	Camera,
+	Check,
+	ChevronDown,
 	ChevronRight,
 	Clock,
 	CreditCard,
@@ -26,24 +28,29 @@ import {
 	FileText,
 	Globe,
 	HardDrive,
+	HelpCircle,
 	Layers,
 	Link2,
 	Loader2,
 	Lock,
 	MapPin,
+	MessageCircle,
 	Monitor,
 	MoreHorizontal,
 	Plus,
+	RotateCcw,
+	Smartphone,
 	Users,
 	UserX,
 	Volume2,
+	Wifi,
 	Wrench,
 	X,
 } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import type { ComponentType } from "react"
-import { ReactNode, useRef, useState } from "react"
+import { ReactNode, useEffect, useRef, useState } from "react"
 import {
 	ChangePasswordPanel,
 	ChangePhonePanel,
@@ -112,6 +119,680 @@ type Section = {
 	description: string
 	icon: ReactNode
 	items: SectionItem[]
+}
+
+// ─── FAQ ───────────────────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+	{
+		question: "How do I reset my password?",
+		answer:
+			"Go to Settings → Account → Change your password. We'll send a one-time code to your registered email to verify your identity before you set a new password.",
+	},
+	{
+		question: "Can I have multiple accounts?",
+		answer:
+			"Yes. Head to Settings → Account → Add account to link up to 5 accounts. Switch between them instantly from the account menu at the top of the screen.",
+	},
+	{
+		question: "How do I permanently delete my account?",
+		answer:
+			"Go to Settings → Account → Delete your account. After confirming, you have a 7-day grace period — simply sign back in within that window to cancel.",
+	},
+	{
+		question: "How do I enable two-step verification?",
+		answer:
+			"Go to Settings → Account → Two-step verification. Choose between a 6-digit PIN, OTP via email, or Google Authenticator.",
+	},
+	{
+		question: "Why isn't my post appearing in others' feeds?",
+		answer:
+			"Check the 'Who can see' setting on the post — it may be restricted to followers only. Feed personalisation also means posts don't always reach every follower immediately.",
+	},
+	{
+		question: "What happens when I block someone?",
+		answer:
+			"Blocked accounts can't view your profile, posts, or contact you. They're not notified. Manage your blocked list under Settings → Privacy → Blocked accounts.",
+	},
+	{
+		question: "How often can I change my username?",
+		answer:
+			"Once every 180 days. Your previous username becomes available to others immediately after the change.",
+	},
+	{
+		question: "How do I report abusive or harmful content?",
+		answer:
+			"Tap the ··· menu on any post or profile and select Report. For account-level issues, use Settings → Support → Report a problem.",
+	},
+	{
+		question: "How do I link my social accounts?",
+		answer:
+			"Go to Settings → Account → Link social accounts. Linking enables faster sign-in and optional cross-platform sharing with Facebook, X, and LinkedIn.",
+	},
+	{
+		question: "Can I recover a deleted post?",
+		answer:
+			"Deleted posts can't be recovered. We recommend downloading your data archive before removing content you may want to keep.",
+	},
+]
+
+function FAQPanel({ onBack }: { onBack: () => void }) {
+	const [openIndex, setOpenIndex] = useState<number | null>(null)
+
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">FAQ</h2>
+			</div>
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-4 space-y-2.5">
+				<p className="text-[12.5px] text-muted-foreground mb-3 leading-relaxed">
+					Quick answers to the most common questions about AppsCombo.
+				</p>
+				{FAQ_ITEMS.map((item, i) => (
+					<div
+						key={i}
+						className={cn(
+							"border rounded-xl overflow-hidden transition-colors",
+							openIndex === i ? "border-primary/30 bg-primary/2.5" : "border-border",
+						)}
+					>
+						<button
+							onClick={() => setOpenIndex(openIndex === i ? null : i)}
+							className="w-full flex items-start justify-between gap-3 px-4 py-3.5 text-left"
+						>
+							<span className="text-[13px] font-semibold text-foreground leading-snug">
+								{item.question}
+							</span>
+							<ChevronDown
+								size={14}
+								className={cn(
+									"text-muted-foreground shrink-0 mt-0.5 transition-transform duration-200",
+									openIndex === i && "rotate-180 text-primary",
+								)}
+							/>
+						</button>
+						{openIndex === i && (
+							<div className="px-4 pb-4 border-t border-border/50 pt-3">
+								<p className="text-[12.5px] text-muted-foreground leading-relaxed">{item.answer}</p>
+							</div>
+						)}
+					</div>
+				))}
+			</div>
+		</div>
+	)
+}
+
+const QUESTION_TOPICS = [
+	"General inquiry",
+	"Account access",
+	"Privacy & safety",
+	"Billing & subscriptions",
+	"Technical issue",
+	"Content & feeds",
+	"Other",
+]
+
+function AskQuestionPanel({ onBack }: { onBack: () => void }) {
+	const user = useAuthStore((s) => s.user)
+	const [topic, setTopic] = useState("")
+	const [topicOpen, setTopicOpen] = useState(false)
+	const [message, setMessage] = useState("")
+	const [submitting, setSubmitting] = useState(false)
+	const [submitted, setSubmitted] = useState(false)
+	const topicRef = useRef<HTMLDivElement>(null)
+	const MAX = 500
+
+	const canSubmit = topic.length > 0 && message.trim().length >= 20 && !submitting
+
+	useEffect(() => {
+		if (!topicOpen) return
+		const handler = (e: MouseEvent) => {
+			if (topicRef.current && !topicRef.current.contains(e.target as Node)) {
+				setTopicOpen(false)
+			}
+		}
+		document.addEventListener("mousedown", handler)
+		return () => document.removeEventListener("mousedown", handler)
+	}, [topicOpen])
+
+	const handleSubmit = async () => {
+		if (!canSubmit) return
+		setSubmitting(true)
+		// TODO: wire to real support endpoint
+		await new Promise((r) => setTimeout(r, 1200))
+		setSubmitting(false)
+		setSubmitted(true)
+	}
+
+	if (submitted) {
+		return (
+			<div className="border-l border-border h-full flex flex-col overflow-hidden">
+				<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+					<button
+						onClick={onBack}
+						className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+						aria-label="Go back"
+					>
+						<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+					</button>
+					<h2 className="font-bold text-foreground text-[15.5px]">Ask a question</h2>
+				</div>
+				<div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
+					<div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+						<Check size={28} className="text-primary" strokeWidth={2} />
+					</div>
+					<div>
+						<p className="font-bold text-foreground text-[15px]">Question submitted!</p>
+						<p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed max-w-64">
+							We&apos;ll reply to <span className="font-medium text-foreground">{user?.email}</span>{" "}
+							within 2 business days.
+						</p>
+					</div>
+					<button
+						onClick={() => {
+							setSubmitted(false)
+							setTopic("")
+							setMessage("")
+						}}
+						className="text-[13px] font-semibold text-primary hover:underline mt-2"
+					>
+						Ask another question
+					</button>
+				</div>
+			</div>
+		)
+	}
+
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">Ask a question</h2>
+			</div>
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-5">
+				<p className="text-[13px] text-muted-foreground leading-relaxed -mt-1">
+					Can&apos;t find what you&apos;re looking for? Send us your question and we&apos;ll get back to you within
+					2 business days.
+				</p>
+
+				<div className="flex flex-col gap-2">
+					<label className="text-sm font-semibold text-foreground">Topic</label>
+					<div className="relative" ref={topicRef}>
+						<button
+							type="button"
+							onClick={() => setTopicOpen((v) => !v)}
+							className={cn(
+								"w-full flex items-center justify-between h-12 px-4 rounded-xl border transition-colors text-sm",
+								topicOpen
+									? "border-primary focus-within:ring-1 focus-within:ring-primary"
+									: topic
+										? "border-primary bg-transparent focus-within:ring-1 focus-within:ring-primary"
+										: "border-border bg-transparent cursor-pointer focus-within:ring-1 focus-within:ring-primary",
+							)}
+						>
+							<span className={topic ? "text-foreground" : "text-muted-foreground"}>
+								{topic || "Select a topic…"}
+							</span>
+							<ChevronDown
+								size={16}
+								className={cn(
+									"text-muted-foreground transition-transform duration-150 shrink-0",
+									topicOpen && "rotate-180",
+								)}
+							/>
+						</button>
+
+						{topicOpen && (
+							<div className="absolute z-50 top-full mt-1 left-0 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+								<div className="max-h-56 overflow-y-auto">
+									{QUESTION_TOPICS.map((t) => (
+										<button
+											key={t}
+											type="button"
+											onClick={() => {
+												setTopic(t)
+												setTopicOpen(false)
+											}}
+											className={cn(
+												"w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent transition-colors text-left",
+												topic === t ? "bg-primary/5 text-primary font-semibold" : "text-foreground",
+											)}
+										>
+											<span className="flex-1 truncate">{t}</span>
+											{topic === t && (
+												<Check size={14} className="text-primary shrink-0" strokeWidth={2.5} />
+											)}
+										</button>
+									))}
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Reply-to */}
+				<div className="flex flex-col gap-1.5">
+					<label className="text-sm font-semibold text-foreground">Reply to</label>
+					<div className="flex items-center gap-2.5 h-11 px-4 rounded-xl border border-border bg-muted/60">
+						<span className="text-[13.5px] text-muted-foreground flex-1 truncate">{user?.email}</span>
+						<Lock size={13} className="text-muted-foreground/40 shrink-0" />
+					</div>
+					<p className="text-[11.5px] text-muted-foreground">
+						We&apos;ll reply to the email address on your account.
+					</p>
+				</div>
+
+				{/* Message */}
+				<div className="flex flex-col gap-2">
+					<div className="flex items-center justify-between">
+						<label className="text-sm font-semibold text-foreground">Your question</label>
+						<span
+							className={cn(
+								"text-[11.5px] tabular-nums",
+								message.length >= MAX * 0.9 ? "text-amber-400" : "text-muted-foreground/50",
+							)}
+						>
+							{message.length}/{MAX}
+						</span>
+					</div>
+					<div
+						className={cn(
+							"rounded-xl border transition-colors",
+							message.length >= 20
+								? "border-primary/40 focus-within:ring-1 focus-within:ring-primary"
+								: "border-border focus-within:ring-1 focus-within:ring-primary",
+						)}
+					>
+						<textarea
+							value={message}
+							onChange={(e) => setMessage(e.target.value.slice(0, MAX))}
+							placeholder="Describe your issue or question in detail…"
+							rows={5}
+							className="w-full bg-transparent px-4 pt-3.5 pb-3 text-[13.5px] text-foreground resize-none outline-none leading-relaxed placeholder:text-muted-foreground"
+						/>
+					</div>
+					{message.length > 0 && message.trim().length < 20 && (
+						<p className="text-[11.5px] text-muted-foreground">
+							Add a bit more detail to help us understand your question.
+						</p>
+					)}
+				</div>
+			</div>
+
+			<div className="shrink-0 px-6 py-4 border-t border-border/50">
+				<button
+					onClick={handleSubmit}
+					disabled={!canSubmit}
+					className="w-full h-12 rounded-full bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+				>
+					{submitting ? (
+						<>
+							<Loader2 size={14} className="animate-spin" /> Submitting…
+						</>
+					) : (
+						"Submit question"
+					)}
+				</button>
+			</div>
+		</div>
+	)
+}
+
+const LANGUAGES = [
+	{ code: "en", label: "English", nativeLabel: "English", available: true },
+	{ code: "fr", label: "French", nativeLabel: "Français", available: false },
+	{ code: "es", label: "Spanish", nativeLabel: "Español", available: false },
+	{ code: "pt", label: "Portuguese", nativeLabel: "Português", available: false },
+	{ code: "ar", label: "Arabic", nativeLabel: "العربية", available: false },
+	{ code: "zh", label: "Chinese (Simplified)", nativeLabel: "中文（简体）", available: false },
+	{ code: "de", label: "German", nativeLabel: "Deutsch", available: false },
+	{ code: "hi", label: "Hindi", nativeLabel: "हिन्दी", available: false },
+	{ code: "ja", label: "Japanese", nativeLabel: "日本語", available: false },
+	{ code: "ko", label: "Korean", nativeLabel: "한국어", available: false },
+	{ code: "ha", label: "Hausa", nativeLabel: "Hausa", available: false },
+	{ code: "yo", label: "Yoruba", nativeLabel: "Yorùbá", available: false },
+	{ code: "ig", label: "Igbo", nativeLabel: "Igbo", available: false },
+	{ code: "sw", label: "Swahili", nativeLabel: "Kiswahili", available: false },
+]
+
+function AppLanguagePanel({ onBack }: { onBack: () => void }) {
+	const [selected, setSelected] = useState("en")
+
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">App language</h2>
+			</div>
+			<p className="px-6 pt-4 pb-3 text-[12.5px] text-muted-foreground leading-relaxed shrink-0">
+				Choose the language you&apos;d like to use in AppsCombo. More languages are on the way.
+			</p>
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden divide-y divide-border/50">
+				{LANGUAGES.map((lang) => (
+					<button
+						key={lang.code}
+						onClick={() => lang.available && setSelected(lang.code)}
+						disabled={!lang.available}
+						className={cn(
+							"w-full flex items-center justify-between gap-3 px-6 py-3.5 text-left transition-colors",
+							lang.available && selected !== lang.code && "hover:bg-accent",
+							selected === lang.code && "bg-primary/5",
+							!lang.available && "cursor-default",
+						)}
+					>
+						<div className="flex-1 min-w-0">
+							<p
+								className={cn(
+									"text-[13.5px] font-semibold leading-tight",
+									selected === lang.code
+										? "text-primary"
+										: lang.available
+											? "text-foreground"
+											: "text-muted-foreground",
+								)}
+							>
+								{lang.label}
+							</p>
+							<p
+								className={cn(
+									"text-[12px] mt-0.5",
+									lang.available ? "text-muted-foreground" : "text-muted-foreground/50",
+								)}
+							>
+								{lang.nativeLabel}
+							</p>
+						</div>
+						{lang.available ? (
+							selected === lang.code ? (
+								<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+									<Check size={11} className="text-primary-foreground" strokeWidth={3} />
+								</div>
+							) : (
+								<div className="w-5 h-5 rounded-full border-2 border-border shrink-0" />
+							)
+						) : (
+							<span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full leading-none shrink-0">
+								Soon
+							</span>
+						)}
+					</button>
+				))}
+			</div>
+		</div>
+	)
+}
+
+const STORAGE_BREAKDOWN = [
+	{ label: "Photos & videos", emoji: "🖼️", mb: 612 },
+	{ label: "Documents", emoji: "📄", mb: 118 },
+	{ label: "Audio files", emoji: "🎵", mb: 42 },
+	{ label: "Cached data", emoji: "⚡", mb: 75 },
+]
+const STORAGE_TOTAL_MB = STORAGE_BREAKDOWN.reduce((s, i) => s + i.mb, 0)
+const STORAGE_LIMIT_GB = 5
+
+function fmtBytes(mb: number) {
+	return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
+}
+
+function StorageUsagePanel({ onBack }: { onBack: () => void }) {
+	const [clearing, setClearing] = useState(false)
+	const [cacheCleared, setCacheCleared] = useState(false)
+	const displayTotal = cacheCleared ? STORAGE_TOTAL_MB - 75 : STORAGE_TOTAL_MB
+
+	const handleClear = async () => {
+		setClearing(true)
+		await new Promise((r) => setTimeout(r, 1200))
+		setClearing(false)
+		setCacheCleared(true)
+	}
+
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">Storage usage</h2>
+			</div>
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 space-y-5">
+				{/* Summary card */}
+				<div className="bg-muted/40 rounded-2xl p-5 border border-border/60">
+					<div className="flex items-end justify-between mb-3">
+						<div>
+							<p className="text-2xl font-bold text-foreground">{fmtBytes(displayTotal)}</p>
+							<p className="text-[12.5px] text-muted-foreground mt-0.5">
+								used of {STORAGE_LIMIT_GB} GB
+							</p>
+						</div>
+						<p className="text-[12.5px] font-semibold text-muted-foreground tabular-nums">
+							{((displayTotal / (STORAGE_LIMIT_GB * 1024)) * 100).toFixed(0)}%
+						</p>
+					</div>
+					<div className="h-2 bg-border rounded-full overflow-hidden">
+						<div
+							className="h-full bg-primary rounded-full transition-all duration-700"
+							style={{
+								width: `${Math.min((displayTotal / (STORAGE_LIMIT_GB * 1024)) * 100, 100)}%`,
+							}}
+						/>
+					</div>
+				</div>
+
+				{/* Breakdown */}
+				<div>
+					<p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">
+						Breakdown
+					</p>
+					<div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
+						{STORAGE_BREAKDOWN.map((item) => {
+							const pct = (item.mb / STORAGE_TOTAL_MB) * 100
+							const isCache = item.label === "Cached data"
+							const displayMb = isCache && cacheCleared ? 0 : item.mb
+							return (
+								<div key={item.label} className="px-5 py-3.5 flex items-center gap-4">
+									<span className="text-lg shrink-0">{item.emoji}</span>
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center justify-between mb-1.5">
+											<span className="text-[13px] font-medium text-foreground">{item.label}</span>
+											<span className="text-[12.5px] text-muted-foreground tabular-nums">
+												{fmtBytes(displayMb)}
+											</span>
+										</div>
+										<div className="h-1.5 bg-border rounded-full overflow-hidden">
+											<div
+												className="h-full bg-primary/60 rounded-full transition-all duration-500"
+												style={{ width: isCache && cacheCleared ? "0%" : `${pct}%` }}
+											/>
+										</div>
+									</div>
+								</div>
+							)
+						})}
+					</div>
+				</div>
+
+				{/* Clear cache */}
+				<div className="rounded-2xl border border-border p-5">
+					<div className="flex items-start justify-between gap-4">
+						<div>
+							<p className="text-[13.5px] font-semibold text-foreground">Cached data</p>
+							<p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">
+								{cacheCleared
+									? "Cache has been cleared successfully."
+									: "Temporary files that can be safely removed to free up space."}
+							</p>
+						</div>
+						<span className="text-[12px] font-semibold text-primary shrink-0 mt-0.5 tabular-nums">
+							{cacheCleared ? "0 MB" : "75 MB"}
+						</span>
+					</div>
+					{!cacheCleared && (
+						<button
+							onClick={handleClear}
+							disabled={clearing}
+							className="mt-4 w-full h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+						>
+							{clearing ? (
+								<>
+									<Loader2 size={13} className="animate-spin" /> Clearing…
+								</>
+							) : (
+								"Clear cached data"
+							)}
+						</button>
+					)}
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function NetworkUsagePanel({ onBack }: { onBack: () => void }) {
+	const [autoDownload, setAutoDownload] = useState(true)
+	const [resetting, setResetting] = useState(false)
+	const [resetDone, setResetDone] = useState(false)
+
+	const handleReset = async () => {
+		setResetting(true)
+		await new Promise((r) => setTimeout(r, 900))
+		setResetting(false)
+		setResetDone(true)
+	}
+
+	const stats = resetDone
+		? { total: "0 B", wifi: "0 B", mobile: "0 B" }
+		: { total: "2.4 GB", wifi: "1.83 GB", mobile: "621 MB" }
+
+	const month = new Date().toLocaleString("default", { month: "long", year: "numeric" })
+
+	return (
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
+			<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
+				<button
+					onClick={onBack}
+					className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
+					aria-label="Go back"
+				>
+					<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
+				</button>
+				<h2 className="font-bold text-foreground text-[15.5px]">Network usage</h2>
+			</div>
+
+			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 space-y-5">
+				{/* Monthly total */}
+				<div className="bg-muted/40 rounded-2xl p-5 border border-border/60 text-center">
+					<p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+						Total · {month}
+					</p>
+					<p className="text-3xl font-bold text-foreground tabular-nums">{stats.total}</p>
+				</div>
+
+				{/* Wi-Fi / Mobile breakdown */}
+				<div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
+					<div className="flex items-center gap-4 px-5 py-4">
+						<div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+							<Wifi size={18} className="text-blue-500" />
+						</div>
+						<div className="flex-1">
+							<p className="text-[13.5px] font-semibold text-foreground">Wi-Fi</p>
+							<p className="text-[12px] text-muted-foreground mt-0.5">Used over wireless</p>
+						</div>
+						<span className="text-[13.5px] font-semibold text-foreground tabular-nums">
+							{stats.wifi}
+						</span>
+					</div>
+					<div className="flex items-center gap-4 px-5 py-4">
+						<div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+							<Smartphone size={18} className="text-orange-500" />
+						</div>
+						<div className="flex-1">
+							<p className="text-[13.5px] font-semibold text-foreground">Mobile data</p>
+							<p className="text-[12px] text-muted-foreground mt-0.5">Used over cellular</p>
+						</div>
+						<span className="text-[13.5px] font-semibold text-foreground tabular-nums">
+							{stats.mobile}
+						</span>
+					</div>
+				</div>
+
+				{/* Settings */}
+				<div className="rounded-2xl border border-border overflow-hidden">
+					<div className="flex items-start justify-between gap-4 px-5 py-4">
+						<div className="flex-1">
+							<p className="text-[13.5px] font-semibold text-foreground">Auto-download media</p>
+							<p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
+								Automatically download photos and videos when connected to Wi-Fi
+							</p>
+						</div>
+						<button
+							onClick={() => setAutoDownload((v) => !v)}
+							role="switch"
+							aria-checked={autoDownload}
+							className={cn(
+								"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors cursor-pointer shrink-0 mt-0.5",
+								autoDownload ? "bg-primary" : "bg-muted-foreground/30",
+							)}
+						>
+							<div
+								className={cn(
+									"w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200",
+									autoDownload ? "translate-x-4" : "translate-x-0",
+								)}
+							/>
+						</button>
+					</div>
+				</div>
+
+				{/* Reset */}
+				<button
+					onClick={handleReset}
+					disabled={resetting || resetDone}
+					className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
+				>
+					{resetting ? (
+						<>
+							<Loader2 size={13} className="animate-spin" /> Resetting…
+						</>
+					) : resetDone ? (
+						"Statistics reset"
+					) : (
+						<>
+							<RotateCcw size={13} />
+							Reset statistics
+						</>
+					)}
+				</button>
+			</div>
+		</div>
+	)
 }
 
 const SECTIONS: Section[] = [
@@ -318,6 +999,18 @@ const SECTIONS: Section[] = [
 				icon: <ReportProblem size={18} />,
 			},
 			{
+				id: "faq",
+				label: "FAQ",
+				description: "Find answers to commonly asked questions",
+				icon: <HelpCircle size={18} />,
+			},
+			{
+				id: "ask-question",
+				label: "Ask a question",
+				description: "Submit a question and our team will respond within 2 business days",
+				icon: <MessageCircle size={18} />,
+			},
+			{
 				id: "terms",
 				label: "Terms & Conditions",
 				description: "Read our Terms & Conditions",
@@ -346,6 +1039,11 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	deactivate: DeleteAccountPanel,
 	terms: TermsSettingsPanel,
 	"privacy-policy": PrivacyPolicySettingsPanel,
+	faq: FAQPanel,
+	"ask-question": AskQuestionPanel,
+	"app-language": AppLanguagePanel,
+	"storage-usage": StorageUsagePanel,
+	"network-usage": NetworkUsagePanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
@@ -358,9 +1056,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "group-tones", title: "Group tones" },
 	{ id: "chat-backup", title: "Chat backup" },
 	{ id: "linked-devices", title: "Linked devices" },
-	{ id: "storage-usage", title: "Storage usage" },
-	{ id: "network-usage", title: "Network usage" },
-	{ id: "app-language", title: "App language" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
 
