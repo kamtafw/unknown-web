@@ -99,7 +99,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const remaining = 4 - mediaItems.length
 		const files = Array.from(e.target.files ?? []).slice(0, remaining)
-
 		files.forEach((file) => {
 			const id = crypto.randomUUID()
 			const preview = URL.createObjectURL(file)
@@ -109,7 +108,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 			])
 			uploadFile(id, file)
 		})
-
 		e.target.value = ""
 	}
 
@@ -160,7 +158,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 	const handleSubmit = () => {
 		if (!canSubmit) return
-
 		const hashtags = extractHashtags(text)
 		const payload: AddCommentPayload = {
 			post: post.pkid,
@@ -179,7 +176,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 	const postAuthorName =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
-
 	const myName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 		: ""
@@ -194,18 +190,16 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 		>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-
-				<Dialog.Content
-					className="
-						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
-						w-full max-w-150 max-h-[85vh]
-						bg-white rounded-2xl shadow-2xl
-						flex flex-col
-						focus:outline-none
-						data-[state=open]:animate-in data-[state=closed]:animate-out
-						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
-						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
-					"
+				<Dialog.Content className="
+				fixed left-1/2 top-[15%] -translate-x-1/2 z-50
+				w-full max-w-150 max-h-[85vh]
+				bg-card border border-border rounded-2xl shadow-2xl
+				flex flex-col
+				focus:outline-none
+				data-[state=open]:animate-in data-[state=closed]:animate-out
+				data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+				data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+				"
 				>
 					<Dialog.Title className="sr-only">Reply to post</Dialog.Title>
 					<Dialog.Description className="sr-only">
@@ -214,7 +208,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 					<div className="flex items-center px-4 pt-4 pb-2 shrink-0">
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
 								<X size={18} />
 							</button>
 						</Dialog.Close>
@@ -229,27 +223,25 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									first={post.user.first_name}
 									last={post.user.last_name}
 								/>
-
-								<div className="w-0.5 bg-gray-200 flex-1 mt-2 min-h-7" />
+								<div className="w-0.5 bg-border flex-1 mt-2 min-h-7" />
 							</div>
-
 							<div className="flex-1 min-w-0 pb-3">
 								<div className="flex items-center gap-1.5 flex-wrap">
-									<span className="font-semibold text-sm text-gray-900">{postAuthorName}</span>
-									<span className="text-gray-400 text-[13px]">@{post.user.username}</span>
+									<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
+									<span className="text-muted-foreground text-[13px]">@{post.user.username}</span>
 								</div>
 								{!!post.content_text && (
-									<p className="text-[13.5px] text-gray-700 leading-relaxed mt-0.5 line-clamp-3">
+									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">
 										{renderText(post.content_text)}
 									</p>
 								)}
-								<p className="text-[12px] text-gray-400 mt-1.5">
+								<p className="text-xs text-muted-foreground mt-1.5">
 									Replying to <span className="text-primary">@{post.user.username}</span>
 								</p>
 							</div>
 						</div>
 
-						{/* Reply input row */}
+						{/* Reply input */}
 						<div className="flex gap-3">
 							<div className="flex flex-col items-center shrink-0 pt-1">
 								<Avatar.Root className="w-10 h-10 rounded-full overflow-hidden">
@@ -258,7 +250,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 										alt={myName}
 										className="w-full h-full object-cover"
 									/>
-									<Avatar.Fallback className="w-full h-full bg-primary/40 text-white text-sm font-semibold flex items-center justify-center">
+									<Avatar.Fallback className="w-full h-full bg-primary/40 text-primary-foreground text-sm font-semibold flex items-center justify-center">
 										{getInitials(user?.first_name ?? "", user?.last_name ?? "")}
 									</Avatar.Fallback>
 								</Avatar.Root>
@@ -275,34 +267,28 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									placeholder="Post your comment"
 									rows={2}
 									autoFocus
-									className="w-full resize-none text-[15px] text-gray-900 placeholder:text-gray-400 outline-none bg-transparent leading-relaxed"
+									className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
 								/>
 
-								{/* Media grid */}
 								{mediaItems.length > 0 && (
 									<div
-										className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
-											mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-2"
-										}`}
+										className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
 									>
 										{mediaItems.map((item) => (
 											<div
 												key={item.id}
-												className="relative bg-gray-100 aspect-video rounded-lg overflow-hidden"
+												className="relative bg-muted aspect-video rounded-lg overflow-hidden"
 											>
 												{item.file.type.startsWith("video/") ? (
 													<video src={item.preview} className="w-full h-full object-cover" />
 												) : (
 													<Image src={item.preview} alt="" className="w-full h-full object-cover" />
 												)}
-												{/* Uploading overlay */}
 												{item.uploading && (
 													<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
 														<Loader2 size={22} className="animate-spin text-white" />
 													</div>
 												)}
-
-												{/* Error overlay with retry */}
 												{item.error && (
 													<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
 														<span className="text-white text-[11px]">Upload failed</span>
@@ -314,8 +300,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 														</button>
 													</div>
 												)}
-
-												{/* Remove (hidden while uploading) */}
 												{!item.uploading && (
 													<button
 														onClick={() => removeMedia(item.id)}
@@ -329,7 +313,6 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									</div>
 								)}
 
-								{/* Location badge */}
 								{locationLabel && (
 									<div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
 										<MapPin size={11} />
@@ -346,15 +329,14 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									</div>
 								)}
 
-								{/* Emoji picker */}
 								{showEmoji && (
-									<div className="mt-2 p-2 border border-gray-200 rounded-xl bg-white shadow-lg">
+									<div className="mt-2 p-2 border border-border rounded-xl bg-card shadow-lg">
 										<div className="grid grid-cols-10 gap-0.5">
 											{EMOJIS.map((e) => (
 												<button
 													key={e}
 													onClick={() => handleEmojiClick(e)}
-													className="w-8 h-8 text-lg rounded hover:bg-gray-100 flex items-center justify-center transition-colors"
+													className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
 												>
 													{e}
 												</button>
@@ -366,9 +348,8 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 shrink-0">
+					<div className="flex items-center justify-between px-4 py-3 border-t border-border shrink-0">
 						<div className="flex items-center gap-0.5">
-							{/* Media */}
 							<button
 								onClick={() => fileInputRef.current?.click()}
 								disabled={mediaItems.length >= 4}
@@ -385,41 +366,32 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 								className="hidden"
 								onChange={handleMediaSelect}
 							/>
-
-							{/* Emoji */}
 							<button
 								onClick={() => setShowEmoji((v) => !v)}
 								title="Add emoji"
-								className={`p-2 rounded-full transition-colors ${
-									showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"
-								}`}
+								className={`p-2 rounded-full transition-colors ${showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"}`}
 							>
 								<Smile size={22} />
 							</button>
-
-							{/* Location */}
 							<button
 								onClick={handleLocation}
 								disabled={fetchingLocation}
 								title={locationLabel ? "Remove location" : "Add location"}
-								className={`p-2 rounded-full transition-colors disabled:opacity-50 ${
-									locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"
-								}`}
+								className={`p-2 rounded-full transition-colors disabled:opacity-50 ${locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"}`}
 							>
 								<MapPin size={22} />
 							</button>
 						</div>
-
 						<div className="flex items-center gap-3">
 							{anyUploading && (
-								<span className="text-xs text-gray-400 flex items-center gap-1.5">
+								<span className="text-xs text-muted-foreground flex items-center gap-1.5">
 									<Loader2 size={12} className="animate-spin" /> Uploading…
 								</span>
 							)}
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit || addComment.isPending}
-								className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+								className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
 							>
 								{addComment.isPending ? "Replying…" : "Reply"}
 							</button>

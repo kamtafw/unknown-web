@@ -54,21 +54,21 @@ import {
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 			<button
 				onClick={onBack}
-				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+				className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 				aria-label="Go back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" />
+				<ArrowLeft size={15} className="text-muted-foreground" />
 			</button>
-			<h2 className="font-bold text-gray-900 text-[15.5px]">{title}</h2>
+			<h2 className="font-bold text-foreground text-[15.5px]">{title}</h2>
 		</div>
 	)
 }
 
 function StickyFooter({ children }: { children: React.ReactNode }) {
-	return <div className="shrink-0 px-6 py-4 border-t border-gray-50 bg-white">{children}</div>
+	return <div className="shrink-0 px-6 py-4 border-t border-border bg-card">{children}</div>
 }
 
 function ActionButton({
@@ -90,7 +90,7 @@ function ActionButton({
 				"w-full h-12 rounded-full text-[14px] text-white font-semibold transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
 				variant === "destructive"
 					? "bg-destructive hover:bg-destructive/90"
-					: "bg-primary hover:bg-primary/85",
+					: "bg-primary hover:bg-primary/85 text-primary-foreground",
 			)}
 		>
 			{children}
@@ -110,20 +110,20 @@ function RadioItem({
 	return (
 		<div
 			className={cn(
-				"flex gap-4 py-4 border-b border-gray-100 last:border-0",
+				"flex gap-4 py-4 border-b border-border last:border-0",
 				description ? "items-start" : "items-center",
 			)}
 		>
 			<RadioGroup.Item
 				value={value}
-				className="shrink-0 w-5.5 h-5.5 rounded-full border-2 border-gray-300 mt-0.5 focus:outline-none data-[state=checked]:border-primary flex items-center justify-center transition-colors cursor-pointer"
+				className="shrink-0 w-5.5 h-5.5 rounded-full border-2 border-input mt-0.5 focus:outline-none data-[state=checked]:border-primary flex items-center justify-center transition-colors cursor-pointer"
 			>
 				<RadioGroup.Indicator className="block w-2.75 h-2.75 rounded-full bg-primary" />
 			</RadioGroup.Item>
 			<div className="flex-1 min-w-0">
-				<p className="text-[13.5px] font-medium text-gray-900 leading-snug">{label}</p>
+				<p className="text-[13.5px] font-medium text-foreground leading-snug">{label}</p>
 				{description && (
-					<p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+					<p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
 				)}
 			</div>
 		</div>
@@ -134,7 +134,7 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 	const [notificationsEnabled, setNotificationsEnabled] = useState(true)
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Security Notifications" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -143,10 +143,10 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 				</div>
 
 				<div className="px-6">
-					<h3 className="text-[15px] font-semibold text-gray-900 mb-3">
+					<h3 className="text-[15px] font-semibold text-foreground mb-3">
 						Your chats and calls are private
 					</h3>
-					<p className="text-[13px] text-gray-500 leading-relaxed mb-4">
+					<p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
 						End to end encryption keeps your personal messages and calls between your and the people
 						your choose. Not even Appscombo can read or listen to them, this include:
 					</p>
@@ -158,8 +158,11 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 							"Location sharing",
 							"Status updates",
 						].map((item) => (
-							<li key={item} className="flex items-center gap-2.5 text-[13px] text-gray-600">
-								<span className="text-gray-400 text-base leading-none shrink-0">•</span>
+							<li
+								key={item}
+								className="flex items-center gap-2.5 text-[13px] text-muted-foreground"
+							>
+								<span className="text-muted-foreground/60 text-base leading-none shrink-0">•</span>
 								{item}
 							</li>
 						))}
@@ -168,21 +171,21 @@ export function SecurityNotificationsPanel({ onBack }: { onBack: () => void }) {
 						Learn More
 					</button>
 
-					<hr className="border-gray-100 mb-6" />
+					<hr className="border-border mb-6" />
 
 					<div className="flex items-start justify-between gap-4 mb-3">
-						<h3 className="text-[15px] font-semibold text-gray-900 flex-1 leading-snug">
+						<h3 className="text-[15px] font-semibold text-foreground flex-1 leading-snug">
 							Show security notification on this device
 						</h3>
 						<Switch.Root
 							checked={notificationsEnabled}
 							onCheckedChange={setNotificationsEnabled}
-							className="shrink-0 w-12 h-6 rounded-full bg-gray-200 data-[state=checked]:bg-primary transition-colors focus:outline-none mt-0.5 cursor-pointer"
+							className="shrink-0 w-12 h-6 rounded-full bg-muted-foreground/25 data-[state=checked]:bg-primary transition-colors focus:outline-none mt-0.5 cursor-pointer"
 						>
-							<Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-x-0.5 data-[state=checked]:translate-x-6" />
+							<Switch.Thumb className="block w-5 h-5 bg-background shadow-sm transition-transform translate-x-0.5 data-[state=checked]:translate-x-6" />
 						</Switch.Root>
 					</div>
-					<p className="text-[13px] text-gray-500 leading-relaxed mb-3">
+					<p className="text-[13px] text-muted-foreground leading-relaxed mb-3">
 						Get notified when your security code changes for a contact&apos;s phone in an end-to-end
 						encrypted chat, if you have multiple devices, this settings must be enabled on each
 						devices where you want to get notification
@@ -239,12 +242,12 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Report A Problem" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				<div className="px-6 pt-5 pb-8">
-					<h3 className="text-sm font-semibold text-gray-900 mb-3">What&apos;s the issue?</h3>
+					<h3 className="text-sm font-semibold text-foreground mb-3">What&apos;s the issue?</h3>
 
 					<RadioGroup.Root
 						value={selected}
@@ -258,8 +261,9 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 					</RadioGroup.Root>
 
 					<div className="mt-5">
-						<h3 className="text-sm font-semibold text-gray-900 mb-3">
-							Additional details <span className="text-gray-400 font-normal">(optional)</span>
+						<h3 className="text-sm font-semibold text-foreground mb-3">
+							Additional details{" "}
+							<span className="text-muted-foreground font-normal">(optional)</span>
 						</h3>
 						<div className="relative">
 							<textarea
@@ -267,9 +271,9 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 								onChange={(e) => setFeedback(e.target.value.slice(0, MAX))}
 								placeholder="Tell us more about the problem..."
 								rows={3}
-								className="w-full resize-none rounded-xl border border-primary/60 focus:border-primary px-4 py-3 pb-7 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-1 focus:ring-primary/20 transition-colors leading-relaxed"
+								className="w-full resize-none rounded-xl border border-primary/60 focus:border-primary px-4 py-3 pb-7 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/20 transition-colors leading-relaxed bg-card"
 							/>
-							<span className="absolute bottom-3 right-3 text-xs text-gray-400 tabular-nums pointer-events-none">
+							<span className="absolute bottom-3 right-3 text-xs text-muted-foreground tabular-nums pointer-events-none">
 								{feedback.length}/{MAX}
 							</span>
 						</div>
@@ -313,7 +317,7 @@ function StepDots({ step }: { step: 1 | 2 }) {
 					key={s}
 					className={cn(
 						"w-2 h-2 rounded-full transition-colors",
-						step === s ? "bg-primary" : "bg-gray-200",
+						step === s ? "bg-primary" : "bg-muted",
 					)}
 				/>
 			))}
@@ -334,7 +338,7 @@ function PinOtpField({ autoFocus }: { autoFocus?: boolean }) {
 			{Array.from({ length: CODE_LENGTH }).map((_, i) => (
 				<OneTimePasswordField.Input
 					key={i}
-					className="flex-1 min-w-0 max-w-12 h-12 sm:h-13 text-center text-lg font-semibold bg-gray-100 text-gray-900 rounded-xl border-2 border-transparent focus:outline-none focus:border-primary caret-primary transition-colors duration-150"
+					className="flex-1 min-w-0 max-w-12 h-12 sm:h-13 text-center text-lg font-semibold bg-muted text-foreground rounded-xl border-2 border-transparent focus:outline-none focus:border-primary caret-primary transition-colors duration-150"
 				/>
 			))}
 			<OneTimePasswordField.HiddenInput />
@@ -361,14 +365,14 @@ function ConfirmMethodDialog({
 					className="
 						fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60
 						w-[calc(100%-2rem)] max-w-100
-						bg-white rounded-3xl shadow-2xl px-6 py-7
+						bg-card border border-border rounded-3xl shadow-2xl px-6 py-7
 						focus:outline-none
 						data-[state=open]:animate-in data-[state=closed]:animate-out
 						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
 						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
 					"
 				>
-					<Dialog.Title className="text-[15px] font-semibold text-gray-900 leading-snug mb-8">
+					<Dialog.Title className="text-[15px] font-semibold text-foreground leading-snug mb-8">
 						Confirm you want to use {methodLabel} verification for 2FA
 					</Dialog.Title>
 					<Dialog.Description className="sr-only">
@@ -377,7 +381,7 @@ function ConfirmMethodDialog({
 
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="text-sm font-regular text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+							<button className="text-sm font-regular text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
 								Close
 							</button>
 						</Dialog.Close>
@@ -415,14 +419,14 @@ function ConfirmPasswordStep({ onBack, onSuccess }: { onBack: () => void; onSucc
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Google Authenticator" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
 				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-5">
 					<div>
-						<h3 className="text-[15px] font-bold text-gray-900 mb-1">Enter your password</h3>
-						<p className="text-[13px] text-gray-500 leading-relaxed">
+						<h3 className="text-[15px] font-bold text-foreground mb-1">Enter your password</h3>
+						<p className="text-[13px] text-muted-foreground leading-relaxed">
 							To get started, first enter your AppsCombo password to confirm it&apos;s really you
 						</p>
 					</div>
@@ -431,10 +435,10 @@ function ConfirmPasswordStep({ onBack, onSuccess }: { onBack: () => void; onSucc
 						<div
 							className={cn(
 								"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
-								error ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+								error ? "border-destructive" : "border-input focus-within:border-primary",
 							)}
 						>
-							<Lock size={16} className="text-gray-400 shrink-0" />
+							<Lock size={16} className="text-muted-foreground shrink-0" />
 							<input
 								type={showPassword ? "text" : "password"}
 								value={password}
@@ -444,12 +448,12 @@ function ConfirmPasswordStep({ onBack, onSuccess }: { onBack: () => void; onSucc
 								}}
 								placeholder="Enter password"
 								autoFocus
-								className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+								className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword((v) => !v)}
-								className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+								className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 							>
 								{showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 							</button>
@@ -501,28 +505,28 @@ function ShowKeyStep({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Google Authenticator" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 				<div className="flex flex-col items-center px-6 pt-8 gap-5">
-					<div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+					<div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center shrink-0">
 						<GoogleAuthenticator width={80} height={80} />
 					</div>
 
 					<div className="text-center">
-						<p className="text-[15px] font-bold text-gray-900 mb-1">
+						<p className="text-[15px] font-bold text-foreground mb-1">
 							Copy key and add to Google Authenticator
 						</p>
-						<p className="text-[13px] text-gray-500">(Google Authenticator)</p>
+						<p className="text-[13px] text-muted-foreground">(Google Authenticator)</p>
 					</div>
 
-					<div className="w-full flex items-center gap-3 px-4 h-12 rounded-xl border border-gray-200 bg-gray-50">
+					<div className="w-full flex items-center gap-3 px-4 h-12 rounded-xl border border-border bg-muted">
 						{isLoading || !secret ? (
-							<Loader2 size={14} className="animate-spin text-gray-400 mx-auto" />
+							<Loader2 size={14} className="animate-spin text-muted-foreground mx-auto" />
 						) : (
 							<>
-								<span className="text-[13px] font-mono text-gray-800 break-all leading-relaxed flex-1">
+								<span className="text-[13px] font-mono text-foreground break-all leading-relaxed flex-1">
 									{secret}
 								</span>
 								<button
@@ -538,8 +542,8 @@ function ShowKeyStep({
 
 					{!isLoading && secret && (
 						<div className="flex flex-col items-center gap-2 pt-1">
-							<p className="text-[12.5px] text-gray-500">Or scan with your camera</p>
-							<div className="w-40 h-40 rounded-xl border border-gray-200 bg-white p-2 overflow-hidden">
+							<p className="text-[12.5px] text-muted-foreground">Or scan with your camera</p>
+							<div className="w-40 h-40 rounded-xl border border-border bg-card p-2 overflow-hidden">
 								<Image
 									src={`/api/auth/generate-2fa-qrcode?email=${encodeURIComponent(email)}`}
 									alt="Scan to set up Google Authenticator"
@@ -582,7 +586,7 @@ function VerifyTotpStep({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Google Authenticator" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
@@ -598,7 +602,7 @@ function VerifyTotpStep({
 						</Form.Message>
 					</Form.Field>
 
-					<p className="text-center text-[13px] text-gray-500 leading-relaxed">
+					<p className="text-center text-[13px] text-muted-foreground leading-relaxed">
 						Enter code generated in your google authenticator app
 					</p>
 
@@ -677,8 +681,6 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 			setTotpSecret(null)
 			setStep("confirm-password")
 		} else if (step === "confirm-password") {
-			// setPassword("")
-			// setPasswordError(null)
 			setStep("select")
 		} else {
 			onBack()
@@ -801,7 +803,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 		const isConfirm = step === "confirm-pin"
 
 		return (
-			<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<div className="border-l border-border h-full flex flex-col overflow-hidden">
 				<PanelHeader title="Two step verification" onBack={handleBack} />
 
 				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 pt-8">
@@ -810,7 +812,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 						onSubmit={isConfirm ? handleConfirmPinSubmit : handleCreatePinSubmit}
 						className="flex flex-col gap-5"
 					>
-						<h3 className="text-center text-[15px] font-semibold text-gray-900 mb-1">
+						<h3 className="text-center text-[15px] font-semibold text-foreground mb-1">
 							{isConfirm ? "Confirm your PIN" : "Create a 6 digit PIN that you can remember"}
 						</h3>
 
@@ -841,7 +843,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Two step verification" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -850,7 +852,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 				</div>
 
 				<div className="px-6">
-					<p className="text-[13.5px] text-gray-500 leading-relaxed mb-2">
+					<p className="text-[13.5px] text-muted-foreground leading-relaxed mb-2">
 						For extra security, turn on two-step verification, which will require a PIN when
 						registering your phone number with Appscombo again.
 					</p>
@@ -858,7 +860,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 						Learn More
 					</button>
 
-					<hr className="border-gray-100 my-5" />
+					<hr className="border-border my-5" />
 
 					<RadioGroup.Root
 						value={method}
@@ -890,7 +892,7 @@ export function TwoStepVerificationPanel({ onBack }: { onBack: () => void }) {
 
 export function ChangePhonePanel({ onBack }: { onBack: () => void }) {
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Change phone number" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -899,14 +901,14 @@ export function ChangePhonePanel({ onBack }: { onBack: () => void }) {
 				</div>
 
 				<div className="px-6 pt-2">
-					<h3 className="text-[15.5px] font-semibold text-gray-900 mb-3 leading-snug">
+					<h3 className="text-[15.5px] font-semibold text-foreground mb-3 leading-snug">
 						Changing your phone number will migrate your account info, groups and settings.
 					</h3>
-					<p className="text-[13px] text-gray-500 leading-relaxed mb-2.5">
+					<p className="text-[13px] text-muted-foreground leading-relaxed mb-2.5">
 						Before proceeding, please confirm that you are able to receive SMS or calls at your new
 						number.
 					</p>
-					<p className="text-[13px] text-gray-500 leading-relaxed">
+					<p className="text-[13px] text-muted-foreground leading-relaxed">
 						If you have both a new phone and a new number, first change your new number on your old
 						phone.
 					</p>
@@ -1050,14 +1052,14 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 		const formatted = deletionDate ? dayjs(deletionDate).format("MMMM D, YYYY") : "within 7 days"
 
 		return (
-			<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
-				<div className="flex items-center px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-					<h2 className="font-bold text-gray-900 text-[15.5px]">Deletion scheduled</h2>
+			<div className="border-l border-border h-full flex flex-col overflow-hidden">
+				<div className="flex items-center px-6 pt-5 pb-4 border-b border-border shrink-0">
+					<h2 className="font-bold text-foreground text-[15.5px]">Deletion scheduled</h2>
 				</div>
 
 				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col items-center justify-center px-6 py-10 text-center gap-5">
 					<div className="relative">
-						<div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+						<div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
 							<Calendar size={24} className="text-amber-500" />
 						</div>
 						<div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive flex items-center justify-center">
@@ -1066,17 +1068,17 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 					</div>
 
 					<div className="space-y-2">
-						<h3 className="text-[15.5px] font-bold text-gray-900 leading-tight">
+						<h3 className="text-[15.5px] font-bold text-foreground leading-tight">
 							Your account is scheduled for deletion
 						</h3>
-						<p className="text-[13px] text-gray-500 leading-relaxed">
+						<p className="text-[13px] text-muted-foreground leading-relaxed">
 							All your data will be permanently deleted on{" "}
-							<span className="font-semibold text-gray-800">{formatted}</span>.
+							<span className="font-semibold text-foreground">{formatted}</span>.
 						</p>
 					</div>
 
-					<div className="w-full p-4 bg-amber-50 border border-amber-100 rounded-xl text-left">
-						<p className="text-[12.5px] text-amber-700 leading-relaxed">
+					<div className="w-full p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-left">
+						<p className="text-[12.5px] text-amber-600 leading-relaxed">
 							<span className="font-semibold">Changed your mind?</span> Sign back in before{" "}
 							<span className="font-semibold">{formatted}</span> to cancel the deletion. After that
 							date, recovery will not be possible.
@@ -1105,14 +1107,14 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 
 	if (step === "confirm") {
 		return (
-			<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+			<div className="border-l border-border h-full flex flex-col overflow-hidden">
 				<PanelHeader title="Delete account" onBack={() => setStep("credentials")} />
 
 				<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
 					<Form.Root onSubmit={handleConfirm} className="flex flex-col">
 						<div className="px-6 pt-5 pb-4">
-							<h3 className="text-[14px] font-bold text-gray-900 mb-0.5">Why are you leaving?</h3>
-							<p className="text-[12.5px] text-gray-500 mb-4">
+							<h3 className="text-[14px] font-bold text-foreground mb-0.5">Why are you leaving?</h3>
+							<p className="text-[12.5px] text-muted-foreground mb-4">
 								Your feedback helps us improve AppsCombo.
 							</p>
 
@@ -1127,13 +1129,13 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 												setReason(r.value)
 												setConfirmErrors((p) => ({ ...p, reason: "" }))
 											}}
-											className="flex items-center gap-4 py-4 transition-all cursor-pointer text-left w-full focus:outline-none border-b border-gray-100 last:border-0"
+											className="flex items-center gap-4 py-4 transition-all cursor-pointer text-left w-full focus:outline-none border-b border-border last:border-0"
 										>
 											<RadioGroup.Item
 												value={r.value}
 												className={cn(
 													"w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-													isSelected ? "border-destructive bg-destructive" : "border-gray-300",
+													isSelected ? "border-destructive bg-destructive" : "border-input",
 												)}
 											>
 												<RadioGroup.Indicator className="block w-2 h-2 rounded-full bg-white" />
@@ -1142,12 +1144,12 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 												<p
 													className={cn(
 														"text-[13px] font-semibold leading-tight",
-														isSelected ? "text-destructive" : "text-gray-900",
+														isSelected ? "text-destructive" : "text-foreground",
 													)}
 												>
 													{r.label}
 												</p>
-												<p className="text-[11.5px] text-gray-400 mt-0.5 leading-snug">
+												<p className="text-[11.5px] text-muted-foreground mt-0.5 leading-snug">
 													{r.description}
 												</p>
 											</div>
@@ -1163,15 +1165,15 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 
 						{reason && (
 							<div className="px-6 pb-4">
-								<div className="relative rounded-xl border border-gray-200 focus-within:border-primary transition-colors">
+								<div className="relative rounded-xl border border-input focus-within:border-primary transition-colors">
 									<textarea
 										value={feedback}
 										onChange={(e) => setFeedback(e.target.value.slice(0, MAX_FEEDBACK))}
 										placeholder="Anything else you'd like to share? (optional)"
 										rows={3}
-										className="w-full px-4 pt-3.5 pb-7 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+										className="w-full px-4 pt-3.5 pb-7 text-sm text-foreground bg-transparent resize-none outline-none leading-relaxed placeholder:text-muted-foreground"
 									/>
-									<span className="absolute bottom-2.5 right-3.5 text-xs text-gray-300 tabular-nums pointer-events-none">
+									<span className="absolute bottom-2.5 right-3.5 text-xs text-muted-foreground/60 tabular-nums pointer-events-none">
 										{feedback.length}/{MAX_FEEDBACK}
 									</span>
 								</div>
@@ -1198,7 +1200,7 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Delete account" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -1206,7 +1208,7 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 					<DeleteAccount width={80} height={80} />
 				</div>
 
-				<div className="mx-6 mb-5 p-4 bg-red-50 border border-red-100 rounded-xl">
+				<div className="mx-6 mb-5 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
 					<p className="text-[12.5px] font-semibold text-destructive mb-2.5 flex items-center gap-1.5">
 						<AlertCircle size={13} strokeWidth={2.5} />
 						This action is permanent and cannot be undone
@@ -1215,9 +1217,9 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 						{DELETION_CONSEQUENCES.map((c) => (
 							<li
 								key={c}
-								className="flex items-start gap-2 text-xs text-red-600/80 leading-relaxed"
+								className="flex items-start gap-2 text-xs text-destructive/80 leading-relaxed"
 							>
-								<span className="w-1 h-1 rounded-full bg-red-400 mt-1.5 shrink-0 block" />
+								<span className="w-1 h-1 rounded-full bg-destructive/60 mt-1.5 shrink-0 block" />
 								{c}
 							</li>
 						))}
@@ -1228,26 +1230,26 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 					<Form.Root onSubmit={handleCredentials} className="flex flex-col gap-4">
 						{/* email — read-only, shows user is deleting the right account */}
 						<div className="flex flex-col gap-1.5">
-							<p className="text-sm font-semibold text-gray-900">Email address</p>
-							<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-gray-100 bg-gray-50">
-								<Mail size={15} className="text-gray-400 shrink-0" />
-								<span className="flex-1 text-sm text-gray-400 truncate">{email}</span>
-								<Lock size={12} className="text-gray-300 shrink-0" />
+							<p className="text-sm font-semibold text-foreground">Email address</p>
+							<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-border bg-muted">
+								<Mail size={15} className="text-muted-foreground shrink-0" />
+								<span className="flex-1 text-sm text-muted-foreground truncate">{email}</span>
+								<Lock size={12} className="text-muted-foreground/50 shrink-0" />
 							</div>
 						</div>
 
 						{/* password */}
 						<div className="flex flex-col gap-1.5">
-							<p className="text-sm font-semibold text-gray-900">Password</p>
+							<p className="text-sm font-semibold text-foreground">Password</p>
 							<div
 								className={cn(
 									"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
 									credentialsError
 										? "border-destructive"
-										: "border-gray-200 focus-within:border-primary",
+										: "border-input focus-within:border-primary",
 								)}
 							>
-								<Lock size={15} className="text-gray-400 shrink-0" />
+								<Lock size={15} className="text-muted-foreground shrink-0" />
 								<input
 									type={showPassword ? "text" : "password"}
 									value={password}
@@ -1258,12 +1260,12 @@ export function DeleteAccountPanel({ onBack }: { onBack: () => void }) {
 									placeholder="Enter your password"
 									autoFocus
 									autoComplete="current-password"
-									className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+									className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
 								/>
 								<button
 									type="button"
 									onClick={() => setShowPassword((v) => !v)}
-									className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+									className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 								>
 									{showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 								</button>
@@ -1325,10 +1327,10 @@ function ChangePasswordStepBar({ step }: { step: ChangePwStep }) {
 							className={cn(
 								"w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300",
 								done
-									? "bg-primary text-white"
+									? "bg-primary text-primary-foreground"
 									: active
-										? "bg-primary text-white ring-[3px] ring-primary/20"
-										: "bg-gray-100 text-gray-400",
+										? "bg-primary text-primary-foreground ring-[3px] ring-primary/20"
+										: "bg-muted text-muted-foreground",
 							)}
 						>
 							{done ? <Check size={13} strokeWidth={3} /> : n}
@@ -1337,7 +1339,7 @@ function ChangePasswordStepBar({ step }: { step: ChangePwStep }) {
 							<div
 								className={cn(
 									"w-10 h-0.5 rounded-full transition-all duration-500",
-									done ? "bg-primary" : "bg-gray-100",
+									done ? "bg-primary" : "bg-muted",
 								)}
 							/>
 						)}
@@ -1446,7 +1448,7 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 	const allRulesPass = PW_RULES.every((r) => r.test(newPassword))
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Change Password" onBack={handleBack} />
 			<ChangePasswordStepBar step={step} />
 
@@ -1459,8 +1461,8 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 								<Lock size={28} className="text-primary" strokeWidth={1.75} />
 							</div>
 							<div className="text-center">
-								<p className="font-semibold text-gray-900">Verify it&apos;s you</p>
-								<p className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">
+								<p className="font-semibold text-foreground">Verify it&apos;s you</p>
+								<p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">
 									Enter your current password to continue
 								</p>
 							</div>
@@ -1468,7 +1470,7 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 
 						<Form.Root onSubmit={handleConfirmPasswordSubmit} className="flex flex-col gap-4">
 							<Form.Field name="password" className="flex flex-col gap-1.5">
-								<Form.Label className="text-sm font-medium text-gray-800">
+								<Form.Label className="text-sm font-medium text-foreground">
 									Current Password
 								</Form.Label>
 								<div
@@ -1476,10 +1478,10 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 										"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
 										currentPasswordError
 											? "border-destructive"
-											: "border-gray-200 focus-within:border-primary",
+											: "border-input focus-within:border-primary",
 									)}
 								>
-									<Lock size={16} className="text-gray-400 shrink-0" />
+									<Lock size={16} className="text-muted-foreground shrink-0" />
 									<Form.Control asChild>
 										<input
 											type={showCurrentPassword ? "text" : "password"}
@@ -1491,13 +1493,13 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 											placeholder="Enter current password"
 											autoFocus
 											autoComplete="current-password"
-											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+											className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
 										/>
 									</Form.Control>
 									<button
 										type="button"
 										onClick={() => setShowCurrentPassword((v) => !v)}
-										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+										className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 									>
 										{showCurrentPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 									</button>
@@ -1526,13 +1528,15 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 				{step === "otp" && (
 					<div className="px-6 pt-2 pb-8 flex flex-col gap-5">
 						<div className="flex flex-col items-center gap-3 py-4">
-							<div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center">
+							<div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
 								<Mail size={28} className="text-amber-500" strokeWidth={1.75} />
 							</div>
 							<div className="text-center">
-								<p className="font-semibold text-gray-900">Check your email</p>
-								<p className="text-[13px] text-gray-500 mt-0.5">We sent a 6-digit code to</p>
-								<p className="text-[13px] font-semibold text-gray-800 mt-0.5">
+								<p className="font-semibold text-foreground">Check your email</p>
+								<p className="text-[13px] text-muted-foreground mt-0.5">
+									We sent a 6-digit code to
+								</p>
+								<p className="text-[13px] font-semibold text-foreground mt-0.5">
 									{user?.email ? maskEmail(user.email) : "your email"}
 								</p>
 							</div>
@@ -1555,7 +1559,7 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 											flex-1 min-w-0
 											max-w-11 h-12
 											text-center text-lg font-semibold
-											bg-gray-200 text-gray-900 rounded-xl
+											bg-muted text-foreground rounded-xl
 											border-2 border-transparent
 											focus:outline-none focus:border-primary
 											caret-primary transition-colors"
@@ -1595,17 +1599,19 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 				{step === "new-password" && (
 					<div className="px-6 pt-2 pb-8 flex flex-col gap-5">
 						<div className="py-2">
-							<p className="font-semibold text-gray-900">Create new password</p>
-							<p className="text-[13px] text-gray-500 mt-0.5">
+							<p className="font-semibold text-foreground">Create new password</p>
+							<p className="text-[13px] text-muted-foreground mt-0.5">
 								Make it strong and different from your previous one
 							</p>
 						</div>
 
 						<Form.Root onSubmit={handleNewPasswordSubmit} className="flex flex-col gap-4">
 							<Form.Field name="password" className="flex flex-col gap-2">
-								<Form.Label className="text-sm font-medium text-gray-800">New Password</Form.Label>
-								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-gray-200 focus-within:border-primary transition-colors">
-									<Lock size={15} className="text-gray-400 shrink-0" />
+								<Form.Label className="text-sm font-medium text-foreground">
+									New Password
+								</Form.Label>
+								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-input focus-within:border-primary transition-colors">
+									<Lock size={15} className="text-muted-foreground shrink-0" />
 									<Form.Control asChild>
 										<input
 											type={showNewPassword ? "text" : "password"}
@@ -1615,13 +1621,13 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 											placeholder="Enter new password"
 											autoFocus
 											autoComplete="new-password"
-											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+											className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
 										/>
 									</Form.Control>
 									<button
 										type="button"
 										onClick={() => setShowNewPassword((v) => !v)}
-										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+										className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 									>
 										{showNewPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 									</button>
@@ -1640,12 +1646,16 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 															strokeWidth={2.5}
 														/>
 													) : (
-														<Circle size={13} className="text-gray-300 shrink-0" strokeWidth={2} />
+														<Circle
+															size={13}
+															className="text-muted-foreground/40 shrink-0"
+															strokeWidth={2}
+														/>
 													)}
 													<span
 														className={cn(
 															"text-[11px] leading-tight",
-															passes ? "text-gray-700" : "text-gray-400",
+															passes ? "text-foreground/80" : "text-muted-foreground",
 														)}
 													>
 														{label}
@@ -1658,24 +1668,24 @@ export function ChangePasswordPanel({ onBack }: { onBack: () => void }) {
 							</Form.Field>
 
 							<Form.Field name="confirm" className="flex flex-col gap-2">
-								<Form.Label className="text-sm font-medium text-gray-800">
+								<Form.Label className="text-sm font-medium text-foreground">
 									Confirm Password
 								</Form.Label>
-								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-gray-200 focus-within:border-primary transition-colors">
-									<Lock size={15} className="text-gray-400 shrink-0" />
+								<div className="flex items-center gap-2.5 h-12 px-4 rounded-xl border border-input focus-within:border-primary transition-colors">
+									<Lock size={15} className="text-muted-foreground shrink-0" />
 									<Form.Control asChild>
 										<input
 											type={showConfirmPassword ? "text" : "password"}
 											name="confirm"
 											placeholder="Re-enter new password"
 											autoComplete="new-password"
-											className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 outline-none"
+											className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
 										/>
 									</Form.Control>
 									<button
 										type="button"
 										onClick={() => setShowConfirmPassword((v) => !v)}
-										className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+										className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 									>
 										{showConfirmPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 									</button>

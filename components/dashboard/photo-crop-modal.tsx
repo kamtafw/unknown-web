@@ -1,8 +1,8 @@
 "use client"
 
 import * as Dialog from "@radix-ui/react-dialog"
-import { Minus,Plus,X } from "lucide-react"
-import { useEffect,useRef,useState } from "react"
+import { Minus, Plus, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 interface PhotoCropModalProps {
 	open: boolean
@@ -28,13 +28,11 @@ export function PhotoCropModal({
 	onCrop,
 }: PhotoCropModalProps) {
 	const imgRef = useRef<HTMLImageElement>(null)
-
 	const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 })
 	const [baseScale, setBaseScale] = useState(1)
 	const [zoom, setZoom] = useState(1)
 	const [pan, setPan] = useState({ x: 0, y: 0 })
 	const [isDragging, setIsDragging] = useState(false)
-
 	const isDraggingRef = useRef(false)
 	const lastPointer = useRef({ x: 0, y: 0 })
 
@@ -43,9 +41,7 @@ export function PhotoCropModal({
 	const dH = naturalSize.h * totalScale
 	const maxPanX = Math.max(0, (dW - containerW) / 2)
 	const maxPanY = Math.max(0, (dH - containerH) / 2)
-
 	const clamp = (val: number, min: number, max: number) => Math.min(max, Math.max(min, val))
-
 	const imgLeft = (containerW - dW) / 2 + pan.x
 	const imgTop = (containerH - dH) / 2 + pan.y
 
@@ -64,7 +60,7 @@ export function PhotoCropModal({
 		e.currentTarget.setPointerCapture(e.pointerId)
 		isDraggingRef.current = true
 		lastPointer.current = { x: e.clientX, y: e.clientY }
-    setIsDragging(isDraggingRef.current)
+		setIsDragging(true)
 	}
 
 	const handlePointerMove = (e: React.PointerEvent) => {
@@ -80,7 +76,7 @@ export function PhotoCropModal({
 
 	const handlePointerUp = () => {
 		isDraggingRef.current = false
-    setIsDragging(isDraggingRef.current)
+		setIsDragging(false)
 	}
 
 	const handleZoomChange = (newZoom: number) => {
@@ -98,25 +94,20 @@ export function PhotoCropModal({
 	const handleCrop = () => {
 		const img = imgRef.current
 		if (!img || !naturalSize.w) return
-
 		const srcX = ((dW - containerW) / 2 - pan.x) / totalScale
 		const srcY = ((dH - containerH) / 2 - pan.y) / totalScale
 		const srcW = containerW / totalScale
 		const srcH = containerH / totalScale
-
 		const canvas = document.createElement("canvas")
 		canvas.width = outputW
 		canvas.height = outputH
 		const ctx = canvas.getContext("2d")!
-
 		if (shape === "circle") {
 			ctx.beginPath()
 			ctx.arc(outputW / 2, outputH / 2, Math.min(outputW, outputH) / 2, 0, Math.PI * 2)
 			ctx.clip()
 		}
-
 		ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outputW, outputH)
-
 		canvas.toBlob(
 			(blob) => {
 				if (blob) {
@@ -137,7 +128,6 @@ export function PhotoCropModal({
 	}, [open, imageSrc])
 
 	if (!imageSrc) return null
-
 	const modalWidth = Math.min(containerW + 48, 480)
 
 	return (
@@ -146,7 +136,7 @@ export function PhotoCropModal({
 				<Dialog.Overlay className="fixed inset-0 bg-black/70 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 				<Dialog.Content
 					onInteractOutside={(e) => e.preventDefault()}
-					className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 bg-white rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden"
+					className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 bg-card border border-border rounded-2xl shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden"
 					style={{ width: modalWidth, maxWidth: "calc(100vw - 2rem)" }}
 				>
 					<Dialog.Title className="sr-only">Crop photo</Dialog.Title>
@@ -154,16 +144,16 @@ export function PhotoCropModal({
 						Drag to reposition. Use the slider to zoom.
 					</Dialog.Description>
 
-					<div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-						<p className="font-semibold text-gray-900 text-[14.5px]">Crop photo</p>
+					<div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+						<p className="font-semibold text-foreground text-[14.5px]">Crop photo</p>
 						<Dialog.Close asChild>
-							<button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
 								<X size={15} />
 							</button>
 						</Dialog.Close>
 					</div>
 
-					{/* Crop stage */}
+					{/* Crop stage — intentionally dark background */}
 					<div className="flex items-center justify-center bg-[#111] py-5 px-4">
 						<div
 							className="relative overflow-hidden select-none"
@@ -204,11 +194,11 @@ export function PhotoCropModal({
 					</div>
 
 					{/* Zoom control */}
-					<div className="flex items-center gap-3 px-5 py-4 border-t border-gray-100">
+					<div className="flex items-center gap-3 px-5 py-4 border-t border-border">
 						<button
 							type="button"
 							onClick={() => handleZoomChange(zoom - 0.1)}
-							className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
+							className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors shrink-0"
 						>
 							<Minus size={15} />
 						</button>
@@ -224,7 +214,7 @@ export function PhotoCropModal({
 						<button
 							type="button"
 							onClick={() => handleZoomChange(zoom + 0.1)}
-							className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
+							className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors shrink-0"
 						>
 							<Plus size={15} />
 						</button>
@@ -234,7 +224,7 @@ export function PhotoCropModal({
 						<Dialog.Close asChild>
 							<button
 								type="button"
-								className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+								className="flex-1 h-10 rounded-xl border border-border text-[13px] font-semibold text-muted-foreground hover:bg-accent transition-colors"
 							>
 								Cancel
 							</button>
@@ -243,7 +233,7 @@ export function PhotoCropModal({
 							type="button"
 							onClick={handleCrop}
 							disabled={!naturalSize.w}
-							className="flex-1 h-10 rounded-xl bg-primary text-white text-[13px] font-semibold hover:bg-primary/85 disabled:opacity-40 transition-colors"
+							className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/85 disabled:opacity-40 transition-colors"
 						>
 							Apply
 						</button>

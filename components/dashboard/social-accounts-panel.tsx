@@ -16,7 +16,7 @@ function FacebookIcon({ size = 20 }: { size?: number }) {
 
 function XIcon({ size = 20 }: { size?: number }) {
 	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="black">
 			<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 		</svg>
 	)
@@ -33,28 +33,39 @@ function LinkedInIcon({ size = 20 }: { size?: number }) {
 type PlatformConfig = {
 	label: string
 	bgColor: string
+	bgColorDark: string
 	Icon: React.ComponentType<{ size?: number }>
 }
 
 const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
-	facebook: { label: "Facebook", bgColor: "#E7F0FD", Icon: FacebookIcon },
-	x: { label: "X", bgColor: "#F0F0F0", Icon: XIcon },
-	linkedin: { label: "LinkedIn", bgColor: "#E8F1F8", Icon: LinkedInIcon },
+	facebook: {
+		label: "Facebook",
+		bgColor: "#E7F0FD",
+		bgColorDark: "rgba(24,119,242,0.15)",
+		Icon: FacebookIcon,
+	},
+	x: { label: "X", bgColor: "#F0F0F0", bgColorDark: "rgba(255,255,255,0.1)", Icon: XIcon },
+	linkedin: {
+		label: "LinkedIn",
+		bgColor: "#E8F1F8",
+		bgColorDark: "rgba(10,102,194,0.15)",
+		Icon: LinkedInIcon,
+	},
 }
 
 const DEFAULT_PLATFORMS = ["facebook", "x", "linkedin"]
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 			<button
 				onClick={onBack}
-				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+				className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 				aria-label="Go back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 			</button>
-			<h2 className="font-bold text-gray-900 text-[15.5px]">{title}</h2>
+			<h2 className="font-bold text-foreground text-[15.5px]">{title}</h2>
 		</div>
 	)
 }
@@ -62,12 +73,12 @@ function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 function PlatformSkeleton() {
 	return (
 		<div className="flex items-center gap-3.5 px-6 py-4 animate-pulse">
-			<div className="w-10 h-10 rounded-xl bg-gray-200 shrink-0" />
+			<div className="w-10 h-10 rounded-xl bg-muted shrink-0" />
 			<div className="flex-1 space-y-1.5">
-				<div className="h-3 bg-gray-200 rounded-full w-1/4" />
-				<div className="h-2.5 bg-gray-200 rounded-full w-2/5" />
+				<div className="h-3 bg-muted rounded-full w-1/4" />
+				<div className="h-2.5 bg-muted rounded-full w-2/5" />
 			</div>
-			<div className="h-7 w-14 bg-gray-200 rounded-full shrink-0" />
+			<div className="h-7 w-14 bg-muted rounded-full shrink-0" />
 		</div>
 	)
 }
@@ -89,17 +100,17 @@ function UnlinkDialog({
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-white rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
-					<Dialog.Title className="font-bold text-gray-900 text-[15px] mb-1.5">
+				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+					<Dialog.Title className="font-bold text-foreground text-[15px] mb-1.5">
 						Disconnect {platformName}?
 					</Dialog.Title>
-					<Dialog.Description className="text-[13px] text-gray-500 leading-relaxed mb-6">
+					<Dialog.Description className="text-[13px] text-muted-foreground leading-relaxed mb-6">
 						Your {platformName} account will be unlinked from AppsCombo. You can reconnect it at any
 						time.
 					</Dialog.Description>
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="flex-1 text-sm font-semibold text-gray-600 hover:opacity-50 transition-colors cursor-pointer">
+							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-50 transition-colors cursor-pointer">
 								Cancel
 							</button>
 						</Dialog.Close>
@@ -147,19 +158,19 @@ function PlatformRow({ account, isLinking, isUnlinking, onLink, onUnlink }: Plat
 
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5">
-					<p className="text-[13.5px] font-semibold text-gray-900">{label}</p>
+					<p className="text-[13.5px] font-semibold text-foreground">{label}</p>
 					{account.linked && (
 						<CheckCircle2 size={13} className="text-green-500 shrink-0" strokeWidth={2.5} />
 					)}
 				</div>
-				<p className="text-[12px] text-gray-500 mt-0.5">
+				<p className="text-[12px] text-muted-foreground mt-0.5">
 					{account.linked ? "Connected" : "Not connected"}
 				</p>
 			</div>
 
 			{!account.linked ? (
 				<button
-					onClick={() => onLink()}
+					onClick={onLink}
 					disabled={isLinking}
 					className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
 				>
@@ -168,21 +179,19 @@ function PlatformRow({ account, isLinking, isUnlinking, onLink, onUnlink }: Plat
 				</button>
 			) : (
 				<div className="flex items-center gap-2">
-					{/* open linked profile */}
 					{account.platform_url && (
 						<button
 							onClick={() => window.open(account.platform_url, "_blank", "noopener,noreferrer")}
-							className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-green-50 text-green-700 hover:bg-green-100 transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap"
+							className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap"
 						>
 							<ExternalLink size={11} />
 							Open
 						</button>
 					)}
-					{/* unlink */}
 					<button
 						onClick={onUnlink}
 						disabled={isUnlinking}
-						className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-red-50 text-destructive hover:border-destructive hover:text-destructive transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+						className="shrink-0 text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
 					>
 						{isUnlinking ? <Loader2 size={12} className="animate-spin" /> : "Unlink"}
 					</button>
@@ -216,18 +225,14 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 		loginUrl.searchParams.set("redirect_uri", callbackUrl)
 
 		setOpeningPlatform(account.platform)
-
-		const w = 600
-		const h = 700
+		const w = 600,
+			h = 700
 		const left = Math.round((window.screen.width - w) / 2)
 		const top = Math.round((window.screen.height - h) / 2)
 		const features = `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
 		const popup = window.open(loginUrl.toString(), "oauth_popup", features)
-
 		popupRef.current = popup
 
-		// poll every 500ms; when Django redirects to the callback page,
-		// it closes itself, and we detect that here
 		const interval = setInterval(async () => {
 			if (!popup || popup.closed) {
 				clearInterval(interval)
@@ -242,9 +247,7 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 		if (!unlinkTarget) return
 		const account = accounts.find((a) => a.platform === unlinkTarget)
 		if (!account) return
-
 		const unlinkUrl = account.platform_login_url.replace(/\/link$/, "/unlink")
-
 		unlink.mutate(
 			{ platform: unlinkTarget, unlinkUrl },
 			{
@@ -256,15 +259,15 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 	const unlinkConfig = unlinkTarget ? PLATFORM_CONFIG[unlinkTarget] : null
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Link Social Accounts" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<p className="px-6 pt-5 pb-4 text-[12.5px] text-gray-500 leading-relaxed">
+				<p className="px-6 pt-5 pb-4 text-[12.5px] text-muted-foreground leading-relaxed">
 					Link your social accounts to AppsCombo for faster sign-in and cross-platform sharing.
 				</p>
 
-				<div className="mx-6 my-2 border-t border-gray-100" />
+				<div className="mx-6 my-2 border-t border-border" />
 
 				{isLoading
 					? DEFAULT_PLATFORMS.map((p) => <PlatformSkeleton key={p} />)
@@ -279,11 +282,10 @@ export function SocialAccountsPanel({ onBack }: { onBack: () => void }) {
 							/>
 						))}
 
-				<div className="mx-6 my-2 border-t border-gray-100" />
+				<div className="mx-6 my-2 border-t border-border" />
 
-				{/* footer note */}
 				{!isLoading && accounts.length > 0 && (
-					<p className="px-6 py-4 text-[12px] text-gray-400 leading-relaxed">
+					<p className="px-6 py-4 text-[12px] text-muted-foreground leading-relaxed">
 						Disconnecting a social account won&apos;t delete your AppsCombo account or the data
 						you&apos;ve shared.
 					</p>

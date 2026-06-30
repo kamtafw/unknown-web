@@ -168,44 +168,44 @@ function SearchableSelect({
 				className={cn(
 					"w-full flex items-center justify-between h-12 px-4 rounded-xl border transition-colors text-sm",
 					disabled
-						? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
+						? "bg-muted border-border cursor-not-allowed opacity-60"
 						: hasError
 							? "border-destructive"
 							: open
 								? "border-primary"
-								: "border-gray-200 hover:border-gray-300 bg-white cursor-pointer",
+								: "border-input hover:border-ring bg-card cursor-pointer",
 				)}
 			>
-				<span className={cn(selected ? "text-gray-900" : "text-gray-400")}>
+				<span className={cn(selected ? "text-foreground" : "text-muted-foreground")}>
 					{selected ? selected.label : placeholder}
 				</span>
 				<ChevronDown
 					size={16}
 					className={cn(
-						"text-gray-400 transition-transform duration-150 shrink-0",
+						"text-muted-foreground transition-transform duration-150 shrink-0",
 						open && "rotate-180",
 					)}
 				/>
 			</button>
 
 			{open && (
-				<div className="absolute z-50 top-full mt-1 left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
-					<div className="p-2 border-b border-gray-100">
-						<div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-gray-50 border border-gray-200">
-							<Search size={13} className="text-gray-400 shrink-0" />
+				<div className="absolute z-50 top-full mt-1 left-0 w-full bg-popover border border-border rounded-2xl shadow-xl overflow-hidden">
+					<div className="p-2 border-b border-border">
+						<div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-muted border border-border">
+							<Search size={13} className="text-muted-foreground shrink-0" />
 							<input
 								ref={searchRef}
 								type="text"
 								placeholder="Search…"
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder:text-gray-400"
+								className="flex-1 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
 							/>
 						</div>
 					</div>
 					<div className="max-h-56 overflow-y-auto">
 						{filtered.length === 0 ? (
-							<p className="px-4 py-3 text-sm text-gray-400 text-center">No results</p>
+							<p className="px-4 py-3 text-sm text-muted-foreground text-center">No results</p>
 						) : (
 							filtered.map((option) => (
 								<button
@@ -217,13 +217,15 @@ function SearchableSelect({
 										setSearch("")
 									}}
 									className={cn(
-										"w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors text-left",
-										value === option.value ? "bg-primary/5 text-primary" : "text-gray-800",
+										"w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent transition-colors text-left",
+										value === option.value ? "bg-primary/5 text-primary" : "text-foreground",
 									)}
 								>
 									<span className="flex-1 truncate">{option.label}</span>
 									{option.secondary && (
-										<span className="text-gray-400 text-xs shrink-0">{option.secondary}</span>
+										<span className="text-muted-foreground text-xs shrink-0">
+											{option.secondary}
+										</span>
 									)}
 								</button>
 							))
@@ -237,15 +239,15 @@ function SearchableSelect({
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-border shrink-0">
 			<button
 				onClick={onBack}
-				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+				className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 				aria-label="Back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 			</button>
-			<h2 className="font-bold text-gray-900">{title}</h2>
+			<h2 className="font-bold text-foreground">{title}</h2>
 		</div>
 	)
 }
@@ -260,11 +262,11 @@ function PanelSave({
 	pending: boolean
 }) {
 	return (
-		<div className="shrink-0 px-5 pt-4 pb-6 border-t border-gray-50">
+		<div className="shrink-0 px-5 pt-4 pb-6 border-t border-border">
 			<button
 				onClick={onSave}
 				disabled={disabled}
-				className="w-full h-13 rounded-full bg-primary text-white text-[15px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+				className="w-full h-13 rounded-full bg-primary text-primary-foreground text-[15px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 			>
 				{pending && <Loader2 size={13} className="animate-spin" />}
 				Save
@@ -286,8 +288,8 @@ function FieldWrapper({
 }) {
 	return (
 		<div className="flex flex-col gap-2">
-			<p className="text-sm font-semibold text-gray-900">{label}</p>
-			{hint && <p className="text-xs text-gray-500 leading-relaxed -mt-1">{hint}</p>}
+			<p className="text-sm font-semibold text-foreground">{label}</p>
+			{hint && <p className="text-xs text-muted-foreground leading-relaxed -mt-1">{hint}</p>}
 			{children}
 			{error && <p className="text-xs text-destructive mt-0.5 px-0.5">{error}</p>}
 		</div>
@@ -322,13 +324,13 @@ function TextInput({
 			className={cn(
 				"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
 				readOnly
-					? "bg-gray-100 border-gray-200 cursor-default"
+					? "bg-muted border-border cursor-default"
 					: hasError
 						? "border-destructive focus-within:border-destructive"
-						: "border-gray-200 focus-within:border-primary",
+						: "border-input focus-within:border-primary",
 			)}
 		>
-			{icon && <span className="text-gray-400 shrink-0">{icon}</span>}
+			{icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
 			<input
 				value={value}
 				onChange={onChange}
@@ -337,7 +339,7 @@ function TextInput({
 				maxLength={maxLength}
 				autoFocus={autoFocus}
 				readOnly={readOnly}
-				className="flex-1 text-sm text-gray-900 bg-transparent outline-none placeholder:text-gray-400 read-only:cursor-default read-only:text-gray-500"
+				className="flex-1 text-sm text-foreground bg-transparent outline-none placeholder:text-muted-foreground read-only:cursor-default read-only:text-muted-foreground"
 			/>
 			{trailingEl}
 		</div>
@@ -362,12 +364,12 @@ function Toggle({
 			type="button"
 			className={cn(
 				"w-11 h-6 rounded-full flex items-center px-0.5 cursor-pointer transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed",
-				enabled ? "bg-primary" : "bg-gray-300",
+				enabled ? "bg-primary" : "bg-muted-foreground/30",
 			)}
 		>
 			<div
 				className={cn(
-					"w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+					"w-5 h-5 rounded-full bg-background shadow-sm transition-transform duration-200",
 					enabled ? "translate-x-5" : "translate-x-0",
 				)}
 			/>
@@ -397,14 +399,14 @@ export function EditNamePanel({ onBack }: { onBack: () => void }) {
 		cn(
 			"text-xs tabular-nums shrink-0",
 			len >= NAME_MAX - 5
-				? "text-amber-400"
+				? "text-amber-500"
 				: len >= NAME_MAX - 2
 					? "text-destructive"
-					: "text-gray-300",
+					: "text-muted-foreground/50",
 		)
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Change Name" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
@@ -447,7 +449,7 @@ export function EditNamePanel({ onBack }: { onBack: () => void }) {
 					/>
 				</FieldWrapper>
 
-				<p className="text-[12.5px] text-gray-400 leading-relaxed">
+				<p className="text-[12.5px] text-muted-foreground leading-relaxed">
 					Your name can only be changed once every 7 days.
 				</p>
 			</div>
@@ -498,7 +500,7 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Change Username" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
@@ -533,7 +535,7 @@ export function EditUsernamePanel({ onBack }: { onBack: () => void }) {
 					<button
 						type="button"
 						onClick={handleGenerate}
-						className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-gray-800 hover:text-primary transition-colors mx-auto"
+						className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-foreground hover:text-primary transition-colors mx-auto"
 					>
 						Generate username
 						<RefreshCw size={13} />
@@ -570,7 +572,7 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Bio" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5">
@@ -579,7 +581,7 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 						"relative rounded-xl border transition-colors",
 						errors.about_me || overLimit
 							? "border-destructive"
-							: "border-gray-200 focus-within:border-primary",
+							: "border-input focus-within:border-primary",
 					)}
 				>
 					<textarea
@@ -594,7 +596,7 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 						}}
 						placeholder="Tell people a little about yourself…"
 						rows={5}
-						className="w-full px-4 pt-3.5 pb-8 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+						className="w-full px-4 pt-3.5 pb-8 text-sm text-foreground bg-transparent resize-none outline-none leading-relaxed placeholder:text-muted-foreground"
 					/>
 					<span
 						className={cn(
@@ -602,8 +604,8 @@ export function EditBioPanel({ onBack }: { onBack: () => void }) {
 							overLimit
 								? "text-destructive font-semibold"
 								: remaining <= 30
-									? "text-amber-400"
-									: "text-gray-300",
+									? "text-amber-500"
+									: "text-muted-foreground/50",
 						)}
 					>
 						{bio.length}/{BIO_MAX}
@@ -654,7 +656,7 @@ export function EditDobPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Set date of birth" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
@@ -672,10 +674,10 @@ export function EditDobPanel({ onBack }: { onBack: () => void }) {
 					/>
 				</FieldWrapper>
 
-				<div className="flex items-center justify-between py-1.5 border-t border-gray-50 pt-4">
+				<div className="flex items-center justify-between py-1.5 border-t border-border pt-4">
 					<div className="min-w-0 pr-4">
-						<p className="text-sm font-semibold text-gray-900">Show birth year</p>
-						<p className="text-[12px] text-gray-500 mt-0.5 leading-relaxed">
+						<p className="text-sm font-semibold text-foreground">Show birth year</p>
+						<p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
 							When off, only your month and day are visible to others.
 						</p>
 					</div>
@@ -738,7 +740,7 @@ export function EditLocationPanel({ onBack }: { onBack: () => void }) {
 		onBack()
 	}
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Set Location" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-4">
@@ -814,7 +816,7 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Add external link" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
@@ -835,7 +837,7 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 					<div
 						className={cn(
 							"rounded-xl border transition-colors",
-							errors.url ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+							errors.url ? "border-destructive" : "border-input focus-within:border-primary",
 						)}
 					>
 						<textarea
@@ -846,7 +848,7 @@ export function AddExternalLinkPanel({ onBack }: { onBack: () => void }) {
 							}}
 							placeholder="https://www.example.com/yourprofile"
 							rows={3}
-							className="w-full px-4 pt-3 pb-3 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+							className="w-full px-4 pt-3 pb-3 text-sm text-foreground bg-transparent resize-none outline-none leading-relaxed placeholder:text-muted-foreground"
 						/>
 					</div>
 				</FieldWrapper>
@@ -908,7 +910,7 @@ export function EditExternalLinkPanel({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Edit link" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-5 py-5 flex flex-col gap-5">
@@ -929,7 +931,7 @@ export function EditExternalLinkPanel({
 					<div
 						className={cn(
 							"rounded-xl border transition-colors",
-							errors.url ? "border-destructive" : "border-gray-200 focus-within:border-primary",
+							errors.url ? "border-destructive" : "border-input focus-within:border-primary",
 						)}
 					>
 						<textarea
@@ -940,13 +942,13 @@ export function EditExternalLinkPanel({
 							}}
 							placeholder="https://www.example.com/yourprofile"
 							rows={3}
-							className="w-full px-4 pt-3 pb-3 text-sm text-gray-900 bg-transparent resize-none outline-none leading-relaxed placeholder:text-gray-400"
+							className="w-full px-4 pt-3 pb-3 text-sm text-foreground bg-transparent resize-none outline-none leading-relaxed placeholder:text-muted-foreground"
 						/>
 					</div>
 				</FieldWrapper>
 
 				{/* Delete section */}
-				<div className="pt-2 border-t border-gray-100">
+				<div className="pt-2 border-t border-border">
 					{!confirmDelete ? (
 						<button
 							onClick={() => setConfirmDelete(true)}
@@ -956,13 +958,15 @@ export function EditExternalLinkPanel({
 							Delete this link
 						</button>
 					) : (
-						<div className="bg-red-50 rounded-xl p-4 flex flex-col gap-3">
-							<p className="text-[13px] text-gray-700 font-medium">Delete this link?</p>
-							<p className="text-[12px] text-gray-500 -mt-1">This action cannot be undone.</p>
+						<div className="bg-destructive/10 rounded-xl p-4 flex flex-col gap-3">
+							<p className="text-[13px] text-foreground font-medium">Delete this link?</p>
+							<p className="text-[12px] text-muted-foreground -mt-1">
+								This action cannot be undone.
+							</p>
 							<div className="flex gap-2">
 								<button
 									onClick={() => setConfirmDelete(false)}
-									className="flex-1 h-9 rounded-xl border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-white transition-colors"
+									className="flex-1 h-9 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-background transition-colors"
 								>
 									Cancel
 								</button>

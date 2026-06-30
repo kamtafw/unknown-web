@@ -20,10 +20,7 @@ type ChatMessage = {
 }
 
 const PLACEHOLDER_MESSAGES: ChatMessage[] = [
-	{
-		role: "user",
-		content: "What is a chameleon",
-	},
+	{ role: "user", content: "What is a chameleon" },
 	{
 		role: "ai",
 		content:
@@ -94,7 +91,7 @@ function AIAvatar({ size = 32 }: { size?: number }) {
 function UserMessage({ content }: { content: string }) {
 	return (
 		<div className="flex justify-end">
-			<div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-white">
+			<div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm text-primary-foreground">
 				{content}
 			</div>
 		</div>
@@ -107,20 +104,19 @@ function AIMessage({ content, time }: { content: string; time?: string }) {
 			<div className="flex items-center gap-3">
 				<AIAvatar size={32} />
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-semibold text-gray-900">Ai_Combo</span>
-					{time && <span className="text-xs text-gray-400">{time}</span>}
+					<span className="text-sm font-semibold text-foreground">Ai_Combo</span>
+					{time && <span className="text-xs text-muted-foreground">{time}</span>}
 				</div>
 			</div>
 
-			<div className="space-y-4 pl-11 text-sm leading-relaxed text-gray-700">
+			<div className="space-y-4 pl-11 text-sm leading-relaxed text-foreground/80">
 				<p>{content}</p>
-
 				<ul className="space-y-3">
 					{CHAMELEON_FACTS.map((fact) => (
 						<li key={fact.title} className="flex gap-2">
 							<span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
 							<p>
-								<span className="font-semibold text-gray-900">{fact.title}: </span>
+								<span className="font-semibold text-foreground">{fact.title}: </span>
 								{fact.body}
 							</p>
 						</li>
@@ -133,7 +129,7 @@ function AIMessage({ content, time }: { content: string; time?: string }) {
 							key={label}
 							type="button"
 							aria-label={label}
-							className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+							className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 						>
 							<Icon className="size-4" />
 						</button>
@@ -146,16 +142,14 @@ function AIMessage({ content, time }: { content: string; time?: string }) {
 
 function ChatComposer() {
 	const [value, setValue] = useState("")
-
-	// TODO: wire up to the AI chat endpoint once it's available
 	const handleSend = () => {}
 
 	return (
-		<div className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-4 py-2">
+		<div className="flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-2">
 			<button
 				type="button"
 				aria-label="Add emoji"
-				className="shrink-0 text-gray-400 transition-colors hover:text-gray-600"
+				className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Smile className="size-5" />
 			</button>
@@ -164,13 +158,13 @@ function ChatComposer() {
 				value={value}
 				onChange={(e) => setValue(e.target.value)}
 				placeholder="Ask anything"
-				className="flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+				className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 			/>
 
 			<button
 				type="button"
 				aria-label="Attach file"
-				className="shrink-0 text-gray-400 transition-colors hover:text-gray-600"
+				className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Paperclip className="size-5" />
 			</button>
@@ -178,7 +172,7 @@ function ChatComposer() {
 			<button
 				type="button"
 				aria-label="AI tools"
-				className="shrink-0 text-gray-400 transition-colors hover:text-gray-600"
+				className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<Sparkles className="size-5" />
 			</button>
@@ -187,7 +181,7 @@ function ChatComposer() {
 				type="button"
 				aria-label="Send message"
 				onClick={handleSend}
-				className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90"
+				className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
 			>
 				<Send className="size-4" />
 			</button>
@@ -199,10 +193,10 @@ export default function AppsComboAI() {
 	return (
 		<div className="flex h-full min-h-0 flex-1 gap-5 overflow-hidden">
 			{/* Chat panel */}
-			<div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white">
-				<header className="flex shrink-0 items-center justify-center gap-2 border-b border-gray-100 py-4">
+			<div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+				<header className="flex shrink-0 items-center justify-center gap-2 border-b border-border py-4">
 					<AIAvatar size={28} />
-					<span className="font-semibold text-gray-900">Ai_Combo</span>
+					<span className="font-semibold text-foreground">Ai_Combo</span>
 				</header>
 
 				<div className="flex-1 space-y-6 overflow-y-auto px-6 py-6 [&::-webkit-scrollbar]:hidden">
@@ -215,7 +209,7 @@ export default function AppsComboAI() {
 					)}
 				</div>
 
-				<div className="shrink-0 border-t border-gray-100 px-6 py-4">
+				<div className="shrink-0 border-t border-border px-6 py-4">
 					<ChatComposer />
 				</div>
 			</div>
@@ -223,7 +217,7 @@ export default function AppsComboAI() {
 			{/* Suggestions sidebar */}
 			<aside className="hidden w-96 shrink-0 flex-col gap-6 overflow-y-auto xl:flex [&::-webkit-scrollbar]:hidden">
 				<div>
-					<h2 className="mb-3 text-sm font-semibold text-gray-900">
+					<h2 className="mb-3 text-sm font-semibold text-foreground">
 						AI suggestions to get started
 					</h2>
 					<div className="grid grid-cols-2 gap-3">
@@ -231,7 +225,7 @@ export default function AppsComboAI() {
 							<button
 								key={suggestion.text}
 								type="button"
-								className="flex flex-col gap-2 rounded-2xl border border-gray-100 p-3 text-left text-sm text-gray-700 transition-colors hover:border-primary/30 hover:bg-primary/5"
+								className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 text-left text-sm text-foreground transition-colors hover:border-primary/30 hover:bg-accent"
 							>
 								<span className="text-lg">{suggestion.emoji}</span>
 								<span>{suggestion.text}</span>
@@ -240,6 +234,7 @@ export default function AppsComboAI() {
 					</div>
 				</div>
 
+				{/* Intentionally dark gradient card — preserved */}
 				<div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-gray-800 via-gray-700 to-primary p-4 text-white">
 					<Sparkles className="mb-12 size-5" />
 					<p className="mb-3 text-sm font-medium">A Chameleon with scales and dragon features</p>
@@ -252,16 +247,16 @@ export default function AppsComboAI() {
 				</div>
 
 				<div>
-					<h2 className="mb-3 text-sm font-semibold text-gray-900">Recent History</h2>
+					<h2 className="mb-3 text-sm font-semibold text-foreground">Recent History</h2>
 					<div className="grid grid-cols-2 gap-3">
 						{RECENT_HISTORY.map((item, index) => (
 							<button
 								key={index}
 								type="button"
-								className="flex flex-col gap-2 rounded-2xl border border-gray-100 p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+								className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/30 hover:bg-accent"
 							>
-								<p className="line-clamp-2 text-sm text-gray-700">{item.text}</p>
-								<span className="text-xs italic text-gray-400">{item.time}</span>
+								<p className="line-clamp-2 text-sm text-foreground">{item.text}</p>
+								<span className="text-xs italic text-muted-foreground">{item.time}</span>
 							</button>
 						))}
 					</div>
