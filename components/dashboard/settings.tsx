@@ -121,8 +121,6 @@ type Section = {
 	items: SectionItem[]
 }
 
-// ─── FAQ ───────────────────────────────────────────────────────────────────
-
 const FAQ_ITEMS = [
 	{
 		question: "How do I reset my password?",
@@ -327,8 +325,8 @@ function AskQuestionPanel({ onBack }: { onBack: () => void }) {
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-5 flex flex-col gap-5">
 				<p className="text-[13px] text-muted-foreground leading-relaxed -mt-1">
-					Can&apos;t find what you&apos;re looking for? Send us your question and we&apos;ll get back to you within
-					2 business days.
+					Can&apos;t find what you&apos;re looking for? Send us your question and we&apos;ll get
+					back to you within 2 business days.
 				</p>
 
 				<div className="flex flex-col gap-2">
@@ -341,9 +339,7 @@ function AskQuestionPanel({ onBack }: { onBack: () => void }) {
 								"w-full flex items-center justify-between h-12 px-4 rounded-xl border transition-colors text-sm",
 								topicOpen
 									? "border-primary focus-within:ring-1 focus-within:ring-primary"
-									: topic
-										? "border-primary bg-transparent focus-within:ring-1 focus-within:ring-primary"
-										: "border-border bg-transparent cursor-pointer focus-within:ring-1 focus-within:ring-primary",
+									: "border-input bg-card cursor-pointer hover:border-ring focus-within:ring-1 focus-within:ring-input",
 							)}
 						>
 							<span className={topic ? "text-foreground" : "text-muted-foreground"}>
@@ -359,7 +355,7 @@ function AskQuestionPanel({ onBack }: { onBack: () => void }) {
 						</button>
 
 						{topicOpen && (
-							<div className="absolute z-50 top-full mt-1 left-0 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+							<div className="absolute z-50 top-full mt-1 left-0 w-full bg-popover border border-border rounded-2xl shadow-xl overflow-hidden">
 								<div className="max-h-56 overflow-y-auto">
 									{QUESTION_TOPICS.map((t) => (
 										<button
@@ -390,7 +386,9 @@ function AskQuestionPanel({ onBack }: { onBack: () => void }) {
 				<div className="flex flex-col gap-1.5">
 					<label className="text-sm font-semibold text-foreground">Reply to</label>
 					<div className="flex items-center gap-2.5 h-11 px-4 rounded-xl border border-border bg-muted/60">
-						<span className="text-[13.5px] text-muted-foreground flex-1 truncate">{user?.email}</span>
+						<span className="text-[13.5px] text-muted-foreground flex-1 truncate">
+							{user?.email}
+						</span>
 						<Lock size={13} className="text-muted-foreground/40 shrink-0" />
 					</div>
 					<p className="text-[11.5px] text-muted-foreground">
@@ -415,8 +413,8 @@ function AskQuestionPanel({ onBack }: { onBack: () => void }) {
 						className={cn(
 							"rounded-xl border transition-colors",
 							message.length >= 20
-								? "border-primary/40 focus-within:ring-1 focus-within:ring-primary"
-								: "border-border focus-within:ring-1 focus-within:ring-primary",
+								? "border-primary focus-within:ring-1 focus-within:ring-primary"
+								: "border-input focus-within:ring-1 focus-within:ring-input",
 						)}
 					>
 						<textarea

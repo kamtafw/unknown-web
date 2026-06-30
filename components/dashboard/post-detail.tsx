@@ -90,7 +90,7 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 			{urls.slice(0, 4).map((url, i) => {
 				const type = mediaType(url)
 				return (
-					<div key={i} className="relative overflow-hidden bg-gray-200 aspect-square">
+					<div key={i} className="relative overflow-hidden bg-muted aspect-square">
 						{type === "video" ? (
 							<video src={url} controls className="w-full h-full object-cover" />
 						) : type === "audio" ? (
@@ -123,7 +123,7 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 		return (
 			<div
 				ref={ref}
-				className={`px-5 py-4 border-b border-gray-100 transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+				className={`px-5 py-4 border-b border-border transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
 			>
 				<div className="flex gap-3">
 					{/* Avatar + optional thread line */}
@@ -134,21 +134,23 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 							last={comment.user.last_name}
 						/>
 						{repliesOpen && comment.replies_count > 0 && (
-							<div className="w-0.5 bg-gray-200 flex-1 mt-1.5 min-h-4" />
+							<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
 						)}
 					</div>
 
 					<div className="flex-1 min-w-0">
 						{/* Header */}
 						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-gray-900 leading-tight">{fullname}</span>
-							<span className="text-gray-500 text-[13px]">@{comment.user.username}</span>
-							<span className="text-gray-400 text-xs">· {timeAgo}</span>
+							<span className="font-semibold text-sm text-foreground leading-tight">
+								{fullname}
+							</span>
+							<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+							<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
 						</div>
 
 						{/* Message */}
 						{comment.message?.trim() && (
-							<p className="text-[13.5px] text-gray-800 leading-relaxed mt-0.5">
+							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
 								{renderText(comment.message)}
 							</p>
 						)}
@@ -157,7 +159,7 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 						<CommentMediaGrid urls={comment.uploaded_media} />
 
 						{/* Actions */}
-						<div className="flex items-center text-gray-400 mt-2.5 w-4/5">
+						<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
 							<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
 								<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
 								<span className="text-sm tabular-nums font-medium">
@@ -186,7 +188,7 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 						{comment.replies_count > 0 && (
 							<button
 								className="mt-1 flex-row items-center gap-1.5"
-								onClick={() => setRepliesOpen(true)}
+								onClick={() => setRepliesOpen(!repliesOpen)}
 							>
 								<span className="text-sm text-primary font-medium">
 									{repliesOpen
@@ -199,7 +201,7 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 				</div>
 				{/* Replies — indented with left border */}
 				{repliesOpen && (
-					<div className="ml-13 mt-1 border-l-2 border-gray-100 pl-3">
+					<div className="ml-13 mt-1 border-l-2 border-border pl-3">
 						<RepliesSection commentId={comment.id} />
 					</div>
 				)}
@@ -227,18 +229,20 @@ function ReplyRow({ reply }: { reply: Comment }) {
 			/>
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5 flex-wrap">
-					<span className="font-semibold text-[13px] text-gray-900 leading-tight">{fullname}</span>
-					<span className="text-gray-500 text-[12px]">@{reply.user.username}</span>
-					<span className="text-gray-400 text-[12px]">· {timeAgo}</span>
+					<span className="font-semibold text-[13px] text-foreground leading-tight">
+						{fullname}
+					</span>
+					<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
+					<span className="text-muted-foreground/70 text-[12px]">· {timeAgo}</span>
 				</div>
 				{reply.message?.trim() && (
-					<p className="text-[13px] text-gray-800 leading-relaxed mt-0.5">
+					<p className="text-[13px] text-foreground/90 leading-relaxed mt-0.5">
 						{renderText(reply.message)}
 					</p>
 				)}
 				<CommentMediaGrid urls={reply.uploaded_media} />
 				<div className="flex items-center gap-4 mt-1.5">
-					<button className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors">
+					<button className="flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors">
 						<Like size={14} color={reply.liked_by_me ? "#ef4444" : undefined} />
 						{reply.like_count > 0 && (
 							<span className="text-[11px]">{formatCount(reply.like_count)}</span>
@@ -259,10 +263,10 @@ function RepliesSection({ commentId }: { commentId: string }) {
 			<div className="py-2 space-y-2">
 				{[0, 1].map((i) => (
 					<div key={i} className="flex gap-2 animate-pulse">
-						<div className="w-7 h-7 rounded-full bg-gray-200 shrink-0" />
+						<div className="w-7 h-7 rounded-full bg-muted shrink-0" />
 						<div className="flex-1 space-y-1.5 pt-1">
-							<div className="h-2.5 bg-gray-200 rounded-full w-1/3" />
-							<div className="h-2.5 bg-gray-200 rounded-full w-2/3" />
+							<div className="h-2.5 bg-muted rounded-full w-1/3" />
+							<div className="h-2.5 bg-muted rounded-full w-2/3" />
 						</div>
 					</div>
 				))}
@@ -271,7 +275,7 @@ function RepliesSection({ commentId }: { commentId: string }) {
 	}
 
 	return (
-		<div className="divide-y divide-gray-50">
+		<div className="divide-y divide-border/50">
 			{replies.map((reply) => (
 				<ReplyRow key={reply.pkid} reply={reply} />
 			))}
@@ -423,7 +427,7 @@ function CommentComposer({ post }: { post: Post }) {
 	return (
 		<div
 			ref={containerRef}
-			className="px-5 py-3 border-b border-gray-100"
+			className="px-5 py-3 border-b border-border"
 			onBlur={() => {
 				setTimeout(() => {
 					if (!containerRef.current?.contains(document.activeElement) && !text.trim()) {
@@ -433,7 +437,7 @@ function CommentComposer({ post }: { post: Post }) {
 			}}
 		>
 			{focused && (
-				<p className="text-xs text-gray-400 mb-2">
+				<p className="text-xs text-muted-foreground mb-2">
 					Replying to <span className="text-primary">@{post.user.username}</span>
 				</p>
 			)}
@@ -454,7 +458,7 @@ function CommentComposer({ post }: { post: Post }) {
 						onKeyDown={handleKeyDown}
 						placeholder="Post your reply"
 						rows={focused ? 2 : 1}
-						className="w-full resize-none bg-transparent text-[13.5px] text-gray-800 placeholder:text-gray-400 outline-none leading-relaxed pt-0.5"
+						className="w-full resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed pt-0.5"
 					/>
 
 					{/* Media grid */}
@@ -467,7 +471,7 @@ function CommentComposer({ post }: { post: Post }) {
 							{mediaItems.map((item) => (
 								<div
 									key={item.id}
-									className="relative bg-gray-100 aspect-video rounded-lg overflow-hidden"
+									className="relative bg-muted aspect-video rounded-lg overflow-hidden"
 								>
 									{item.file.type.startsWith("video/") ? (
 										<video src={item.preview} className="w-full h-full object-cover" />
@@ -527,13 +531,13 @@ function CommentComposer({ post }: { post: Post }) {
 
 					{/* Emoji picker */}
 					{showEmoji && (
-						<div className="mt-2 p-2 border border-gray-200 rounded-xl bg-white shadow-lg">
+						<div className="mt-2 p-2 border border-border rounded-xl bg-popover shadow-lg">
 							<div className="grid grid-cols-10 gap-0.5">
 								{EMOJIS.map((e) => (
 									<button
 										key={e}
 										onClick={() => handleEmojiClick(e)}
-										className="w-8 h-8 text-lg rounded hover:bg-gray-100 flex items-center justify-center transition-colors"
+										className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
 									>
 										{e}
 									</button>
@@ -543,7 +547,7 @@ function CommentComposer({ post }: { post: Post }) {
 					)}
 
 					{focused && (
-						<div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+						<div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
 							<div className="flex items-center gap-3 text-primary">
 								{/* Media */}
 								<button
@@ -593,14 +597,14 @@ function CommentComposer({ post }: { post: Post }) {
 
 							<div className="flex items-center gap-3">
 								{anyUploading && (
-									<span className="text-xs text-gray-400 flex items-center gap-1.5">
+									<span className="text-xs text-muted-foreground flex items-center gap-1.5">
 										<Loader2 size={12} className="animate-spin" /> Uploading…
 									</span>
 								)}
 								<button
 									onClick={handleSubmit}
 									disabled={!canSubmit || addComment.isPending}
-									className="px-4 py-1.5 rounded-full bg-primary cursor-pointer text-white text-sm font-semibold disabled:opacity-40 hover:bg-primary/85 active:scale-[0.98] transition-all"
+									className="px-4 py-1.5 rounded-full bg-primary cursor-pointer text-primary-foreground text-sm font-semibold disabled:opacity-40 hover:bg-primary/85 active:scale-[0.98] transition-all"
 								>
 									{addComment.isPending ? "Posting…" : "Reply"}
 								</button>
@@ -616,7 +620,7 @@ function CommentComposer({ post }: { post: Post }) {
 							setFocused(true)
 							setTimeout(() => textareaRef.current?.focus(), 0)
 						}}
-						className="shrink-0 self-start mt-0.5 px-4 py-1.5 cursor-pointer rounded-full border border-gray-200 text-gray-400 text-sm font-semibold"
+						className="shrink-0 self-start mt-0.5 px-4 py-1.5 cursor-pointer rounded-full border border-border text-muted-foreground text-sm font-semibold"
 					>
 						Reply
 					</button>
@@ -649,8 +653,8 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						last={post.user.last_name}
 					/>
 					<div className="flex-1 min-w-0">
-						<p className="font-bold text-[15px] text-gray-900 leading-tight">{fullname}</p>
-						<p className="text-gray-500 text-sm">@{post.user.username}</p>
+						<p className="font-bold text-[15px] text-foreground leading-tight">{fullname}</p>
+						<p className="text-muted-foreground text-sm">@{post.user.username}</p>
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
@@ -660,7 +664,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 
 				<div>
 					{!!post.content_text && (
-						<p className="text-gray-800 leading-relaxed">{renderText(post.content_text)}</p>
+						<p className="text-foreground/90 leading-relaxed">{renderText(post.content_text)}</p>
 					)}
 
 					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
@@ -674,34 +678,34 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 				</div>
 
 				{/* Timestamp */}
-				<div className="pt-3 text-[13px] text-gray-400">
+				<div className="pt-3 text-[13px] text-muted-foreground">
 					{fullDate}
 					{shortAddress && <> · {shortAddress}</>}
 				</div>
 
 				{/* Engagement stats */}
 				{(post.repost_count > 0 || post.post_like_count > 0 || post.post_comment_count > 0) && (
-					<div className="py-3 border-b border-gray-100 flex items-center gap-5 text-sm">
+					<div className="py-3 border-b border-border flex items-center gap-5 text-sm">
 						{post.repost_count > 0 && (
 							<span>
-								<strong className="text-gray-900">{formatCount(post.repost_count)}</strong>{" "}
-								<span className="text-gray-500">
+								<strong className="text-foreground">{formatCount(post.repost_count)}</strong>{" "}
+								<span className="text-muted-foreground">
 									{post.repost_count === 1 ? "Repost" : "Reposts"}
 								</span>
 							</span>
 						)}
 						{post.post_like_count > 0 && (
 							<span>
-								<strong className="text-gray-900">{formatCount(post.post_like_count)}</strong>{" "}
-								<span className="text-gray-500">
+								<strong className="text-foreground">{formatCount(post.post_like_count)}</strong>{" "}
+								<span className="text-muted-foreground">
 									{post.post_like_count === 1 ? "Like" : "Likes"}
 								</span>
 							</span>
 						)}
 						{post.post_comment_count > 0 && (
 							<span>
-								<strong className="text-gray-900">{formatCount(post.post_comment_count)}</strong>{" "}
-								<span className="text-gray-500">
+								<strong className="text-foreground">{formatCount(post.post_comment_count)}</strong>{" "}
+								<span className="text-muted-foreground">
 									{post.post_comment_count === 1 ? "Comment" : "Comments"}
 								</span>
 							</span>
@@ -714,13 +718,13 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 					<div className="flex flex-1 flex-row items-center gap-5">
 						<button
 							onClick={() => likePost.mutate(post.id)}
-							className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:primary transition-colors cursor-pointer"
+							className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:bg-accent transition-colors cursor-pointer"
 						>
 							<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
 						</button>
 						<button
 							onClick={onCommentClick}
-							className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:primary transition-colors cursor-pointer"
+							className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:bg-accent transition-colors cursor-pointer"
 						>
 							<CommentIcon size={22} />
 						</button>
@@ -738,7 +742,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 					<div className="flex flex-row items-center gap-4 ml-auto">
 						<button
 							onClick={() => bookmarkPost.mutate(post.id)}
-							className="flex items-center ml-auto p-3 rounded-full hover:bg-blue-50 transition-colors cursor-pointer"
+							className="flex items-center ml-auto p-3 rounded-full hover:bg-primary/10 transition-colors cursor-pointer"
 						>
 							<Bookmark2
 								size={22}
@@ -757,12 +761,12 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 
 function CommentSkeleton() {
 	return (
-		<div className="flex gap-3 px-5 py-4 border-b border-gray-100 animate-pulse">
-			<div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+		<div className="flex gap-3 px-5 py-4 border-b border-border animate-pulse">
+			<div className="w-10 h-10 rounded-full bg-muted shrink-0" />
 			<div className="flex-1 space-y-2 pt-1">
-				<div className="h-3 bg-gray-200 rounded-full w-2/5" />
-				<div className="h-3 bg-gray-200 rounded-full w-4/5" />
-				<div className="h-3 bg-gray-200 rounded-full w-3/5" />
+				<div className="h-3 bg-muted rounded-full w-2/5" />
+				<div className="h-3 bg-muted rounded-full w-4/5" />
+				<div className="h-3 bg-muted rounded-full w-3/5" />
 			</div>
 		</div>
 	)
@@ -770,20 +774,20 @@ function CommentSkeleton() {
 
 function PostSkeleton() {
 	return (
-		<div className="px-5 pt-5 pb-3 animate-pulse border-b border-gray-100">
+		<div className="px-5 pt-5 pb-3 animate-pulse border-b border-border">
 			<div className="flex gap-3 mb-4">
-				<div className="w-10 h-10 rounded-full bg-gray-200 shrink-0" />
+				<div className="w-10 h-10 rounded-full bg-muted shrink-0" />
 				<div className="flex-1 space-y-2 pt-1">
-					<div className="h-3 bg-gray-200 rounded-full w-1/3" />
-					<div className="h-3 bg-gray-200 rounded-full w-1/4" />
+					<div className="h-3 bg-muted rounded-full w-1/3" />
+					<div className="h-3 bg-muted rounded-full w-1/4" />
 				</div>
 			</div>
 			<div className="space-y-2">
-				<div className="h-4 bg-gray-200 rounded-full w-full" />
-				<div className="h-4 bg-gray-200 rounded-full w-5/6" />
-				<div className="h-4 bg-gray-200 rounded-full w-3/4" />
+				<div className="h-4 bg-muted rounded-full w-full" />
+				<div className="h-4 bg-muted rounded-full w-5/6" />
+				<div className="h-4 bg-muted rounded-full w-3/4" />
 			</div>
-			<div className="mt-3 h-48 bg-gray-200 rounded-2xl" />
+			<div className="mt-3 h-48 bg-muted rounded-2xl" />
 		</div>
 	)
 }
@@ -841,16 +845,13 @@ export function PostDetailView({
 	}
 
 	return (
-		<div className="flex-1 min-w-0 flex flex-col bg-white rounded-t-2xl border border-gray-100 min-h-0 overflow-hidden">
+		<div className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden">
 			{/* Sticky header */}
-			<div className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 shrink-0 bg-white">
-				<button
-					onClick={handleBack}
-					className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-				>
-					<ArrowLeft size={18} className="text-gray-700" />
+			<div className="flex items-center gap-4 px-4 py-3 border-b border-border shrink-0 bg-card">
+				<button onClick={handleBack} className="p-2 rounded-full hover:bg-accent transition-colors">
+					<ArrowLeft size={18} className="text-foreground" />
 				</button>
-				<span className="font-bold text-[17px] text-gray-900">Post</span>
+				<span className="font-bold text-[17px] text-foreground">Post</span>
 			</div>
 
 			{/* Scrollable body */}
@@ -863,14 +864,16 @@ export function PostDetailView({
 						))}
 					</>
 				) : isError ? (
-					<p className="px-5 py-16 text-center text-sm text-gray-500">Failed to load post.</p>
+					<p className="px-5 py-16 text-center text-sm text-muted-foreground">
+						Failed to load post.
+					</p>
 				) : post ? (
 					<>
 						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />
 
 						<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
 
-						<div className="border-b border-gray-100" />
+						<div className="border-b border-border" />
 
 						<CommentComposer post={post} />
 
@@ -878,7 +881,9 @@ export function PostDetailView({
 						{(commentsLoading || isPlaceholderData) && !commentsData ? (
 							[0, 1, 2].map((i) => <CommentSkeleton key={i} />)
 						) : comments.length === 0 ? (
-							<p className="px-5 py-12 text-center text-sm text-gray-400">No comments yet.</p>
+							<p className="px-5 py-12 text-center text-sm text-muted-foreground/70">
+								No comments yet.
+							</p>
 						) : (
 							<>
 								{comments.map((comment) => (
@@ -896,7 +901,7 @@ export function PostDetailView({
 									</div>
 								)}
 								{!hasNextPage && comments.length > 0 && (
-									<p className="text-center text-[11px] text-gray-400 py-8">•</p>
+									<p className="text-center text-[11px] text-muted-foreground/50 py-8">•</p>
 								)}
 							</>
 						)}

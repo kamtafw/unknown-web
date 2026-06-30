@@ -69,6 +69,7 @@ function PanelHeader({
 				)}
 			</div>
 
+			{/* Selection mode hint bar */}
 			<div
 				className={cn(
 					"overflow-hidden transition-all duration-300",
@@ -100,6 +101,7 @@ function UnblockConfirmDialog({
 	onConfirm: () => void
 	isPending: boolean
 }) {
+	if (!user && !isBulk) return null
 	const displayName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 		: ""
@@ -118,7 +120,7 @@ function UnblockConfirmDialog({
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-2xl shadow-xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
 					<Dialog.Title className="font-bold text-foreground text-[15px] mb-1.5">
 						{title}
 					</Dialog.Title>
@@ -128,7 +130,7 @@ function UnblockConfirmDialog({
 
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-50 transition-colors cursor-pointer">
+							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-70 transition-colors cursor-pointer">
 								Cancel
 							</button>
 						</Dialog.Close>
@@ -170,11 +172,11 @@ function Checkbox({ checked }: { checked: boolean }) {
 		<div
 			className={cn(
 				"w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200",
-				checked ? "bg-primary border-primary" : "border-input bg-transparent",
+				checked ? "bg-primary border-primary" : "border-input bg-card",
 			)}
 		>
 			{checked && (
-				<svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+				<svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
 					<path
 						fillRule="evenodd"
 						d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -202,10 +204,12 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 	const allSelected = blockedUsers.length > 0 && selectedIds.size === blockedUsers.length
 
 	const enterSelectMode = () => setSelectionMode(true)
+
 	const exitSelectMode = () => {
 		setSelectionMode(false)
 		setSelectedIds(new Set())
 	}
+
 	const toggleSelect = (pkid: number) => {
 		setSelectedIds((prev) => {
 			const next = new Set(prev)
@@ -214,6 +218,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 			return next
 		})
 	}
+
 	const toggleSelectAll = () => {
 		setSelectedIds(allSelected ? new Set() : new Set(blockedUsers.map((u) => u.pkid)))
 	}
@@ -224,7 +229,9 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 			: confirmDialog.user
 				? [confirmDialog.user.pkid]
 				: []
+
 		if (!ids.length) return
+
 		unblockUsers.mutate(ids, {
 			onSuccess: () => {
 				setConfirmDialog({ open: false, user: null, isBulk: false })
@@ -246,12 +253,14 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 				allSelected={allSelected}
 			/>
 
+			{/* Scrollable list — extra bottom padding so content clears the action bar */}
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden pb-24">
 				{!isLoading && blockedUsers.length > 0 && !selectionMode && (
 					<>
 						<p className="px-6 pt-4 pb-3 text-xs text-muted-foreground leading-relaxed">
 							These accounts can&apos;t see your posts or find your profile.
 						</p>
+
 						<div className="mx-6 my-1 border-t border-border" />
 					</>
 				)}
@@ -261,7 +270,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 				) : blockedUsers.length === 0 ? (
 					<div className="flex flex-col items-center justify-center px-6 py-16 text-center gap-4">
 						<div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center">
-							<ShieldOff size={24} className="text-muted-foreground/40" />
+							<ShieldOff size={24} className="text-muted-foreground/60" />
 						</div>
 						<div>
 							<p className="font-semibold text-foreground text-[13.5px]">No blocked accounts</p>
@@ -276,6 +285,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 							const displayName =
 								[user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 							const isSelected = selectedIds.has(user.pkid)
+
 							return (
 								<div
 									key={user.id}
@@ -286,10 +296,11 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 										selectionMode && isSelected
 											? "bg-primary/5"
 											: selectionMode
-												? "hover:bg-accent active:bg-muted"
+												? "hover:bg-accent/50 active:bg-accent"
 												: "",
 									)}
 								>
+									{/* Checkbox — slides in when selection mode activates */}
 									<div
 										className={cn(
 											"overflow-hidden transition-all duration-200 shrink-0",
@@ -319,6 +330,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 										</p>
 									</div>
 
+									{/* Single unblock button — hidden in selection mode */}
 									<div
 										className={cn(
 											"shrink-0 overflow-hidden transition-all duration-200",
@@ -342,7 +354,7 @@ export function BlockedAccountsPanel({ onBack }: { onBack: () => void }) {
 				)}
 			</div>
 
-			{/* Bulk action bar */}
+			{/* Bulk action bar — slides up from bottom when items are selected */}
 			<div
 				className={cn(
 					"absolute bottom-0 inset-x-0 px-5 py-4 bg-card/95 backdrop-blur-sm border-t border-border flex items-center gap-3 transition-transform duration-300 ease-out",

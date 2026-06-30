@@ -65,15 +65,15 @@ function getInitials(first: string, last: string) {
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
 	return (
-		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
+		<div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-border shrink-0">
 			<button
 				onClick={onBack}
-				className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition-colors"
+				className="p-1.5 -ml-1.5 rounded-full hover:bg-accent transition-colors"
 				aria-label="Go back"
 			>
-				<ArrowLeft size={15} className="text-gray-600" strokeWidth={2.5} />
+				<ArrowLeft size={15} className="text-muted-foreground" strokeWidth={2.5} />
 			</button>
-			<h2 className="font-bold text-gray-900 text-[15.5px]">{title}</h2>
+			<h2 className="font-bold text-foreground text-[15.5px]">{title}</h2>
 		</div>
 	)
 }
@@ -96,17 +96,17 @@ function RemoveDialog({
 		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
 			<Dialog.Portal>
 				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-white rounded-2xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
-					<Dialog.Title className="font-bold text-gray-900 text-[15px] mb-1.5">
+				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-2xl shadow-xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+					<Dialog.Title className="font-bold text-foreground text-[15px] mb-1.5">
 						Remove account?
 					</Dialog.Title>
-					<Dialog.Description className="text-[13px] text-gray-500 leading-relaxed mb-6">
-						Remove <span className="font-semibold text-gray-800">@{account.username}</span> from
+					<Dialog.Description className="text-[13px] text-muted-foreground leading-relaxed mb-6">
+						Remove <span className="font-semibold text-foreground">@{account.username}</span> from
 						your linked accounts. You can add it again later.
 					</Dialog.Description>
 					<div className="flex items-center justify-end gap-6">
 						<Dialog.Close asChild>
-							<button className="flex-1 text-sm font-semibold text-gray-600 hover:opacity-50 transition-colors cursor-pointer">
+							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-70 transition-colors cursor-pointer">
 								Cancel
 							</button>
 						</Dialog.Close>
@@ -168,7 +168,7 @@ function AccountsListView({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Add Account" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden">
@@ -176,12 +176,12 @@ function AccountsListView({
 					<div className="flex flex-col gap-1 px-4 pt-4">
 						{[0, 1, 2].map((i) => (
 							<div key={i} className="flex items-center gap-3 px-2 py-3.5 animate-pulse">
-								<div className="w-11 h-11 rounded-full bg-gray-200 shrink-0" />
+								<div className="w-11 h-11 rounded-full bg-muted shrink-0" />
 								<div className="flex-1 space-y-1.5">
-									<div className="h-3 bg-gray-200 rounded-full w-2/5" />
-									<div className="h-2.5 bg-gray-200 rounded-full w-1/3" />
+									<div className="h-3 bg-muted rounded-full w-2/5" />
+									<div className="h-2.5 bg-muted rounded-full w-1/3" />
 								</div>
-								<div className="w-5.5 h-5.5 rounded-full bg-gray-200" />
+								<div className="w-5.5 h-5.5 rounded-full bg-muted" />
 							</div>
 						))}
 					</div>
@@ -200,7 +200,7 @@ function AccountsListView({
 									onClick={() => setSelectedId(account.id)}
 									className={cn(
 										"w-full flex items-center gap-3 px-6 py-3.5 transition-colors text-left",
-										isSelected && !isCurrent ? "bg-primary/5" : "hover:bg-gray-50",
+										isSelected && !isCurrent ? "bg-primary/5" : "hover:bg-accent/60",
 									)}
 								>
 									<div className="relative flex shrink-0">
@@ -218,16 +218,16 @@ function AccountsListView({
 
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center gap-2 min-w-0">
-											<p className="text-[13.5px] font-semibold text-gray-900 truncate leading-tight">
+											<p className="text-[13.5px] font-semibold text-foreground truncate leading-tight">
 												@{account.username}
 											</p>
 											{isCurrent && (
-												<span className="shrink-0 text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full leading-none">
+												<span className="shrink-0 text-[10px] font-semibold text-green-600 bg-green-500/10 border border-green-500/30 px-1.5 py-0.5 rounded-full leading-none">
 													Active
 												</span>
 											)}
 										</div>
-										<p className="text-xs text-gray-500 truncate mt-0.5">
+										<p className="text-xs text-muted-foreground truncate mt-0.5">
 											{account.phone_number || account.email}
 										</p>
 									</div>
@@ -248,7 +248,7 @@ function AccountsListView({
 													}
 												}}
 												title="Unlink account"
-												className="p-1.5 rounded-full hover:bg-red-50 text-gray-300 hover:text-destructive transition-colors"
+												className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors"
 											>
 												<Unlink size={16} />
 											</span>
@@ -257,7 +257,7 @@ function AccountsListView({
 										<div
 											className={cn(
 												"w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center transition-all",
-												isSelected ? "bg-green-500 border-green-500" : "border-gray-300",
+												isSelected ? "bg-green-500 border-green-500" : "border-input",
 											)}
 										>
 											{isSelected && (
@@ -275,30 +275,32 @@ function AccountsListView({
 							)
 						})}
 
-						<div className="mx-6 my-2 border-t border-gray-100" />
+						<div className="mx-6 my-2 border-t border-border" />
 
 						{/* add another account */}
 						<button
 							onClick={onAddAccount}
-							className="w-full flex items-center gap-3 px-6 py-3.5 hover:bg-gray-50 transition-colors text-left"
+							className="w-full flex items-center gap-3 px-6 py-3.5 hover:bg-accent/60 transition-colors text-left"
 						>
 							<div className="w-11 h-11 rounded-full border-[1.5px] border-dashed border-primary flex items-center justify-center shrink-0">
 								<Plus size={18} className="text-primary" />
 							</div>
 							<div>
 								<p className="text-[13.5px] font-semibold text-primary">Add another account</p>
-								<p className="text-xs text-gray-400 mt-0.5">Sign in with a different account</p>
+								<p className="text-xs text-muted-foreground mt-0.5">
+									Sign in with a different account
+								</p>
 							</div>
 						</button>
 					</div>
 				)}
 			</div>
 
-			<div className="shrink-0 px-6 py-4 border-t border-gray-50">
+			<div className="shrink-0 px-6 py-4 border-t border-border">
 				<button
 					onClick={handleContinue}
 					disabled={!canSwitch}
-					className="w-full h-12 rounded-full bg-primary text-white text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+					className="w-full h-12 rounded-full bg-primary text-primary-foreground text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 				>
 					{switchAccount.isPending ? (
 						<>
@@ -373,23 +375,23 @@ function AddLoginStep({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title="Add Account" onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-6">
-				<p className="text-[13.5px] text-gray-500 leading-relaxed mb-6">
+				<p className="text-[13.5px] text-muted-foreground leading-relaxed mb-6">
 					Enter credentials for the account you want to add.
 				</p>
 
 				<Form.Root onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<Form.Field name="identifier" className="flex flex-col gap-1.5">
-						<Form.Label className="text-sm font-medium text-gray-800">Email or Phone</Form.Label>
+						<Form.Label className="text-sm font-medium text-foreground">Email or Phone</Form.Label>
 						<div
 							className={cn(
 								"flex items-center h-12 px-4 rounded-xl border transition-colors",
 								errors.identifier
 									? "border-destructive"
-									: "border-gray-200 focus-within:border-primary",
+									: "border-input focus-within:border-primary",
 							)}
 						>
 							<Form.Control asChild>
@@ -399,7 +401,7 @@ function AddLoginStep({
 									placeholder="Enter email or phone number"
 									autoFocus
 									autoComplete="username"
-									className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 bg-transparent outline-none"
+									className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 								/>
 							</Form.Control>
 						</div>
@@ -407,13 +409,11 @@ function AddLoginStep({
 					</Form.Field>
 
 					<Form.Field name="password" className="flex flex-col gap-1.5">
-						<Form.Label className="text-sm font-medium text-gray-800">Password</Form.Label>
+						<Form.Label className="text-sm font-medium text-foreground">Password</Form.Label>
 						<div
 							className={cn(
 								"flex items-center gap-2.5 h-12 px-4 rounded-xl border transition-colors",
-								errors.password
-									? "border-destructive"
-									: "border-gray-200 focus-within:border-primary",
+								errors.password ? "border-destructive" : "border-input focus-within:border-primary",
 							)}
 						>
 							<Form.Control asChild>
@@ -422,13 +422,13 @@ function AddLoginStep({
 									name="password"
 									placeholder="Enter password"
 									autoComplete="current-password"
-									className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 bg-transparent outline-none"
+									className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 								/>
 							</Form.Control>
 							<button
 								type="button"
 								onClick={() => setShowPassword((v) => !v)}
-								className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none shrink-0"
+								className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none shrink-0"
 							>
 								{showPassword ? <Eye size={15} /> : <EyeOff size={15} />}
 							</button>
@@ -442,7 +442,7 @@ function AddLoginStep({
 					<Form.Submit asChild>
 						<button
 							disabled={addLinkedAccount.isPending}
-							className="w-full h-12 rounded-full bg-primary text-white text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-2"
+							className="w-full h-12 rounded-full bg-primary text-primary-foreground text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-2"
 						>
 							{addLinkedAccount.isPending ? (
 								<>
@@ -535,13 +535,15 @@ function AddOtpStep({
 	}
 
 	return (
-		<div className="border-l border-gray-100 h-full flex flex-col overflow-hidden">
+		<div className="border-l border-border h-full flex flex-col overflow-hidden">
 			<PanelHeader title={method.title} onBack={onBack} />
 
 			<div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden px-6 py-6">
-				<p className="text-[13.5px] text-gray-500 leading-relaxed mb-1">{method.description}</p>
+				<p className="text-[13.5px] text-muted-foreground leading-relaxed mb-1">
+					{method.description}
+				</p>
 				{method.showEmail && (
-					<p className="text-[13.5px] font-semibold text-gray-900 mb-7 break-all">{email}</p>
+					<p className="text-[13.5px] font-semibold text-foreground mb-7 break-all">{email}</p>
 				)}
 				{!method.showEmail && <div className="mb-7" />}
 
@@ -558,7 +560,7 @@ function AddOtpStep({
 							{Array.from({ length: 6 }).map((_, i) => (
 								<OneTimePasswordField.Input
 									key={i}
-									className="flex-1 min-w-0 max-w-12 h-12 text-center text-lg font-semibold bg-gray-100 text-gray-900 rounded-xl border-2 border-transparent focus:outline-none focus:border-primary caret-primary transition-colors duration-150"
+									className="flex-1 min-w-0 max-w-12 h-12 text-center text-lg font-semibold bg-muted text-foreground rounded-xl border-2 border-transparent focus:outline-none focus:border-primary caret-primary transition-colors duration-150"
 								/>
 							))}
 							<OneTimePasswordField.HiddenInput />
@@ -577,7 +579,7 @@ function AddOtpStep({
 					<Form.Submit asChild>
 						<button
 							disabled={isPending}
-							className="w-full h-12 rounded-full bg-primary text-white text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+							className="w-full h-12 rounded-full bg-primary text-primary-foreground text-[14.5px] font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
 						>
 							{isPending ? (
 								<>
