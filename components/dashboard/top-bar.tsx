@@ -1,22 +1,14 @@
 "use client"
 
-import { useLogout } from "@/hooks/use-auth"
+import { useLinkedAccounts, useSwitchAccount } from "@/hooks/use-linked-accounts"
+import { authApi } from "@/lib/api"
+import { resolveMediaUrl } from "@/lib/server-config"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
-import {
-	Check,
-	ChevronDown,
-	ChevronRight,
-	LogOut,
-	Monitor,
-	Moon,
-	Search,
-	Sun,
-	User,
-	X,
-} from "lucide-react"
-import { useTheme } from "next-themes"
+import { useQueryClient } from "@tanstack/react-query"
+import { ChevronDown, Loader2, LogOut, Plus, Search, UserPlus, X } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { Bell, Event, Marketplace, Message, Social } from "./icons"
@@ -27,12 +19,6 @@ const CATEGORY_ICONS = [
 	{ label: "Event", icon: Event },
 	{ label: "Marketplace", icon: Marketplace },
 ]
-
-const THEME_OPTIONS = [
-	{ value: "system", label: "System", icon: Monitor, hint: "Follow device" },
-	{ value: "light", label: "Light", icon: Sun, hint: "Always light" },
-	{ value: "dark", label: "Dark", icon: Moon, hint: "Always dark" },
-] as const
 
 function getInitials(firstName: string, lastName: string) {
 	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
@@ -45,7 +31,20 @@ function LogoutDialog({
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }) {
-	const logout = useLogout()
+	const router = useRouter()
+	const queryClient = useQueryClient()
+	const logoutStore = useAuthStore((s) => s.logout)
+	const [pending, setPending] = useState(false)
+
+	const handleLogout = async () => {
+		setPending(true)
+		try {
+			await authApi.logout()
+		} catch {}
+		logoutStore()
+		queryClient.clear()
+		router.push("/sign-in")
+	}
 
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -88,11 +87,17 @@ function LogoutDialog({
 							</button>
 						</Dialog.Close>
 						<button
-							onClick={() => logout.mutate()}
-							disabled={logout.isPending}
-							className="flex-1 h-11 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center"
+							onClick={handleLogout}
+							disabled={pending}
+							className="flex-1 h-11 rounded-xl bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 disabled:opacity-50 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
 						>
-							{logout.isPending ? "Logging out…" : "Log out"}
+							{pending ? (
+								<>
+									<Loader2 size={13} className="animate-spin" /> Logging out…
+								</>
+							) : (
+								"Log out"
+							)}
 						</button>
 					</div>
 				</Dialog.Content>
@@ -103,16 +108,41 @@ function LogoutDialog({
 
 export function TopBar() {
 	const user = useAuthStore((s) => s.user)
+	const logoutStore = useAuthStore((s) => s.logout)
+	const router = useRouter()
+	const queryClient = useQueryClient()
+
+	const { data: linkedData, isLoading: accountsLoading } = useLinkedAccounts()
+	const switchAccount = useSwitchAccount()
+	const [switchingId, setSwitchingId] = useState<number | null>(null)
+
 	const [searchOpen, setSearchOpen] = useState(false)
 	const [logoutOpen, setLogoutOpen] = useState(false)
-	const { theme, setTheme } = useTheme()
 
 	const displayName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 		: "Loading…"
 
-	const currentOpt = THEME_OPTIONS.find((o) => o.value === theme) ?? THEME_OPTIONS[0]
-	const ThemeIcon = currentOpt.icon
+	const allAccounts = linkedData?.data?.accounts ?? []
+	const otherAccounts = allAccounts.filter(
+		(a) => a.email !== user?.email && a.username !== user?.username,
+	)
+
+	const handleCreateAccount = async () => {
+		try {
+			await authApi.logout()
+		} catch {}
+		logoutStore()
+		queryClient.clear()
+		router.push("/sign-up")
+	}
+
+	const handleSwitchAccount = (id: number) => {
+		setSwitchingId(id)
+		switchAccount.mutate(String(id), {
+			onSettled: () => setSwitchingId(null),
+		})
+	}
 
 	return (
 		<>
@@ -203,16 +233,16 @@ export function TopBar() {
 									align="end"
 									sideOffset={8}
 									collisionPadding={12}
-									className="z-150 min-w-54 bg-popover border border-border rounded-2xl p-1.5
+									className="z-150 min-w-64 bg-popover border border-border rounded-2xl p-1.5
 										shadow-xl
 										data-[state=open]:animate-in data-[state=closed]:animate-out
 										data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
 										data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
 										origin-top-right"
 								>
-									{/* User header — non-interactive */}
-									<div className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 mb-0.5 pointer-events-none select-none">
-										<Avatar.Root className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+									{/* ── Current user ── */}
+									<div className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 pointer-events-none select-none">
+										<Avatar.Root className="w-9 h-9 rounded-full overflow-hidden shrink-0">
 											<Avatar.Image
 												src={user?.profile_photo}
 												alt={displayName}
@@ -222,7 +252,7 @@ export function TopBar() {
 												{user ? getInitials(user.first_name ?? "", user.last_name ?? "") : "?"}
 											</Avatar.Fallback>
 										</Avatar.Root>
-										<div className="min-w-0">
+										<div className="min-w-0 flex-1">
 											<p className="text-[13px] font-bold text-foreground truncate leading-snug">
 												{displayName}
 											</p>
@@ -230,102 +260,86 @@ export function TopBar() {
 												@{user?.username ?? ""}
 											</p>
 										</div>
+										<span className="text-[9.5px] font-bold text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full leading-none shrink-0 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
+											Active
+										</span>
 									</div>
 
-									<DropdownMenu.Separator className="h-px bg-border -mx-1.5 my-1" />
-
-									{/* My Profile — disabled */}
-									<DropdownMenu.Item
-										disabled
-										className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] text-muted-foreground/60 select-none outline-none cursor-default"
-									>
-										<User size={14} className="shrink-0 text-muted-foreground/40" />
-										<span className="flex-1">My Profile</span>
-										<span className="text-[9.5px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-semibold tracking-wide uppercase leading-none">
-											Soon
-										</span>
-									</DropdownMenu.Item>
-
-									{/* Appearance — submenu */}
-									<DropdownMenu.Sub>
-										<DropdownMenu.SubTrigger className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] text-foreground cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent data-[state=open]:bg-accent w-full">
-											<ThemeIcon size={14} className="shrink-0 text-muted-foreground" />
-											<span className="flex-1 text-left">Appearance</span>
-											<div className="flex items-center gap-1 text-muted-foreground">
-												<span className="text-[11.5px]">{currentOpt.label}</span>
-												<ChevronRight size={12} className="shrink-0" />
-											</div>
-										</DropdownMenu.SubTrigger>
-
-										<DropdownMenu.Portal>
-											<DropdownMenu.SubContent
-												sideOffset={8}
-												alignOffset={-6}
-												className="z-150 min-w-46 bg-popover border border-border rounded-2xl p-1.5
-													shadow-xl
-													data-[state=open]:animate-in data-[state=closed]:animate-out
-													data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
-													data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
-													origin-top-left"
-											>
-												<p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest select-none">
-													Theme
-												</p>
-
-												{THEME_OPTIONS.map((opt) => {
-													const active = theme === opt.value
+									{/* ── Other linked accounts ── */}
+									{accountsLoading ? (
+										<div className="flex items-center justify-center py-2.5">
+											<Loader2 size={14} className="animate-spin text-muted-foreground" />
+										</div>
+									) : (
+										otherAccounts.length > 0 && (
+											<>
+												<DropdownMenu.Separator className="h-px bg-border -mx-1.5 my-1" />
+												{otherAccounts.map((account) => {
+													const name =
+														[account.first_name, account.last_name].filter(Boolean).join(" ") ||
+														account.username
+													const isPending = switchingId === account.id
 													return (
 														<DropdownMenu.Item
-															key={opt.value}
-															onSelect={() => setTheme(opt.value)}
-															className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent"
+															key={account.id}
+															onSelect={() => handleSwitchAccount(account.id)}
+															disabled={isPending || switchAccount.isPending}
+															className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent data-disabled:opacity-50 data-disabled:cursor-default"
 														>
-															<div
-																className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-																	active ? "bg-primary/10" : "bg-muted"
-																}`}
-															>
-																<opt.icon
-																	size={13}
-																	className={active ? "text-primary" : "text-muted-foreground"}
-																	strokeWidth={active ? 2.5 : 1.75}
+															<Avatar.Root className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+																<Avatar.Image
+																	src={resolveMediaUrl(account.profile_photo)}
+																	alt={name}
+																	className="w-full h-full object-cover"
 																/>
-															</div>
+																<Avatar.Fallback className="w-full h-full bg-primary/20 text-primary text-[11px] font-bold flex items-center justify-center">
+																	{getInitials(account.first_name, account.last_name)}
+																</Avatar.Fallback>
+															</Avatar.Root>
 															<div className="flex-1 min-w-0">
-																<p
-																	className={`text-[13px] leading-tight ${
-																		active ? "font-semibold text-primary" : "text-foreground"
-																	}`}
-																>
-																	{opt.label}
+																<p className="text-[13px] font-semibold text-foreground truncate leading-snug">
+																	{name}
 																</p>
-																<p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-																	{opt.hint}
+																<p className="text-[11px] text-muted-foreground truncate">
+																	@{account.username}
 																</p>
 															</div>
-															{active && (
-																<Check
+															{isPending ? (
+																<Loader2
 																	size={13}
-																	className="text-primary shrink-0"
-																	strokeWidth={2.5}
+																	className="animate-spin text-muted-foreground shrink-0"
 																/>
+															) : (
+																<div className="w-4 h-4 rounded-full border-2 border-border shrink-0" />
 															)}
 														</DropdownMenu.Item>
 													)
 												})}
-											</DropdownMenu.SubContent>
-										</DropdownMenu.Portal>
-									</DropdownMenu.Sub>
+											</>
+										)
+									)}
 
 									<DropdownMenu.Separator className="h-px bg-border -mx-1.5 my-1" />
 
-									{/* Log out */}
+									{/* ── Account actions ── */}
 									<DropdownMenu.Item
-										onSelect={() => setLogoutOpen(true)}
-										className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] text-destructive cursor-pointer select-none outline-none transition-colors hover:bg-destructive/10 data-highlighted:bg-destructive/10 mb-0.5"
+										onSelect={() => router.push("/settings")}
+										className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent"
 									>
-										<LogOut size={14} className="shrink-0" strokeWidth={1.75} />
-										<span>Log out</span>
+										<div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+											<UserPlus size={13} className="text-muted-foreground" />
+										</div>
+										<span className="text-foreground">Add existing account</span>
+									</DropdownMenu.Item>
+
+									<DropdownMenu.Item
+										onSelect={handleCreateAccount}
+										className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent"
+									>
+										<div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+											<Plus size={13} className="text-muted-foreground" />
+										</div>
+										<span className="text-foreground">Create new account</span>
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Portal>
@@ -333,7 +347,7 @@ export function TopBar() {
 					</div>
 				</div>
 
-				{/* Mobile full-width search overlay */}
+				{/* mobile full-width search overlay */}
 				{searchOpen && (
 					<div className="sm:hidden absolute inset-x-0 top-0 h-14 bg-background/95 backdrop-blur-md z-10 flex items-center gap-2 px-3 border-b border-border">
 						<Search size={16} className="text-muted-foreground shrink-0" />

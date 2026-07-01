@@ -67,7 +67,7 @@ async function refreshAuth(refreshToken: string) {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ refresh: refreshToken }),
-			signal: AbortSignal.timeout(8000),
+			signal: AbortSignal.timeout(10000),
 		})
 
 		const json = await res.json().catch(() => null)
