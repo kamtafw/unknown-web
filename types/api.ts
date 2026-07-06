@@ -506,3 +506,34 @@ export interface BlockedUser {
 
 export type BlockedUsersResponse = ApiResponse<PaginatedResponse<BlockedUser>>
 export type UnblockUsersResponse = ApiResponse<{ unblocked_ids: number[] }>
+
+export interface UserProfileData {
+	id: string
+	pkid: number
+	username: string
+	email: string
+	first_name: string | null
+	last_name: string | null
+	phone_number: string
+	profile_photo: string | null
+	cover_photo: string | null
+	country: string
+	state: string
+	date_joined: string
+	profile: {
+		occupation: string
+		interests: string[]
+		about_me: string
+	}
+	external_links: ExternalLink[]
+	follower_count: number
+	following_count: number
+	connection_count: number
+	is_blocked: boolean
+	is_muted: boolean
+	is_following_you: boolean
+	is_user_you_follow: boolean
+	is_connected_to_you: boolean
+}
+
+export type UserProfileResponse = ApiResponse<UserProfileData>

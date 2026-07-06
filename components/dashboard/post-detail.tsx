@@ -12,6 +12,7 @@ import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } f
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { forwardRef, useEffect, useRef, useState } from "react"
+import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
 import {
@@ -647,13 +648,20 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 		<>
 			<div className="px-5">
 				<div className="flex items-start gap-3 pt-5 pb-2">
-					<UserAvatar
-						src={post.user.profile_photo}
-						first={post.user.first_name}
-						last={post.user.last_name}
-					/>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<UserAvatar
+							src={post.user.profile_photo}
+							first={post.user.first_name}
+							last={post.user.last_name}
+							className="cursor-pointer"
+						/>
+					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<p className="font-bold text-[15px] text-foreground leading-tight">{fullname}</p>
+						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+							<p className="font-bold text-[15px] text-foreground leading-tight cursor-pointer hover:underline underline-offset-2 w-fit">
+								{fullname}
+							</p>
+						</AuthorHoverCard>
 						<p className="text-muted-foreground text-sm">@{post.user.username}</p>
 					</div>
 

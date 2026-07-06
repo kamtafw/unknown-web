@@ -3,7 +3,7 @@ import { toast } from "sonner"
 
 export const apiClient: AxiosInstance = axios.create({
 	withCredentials: true, // sends the HTTP-only cookies on every request
-	timeout: 1000 * 20,
+	timeout: 1000 * 30,
 })
 
 let isRefreshing = false

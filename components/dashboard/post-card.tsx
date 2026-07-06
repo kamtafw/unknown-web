@@ -4,13 +4,14 @@ import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
 import { MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
-import { useState } from "react"
+import { forwardRef, useState } from "react"
 import {
 	Block,
 	ChangeReplier,
@@ -25,6 +26,7 @@ import {
 	Trash,
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
+import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { QuoteModal } from "./quote-modal"
@@ -87,21 +89,23 @@ function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 	}
 }
 
-export function UserAvatar({
-	src,
-	first,
-	last,
-	size = "md",
-}: {
-	src?: string | null
-	first: string
-	last: string
-	size?: "sm" | "md"
-}) {
+export const UserAvatar = forwardRef<
+	HTMLSpanElement,
+	{
+		src?: string | null
+		first: string
+		last: string
+		size?: "sm" | "md"
+		className?: string
+	}
+>(function UserAvatar({ src, first, last, size = "md", className }, ref) {
 	const dim = size === "sm" ? "w-8 h-8" : "w-10 h-10"
 	const txt = size === "sm" ? "text-[11px]" : "text-sm"
 	return (
-		<Avatar.Root className={`${dim} rounded-full overflow-hidden shrink-0`}>
+		<Avatar.Root
+			ref={ref}
+			className={cn(`${dim} rounded-full overflow-hidden shrink-0`, className)}
+		>
 			<Avatar.Image
 				src={src ?? undefined}
 				alt={`${first} ${last}`}
@@ -114,7 +118,7 @@ export function UserAvatar({
 			</Avatar.Fallback>
 		</Avatar.Root>
 	)
-}
+})
 
 export function MediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
@@ -481,14 +485,14 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 			onSelect: () => console.log("TODO: read post", post.id),
 		},
 		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: request note", post.id),
-		},
-		{
 			label: "Not interested in this post",
 			icon: <NotInterested />,
 			onSelect: () => console.log("TODO: not interested", post.id),
+		},
+		{
+			label: "Request community note",
+			icon: <RequestNote />,
+			onSelect: () => console.log("TODO: request note", post.id),
 		},
 		{
 			label: post.bookmarked_by_me ? "Remove from saved" : "Add to saved",
@@ -516,11 +520,6 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 			icon: <Block />,
 			onSelect: () => console.log("TODO: block", post.user.username),
 			destructive: true,
-		},
-		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: community note", post.id),
 		},
 	]
 
@@ -577,13 +576,19 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div onClick={() => router.push(`/posts/${displayPost.pkid}`)} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<UserAvatar
-						src={displayPost.user.profile_photo}
-						first={displayPost.user.first_name}
-						last={displayPost.user.last_name}
-					/>
+					<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<UserAvatar
+							src={displayPost.user.profile_photo}
+							first={displayPost.user.first_name}
+							last={displayPost.user.last_name}
+						/>
+					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<span className="font-semibold text-sm text-foreground">{fullname}</span>{" "}
+						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-2">
+								{fullname}
+							</span>{" "}
+						</AuthorHoverCard>
 						<span className="text-muted-foreground text-[13.5px]">
 							@{displayPost.user.username}
 						</span>

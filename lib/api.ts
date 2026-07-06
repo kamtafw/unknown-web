@@ -62,6 +62,7 @@ import {
 	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
+	UserProfileResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 	VerifyTotpResponse,
@@ -80,9 +81,10 @@ export const authApi = {
 
 	verifyOtp: (payload: VerifyOtpPayload) =>
 		apiClient
-			.post<
-				ApiResponse<VerifyOtpResponseData & { otp_token: string }>
-			>("/api/auth/verify-otp", payload)
+			.post<ApiResponse<VerifyOtpResponseData & { otp_token: string }>>(
+				"/api/auth/verify-otp",
+				payload,
+			)
 			.then((r) => r.data),
 
 	resendOtp: (email: string) =>
@@ -286,6 +288,9 @@ export const userApi = {
 		apiClient
 			.post<UnblockUsersResponse>("/api/users/privacy/unblock-users", { user_ids: userIds })
 			.then((r) => r.data),
+
+	getUserProfile: (pkid: number) =>
+		apiClient.get<UserProfileResponse>(`/api/users/${pkid}/profile`).then((r) => r.data),
 }
 
 export const socialApi = {
