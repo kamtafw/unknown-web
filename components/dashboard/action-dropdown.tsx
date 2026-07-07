@@ -43,7 +43,7 @@ export function ActionDropdown({ trigger, items, clsName, onOpenChange }: Action
 					sideOffset={-32}
 					align="end"
 					collisionPadding={12}
-					className="z-99 min-w-48 bg-popover rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.15)] border border-border
+					className="z-99 min-w-48 bg-popover rounded-2xl p-1.5 shadow-lg border border-border
 						data-[state=open]:animate-in data-[state=closed]:animate-out
 						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
 						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95

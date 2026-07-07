@@ -33,6 +33,15 @@ export function extractFieldErrors(error: unknown): Record<string, string> {
 	return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v.message]))
 }
 
+/**
+ * for endpoints that report validation failures via errors.non_field_errors.message
+ * (as opposed to per-field errors) — falls back to top-level message, then fallback
+ */
+export function extractNonFieldError(error: unknown, fallback: string): string {
+	const fieldErrors = extractFieldErrors(error)
+	return fieldErrors.non_field_errors ?? extractMessage(error, fallback)
+}
+
 export function extractOtpMessage(error: unknown): string {
 	const msg = extractMessage(error)
 	if (msg.toLowerCase() === "validation error") return "Invalid code. Please try again."

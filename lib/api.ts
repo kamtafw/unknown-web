@@ -297,10 +297,10 @@ export const userApi = {
 	muteUser: (payload: { muted_user: number }) =>
 		apiClient.post<MuteUserResponse>("/api/users/mute-user", payload).then((r) => r.data),
 
-	unmuteUser: (pkid: number) =>
-		apiClient.delete<UnmuteUserResponse>(`/api/users/mute-user/${pkid}`).then((r) => r.data),
+	unmuteUser: (payload: { muted_user: number }) =>
+		apiClient.post<UnmuteUserResponse>("/api/users/unmute-user", payload).then((r) => r.data),
 
-	blockUser: (payload: { blocked_user: number; reason?: string }) =>
+	blockUser: (payload: { user_id: number }) =>
 		apiClient.post<BlockUserResponse>("/api/users/privacy/block-user", payload).then((r) => r.data),
 
 	getUserProfile: (pkid: number) =>

@@ -1,10 +1,30 @@
 import { userApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
-import { BlockedUsersResponse } from "@/types/api"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { usePostInteractionsStore } from "@/stores/post-interactions-store"
+import { BlockedUsersResponse, Post } from "@/types/api"
+import { InfiniteData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { feedKeys } from "./use-feed"
 
 export const blockedUsersKey = ["users", "blocked"] as const
+
+type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
+
+function removeUserPostsFromFeeds(qc: ReturnType<typeof useQueryClient>, authorPkid: number) {
+	const keys = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
+	keys.forEach((key) =>
+		qc.setQueryData<FeedCache>(key, (old) => {
+			if (!old) return old
+			return {
+				...old,
+				pages: old.pages.map((page) => ({
+					...page,
+					posts: page.posts.filter((p) => p.user.pkid !== authorPkid),
+				})),
+			}
+		}),
+	)
+}
 
 export function useBlockedUsers() {
 	return useQuery({
@@ -41,6 +61,25 @@ export function useUnblockUsers() {
 
 		onError: (error) => {
 			showMutationErrorToast(error, "Failed to unblock. Please try again.")
+		},
+	})
+}
+
+export function useBlockUser() {
+	const qc = useQueryClient()
+	const setBlocked = usePostInteractionsStore((s) => s.setBlocked)
+
+	return useMutation({
+		mutationFn: (pkid: number) => userApi.blockUser({ user_id: pkid }),
+		onMutate: (pkid) => setBlocked(pkid, true),
+		onSuccess: (data, pkid) => {
+			if (!data.success) return
+			removeUserPostsFromFeeds(qc, pkid)
+			toast.success("Account blocked")
+		},
+		onError: (error, pkid) => {
+			setBlocked(pkid, false)
+			showMutationErrorToast(error, "Failed to block. Please try again.")
 		},
 	})
 }

@@ -129,11 +129,13 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 				<div className="flex gap-3">
 					{/* Avatar + optional thread line */}
 					<div className="flex flex-col items-center shrink-0">
-						<UserAvatar
-							src={comment.user.profile_photo}
-							first={comment.user.first_name}
-							last={comment.user.last_name}
-						/>
+						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+							<UserAvatar
+								src={comment.user.profile_photo}
+								first={comment.user.first_name}
+								last={comment.user.last_name}
+							/>
+						</AuthorHoverCard>
 						{repliesOpen && comment.replies_count > 0 && (
 							<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
 						)}
@@ -142,10 +144,14 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 					<div className="flex-1 min-w-0">
 						{/* Header */}
 						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground leading-tight">
-								{fullname}
-							</span>
-							<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+								<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
+									{fullname}
+								</span>
+							</AuthorHoverCard>
+							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+								<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+							</AuthorHoverCard>
 							<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
 						</div>
 
@@ -222,18 +228,24 @@ function ReplyRow({ reply }: { reply: Comment }) {
 
 	return (
 		<div className="flex gap-2.5 py-2.5">
-			<UserAvatar
-				src={reply.user.profile_photo}
-				first={reply.user.first_name}
-				last={reply.user.last_name}
-				size="sm"
-			/>
+			<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+				<UserAvatar
+					src={reply.user.profile_photo}
+					first={reply.user.first_name}
+					last={reply.user.last_name}
+					size="sm"
+				/>
+			</AuthorHoverCard>
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5 flex-wrap">
-					<span className="font-semibold text-[13px] text-foreground leading-tight">
-						{fullname}
-					</span>
-					<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
+					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+						<span className="font-semibold text-[13px] text-foreground leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+						<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
+					</AuthorHoverCard>
 					<span className="text-muted-foreground/70 text-[12px]">· {timeAgo}</span>
 				</div>
 				{reply.message?.trim() && (
@@ -662,7 +674,9 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 								{fullname}
 							</p>
 						</AuthorHoverCard>
-						<p className="text-muted-foreground text-sm">@{post.user.username}</p>
+						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+							<p className="text-muted-foreground text-sm">@{post.user.username}</p>
+						</AuthorHoverCard>
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
