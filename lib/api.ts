@@ -5,6 +5,7 @@ import {
 	AddLinkedAccountResponse,
 	ApiResponse,
 	BlockedUsersResponse,
+	BlockUserResponse,
 	BookmarkResponse,
 	ChangeOtpDefaultResponse,
 	ChangeTimezoneResponse,
@@ -29,6 +30,8 @@ import {
 	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
+	MuteUserResponse,
+	NotInterestedResponse,
 	NullResponse,
 	OtpDefault,
 	PostDetailResponse,
@@ -37,6 +40,7 @@ import {
 	ReportProblemResponse,
 	RepostPayload,
 	RepostResponse,
+	RequestNoteResponse,
 	ResetPasswordPayload,
 	ResetPasswordResponse,
 	SetPinResponse,
@@ -51,6 +55,7 @@ import {
 	TimezonePreferenceResponse,
 	UnblockUsersResponse,
 	UnknownResponse,
+	UnmuteUserResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
 	UpdateDobResponse,
@@ -289,6 +294,15 @@ export const userApi = {
 			.post<UnblockUsersResponse>("/api/users/privacy/unblock-users", { user_ids: userIds })
 			.then((r) => r.data),
 
+	muteUser: (payload: { muted_user: number }) =>
+		apiClient.post<MuteUserResponse>("/api/users/mute-user", payload).then((r) => r.data),
+
+	unmuteUser: (pkid: number) =>
+		apiClient.delete<UnmuteUserResponse>(`/api/users/mute-user/${pkid}`).then((r) => r.data),
+
+	blockUser: (payload: { blocked_user: number; reason?: string }) =>
+		apiClient.post<BlockUserResponse>("/api/users/privacy/block-user", payload).then((r) => r.data),
+
 	getUserProfile: (pkid: number) =>
 		apiClient.get<UserProfileResponse>(`/api/users/${pkid}/profile`).then((r) => r.data),
 }
@@ -347,4 +361,12 @@ export const socialApi = {
 		})
 		return res.data.data.media_urls
 	},
+
+	notInterested: (payload: { post: string }) =>
+		apiClient
+			.post<NotInterestedResponse>("/api/socials/not-interested", payload)
+			.then((r) => r.data),
+
+	requestCommunityNote: (payload: { post: string; reason?: string }) =>
+		apiClient.post<RequestNoteResponse>("/api/socials/request-note", payload).then((r) => r.data),
 }
