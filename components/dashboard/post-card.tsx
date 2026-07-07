@@ -1,16 +1,21 @@
 "use client"
 
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useMuteUser, useNotInterested, useUnmuteUser } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
+import { usePostInteractionsStore } from "@/stores/post-interactions-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
 import { MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
-import { useState } from "react"
+import { forwardRef, useState } from "react"
+import { toast } from "sonner"
 import {
 	Block,
 	ChangeReplier,
@@ -25,9 +30,13 @@ import {
 	Trash,
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
+import { AuthorHoverCard } from "./author-hover-card"
+import { BlockUserModal } from "./block-user-modal"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { QuoteModal } from "./quote-modal"
+import { ReadAloudModal } from "./read-aloud-modal"
+import { RequestNoteModal } from "./request-note-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -87,21 +96,23 @@ function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 	}
 }
 
-export function UserAvatar({
-	src,
-	first,
-	last,
-	size = "md",
-}: {
-	src?: string | null
-	first: string
-	last: string
-	size?: "sm" | "md"
-}) {
+export const UserAvatar = forwardRef<
+	HTMLSpanElement,
+	{
+		src?: string | null
+		first: string
+		last: string
+		size?: "sm" | "md"
+		className?: string
+	}
+>(function UserAvatar({ src, first, last, size = "md", className }, ref) {
 	const dim = size === "sm" ? "w-8 h-8" : "w-10 h-10"
 	const txt = size === "sm" ? "text-[11px]" : "text-sm"
 	return (
-		<Avatar.Root className={`${dim} rounded-full overflow-hidden shrink-0`}>
+		<Avatar.Root
+			ref={ref}
+			className={cn(`${dim} rounded-full overflow-hidden shrink-0`, className)}
+		>
 			<Avatar.Image
 				src={src ?? undefined}
 				alt={`${first} ${last}`}
@@ -114,7 +125,7 @@ export function UserAvatar({
 			</Avatar.Fallback>
 		</Avatar.Root>
 	)
-}
+})
 
 export function MediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
@@ -450,6 +461,48 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
 	const isOwn = post.user.pkid === currentUserId
 
+	const [readAloudOpen, setReadAloudOpen] = useState(false)
+	const [requestNoteOpen, setRequestNoteOpen] = useState(false)
+	const [blockOpen, setBlockOpen] = useState(false)
+
+	const bookmarkPost = useBookmarkPost()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
+	const muteUser = useMuteUser()
+	const unmuteUser = useUnmuteUser()
+	const notInterested = useNotInterested()
+
+	const isFollowed = usePostInteractionsStore((s) => s.followedUserIds.includes(post.user.pkid))
+	const isMuted = usePostInteractionsStore((s) => s.mutedUserIds.includes(post.user.pkid))
+	const setFollowed = usePostInteractionsStore((s) => s.setFollowed)
+
+	const handleFollowToggle = () => {
+		if (isFollowed) {
+			setFollowed(post.user.pkid, false)
+			unfollowUser.mutate(post.user.pkid, { onError: () => setFollowed(post.user.pkid, true) })
+		} else {
+			setFollowed(post.user.pkid, true)
+			followUser.mutate(post.user.pkid, { onError: () => setFollowed(post.user.pkid, false) })
+		}
+	}
+
+	const handleMuteToggle = () => {
+		if (isMuted) unmuteUser.mutate(post.user.pkid)
+		else muteUser.mutate(post.user.pkid)
+	}
+
+	const handleNotInterested = () => {
+		notInterested.mutate(post.id, {
+			onSuccess: () =>
+				toast.info("You'll see fewer posts like this", {
+					action: {
+						label: "Undo",
+						onClick: () => usePostInteractionsStore.getState().unmarkNotInterested(post.id),
+					},
+				}),
+		})
+	}
+
 	const ownItems: ActionDropdownItem[] = [
 		{
 			label: "Edit post",
@@ -478,17 +531,17 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 		{
 			label: "Read post out loud",
 			icon: <ScreenReader />,
-			onSelect: () => console.log("TODO: read post", post.id),
-		},
-		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: request note", post.id),
+			onSelect: () => setReadAloudOpen(true),
 		},
 		{
 			label: "Not interested in this post",
 			icon: <NotInterested />,
-			onSelect: () => console.log("TODO: not interested", post.id),
+			onSelect: handleNotInterested,
+		},
+		{
+			label: "Request community note",
+			icon: <RequestNote />,
+			onSelect: () => setRequestNoteOpen(true),
 		},
 		{
 			label: post.bookmarked_by_me ? "Remove from saved" : "Add to saved",
@@ -499,37 +552,47 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 					bookmarked={post.bookmarked_by_me}
 				/>
 			),
-			onSelect: () => console.log("TODO: save post", post.id),
+			onSelect: () => bookmarkPost.mutate(post.id),
 		},
 		{
-			label: `Follow @${post.user.username}`,
+			label: isFollowed ? `Unfollow @${post.user.username}` : `Follow @${post.user.username}`,
 			icon: <Connect />,
-			onSelect: () => console.log("TODO: follow", post.user.username),
+			onSelect: handleFollowToggle,
 		},
 		{
-			label: `Mute @${post.user.username}`,
+			label: isMuted ? `Unmute @${post.user.username}` : `Mute @${post.user.username}`,
 			icon: <Mute />,
-			onSelect: () => console.log("TODO: mute", post.user.username),
+			onSelect: handleMuteToggle,
 		},
 		{
 			label: `Block @${post.user.username}`,
 			icon: <Block />,
-			onSelect: () => console.log("TODO: block", post.user.username),
+			onSelect: () => setBlockOpen(true),
 			destructive: true,
-		},
-		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: community note", post.id),
 		},
 	]
 
 	return (
-		<ActionDropdown
-			trigger={<MoreHorizontal size={18} />}
-			items={isOwn ? ownItems : otherItems}
-			clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
-		/>
+		<>
+			<ActionDropdown
+				trigger={<MoreHorizontal size={18} />}
+				items={isOwn ? ownItems : otherItems}
+				clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
+			/>
+
+			<ReadAloudModal
+				text={post.content_text ?? ""}
+				open={readAloudOpen}
+				onOpenChange={setReadAloudOpen}
+			/>
+			<RequestNoteModal postId={post.id} open={requestNoteOpen} onOpenChange={setRequestNoteOpen} />
+			<BlockUserModal
+				pkid={post.user.pkid}
+				username={post.user.username}
+				open={blockOpen}
+				onOpenChange={setBlockOpen}
+			/>
+		</>
 	)
 }
 
@@ -577,13 +640,19 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div onClick={() => router.push(`/posts/${displayPost.pkid}`)} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<UserAvatar
-						src={displayPost.user.profile_photo}
-						first={displayPost.user.first_name}
-						last={displayPost.user.last_name}
-					/>
+					<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<UserAvatar
+							src={displayPost.user.profile_photo}
+							first={displayPost.user.first_name}
+							last={displayPost.user.last_name}
+						/>
+					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<span className="font-semibold text-sm text-foreground">{fullname}</span>{" "}
+						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-2">
+								{fullname}
+							</span>
+						</AuthorHoverCard>{" "}
 						<span className="text-muted-foreground text-[13.5px]">
 							@{displayPost.user.username}
 						</span>
