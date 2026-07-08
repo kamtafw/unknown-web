@@ -152,26 +152,6 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 											<span className="text-xs text-muted-foreground">{label}</span>
 										</div>
 									))}
-									{/* <span className="text-[13px]">
-										<strong className="text-foreground font-bold">
-											{formatCount(profile?.following_count ?? 0)}
-										</strong>{" "}
-										<span className="text-muted-foreground">Following</span>
-									</span>
-									<span className="text-[13px]">
-										<strong className="text-foreground font-bold">
-											{formatCount(profile?.follower_count ?? 0)}
-										</strong>{" "}
-										<span className="text-muted-foreground">Followers</span>
-									</span>
-									{!!profile?.connection_count && (
-										<span className="text-[13px]">
-											<strong className="text-foreground font-bold">
-												{formatCount(profile.connection_count)}
-											</strong>{" "}
-											<span className="text-muted-foreground">Connections</span>
-										</span>
-									)} */}
 								</div>
 							)}
 						</div>

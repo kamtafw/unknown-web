@@ -1,8 +1,9 @@
 "use client"
 
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
-import { useMuteUser, useNotInterested, useUnmuteUser } from "@/hooks/use-post-interactions"
+import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
@@ -191,17 +192,23 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<UserAvatar
-					src={comment.user.profile_photo}
-					first={comment.user.first_name}
-					last={comment.user.last_name}
-					size="sm"
-				/>
+				<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+					<UserAvatar
+						src={comment.user.profile_photo}
+						first={comment.user.first_name}
+						last={comment.user.last_name}
+						size="sm"
+					/>
+				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-						{fullname}
-					</span>
-					<span>@{comment.user.username}</span>
+					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<span>@{comment.user.username}</span>
+					</AuthorHoverCard>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -227,17 +234,23 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<UserAvatar
-					src={post.user.profile_photo}
-					first={post.user.first_name}
-					last={post.user.last_name}
-					size="sm"
-				/>
+				<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+					<UserAvatar
+						src={post.user.profile_photo}
+						first={post.user.first_name}
+						last={post.user.last_name}
+						size="sm"
+					/>
+				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-						{fullname}
-					</span>
-					<span>@{post.user.username}</span>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<span>@{post.user.username}</span>
+					</AuthorHoverCard>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -649,13 +662,15 @@ export function PostCard({ post }: { post: Post }) {
 					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
 						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
-							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-2">
+							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>{" "}
-						<span className="text-muted-foreground text-[13.5px]">
-							@{displayPost.user.username}
-						</span>
+						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+							<span className="text-muted-foreground text-[13.5px]">
+								@{displayPost.user.username}
+							</span>
+						</AuthorHoverCard>
 						<div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground overflow-hidden whitespace-nowrap">
 							<span className="shrink-0">{timeAgo}</span>
 							{address && (

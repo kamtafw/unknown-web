@@ -540,6 +540,6 @@ export type UserProfileResponse = ApiResponse<UserProfileData>
 
 export type NotInterestedResponse = ApiResponse<{ post: string }>
 export type RequestNoteResponse = ApiResponse<{ post: string; note_request_id: string }>
-export type MuteUserResponse = ApiResponse<{ muted_user: number }>
-export type UnmuteUserResponse = ApiResponse<{ unmuted_user: number }>
+export type MuteUserResponse = ApiResponse<Record<string, never>>
+export type UnmuteUserResponse = ApiResponse<Record<string, never>>
 export type BlockUserResponse = ApiResponse<{ blocked_user: number }>
