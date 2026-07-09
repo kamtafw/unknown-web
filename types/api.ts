@@ -164,6 +164,12 @@ export interface OriginalPost {
 	post_location: PostLocation[]
 	post_media: PostMedia[]
 	post_hashtagged: string[]
+	liked_by_me?: boolean
+	bookmarked_by_me?: boolean
+	reposted_by_me?: boolean
+	post_like_count?: number
+	post_comment_count?: number
+	repost_count?: number
 	created_at: string
 }
 

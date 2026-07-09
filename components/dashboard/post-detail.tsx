@@ -5,6 +5,7 @@ import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { useAuthStore } from "@/stores/auth-store"
 import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
@@ -17,7 +18,6 @@ import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
 import {
 	formatCount,
-	isOriginalComment,
 	MediaGrid,
 	mediaType,
 	PostOptionsMenu,
@@ -680,7 +680,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu post={post} currentUserId={post.user?.pkid} />
+						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
 					</div>
 				</div>
 
@@ -752,7 +752,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.is_repost}
+							reposted={post.reposted_by_me}
 							onRepost={() => {}}
 							onQuote={() => {}}
 							size={22}
@@ -827,7 +827,8 @@ export function PostDetailView({
 
 	const [commentOpen, setCommentOpen] = useState(false)
 
-	const { data: post, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
 	const {
 		data: commentsData,
 		isLoading: commentsLoading,
