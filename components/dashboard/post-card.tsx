@@ -1,5 +1,6 @@
 "use client"
 
+import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
@@ -9,14 +10,12 @@ import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { usePostInteractionsStore } from "@/stores/post-interactions-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
 import { MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { forwardRef, useState } from "react"
-import { toast } from "sonner"
 import {
 	Block,
 	ChangeReplier,
@@ -473,6 +472,7 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 
 export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
 	const isOwn = post.user.pkid === currentUserId
+	const pkid = post.user.pkid
 
 	const [readAloudOpen, setReadAloudOpen] = useState(false)
 	const [requestNoteOpen, setRequestNoteOpen] = useState(false)
@@ -483,38 +483,27 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 	const unfollowUser = useUnfollowUser()
 	const muteUser = useMuteUser()
 	const unmuteUser = useUnmuteUser()
+	const unblockUsers = useUnblockUsers()
 	const notInterested = useNotInterested()
 
-	const isFollowed = usePostInteractionsStore((s) => s.followedUserIds.includes(post.user.pkid))
-	const isMuted = usePostInteractionsStore((s) => s.mutedUserIds.includes(post.user.pkid))
-	const setFollowed = usePostInteractionsStore((s) => s.setFollowed)
+	const isFollowed = post.user.youFollowThisUser ?? false
+	const isMuted = post.user.youMutedThisUser ?? false
+	const isBlocked = post.user.youBlockedThisUser ?? false
+	const followsYou = post.user.thisUserFollowsYou ?? false
 
 	const handleFollowToggle = () => {
-		if (isFollowed) {
-			setFollowed(post.user.pkid, false)
-			unfollowUser.mutate(post.user.pkid, { onError: () => setFollowed(post.user.pkid, true) })
-		} else {
-			setFollowed(post.user.pkid, true)
-			followUser.mutate(post.user.pkid, { onError: () => setFollowed(post.user.pkid, false) })
-		}
+		if (isFollowed) unfollowUser.mutate(pkid)
+		else followUser.mutate(pkid)
 	}
 
 	const handleMuteToggle = () => {
-		if (isMuted) unmuteUser.mutate(post.user.pkid)
-		else muteUser.mutate(post.user.pkid)
+		if (isMuted) unmuteUser.mutate(pkid)
+		else muteUser.mutate(pkid)
 	}
 
-	const handleNotInterested = () => {
-		notInterested.mutate(post.id, {
-			onSuccess: () =>
-				toast.info("You'll see fewer posts like this", {
-					action: {
-						label: "Undo",
-						onClick: () => usePostInteractionsStore.getState().unmarkNotInterested(post.id),
-					},
-				}),
-		})
-	}
+	const handleUnblock = () => unblockUsers.mutate([pkid])
+
+	const handleNotInterested = () => notInterested.mutate(post.id)
 
 	const ownItems: ActionDropdownItem[] = [
 		{
@@ -568,7 +557,11 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 			onSelect: () => bookmarkPost.mutate(post.id),
 		},
 		{
-			label: isFollowed ? `Unfollow @${post.user.username}` : `Follow @${post.user.username}`,
+			label: isFollowed
+				? `Unfollow @${post.user.username}`
+				: followsYou
+					? `Follow Back @${post.user.username}`
+					: `Follow @${post.user.username}`,
 			icon: <Connect />,
 			onSelect: handleFollowToggle,
 		},
@@ -577,12 +570,18 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 			icon: <Mute />,
 			onSelect: handleMuteToggle,
 		},
-		{
-			label: `Block @${post.user.username}`,
-			icon: <Block />,
-			onSelect: () => setBlockOpen(true),
-			destructive: true,
-		},
+		isBlocked
+			? {
+					label: unblockUsers.isPending ? "Unblocking…" : `Unblock @${post.user.username}`,
+					icon: <Block />,
+					onSelect: handleUnblock,
+				}
+			: {
+					label: `Block @${post.user.username}`,
+					icon: <Block />,
+					onSelect: () => setBlockOpen(true),
+					destructive: true,
+				},
 	]
 
 	return (

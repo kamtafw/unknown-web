@@ -54,6 +54,7 @@ import {
 	TimezoneListResponse,
 	TimezonePreferenceResponse,
 	UnblockUsersResponse,
+	UndoNotInterestedResponse,
 	UnknownResponse,
 	UnmuteUserResponse,
 	UpdateBioResponse,
@@ -362,9 +363,14 @@ export const socialApi = {
 		return res.data.data.media_urls
 	},
 
-	notInterested: (payload: { post: string }) =>
+	notInterested: (payload: { post_id: string }) =>
 		apiClient
 			.post<NotInterestedResponse>("/api/socials/not-interested", payload)
+			.then((r) => r.data),
+
+	undoNotInterested: (postId: string) =>
+		apiClient
+			.delete<UndoNotInterestedResponse>(`/api/socials/undo-not-interested/${postId}`)
 			.then((r) => r.data),
 
 	requestCommunityNote: (payload: { post: string; reason?: string }) =>

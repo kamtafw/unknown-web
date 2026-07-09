@@ -1,10 +1,10 @@
 import { userApi } from "@/lib/api"
 import { extractNonFieldError } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
-import { usePostInteractionsStore } from "@/stores/post-interactions-store"
 import { Post } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
+import { patchAuthorFlagInFeeds } from "./use-follow-actions"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -26,42 +26,42 @@ function removeUserPostsFromFeeds(qc: ReturnType<typeof useQueryClient>, authorP
 
 export function useMuteUser() {
 	const qc = useQueryClient()
-	const setMuted = usePostInteractionsStore((s) => s.setMuted)
 
 	return useMutation({
 		mutationFn: (pkid: number) => userApi.muteUser({ muted_user: pkid }),
-		onMutate: (pkid) => setMuted(pkid, true),
+		onMutate: (pkid) => patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: true }),
 		onSuccess: (data, pkid) => {
 			if (data.success) {
 				removeUserPostsFromFeeds(qc, pkid)
 				toast.success(data.message ?? "Account muted")
 			} else {
-				setMuted(pkid, false)
+				patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: false })
 				toast.error(data.message ?? "Failed to mute. Please try again.")
 			}
 		},
 		onError: (error, pkid) => {
-			setMuted(pkid, false)
+			patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: false })
 			toast.error(extractNonFieldError(error, "Failed to mute. Please try again."))
 		},
 	})
 }
 
 export function useUnmuteUser() {
-	const setMuted = usePostInteractionsStore((s) => s.setMuted)
+	const qc = useQueryClient()
 
 	return useMutation({
 		mutationFn: (pkid: number) => userApi.unmuteUser({ muted_user: pkid }),
-		onMutate: (pkid) => setMuted(pkid, false),
+		onMutate: (pkid) => patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: false }),
 		onSuccess: (data, pkid) => {
-			if (data.success) toast.success(data.message ?? "Account unmuted")
-			else {
-				setMuted(pkid, true)
+			if (data.success) {
+				toast.success(data.message ?? "Account unmuted")
+			} else {
+				patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: true })
 				toast.error(data.message ?? "Failed to unmute. Please try again.")
 			}
 		},
 		onError: (error, pkid) => {
-			setMuted(pkid, true)
+			patchAuthorFlagInFeeds(qc, pkid, { youMutedThisUser: true })
 			toast.error(extractNonFieldError(error, "Failed to unmute. Please try again."))
 		},
 	})

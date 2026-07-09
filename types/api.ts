@@ -136,6 +136,11 @@ export interface PostUser {
 	username: string
 	phone_number: string
 	profile_photo: string | null
+	youBlockedThisUser?: boolean
+	youMutedThisUser?: boolean
+	youFollowThisUser?: boolean
+	thisUserFollowsYou?: boolean
+	youAreConnectedThisUser?: boolean
 }
 
 export interface PostLocation {
@@ -538,7 +543,8 @@ export interface UserProfileData {
 
 export type UserProfileResponse = ApiResponse<UserProfileData>
 
-export type NotInterestedResponse = ApiResponse<{ post: string }>
+export type NotInterestedResponse = ApiResponse<Record<string, never>>
+export type UndoNotInterestedResponse = ApiResponse<Record<string, never>>
 export type RequestNoteResponse = ApiResponse<{ post: string; note_request_id: string }>
 export type MuteUserResponse = ApiResponse<Record<string, never>>
 export type UnmuteUserResponse = ApiResponse<Record<string, never>>
