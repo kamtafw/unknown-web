@@ -102,7 +102,7 @@ export function useRepost() {
 			}
 
 			// 1. bump repost_count wherever the original appears — standalone or nested
-			const current = findEngagementEntity(qc, payload.original_post)
+			const current = findEngagementEntity(qc, { id: payload.original_post })
 			patchEngagementInFeeds(qc, payload.original_post, {
 				repost_count: Math.max(0, (current?.repost_count ?? 0) + 1),
 				reposted_by_me: true,

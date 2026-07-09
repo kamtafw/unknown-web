@@ -3,6 +3,7 @@
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/api"
 import { Avatar, HoverCard } from "radix-ui"
 import { type ReactNode, useState } from "react"
@@ -24,6 +25,9 @@ interface AuthorHoverCardProps {
 }
 
 export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardProps) {
+	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
+	const isOwnProfile = pkid === currentUserPkid
+
 	const [open, setOpen] = useState(false)
 	const { data, isLoading } = useUserProfileHover(pkid, open)
 	const profile = data?.data
@@ -104,7 +108,7 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 									</Avatar.Fallback>
 								</Avatar.Root>
 
-								{profile && !profile.is_blocked && (
+								{profile && !profile.is_blocked && !isOwnProfile && (
 									<button
 										onClick={handleFollowToggle}
 										disabled={followUser.isPending || unfollowUser.isPending}

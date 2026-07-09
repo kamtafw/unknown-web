@@ -66,9 +66,9 @@ export function useNotInterested() {
 	const undoNotInterested = useUndoNotInterested()
 
 	return useMutation({
-		mutationFn: (postId: string) => socialApi.notInterested({ post_id: postId }),
+		mutationFn: (id: string) => socialApi.notInterested({ post_id: id }),
 
-		onMutate: async (postId): Promise<FeedSnapshot> => {
+		onMutate: async (id): Promise<FeedSnapshot> => {
 			const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
 			await Promise.all(feedKeys_.map((k) => qc.cancelQueries({ queryKey: k })))
 
@@ -78,21 +78,21 @@ export function useNotInterested() {
 				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks),
 			}
 
-			removePostFromAllFeeds(qc, postId)
+			removePostFromAllFeeds(qc, id)
 
 			return snapshot
 		},
 
-		onSuccess: (_data, postId, snapshot) => {
+		onSuccess: (_data, id, snapshot) => {
 			toast.info("You'll see fewer posts like this", {
 				action: {
 					label: "Undo",
-					onClick: () => undoNotInterested.mutate({ postId, snapshot }),
+					onClick: () => undoNotInterested.mutate({ postId: id, snapshot }),
 				},
 			})
 		},
 
-		onError: (error, _postId, snapshot) => {
+		onError: (error, _id, snapshot) => {
 			restoreSnapshot(qc, snapshot)
 			showMutationErrorToast(error, "Couldn't process that. Please try again.")
 		},

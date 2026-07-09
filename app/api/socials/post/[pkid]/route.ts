@@ -19,3 +19,36 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pki
 		cache: "no-store",
 	})
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pkid: number }> }) {
+	const { pkid } = await params
+	const body = await req.json()
+	const accessToken = await getAccessToken()
+
+	if (!accessToken) {
+		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
+	}
+
+	return proxyJson(`${DJANGO_API_URL}/socials/post/${pkid}`, {
+		method: "PATCH",
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(body),
+	})
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ pkid: number }> }) {
+	const { pkid } = await params
+	const accessToken = await getAccessToken()
+
+	if (!accessToken) {
+		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
+	}
+
+	return proxyJson(`${DJANGO_API_URL}/socials/post/${pkid}`, {
+		method: "DELETE",
+		headers: { Authorization: `Bearer ${accessToken}` },
+	})
+}
