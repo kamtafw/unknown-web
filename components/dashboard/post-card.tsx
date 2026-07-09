@@ -8,6 +8,7 @@ import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
@@ -73,12 +74,6 @@ export function renderText(text: string) {
 			part
 		),
 	)
-}
-
-export function isOriginalComment(
-	obj: OriginalPost | OriginalComment | null | undefined,
-): obj is OriginalComment {
-	return !!obj && "message" in obj
 }
 
 function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
@@ -470,7 +465,15 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 	)
 }
 
-export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
+export function PostOptionsMenu({
+	post,
+	currentUserId,
+	feedItemId,
+}: {
+	post: Post
+	currentUserId?: number
+	feedItemId?: string
+}) {
 	const isOwn = post.user.pkid === currentUserId
 	const pkid = post.user.pkid
 
@@ -503,7 +506,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 
 	const handleUnblock = () => unblockUsers.mutate([pkid])
 
-	const handleNotInterested = () => notInterested.mutate(post.id)
+	const handleNotInterested = () => notInterested.mutate(feedItemId ?? post.id)
 
 	const ownItems: ActionDropdownItem[] = [
 		{
@@ -611,6 +614,7 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 export function PostCard({ post }: { post: Post }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
+
 	const [commentOpen, setCommentOpen] = useState(false)
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
@@ -618,6 +622,7 @@ export function PostCard({ post }: { post: Post }) {
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
 	const isMyRepost = post.user.pkid === user?.pkid
 
+	const engagementPost = resolveEngagementPost(post)
 	const displayPost = unquotedRepost ? (post.original_post as OriginalPost)! : post
 	const normalisedComment =
 		isCommentRepost && post.original_post ? normaliseCommentOriginal(post.original_post) : null
@@ -682,7 +687,11 @@ export function PostCard({ post }: { post: Post }) {
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
+						<PostOptionsMenu
+							post={engagementPost}
+							currentUserId={user?.pkid}
+							feedItemId={post.id}
+						/>
 					</div>
 				</div>
 
@@ -707,17 +716,17 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div onClick={(e) => e.stopPropagation()}>
 				<ActionBar
-					post={post}
-					comments={post.post_comment_count}
-					reposts={post.repost_count}
-					repostedByMe={post.reposted_by_me}
+					post={engagementPost}
+					comments={engagementPost.post_comment_count}
+					reposts={engagementPost.repost_count}
+					repostedByMe={engagementPost.reposted_by_me}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
 				/>
 			</div>
 
-			<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
-			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
+			<CommentModal post={engagementPost} open={commentOpen} onOpenChange={setCommentOpen} />
+			<QuoteModal post={engagementPost} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</article>
 	)
 }

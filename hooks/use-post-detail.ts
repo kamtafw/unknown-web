@@ -1,4 +1,5 @@
 import { socialApi } from "@/lib/api"
+import { isOriginalComment, toStandalonePost } from "@/lib/post-helpers"
 import { CommentsResponse, Post } from "@/types/api"
 import { InfiniteData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
@@ -24,9 +25,20 @@ export function usePostDetail(pkid: number) {
 		placeholderData: (): Post | undefined => {
 			for (const key of [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]) {
 				const cache = qc.getQueryData<FeedCache>(key)
-				const post = cache?.pages.flatMap((p) => p.posts).find((p) => p.pkid === pkid)
-				return post
+				for (const page of cache?.pages ?? []) {
+					for (const p of page.posts) {
+						if (p.pkid === pkid) return p
+						if (
+							p.original_post &&
+							!isOriginalComment(p.original_post) &&
+							Number(p.original_post.pkid) === pkid
+						) {
+							return toStandalonePost(p.original_post)
+						}
+					}
+				}
 			}
+			return undefined
 		},
 	})
 }
