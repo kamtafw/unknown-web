@@ -1,7 +1,6 @@
 "use client"
 
 import { flattenFeedPages, useFollowingFeed, useForYouFeed } from "@/hooks/use-feed"
-import { usePostInteractionsStore } from "@/stores/post-interactions-store"
 import { Post } from "@/types/api"
 import { Loader2 } from "lucide-react"
 import { Tabs } from "radix-ui"
@@ -120,9 +119,7 @@ function ForYouPanel() {
 		return () => obs.disconnect()
 	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
-	const notInterestedIds = usePostInteractionsStore((s) => s.notInterestedPostIds)
-	const posts = flattenFeedPages(data?.pages).filter((p) => !notInterestedIds.includes(p.id))
-	// const posts = flattenFeedPages(data?.pages)
+	const posts = flattenFeedPages(data?.pages)
 
 	return (
 		<FeedContent
@@ -145,9 +142,7 @@ function FollowingPanel() {
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useFollowingFeed()
 
-	const notInterestedIds = usePostInteractionsStore((s) => s.notInterestedPostIds)
-	const posts = flattenFeedPages(data?.pages).filter((p) => !notInterestedIds.includes(p.id))
-	// const posts = flattenFeedPages(data?.pages)
+	const posts = flattenFeedPages(data?.pages)
 
 	return (
 		<FeedContent
