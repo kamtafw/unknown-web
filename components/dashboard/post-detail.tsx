@@ -5,6 +5,7 @@ import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { useAuthStore } from "@/stores/auth-store"
 import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
@@ -12,11 +13,11 @@ import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } f
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { forwardRef, useEffect, useRef, useState } from "react"
+import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
 import {
 	formatCount,
-	isOriginalComment,
 	MediaGrid,
 	mediaType,
 	PostOptionsMenu,
@@ -128,11 +129,13 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 				<div className="flex gap-3">
 					{/* Avatar + optional thread line */}
 					<div className="flex flex-col items-center shrink-0">
-						<UserAvatar
-							src={comment.user.profile_photo}
-							first={comment.user.first_name}
-							last={comment.user.last_name}
-						/>
+						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+							<UserAvatar
+								src={comment.user.profile_photo}
+								first={comment.user.first_name}
+								last={comment.user.last_name}
+							/>
+						</AuthorHoverCard>
 						{repliesOpen && comment.replies_count > 0 && (
 							<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
 						)}
@@ -141,10 +144,14 @@ const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: 
 					<div className="flex-1 min-w-0">
 						{/* Header */}
 						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground leading-tight">
-								{fullname}
-							</span>
-							<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+								<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
+									{fullname}
+								</span>
+							</AuthorHoverCard>
+							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+								<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+							</AuthorHoverCard>
 							<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
 						</div>
 
@@ -221,18 +228,24 @@ function ReplyRow({ reply }: { reply: Comment }) {
 
 	return (
 		<div className="flex gap-2.5 py-2.5">
-			<UserAvatar
-				src={reply.user.profile_photo}
-				first={reply.user.first_name}
-				last={reply.user.last_name}
-				size="sm"
-			/>
+			<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+				<UserAvatar
+					src={reply.user.profile_photo}
+					first={reply.user.first_name}
+					last={reply.user.last_name}
+					size="sm"
+				/>
+			</AuthorHoverCard>
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5 flex-wrap">
-					<span className="font-semibold text-[13px] text-foreground leading-tight">
-						{fullname}
-					</span>
-					<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
+					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+						<span className="font-semibold text-[13px] text-foreground leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
+						<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
+					</AuthorHoverCard>
 					<span className="text-muted-foreground/70 text-[12px]">· {timeAgo}</span>
 				</div>
 				{reply.message?.trim() && (
@@ -647,18 +660,27 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 		<>
 			<div className="px-5">
 				<div className="flex items-start gap-3 pt-5 pb-2">
-					<UserAvatar
-						src={post.user.profile_photo}
-						first={post.user.first_name}
-						last={post.user.last_name}
-					/>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<UserAvatar
+							src={post.user.profile_photo}
+							first={post.user.first_name}
+							last={post.user.last_name}
+							className="cursor-pointer"
+						/>
+					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<p className="font-bold text-[15px] text-foreground leading-tight">{fullname}</p>
-						<p className="text-muted-foreground text-sm">@{post.user.username}</p>
+						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+							<p className="font-bold text-[15px] text-foreground leading-tight cursor-pointer hover:underline underline-offset-2 w-fit">
+								{fullname}
+							</p>
+						</AuthorHoverCard>
+						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+							<p className="text-muted-foreground text-sm">@{post.user.username}</p>
+						</AuthorHoverCard>
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu post={post} currentUserId={post.user?.pkid} />
+						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
 					</div>
 				</div>
 
@@ -730,7 +752,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.is_repost}
+							reposted={post.reposted_by_me}
 							onRepost={() => {}}
 							onQuote={() => {}}
 							size={22}
@@ -805,7 +827,8 @@ export function PostDetailView({
 
 	const [commentOpen, setCommentOpen] = useState(false)
 
-	const { data: post, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
 	const {
 		data: commentsData,
 		isLoading: commentsLoading,

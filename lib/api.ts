@@ -5,6 +5,7 @@ import {
 	AddLinkedAccountResponse,
 	ApiResponse,
 	BlockedUsersResponse,
+	BlockUserResponse,
 	BookmarkResponse,
 	ChangeOtpDefaultResponse,
 	ChangeTimezoneResponse,
@@ -29,6 +30,8 @@ import {
 	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
+	MuteUserResponse,
+	NotInterestedResponse,
 	NullResponse,
 	OtpDefault,
 	PostDetailResponse,
@@ -37,6 +40,7 @@ import {
 	ReportProblemResponse,
 	RepostPayload,
 	RepostResponse,
+	RequestNoteResponse,
 	ResetPasswordPayload,
 	ResetPasswordResponse,
 	SetPinResponse,
@@ -50,7 +54,9 @@ import {
 	TimezoneListResponse,
 	TimezonePreferenceResponse,
 	UnblockUsersResponse,
+	UndoNotInterestedResponse,
 	UnknownResponse,
+	UnmuteUserResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
 	UpdateDobResponse,
@@ -62,6 +68,7 @@ import {
 	UpdateUsernameResponse,
 	UploadMediaResponse,
 	UserListResponse,
+	UserProfileResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 	VerifyTotpResponse,
@@ -80,9 +87,10 @@ export const authApi = {
 
 	verifyOtp: (payload: VerifyOtpPayload) =>
 		apiClient
-			.post<
-				ApiResponse<VerifyOtpResponseData & { otp_token: string }>
-			>("/api/auth/verify-otp", payload)
+			.post<ApiResponse<VerifyOtpResponseData & { otp_token: string }>>(
+				"/api/auth/verify-otp",
+				payload,
+			)
 			.then((r) => r.data),
 
 	resendOtp: (email: string) =>
@@ -286,6 +294,18 @@ export const userApi = {
 		apiClient
 			.post<UnblockUsersResponse>("/api/users/privacy/unblock-users", { user_ids: userIds })
 			.then((r) => r.data),
+
+	muteUser: (payload: { muted_user: number }) =>
+		apiClient.post<MuteUserResponse>("/api/users/mute-user", payload).then((r) => r.data),
+
+	unmuteUser: (payload: { muted_user: number }) =>
+		apiClient.post<UnmuteUserResponse>("/api/users/unmute-user", payload).then((r) => r.data),
+
+	blockUser: (payload: { user_id: number }) =>
+		apiClient.post<BlockUserResponse>("/api/users/privacy/block-user", payload).then((r) => r.data),
+
+	getUserProfile: (pkid: number) =>
+		apiClient.get<UserProfileResponse>(`/api/users/${pkid}/profile`).then((r) => r.data),
 }
 
 export const socialApi = {
@@ -342,4 +362,17 @@ export const socialApi = {
 		})
 		return res.data.data.media_urls
 	},
+
+	notInterested: (payload: { post_id: string }) =>
+		apiClient
+			.post<NotInterestedResponse>("/api/socials/not-interested", payload)
+			.then((r) => r.data),
+
+	undoNotInterested: (postId: string) =>
+		apiClient
+			.delete<UndoNotInterestedResponse>(`/api/socials/undo-not-interested/${postId}`)
+			.then((r) => r.data),
+
+	requestCommunityNote: (payload: { post: string; reason?: string }) =>
+		apiClient.post<RequestNoteResponse>("/api/socials/request-note", payload).then((r) => r.data),
 }

@@ -1,16 +1,22 @@
 "use client"
 
+import { useUnblockUsers } from "@/hooks/use-block-actions"
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
 import { MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
-import { useState } from "react"
+import { forwardRef, useState } from "react"
 import {
 	Block,
 	ChangeReplier,
@@ -25,9 +31,13 @@ import {
 	Trash,
 } from "../posts/icons"
 import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
+import { AuthorHoverCard } from "./author-hover-card"
+import { BlockUserModal } from "./block-user-modal"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { QuoteModal } from "./quote-modal"
+import { ReadAloudModal } from "./read-aloud-modal"
+import { RequestNoteModal } from "./request-note-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -66,12 +76,6 @@ export function renderText(text: string) {
 	)
 }
 
-export function isOriginalComment(
-	obj: OriginalPost | OriginalComment | null | undefined,
-): obj is OriginalComment {
-	return !!obj && "message" in obj
-}
-
 function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 	if (isOriginalComment(original)) {
 		return {
@@ -87,21 +91,23 @@ function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
 	}
 }
 
-export function UserAvatar({
-	src,
-	first,
-	last,
-	size = "md",
-}: {
-	src?: string | null
-	first: string
-	last: string
-	size?: "sm" | "md"
-}) {
+export const UserAvatar = forwardRef<
+	HTMLSpanElement,
+	{
+		src?: string | null
+		first: string
+		last: string
+		size?: "sm" | "md"
+		className?: string
+	}
+>(function UserAvatar({ src, first, last, size = "md", className }, ref) {
 	const dim = size === "sm" ? "w-8 h-8" : "w-10 h-10"
 	const txt = size === "sm" ? "text-[11px]" : "text-sm"
 	return (
-		<Avatar.Root className={`${dim} rounded-full overflow-hidden shrink-0`}>
+		<Avatar.Root
+			ref={ref}
+			className={cn(`${dim} rounded-full overflow-hidden shrink-0`, className)}
+		>
 			<Avatar.Image
 				src={src ?? undefined}
 				alt={`${first} ${last}`}
@@ -114,7 +120,7 @@ export function UserAvatar({
 			</Avatar.Fallback>
 		</Avatar.Root>
 	)
-}
+})
 
 export function MediaGrid({ urls }: { urls: string[] }) {
 	if (!urls.length) return null
@@ -180,17 +186,23 @@ export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<UserAvatar
-					src={comment.user.profile_photo}
-					first={comment.user.first_name}
-					last={comment.user.last_name}
-					size="sm"
-				/>
+				<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+					<UserAvatar
+						src={comment.user.profile_photo}
+						first={comment.user.first_name}
+						last={comment.user.last_name}
+						size="sm"
+					/>
+				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-						{fullname}
-					</span>
-					<span>@{comment.user.username}</span>
+					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<span>@{comment.user.username}</span>
+					</AuthorHoverCard>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -216,17 +228,23 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<UserAvatar
-					src={post.user.profile_photo}
-					first={post.user.first_name}
-					last={post.user.last_name}
-					size="sm"
-				/>
+				<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+					<UserAvatar
+						src={post.user.profile_photo}
+						first={post.user.first_name}
+						last={post.user.last_name}
+						size="sm"
+					/>
+				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-						{fullname}
-					</span>
-					<span>@{post.user.username}</span>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
+							{fullname}
+						</span>
+					</AuthorHoverCard>
+					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<span>@{post.user.username}</span>
+					</AuthorHoverCard>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
@@ -447,8 +465,48 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 	)
 }
 
-export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUserId?: number }) {
+export function PostOptionsMenu({
+	post,
+	currentUserId,
+	feedItemId,
+}: {
+	post: Post
+	currentUserId?: number
+	feedItemId?: string
+}) {
 	const isOwn = post.user.pkid === currentUserId
+	const pkid = post.user.pkid
+
+	const [readAloudOpen, setReadAloudOpen] = useState(false)
+	const [requestNoteOpen, setRequestNoteOpen] = useState(false)
+	const [blockOpen, setBlockOpen] = useState(false)
+
+	const bookmarkPost = useBookmarkPost()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
+	const muteUser = useMuteUser()
+	const unmuteUser = useUnmuteUser()
+	const unblockUsers = useUnblockUsers()
+	const notInterested = useNotInterested()
+
+	const isFollowed = post.user.youFollowThisUser ?? false
+	const isMuted = post.user.youMutedThisUser ?? false
+	const isBlocked = post.user.youBlockedThisUser ?? false
+	const followsYou = post.user.thisUserFollowsYou ?? false
+
+	const handleFollowToggle = () => {
+		if (isFollowed) unfollowUser.mutate(pkid)
+		else followUser.mutate(pkid)
+	}
+
+	const handleMuteToggle = () => {
+		if (isMuted) unmuteUser.mutate(pkid)
+		else muteUser.mutate(pkid)
+	}
+
+	const handleUnblock = () => unblockUsers.mutate([pkid])
+
+	const handleNotInterested = () => notInterested.mutate(feedItemId ?? post.id)
 
 	const ownItems: ActionDropdownItem[] = [
 		{
@@ -478,17 +536,17 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 		{
 			label: "Read post out loud",
 			icon: <ScreenReader />,
-			onSelect: () => console.log("TODO: read post", post.id),
-		},
-		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: request note", post.id),
+			onSelect: () => setReadAloudOpen(true),
 		},
 		{
 			label: "Not interested in this post",
 			icon: <NotInterested />,
-			onSelect: () => console.log("TODO: not interested", post.id),
+			onSelect: handleNotInterested,
+		},
+		{
+			label: "Request community note",
+			icon: <RequestNote />,
+			onSelect: () => setRequestNoteOpen(true),
 		},
 		{
 			label: post.bookmarked_by_me ? "Remove from saved" : "Add to saved",
@@ -499,43 +557,64 @@ export function PostOptionsMenu({ post, currentUserId }: { post: Post; currentUs
 					bookmarked={post.bookmarked_by_me}
 				/>
 			),
-			onSelect: () => console.log("TODO: save post", post.id),
+			onSelect: () => bookmarkPost.mutate(post.id),
 		},
 		{
-			label: `Follow @${post.user.username}`,
+			label: isFollowed
+				? `Unfollow @${post.user.username}`
+				: followsYou
+					? `Follow Back @${post.user.username}`
+					: `Follow @${post.user.username}`,
 			icon: <Connect />,
-			onSelect: () => console.log("TODO: follow", post.user.username),
+			onSelect: handleFollowToggle,
 		},
 		{
-			label: `Mute @${post.user.username}`,
+			label: isMuted ? `Unmute @${post.user.username}` : `Mute @${post.user.username}`,
 			icon: <Mute />,
-			onSelect: () => console.log("TODO: mute", post.user.username),
+			onSelect: handleMuteToggle,
 		},
-		{
-			label: `Block @${post.user.username}`,
-			icon: <Block />,
-			onSelect: () => console.log("TODO: block", post.user.username),
-			destructive: true,
-		},
-		{
-			label: "Request community note",
-			icon: <RequestNote />,
-			onSelect: () => console.log("TODO: community note", post.id),
-		},
+		isBlocked
+			? {
+					label: unblockUsers.isPending ? "Unblocking…" : `Unblock @${post.user.username}`,
+					icon: <Block />,
+					onSelect: handleUnblock,
+				}
+			: {
+					label: `Block @${post.user.username}`,
+					icon: <Block />,
+					onSelect: () => setBlockOpen(true),
+					destructive: true,
+				},
 	]
 
 	return (
-		<ActionDropdown
-			trigger={<MoreHorizontal size={18} />}
-			items={isOwn ? ownItems : otherItems}
-			clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
-		/>
+		<>
+			<ActionDropdown
+				trigger={<MoreHorizontal size={18} />}
+				items={isOwn ? ownItems : otherItems}
+				clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
+			/>
+
+			<ReadAloudModal
+				text={post.content_text ?? ""}
+				open={readAloudOpen}
+				onOpenChange={setReadAloudOpen}
+			/>
+			<RequestNoteModal postId={post.id} open={requestNoteOpen} onOpenChange={setRequestNoteOpen} />
+			<BlockUserModal
+				pkid={post.user.pkid}
+				username={post.user.username}
+				open={blockOpen}
+				onOpenChange={setBlockOpen}
+			/>
+		</>
 	)
 }
 
 export function PostCard({ post }: { post: Post }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
+
 	const [commentOpen, setCommentOpen] = useState(false)
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
@@ -543,6 +622,7 @@ export function PostCard({ post }: { post: Post }) {
 	const unquotedRepost = post.is_repost && !post.content_text?.trim()
 	const isMyRepost = post.user.pkid === user?.pkid
 
+	const engagementPost = resolveEngagementPost(post)
 	const displayPost = unquotedRepost ? (post.original_post as OriginalPost)! : post
 	const normalisedComment =
 		isCommentRepost && post.original_post ? normaliseCommentOriginal(post.original_post) : null
@@ -577,16 +657,24 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div onClick={() => router.push(`/posts/${displayPost.pkid}`)} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<UserAvatar
-						src={displayPost.user.profile_photo}
-						first={displayPost.user.first_name}
-						last={displayPost.user.last_name}
-					/>
+					<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<UserAvatar
+							src={displayPost.user.profile_photo}
+							first={displayPost.user.first_name}
+							last={displayPost.user.last_name}
+						/>
+					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<span className="font-semibold text-sm text-foreground">{fullname}</span>{" "}
-						<span className="text-muted-foreground text-[13.5px]">
-							@{displayPost.user.username}
-						</span>
+						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
+								{fullname}
+							</span>
+						</AuthorHoverCard>{" "}
+						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+							<span className="text-muted-foreground text-[13.5px]">
+								@{displayPost.user.username}
+							</span>
+						</AuthorHoverCard>
 						<div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground overflow-hidden whitespace-nowrap">
 							<span className="shrink-0">{timeAgo}</span>
 							{address && (
@@ -599,7 +687,11 @@ export function PostCard({ post }: { post: Post }) {
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
+						<PostOptionsMenu
+							post={engagementPost}
+							currentUserId={user?.pkid}
+							feedItemId={post.id}
+						/>
 					</div>
 				</div>
 
@@ -624,17 +716,17 @@ export function PostCard({ post }: { post: Post }) {
 
 			<div onClick={(e) => e.stopPropagation()}>
 				<ActionBar
-					post={post}
-					comments={post.post_comment_count}
-					reposts={post.repost_count}
-					repostedByMe={post.reposted_by_me}
+					post={engagementPost}
+					comments={engagementPost.post_comment_count}
+					reposts={engagementPost.repost_count}
+					repostedByMe={engagementPost.reposted_by_me}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
 				/>
 			</div>
 
-			<CommentModal post={post} open={commentOpen} onOpenChange={setCommentOpen} />
-			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
+			<CommentModal post={engagementPost} open={commentOpen} onOpenChange={setCommentOpen} />
+			<QuoteModal post={engagementPost} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</article>
 	)
 }

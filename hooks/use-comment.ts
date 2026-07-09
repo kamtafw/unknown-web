@@ -1,4 +1,5 @@
 import { socialApi } from "@/lib/api"
+import { isOriginalComment } from "@/lib/post-helpers"
 import { AddCommentPayload, Comment, CommentsResponse, Post } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
@@ -10,14 +11,27 @@ type RepliesCache = CommentsResponse
 
 function incrementCommentCount(old: FeedCache | undefined, pkid: number): FeedCache | undefined {
 	if (!old) return old
-
 	return {
 		...old,
 		pages: old.pages.map((page) => ({
 			...page,
-			posts: page.posts.map((p) =>
-				p.pkid === pkid ? { ...p, post_comment_count: p.post_comment_count + 1 } : p,
-			),
+			posts: page.posts.map((p) => {
+				if (p.pkid === pkid) return { ...p, post_comment_count: p.post_comment_count + 1 }
+				if (
+					p.original_post &&
+					!isOriginalComment(p.original_post) &&
+					Number(p.original_post.pkid) === pkid
+				) {
+					return {
+						...p,
+						original_post: {
+							...p.original_post,
+							post_comment_count: p.original_post.post_comment_count ?? 0 + 1,
+						},
+					}
+				}
+				return p
+			}),
 		})),
 	}
 }

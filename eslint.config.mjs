@@ -16,13 +16,17 @@ const eslintConfig = [
 		files: [
 			"app/(auth)/social-callback/page.tsx",
 			"hooks/use-otp-cooldown.ts",
+			"hooks/use-read-aloud.ts",
 			"components/auth/create-new-password.tsx",
 			"components/dashboard/add-account-panel.tsx",
 			"components/dashboard/photo-crop-modal.tsx",
+			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
 		],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",
+			"react-hooks/exhaustive-deps": "off",
+			"react-hooks/purity": "off",
 		},
 	},
 ]

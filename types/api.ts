@@ -136,6 +136,11 @@ export interface PostUser {
 	username: string
 	phone_number: string
 	profile_photo: string | null
+	youBlockedThisUser?: boolean
+	youMutedThisUser?: boolean
+	youFollowThisUser?: boolean
+	thisUserFollowsYou?: boolean
+	youAreConnectedThisUser?: boolean
 }
 
 export interface PostLocation {
@@ -159,6 +164,12 @@ export interface OriginalPost {
 	post_location: PostLocation[]
 	post_media: PostMedia[]
 	post_hashtagged: string[]
+	liked_by_me?: boolean
+	bookmarked_by_me?: boolean
+	reposted_by_me?: boolean
+	post_like_count?: number
+	post_comment_count?: number
+	repost_count?: number
 	created_at: string
 }
 
@@ -506,3 +517,41 @@ export interface BlockedUser {
 
 export type BlockedUsersResponse = ApiResponse<PaginatedResponse<BlockedUser>>
 export type UnblockUsersResponse = ApiResponse<{ unblocked_ids: number[] }>
+
+export interface UserProfileData {
+	id: string
+	pkid: number
+	username: string
+	email: string
+	first_name: string | null
+	last_name: string | null
+	phone_number: string
+	profile_photo: string | null
+	cover_photo: string | null
+	country: string
+	state: string
+	date_joined: string
+	profile: {
+		occupation: string
+		interests: string[]
+		about_me: string
+	}
+	external_links: ExternalLink[]
+	follower_count: number
+	following_count: number
+	connection_count: number
+	is_blocked: boolean
+	is_muted: boolean
+	is_following_you: boolean
+	is_user_you_follow: boolean
+	is_connected_to_you: boolean
+}
+
+export type UserProfileResponse = ApiResponse<UserProfileData>
+
+export type NotInterestedResponse = ApiResponse<Record<string, never>>
+export type UndoNotInterestedResponse = ApiResponse<Record<string, never>>
+export type RequestNoteResponse = ApiResponse<{ post: string; note_request_id: string }>
+export type MuteUserResponse = ApiResponse<Record<string, never>>
+export type UnmuteUserResponse = ApiResponse<Record<string, never>>
+export type BlockUserResponse = ApiResponse<{ blocked_user: number }>

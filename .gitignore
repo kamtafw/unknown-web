@@ -49,3 +49,5 @@ next-env.d.ts
 # vitest
 vitest.config.ts.timestamp-*
 
+
+bugs-and-incomplete.md

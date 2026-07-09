@@ -61,6 +61,7 @@ import {
 } from "./account-setting"
 import { AddAccountPanel } from "./add-account-panel"
 import { BlockedAccountsPanel } from "./blocked-accounts-panel"
+import { ManageSubscriptionPanel } from "./manage-subscription-panel"
 import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
@@ -90,6 +91,7 @@ import {
 	Verification,
 } from "./settings-icons"
 import { SocialAccountsPanel } from "./social-accounts-panel"
+import { SwitchTierPanel } from "./switch-tier-panel"
 import { TimeZonePanel } from "./timezone-panel"
 
 type SectionId =
@@ -551,7 +553,7 @@ const STORAGE_BREAKDOWN = [
 const STORAGE_TOTAL_MB = STORAGE_BREAKDOWN.reduce((s, i) => s + i.mb, 0)
 const STORAGE_LIMIT_GB = 5
 
-function fmtBytes(mb: number) {
+function formatBytes(mb: number) {
 	return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
 }
 
@@ -585,7 +587,7 @@ function StorageUsagePanel({ onBack }: { onBack: () => void }) {
 				<div className="bg-muted/40 rounded-2xl p-5 border border-border/60">
 					<div className="flex items-end justify-between mb-3">
 						<div>
-							<p className="text-2xl font-bold text-foreground">{fmtBytes(displayTotal)}</p>
+							<p className="text-2xl font-bold text-foreground">{formatBytes(displayTotal)}</p>
 							<p className="text-[12.5px] text-muted-foreground mt-0.5">
 								used of {STORAGE_LIMIT_GB} GB
 							</p>
@@ -621,7 +623,7 @@ function StorageUsagePanel({ onBack }: { onBack: () => void }) {
 										<div className="flex items-center justify-between mb-1.5">
 											<span className="text-[13px] font-medium text-foreground">{item.label}</span>
 											<span className="text-[12.5px] text-muted-foreground tabular-nums">
-												{fmtBytes(displayMb)}
+												{formatBytes(displayMb)}
 											</span>
 										</div>
 										<div className="h-1.5 bg-border rounded-full overflow-hidden">
@@ -1024,7 +1026,10 @@ const SECTIONS: Section[] = [
 	},
 ]
 
-const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
+const PANEL_REGISTRY: Record<
+	string,
+	ComponentType<{ onBack: () => void; onNavigate?: (id: string | null) => void }>
+> = {
 	"change-password": ChangePasswordPanel,
 	"security-notifications": SecurityNotificationsPanel,
 	"two-step-verification": TwoStepVerificationPanel,
@@ -1042,11 +1047,11 @@ const PANEL_REGISTRY: Record<string, ComponentType<{ onBack: () => void }>> = {
 	"app-language": AppLanguagePanel,
 	"storage-usage": StorageUsagePanel,
 	"network-usage": NetworkUsagePanel,
+	"switch-tier": SwitchTierPanel,
+	"manage-subscription": ManageSubscriptionPanel,
 }
 
 const COMING_SOON: { id: string; title: string }[] = [
-	{ id: "switch-tier", title: "Switch tier" },
-	{ id: "manage-subscription", title: "Manage subscription" },
 	{ id: "last-seen", title: "Last seen & online" },
 	{ id: "location-sharing", title: "Live location sharing" },
 	{ id: "push-notifs", title: "Push notifications" },
@@ -1969,7 +1974,7 @@ function SettingsListView({
 				)}
 			>
 				{ActivePanelComponent ? (
-					<ActivePanelComponent onBack={() => onActivePanel(null)} />
+					<ActivePanelComponent onBack={() => onActivePanel(null)} onNavigate={onActivePanel} />
 				) : (
 					<>
 						{/* mobile back row */}

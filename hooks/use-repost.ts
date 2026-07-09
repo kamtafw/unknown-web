@@ -1,8 +1,10 @@
+import { socialApi } from "@/lib/api"
+import { findEngagementEntity, patchEngagementInFeeds } from "@/lib/post-engagement"
+import { toStandalonePost } from "@/lib/post-helpers"
+import { useAuthStore } from "@/stores/auth-store"
 import { FullUser, Post, PostUser, RepostPayload } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
-import { socialApi } from "@/lib/api"
-import { useAuthStore } from "@/stores/auth-store"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -16,37 +18,6 @@ function fullUserToPostUser(user: FullUser): PostUser {
 		username: user.username,
 		phone_number: user.phone_number,
 		profile_photo: user.profile_photo ?? null,
-	}
-}
-
-function findPostInFeeds(qc: ReturnType<typeof useQueryClient>, id: string): Post | undefined {
-	for (const key of [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]) {
-		const hit = qc
-			.getQueryData<FeedCache>(key)
-			?.pages.flatMap((p) => p.posts)
-			.find((p) => p.id === id)
-
-		if (hit) return hit
-	}
-}
-
-function patchRepostCount(
-	old: FeedCache | undefined,
-	id: string,
-	delta: 1 | -1,
-): FeedCache | undefined {
-	if (!old) return old
-
-	return {
-		...old,
-		pages: old.pages.map((page) => ({
-			...page,
-			posts: page.posts.map((p) =>
-				p.id === id
-					? { ...p, repost_count: Math.max(0, p.repost_count + delta), reposted_by_me: delta > 0 }
-					: p,
-			),
-		})),
 	}
 }
 
@@ -130,15 +101,16 @@ export function useRepost() {
 				tempId: null as string | null,
 			}
 
-			// 1. increment repost_count on the original post in all caches
-			const patch = (old: FeedCache | undefined) => patchRepostCount(old, payload.original_post, 1)
-			qc.setQueryData(feedKeys.forYou, patch)
-			qc.setQueryData(feedKeys.following, patch)
-			qc.setQueryData(feedKeys.bookmarks, patch)
+			// 1. bump repost_count wherever the original appears — standalone or nested
+			const current = findEngagementEntity(qc, payload.original_post)
+			patchEngagementInFeeds(qc, payload.original_post, {
+				repost_count: Math.max(0, (current?.repost_count ?? 0) + 1),
+				reposted_by_me: true,
+			})
 
 			// 2. prepend a fake repost card to the For You feed
 			const user = useAuthStore.getState().user
-			const originalPost = findPostInFeeds(qc, payload.original_post)
+			const originalPost = current ? toStandalonePost(current) : undefined
 
 			if (user && originalPost) {
 				const optimistic = buildOptimisticPost(payload, originalPost, user)

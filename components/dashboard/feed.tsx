@@ -141,6 +141,7 @@ function FollowingPanel() {
 	const sentinel = useRef<HTMLDivElement>(null)
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useFollowingFeed()
+
 	const posts = flattenFeedPages(data?.pages)
 
 	return (

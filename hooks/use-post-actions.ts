@@ -1,37 +1,12 @@
+import { socialApi } from "@/lib/api"
+import { findEngagementEntity, patchEngagementInFeeds } from "@/lib/post-engagement"
+import { toStandalonePost } from "@/lib/post-helpers"
 import { Post } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
-import { socialApi } from "@/lib/api"
 import { postDetailKeys } from "./use-post-detail"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
-
-function patchFeedPost(
-	old: FeedCache | undefined,
-	id: string,
-	patch: Partial<Post>,
-): FeedCache | undefined {
-	if (!old) return old
-
-	return {
-		...old,
-		pages: old.pages.map((page) => ({
-			...page,
-			posts: page.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-		})),
-	}
-}
-
-function findPostInFeeds(qc: ReturnType<typeof useQueryClient>, id: string): Post | undefined {
-	for (const key of [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]) {
-		const hit = qc
-			.getQueryData<FeedCache>(key)
-			?.pages.flatMap((p) => p.posts)
-			.find((p) => p.id === id)
-
-		if (hit) return hit
-	}
-}
 
 export function useLikePost() {
 	const qc = useQueryClient()
@@ -50,33 +25,25 @@ export function useLikePost() {
 				pkid: undefined as number | undefined,
 			}
 
-			const current = findPostInFeeds(qc, id)
+			const current = findEngagementEntity(qc, id)
 			const wasLiked = current?.liked_by_me ?? false
 			const patch: Partial<Post> = {
 				liked_by_me: !wasLiked,
 				post_like_count: (current?.post_like_count ?? 0) + (wasLiked ? -1 : 1),
 			}
 
-			qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => patchFeedPost(old, id, patch))
-			qc.setQueryData<FeedCache>(feedKeys.following, (old) => patchFeedPost(old, id, patch))
-			qc.setQueryData<FeedCache>(feedKeys.bookmarks, (old) => patchFeedPost(old, id, patch))
+			patchEngagementInFeeds(qc, id, patch)
 
 			if (current) {
-				const detailKey = postDetailKeys.detail(current.pkid)
+				const pkid = typeof current.pkid === "number" ? current.pkid : Number(current.pkid)
+				const detailKey = postDetailKeys.detail(pkid)
 				await qc.cancelQueries({ queryKey: detailKey })
 				const detailPrev = qc.getQueryData<Post>(detailKey)
 
 				snapshots.detail = detailPrev
-				snapshots.pkid = current.pkid
+				snapshots.pkid = pkid
 
-				
 				if (detailPrev) qc.setQueryData<Post>(detailKey, { ...detailPrev, ...patch })
-
-				// qc.getQueriesData<Post>({ queryKey: ["post", "detail"] }).forEach(([key, cached]) => {
-				// 	if (cached?.id === current.id) {
-				// 		qc.setQueryData<Post>(key, (old) => (old ? { ...old, ...patch } : old))
-				// 	}
-				// })
 			}
 
 			return snapshots
@@ -108,15 +75,13 @@ export function useBookmarkPost() {
 				pkid: undefined as number | undefined,
 			}
 
-			const current = findPostInFeeds(qc, id)
+			const current = findEngagementEntity(qc, id)
 			const wasBookmarked = current?.bookmarked_by_me ?? false
 			const patch = { bookmarked_by_me: !wasBookmarked }
 
-			qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => patchFeedPost(old, id, patch))
-			qc.setQueryData<FeedCache>(feedKeys.following, (old) => patchFeedPost(old, id, patch))
+			patchEngagementInFeeds(qc, id, patch)
 
 			if (wasBookmarked) {
-				// if un-bookmarking, remove from bookmarks list
 				qc.setQueryData<FeedCache>(feedKeys.bookmarks, (old) => {
 					if (!old) return old
 					return {
@@ -128,10 +93,9 @@ export function useBookmarkPost() {
 					}
 				})
 			} else if (current) {
-				// prepend to bookmarks @ the top
 				qc.setQueryData<FeedCache>(feedKeys.bookmarks, (old) => {
 					if (!old) return old
-					const bookmarkedPost = { ...current, bookmarked_by_me: true }
+					const bookmarkedPost = { ...toStandalonePost(current), bookmarked_by_me: true }
 					return {
 						...old,
 						pages: old.pages.map((page, i) =>
@@ -142,20 +106,13 @@ export function useBookmarkPost() {
 			}
 
 			if (current) {
-				const detailKey = postDetailKeys.detail(current.pkid)
+				const pkid = typeof current.pkid === "number" ? current.pkid : Number(current.pkid)
+				const detailKey = postDetailKeys.detail(pkid)
 				await qc.cancelQueries({ queryKey: detailKey })
 				const detailPrev = qc.getQueryData<Post>(detailKey)
-
 				snapshots.detail = detailPrev
-				snapshots.pkid = current.pkid
-
+				snapshots.pkid = pkid
 				if (detailPrev) qc.setQueryData<Post>(detailKey, { ...detailPrev, ...patch })
-
-				// qc.getQueriesData<Post>({ queryKey: ["post", "detail"] }).forEach(([key, cached]) => {
-				// 	if (cached?.id === current.id) {
-				// 		qc.setQueryData<Post>(key, (old) => (old ? { ...old, ...patch } : old))
-				// 	}
-				// })
 			}
 
 			return snapshots
