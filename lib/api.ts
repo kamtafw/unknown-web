@@ -17,6 +17,7 @@ import {
 	ConfirmPasswordResponse,
 	CreatePostPayload,
 	CreatePostResponse,
+	DeletePostResponse,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
@@ -53,6 +54,7 @@ import {
 	SwitchOtpDefaultResponse,
 	TimezoneListResponse,
 	TimezonePreferenceResponse,
+	TogglePinnedPostResponse,
 	UnblockUsersResponse,
 	UndoNotInterestedResponse,
 	UnknownResponse,
@@ -64,6 +66,8 @@ import {
 	UpdateExternalLinkResponse,
 	UpdateLocationResponse,
 	UpdateNameResponse,
+	UpdatePostPayload,
+	UpdatePostResponse,
 	UpdateProfilePhotoResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
@@ -375,4 +379,15 @@ export const socialApi = {
 
 	requestCommunityNote: (payload: { post: string; reason?: string }) =>
 		apiClient.post<RequestNoteResponse>("/api/socials/request-note", payload).then((r) => r.data),
+
+	updatePost: (pkid: number, payload: UpdatePostPayload) =>
+		apiClient.patch<UpdatePostResponse>(`/api/socials/post/${pkid}`, payload).then((r) => r.data),
+
+	deletePost: (pkid: number) =>
+		apiClient.delete<DeletePostResponse>(`/api/socials/post/${pkid}`).then((r) => r.data),
+
+	togglePinnedPost: (id: string) =>
+		apiClient
+			.post<TogglePinnedPostResponse>(`/api/socials/post/${id}/toggle-pinned-post`)
+			.then((r) => r.data),
 }
