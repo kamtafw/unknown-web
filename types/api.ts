@@ -196,6 +196,11 @@ export type WhoCanReply =
 	| "VERIFIED_ACCOUNTS"
 	| "ONLY_ACCOUNTS_YOU_MENTION"
 
+export interface ViewerPermissions {
+	can_view: boolean
+	can_reply: boolean
+}
+
 export interface Post {
 	pkid: number
 	id: string
@@ -219,6 +224,7 @@ export interface Post {
 	post_comment_count: number
 	repost_count: number
 	post_hashtagged: string[]
+	viewer_permissions?: ViewerPermissions
 }
 
 export interface PostStats {
