@@ -1,57 +1,17 @@
 "use client"
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useCreatePost } from "@/hooks/use-create-post"
 import { socialApi } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth-store"
-import type { CreatePostPayload, MediaItem, WhoCanReply } from "@/types/api"
+import type { CreatePostPayload,MediaItem,WhoCanReply,WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import {
-	Camera,
-	Check,
-	ChevronDown,
-	Image as ImageIcon,
-	Loader2,
-	MapPin,
-	RefreshCw,
-	Smile,
-	X,
-} from "lucide-react"
+import { Camera,Image as ImageIcon,Loader2,MapPin,RefreshCw,Smile,X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { ReactNode, useRef, useState } from "react"
-import { Everyone, Followers, Following, Mention, Verified } from "../posts/icons"
+import { useRef,useState } from "react"
 import { getInitials } from "./post-card"
-
-interface ReplyOption {
-	value: WhoCanReply
-	label: string
-	icon: ReactNode
-}
-
-const REPLY_OPTIONS: ReplyOption[] = [
-	{ value: "EVERYONE", label: "Everyone", icon: <Everyone size={16} color="#6A88D1" /> },
-	{
-		value: "ONLY_FOLLOWERS",
-		label: "Only followers",
-		icon: <Followers size={16} color="#6A88D1" />,
-	},
-	{
-		value: "ACCOUNTS_YOU_FOLLOW",
-		label: "Accounts you follow",
-		icon: <Following size={16} color="#6A88D1" />,
-	},
-	{
-		value: "ONLY_ACCOUNTS_YOU_MENTION",
-		label: "Only accounts you mention",
-		icon: <Mention size={16} color="#6A88D1" />,
-	},
-	{
-		value: "VERIFIED_ACCOUNTS",
-		label: "Verified accounts",
-		icon: <Verified size={16} color="#6A88D1" />,
-	},
-]
+import { WhoCanReplyPicker } from "./who-can-reply-picker"
+import { WhoCanSeePicker } from "./who-can-see-picker"
 
 const EMOJIS = [
 	"😀",
@@ -100,8 +60,8 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 	const createPost = useCreatePost()
 
 	const [text, setText] = useState("")
+	const [whoCanSee, setWhoCanSee] = useState<WhoCanSee>("EVERYONE")
 	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>("EVERYONE")
-	const [replyPickerOpen, setReplyPickerOpen] = useState(false)
 	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
 	const [showEmoji, setShowEmoji] = useState(false)
 	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(null)
@@ -112,7 +72,6 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 	const cameraInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-	const currentOption = REPLY_OPTIONS.find((o) => o.value === whoCanReply) ?? REPLY_OPTIONS[0]
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
@@ -125,6 +84,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 		setShowEmoji(false)
 		setLocation(null)
 		setLocationLabel(null)
+		setWhoCanSee("EVERYONE")
 		setWhoCanReply("EVERYONE")
 	}
 
@@ -209,7 +169,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 		const hashtags = extractHashtags(text)
 		const payload: CreatePostPayload = {
 			content_text: text.trim(),
-			who_can_see: "EVERYONE",
+			who_can_see: whoCanSee,
 			who_can_reply: whoCanReply,
 			is_shared: null,
 			is_repost: false,
@@ -284,6 +244,10 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 									{myName}
 								</span>
 								<span className="text-xs text-muted-foreground">@{user?.username}</span>
+							</div>
+
+							<div className="ml-auto flex items-center">
+								<WhoCanSeePicker value={whoCanSee} onChange={setWhoCanSee} />
 							</div>
 						</div>
 
@@ -397,50 +361,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					</div>
 
 					<div className="px-5 pb-3 shrink-0">
-						<Popover open={replyPickerOpen} onOpenChange={setReplyPickerOpen}>
-							<PopoverTrigger asChild>
-								<button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted hover:bg-accent transition-colors text-sm text-muted-foreground">
-									<span className="shrink-0">{currentOption.icon}</span>
-									<span className="flex-1 text-left text-[13px]">Who can reply to this post?</span>
-									<ChevronDown size={14} className="text-muted-foreground shrink-0" />
-								</button>
-							</PopoverTrigger>
-
-							<PopoverContent
-								align="start"
-								sideOffset={6}
-								className="w-130 p-0 rounded-2xl border border-border shadow-xl"
-							>
-								{/* Who can reply */}
-								<div className="px-3 pt-3 pb-4">
-									<h3 className="font-bold text-foreground text-[15px] mb-3">Who can reply?</h3>
-									<div className="flex flex-col gap-0.5">
-										{REPLY_OPTIONS.map((opt) => (
-											<button
-												key={opt.value}
-												onClick={() => {
-													setWhoCanReply(opt.value)
-													setReplyPickerOpen(false)
-												}}
-												className="flex items-center justify-between w-full px-2 py-2 rounded-xl hover:bg-accent transition-colors"
-											>
-												<div className="flex items-center gap-3">
-													<div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-														{opt.icon}
-													</div>
-													<span className="text-sm font-medium text-foreground">{opt.label}</span>
-												</div>
-												{whoCanReply === opt.value && (
-													<div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-														<Check size={11} className="text-primary-foreground" strokeWidth={3} />
-													</div>
-												)}
-											</button>
-										))}
-									</div>
-								</div>
-							</PopoverContent>
-						</Popover>
+						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">

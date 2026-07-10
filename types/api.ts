@@ -321,6 +321,7 @@ export interface RepostPayload {
 	media_urls?: string[]
 	location?: { longitude: string; latitude: string }
 	who_can_reply?: WhoCanReply
+	who_can_see?: WhoCanSee
 }
 
 export type PostDetailResponse = ApiResponse<Post>
