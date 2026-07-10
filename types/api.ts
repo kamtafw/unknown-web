@@ -196,6 +196,11 @@ export type WhoCanReply =
 	| "VERIFIED_ACCOUNTS"
 	| "ONLY_ACCOUNTS_YOU_MENTION"
 
+export interface ViewerPermissions {
+	can_view: boolean
+	can_reply: boolean
+}
+
 export interface Post {
 	pkid: number
 	id: string
@@ -219,6 +224,7 @@ export interface Post {
 	post_comment_count: number
 	repost_count: number
 	post_hashtagged: string[]
+	viewer_permissions?: ViewerPermissions
 }
 
 export interface PostStats {
@@ -321,6 +327,7 @@ export interface RepostPayload {
 	media_urls?: string[]
 	location?: { longitude: string; latitude: string }
 	who_can_reply?: WhoCanReply
+	who_can_see?: WhoCanSee
 }
 
 export type PostDetailResponse = ApiResponse<Post>
@@ -555,3 +562,38 @@ export type RequestNoteResponse = ApiResponse<{ post: string; note_request_id: s
 export type MuteUserResponse = ApiResponse<Record<string, never>>
 export type UnmuteUserResponse = ApiResponse<Record<string, never>>
 export type BlockUserResponse = ApiResponse<{ blocked_user: number }>
+
+export interface UpdatePostPayload {
+	content_text?: string
+	who_can_see?: WhoCanSee
+	who_can_reply?: WhoCanReply
+	location?: { longitude: string; latitude: string } | null
+	hashtags?: string[]
+	media_urls?: string[]
+}
+
+export interface UpdatePostResponseData {
+	pkid: number
+	id: string
+	user: number
+	content_text: string
+	is_shared: boolean | null
+	is_repost: boolean
+	original_post: OriginalPost | OriginalComment | null
+	who_can_see: WhoCanSee
+	who_can_reply: WhoCanReply
+	created_at: string
+	updated_at: string
+	uploaded_media: string[]
+	post_location: PostLocation[]
+	post_hashtagged: string[]
+}
+
+export type UpdatePostResponse = ApiResponse<UpdatePostResponseData>
+export type DeletePostResponse = ApiResponse<Record<string, never>>
+
+export interface TogglePinnedPostResponseData {
+	message: string
+	is_pinned: boolean
+}
+export type TogglePinnedPostResponse = ApiResponse<TogglePinnedPostResponseData>

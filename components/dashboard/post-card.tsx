@@ -3,7 +3,12 @@
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
-import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import {
+	useBookmarkPost,
+	useDeletePost,
+	useLikePost,
+	useTogglePinnedPost,
+} from "@/hooks/use-post-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useRepost } from "@/hooks/use-repost"
@@ -12,9 +17,10 @@ import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
-import { MoreHorizontal, Users } from "lucide-react"
+import * as Dialog from "@radix-ui/react-dialog"
+import { Loader2, MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { forwardRef, useState } from "react"
 import {
@@ -38,6 +44,7 @@ import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { QuoteModal } from "./quote-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
+import { EditPostModal } from "./edit-post-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -465,6 +472,55 @@ export function StatsButton({ postId, size }: { postId: string; size?: number })
 	)
 }
 
+function DeletePostConfirmDialog({
+	open,
+	onClose,
+	onConfirm,
+	isPending,
+}: {
+	open: boolean
+	onClose: () => void
+	onConfirm: () => void
+	isPending: boolean
+}) {
+	return (
+		<Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
+			<Dialog.Portal>
+				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-[calc(100%-2rem)] max-w-96 bg-card border border-border rounded-3xl shadow-2xl px-6 py-6 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+					<Dialog.Title className="font-bold text-foreground text-[15px] mb-1.5">
+						Delete post?
+					</Dialog.Title>
+					<Dialog.Description className="text-[13px] text-muted-foreground leading-relaxed mb-6">
+						This can&apos;t be undone. This post will be removed from your profile, the feed, and
+						anyone else who has it bookmarked.
+					</Dialog.Description>
+					<div className="flex items-center justify-end gap-4">
+						<Dialog.Close asChild>
+							<button className="flex-1 text-sm font-semibold text-muted-foreground hover:opacity-70 transition-colors cursor-pointer">
+								Cancel
+							</button>
+						</Dialog.Close>
+						<button
+							onClick={onConfirm}
+							disabled={isPending}
+							className="flex-1 text-destructive text-sm font-semibold hover:opacity-80 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+						>
+							{isPending ? (
+								<>
+									<Loader2 size={12} className="animate-spin" /> Deleting…
+								</>
+							) : (
+								"Delete"
+							)}
+						</button>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	)
+}
+
 export function PostOptionsMenu({
 	post,
 	currentUserId,
@@ -477,9 +533,14 @@ export function PostOptionsMenu({
 	const isOwn = post.user.pkid === currentUserId
 	const pkid = post.user.pkid
 
+	const router = useRouter()
+	const pathname = usePathname()
+
 	const [readAloudOpen, setReadAloudOpen] = useState(false)
 	const [requestNoteOpen, setRequestNoteOpen] = useState(false)
 	const [blockOpen, setBlockOpen] = useState(false)
+	const [editOpen, setEditOpen] = useState(false)
+	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
 	const bookmarkPost = useBookmarkPost()
 	const followUser = useFollowUser()
@@ -488,6 +549,8 @@ export function PostOptionsMenu({
 	const unmuteUser = useUnmuteUser()
 	const unblockUsers = useUnblockUsers()
 	const notInterested = useNotInterested()
+	const togglePinnedPost = useTogglePinnedPost()
+	const deletePost = useDeletePost()
 
 	const isFollowed = post.user.youFollowThisUser ?? false
 	const isMuted = post.user.youMutedThisUser ?? false
@@ -508,26 +571,37 @@ export function PostOptionsMenu({
 
 	const handleNotInterested = () => notInterested.mutate(feedItemId ?? post.id)
 
+	const handleTogglePinned = () => togglePinnedPost.mutate(post.id)
+
+	const handleDeleteConfirm = () => {
+		deletePost.mutate(post.pkid, {
+			onSuccess: () => {
+				setDeleteConfirmOpen(false)
+				if (pathname.startsWith(`/posts/${post.pkid}`)) router.push("/home")
+			},
+		})
+	}
+
 	const ownItems: ActionDropdownItem[] = [
 		{
 			label: "Edit post",
 			icon: <Quote />,
-			onSelect: () => console.log("TODO: edit post", post.id),
+			onSelect: () => setEditOpen(true),
 		},
 		{
 			label: post.is_pinned ? "Unpin from profile" : "Pin to profile",
 			icon: <Pin />,
-			onSelect: () => console.log("TODO: pin post", post.id),
+			onSelect: handleTogglePinned,
 		},
 		{
 			label: "Change who can reply",
 			icon: <ChangeReplier />,
-			onSelect: () => console.log("TODO: change replier", post.id),
+			onSelect: () => setEditOpen(true),
 		},
 		{
 			label: "Delete post",
 			icon: <Trash />,
-			onSelect: () => console.log("TODO: delete post", post.id),
+			onSelect: () => setDeleteConfirmOpen(true),
 			destructive: true,
 		},
 	]
@@ -607,6 +681,18 @@ export function PostOptionsMenu({
 				open={blockOpen}
 				onOpenChange={setBlockOpen}
 			/>
+
+			{isOwn && (
+				<>
+					<EditPostModal post={post} open={editOpen} onOpenChange={setEditOpen} />
+					<DeletePostConfirmDialog
+						open={deleteConfirmOpen}
+						onClose={() => setDeleteConfirmOpen(false)}
+						onConfirm={handleDeleteConfirm}
+						isPending={deletePost.isPending}
+					/>
+				</>
+			)}
 		</>
 	)
 }

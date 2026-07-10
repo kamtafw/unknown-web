@@ -1,11 +1,42 @@
 import { feedKeys } from "@/hooks/use-feed"
 import { isOriginalComment } from "@/lib/post-helpers"
-import { OriginalPost, Post } from "@/types/api"
-import { InfiniteData, QueryClient } from "@tanstack/react-query"
+import { OriginalPost,Post } from "@/types/api"
+import { InfiniteData,QueryClient } from "@tanstack/react-query"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
 const ENGAGEMENT_FEED_KEYS = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks] as const
+
+type EntityMatcher = { id: string; pkid?: never } | { pkid: number; id?: never }
+
+/**
+ * finds whichever occurrence of `id`/`pkid` currently holds engagement state — a direct
+ * feed post, or nested inside someone's bare repost of it — across every feed
+ * cache; bare reposts don't carry their own engagement state, so their
+ * `original_post` is checked too
+ */
+export function findEngagementEntity(
+	qc: QueryClient,
+	matcher: EntityMatcher,
+): Post | OriginalPost | undefined {
+	const match =
+		matcher.id !== undefined
+			? (p: Post | OriginalPost) => p.id === matcher.id
+			: (p: Post | OriginalPost) => p.pkid === matcher.pkid
+
+	for (const key of ENGAGEMENT_FEED_KEYS) {
+		const cache = qc.getQueryData<FeedCache>(key)
+		for (const page of cache?.pages ?? []) {
+			for (const p of page.posts) {
+				if (match(p)) return p
+				if (p.original_post && !isOriginalComment(p.original_post) && match(p.original_post)) {
+					return p.original_post
+				}
+			}
+		}
+	}
+	return undefined
+}
 
 /**
  * finds whichever occurrence of `id` currently holds engagement state — a direct
@@ -13,13 +44,38 @@ const ENGAGEMENT_FEED_KEYS = [feedKeys.forYou, feedKeys.following, feedKeys.book
  * cache; bare reposts don't carry their own engagement state, so their
  * `original_post` is checked too
  */
-export function findEngagementEntity(qc: QueryClient, id: string): Post | OriginalPost | undefined {
+export function findEngagementEntityById(
+	qc: QueryClient,
+	id: string,
+): Post | OriginalPost | undefined {
 	for (const key of ENGAGEMENT_FEED_KEYS) {
 		const cache = qc.getQueryData<FeedCache>(key)
 		for (const page of cache?.pages ?? []) {
 			for (const p of page.posts) {
 				if (p.id === id) return p
 				if (p.original_post && !isOriginalComment(p.original_post) && p.original_post.id === id) {
+					return p.original_post
+				}
+			}
+		}
+	}
+	return undefined
+}
+
+export function findEngagementEntityByPkid(
+	qc: QueryClient,
+	pkid: number,
+): Post | OriginalPost | undefined {
+	for (const key of ENGAGEMENT_FEED_KEYS) {
+		const cache = qc.getQueryData<FeedCache>(key)
+		for (const page of cache?.pages ?? []) {
+			for (const p of page.posts) {
+				if (p.pkid === pkid) return p
+				if (
+					p.original_post &&
+					!isOriginalComment(p.original_post) &&
+					p.original_post.pkid === pkid
+				) {
 					return p.original_post
 				}
 			}

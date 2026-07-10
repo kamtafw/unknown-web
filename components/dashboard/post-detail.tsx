@@ -6,10 +6,20 @@ import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-p
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
 import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { canReplyToPost } from "@/lib/post-permissions"
 import { useAuthStore } from "@/stores/auth-store"
 import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
-import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
+import {
+	ArrowLeft,
+	Image as ImageIcon,
+	Loader2,
+	Lock,
+	MapPin,
+	RefreshCw,
+	Smile,
+	X,
+} from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { forwardRef, useEffect, useRef, useState } from "react"
@@ -30,6 +40,7 @@ import {
 	UserAvatar,
 } from "./post-card"
 import { ReplyModal } from "./reply-modal"
+import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 
 const EMOJIS = [
 	"😀",
@@ -108,116 +119,126 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 	)
 }
 
-const CommentRow = forwardRef<HTMLDivElement, { comment: Comment; highlighted?: boolean }>(
-	function CommentRow({ comment, highlighted }, ref) {
-		const [replyOpen, setReplyOpen] = useState(false)
-		const [repliesOpen, setRepliesOpen] = useState(false)
-		const timeAgo = useTimeAgo(comment.created_at)
-		const fullname =
-			[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
-			comment.user.username
+const CommentRow = forwardRef<
+	HTMLDivElement,
+	{ comment: Comment; post: Post; highlighted?: boolean }
+>(function CommentRow({ comment, post, highlighted }, ref) {
+	const [replyOpen, setReplyOpen] = useState(false)
+	const [repliesOpen, setRepliesOpen] = useState(false)
+	const timeAgo = useTimeAgo(comment.created_at)
+	const canReply = canReplyToPost(post)
+	const fullname =
+		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
+		comment.user.username
 
-		const hasContent = !!comment.message?.trim() || comment.uploaded_media.length > 0
+	const hasContent = !!comment.message?.trim() || comment.uploaded_media.length > 0
 
-		if (!hasContent) return null
+	if (!hasContent) return null
 
-		return (
-			<div
-				ref={ref}
-				className={`px-5 py-4 border-b border-border transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
-			>
-				<div className="flex gap-3">
-					{/* Avatar + optional thread line */}
-					<div className="flex flex-col items-center shrink-0">
-						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
-							<UserAvatar
-								src={comment.user.profile_photo}
-								first={comment.user.first_name}
-								last={comment.user.last_name}
-							/>
-						</AuthorHoverCard>
-						{repliesOpen && comment.replies_count > 0 && (
-							<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
-						)}
-					</div>
-
-					<div className="flex-1 min-w-0">
-						{/* Header */}
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
-								<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
-									{fullname}
-								</span>
-							</AuthorHoverCard>
-							<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
-								<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
-							</AuthorHoverCard>
-							<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
-						</div>
-
-						{/* Message */}
-						{comment.message?.trim() && (
-							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
-								{renderText(comment.message)}
-							</p>
-						)}
-
-						{/* Media */}
-						<CommentMediaGrid urls={comment.uploaded_media} />
-
-						{/* Actions */}
-						<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
-							<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-								<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
-								<span className="text-sm tabular-nums font-medium">
-									{formatCount(comment.like_count)}
-								</span>
-							</button>
-
-							<button
-								onClick={() => setReplyOpen(true)}
-								className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer"
-							>
-								<CommentIcon size={22} />
-								<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
-							</button>
-
-							<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-								<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-								<span className="text-sm tabular-nums font-medium">
-									{formatCount(comment.repost_count)}
-								</span>
-							</button>
-
-							<ShareButton postId={comment.id} size={22} />
-						</div>
-
-						{comment.replies_count > 0 && (
-							<button
-								className="mt-1 flex-row items-center gap-1.5"
-								onClick={() => setRepliesOpen(!repliesOpen)}
-							>
-								<span className="text-sm text-primary font-medium">
-									{repliesOpen
-										? "Hide replies"
-										: `View ${comment.replies_count} ${comment.replies_count === 1 ? "reply" : "replies"}`}
-								</span>
-							</button>
-						)}
-					</div>
+	return (
+		<div
+			ref={ref}
+			className={`px-5 py-4 border-b border-border transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+		>
+			<div className="flex gap-3">
+				{/* Avatar + optional thread line */}
+				<div className="flex flex-col items-center shrink-0">
+					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<UserAvatar
+							src={comment.user.profile_photo}
+							first={comment.user.first_name}
+							last={comment.user.last_name}
+						/>
+					</AuthorHoverCard>
+					{repliesOpen && comment.replies_count > 0 && (
+						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
+					)}
 				</div>
-				{/* Replies — indented with left border */}
-				{repliesOpen && (
-					<div className="ml-13 mt-1 border-l-2 border-border pl-3">
-						<RepliesSection commentId={comment.id} />
-					</div>
-				)}
 
-				<ReplyModal comment={comment} open={replyOpen} onOpenChange={setReplyOpen} />
+				<div className="flex-1 min-w-0">
+					{/* Header */}
+					<div className="flex items-center gap-1.5 flex-wrap">
+						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
+								{fullname}
+							</span>
+						</AuthorHoverCard>
+						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+							<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+						</AuthorHoverCard>
+						<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
+					</div>
+
+					{/* Message */}
+					{comment.message?.trim() && (
+						<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
+							{renderText(comment.message)}
+						</p>
+					)}
+
+					{/* Media */}
+					<CommentMediaGrid urls={comment.uploaded_media} />
+
+					{/* Actions */}
+					<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
+						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
+							<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
+							<span className="text-sm tabular-nums font-medium">
+								{formatCount(comment.like_count)}
+							</span>
+						</button>
+
+						<button
+							onClick={() => setReplyOpen(true)}
+							aria-label={canReply ? "Reply" : "Reply restricted"}
+							className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer"
+						>
+							<span className="relative inline-flex">
+								<CommentIcon size={22} />
+								{!canReply && (
+									<span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-card ring-1 ring-border flex items-center justify-center">
+										<Lock size={7.5} className="text-muted-foreground" strokeWidth={3} />
+									</span>
+								)}
+							</span>
+							<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
+						</button>
+
+						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
+							<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
+							<span className="text-sm tabular-nums font-medium">
+								{formatCount(comment.repost_count)}
+							</span>
+						</button>
+
+						<ShareButton postId={comment.id} size={22} />
+					</div>
+
+					{comment.replies_count > 0 && (
+						<button
+							className="mt-1 flex-row items-center gap-1.5"
+							onClick={() => setRepliesOpen(!repliesOpen)}
+						>
+							<span className="text-sm text-primary font-medium">
+								{repliesOpen
+									? "Hide replies"
+									: `View ${comment.replies_count} ${comment.replies_count === 1 ? "reply" : "replies"}`}
+							</span>
+						</button>
+					)}
+				</div>
 			</div>
-		)
-	},
-)
+			{/* Replies — indented with left border */}
+			{repliesOpen && (
+				<div className="ml-13 mt-1 border-l-2 border-border pl-3">
+					<RepliesSection commentId={comment.id} />
+				</div>
+			)}
+
+			<ReplyModal comment={comment} post={post} open={replyOpen} onOpenChange={setReplyOpen} />
+		</div>
+	)
+})
 
 function ReplyRow({ reply }: { reply: Comment }) {
 	const timeAgo = useTimeAgo(reply.created_at)
@@ -317,6 +338,8 @@ function CommentComposer({ post }: { post: Post }) {
 	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
 	const canSubmit = hasContent && !anyUploading
+
+	const canReply = canReplyToPost(post)
 
 	const reset = () => {
 		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
@@ -435,6 +458,14 @@ function CommentComposer({ post }: { post: Post }) {
 		if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
 			handleSubmit()
 		}
+	}
+
+	if (!canReply) {
+		return (
+			<div className="px-5 py-4 border-b border-border">
+				<ReplyRestrictedNotice whoCanReply={post.who_can_reply} username={post.user.username} />
+			</div>
+		)
 	}
 
 	return (
@@ -649,6 +680,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const bookmarkPost = useBookmarkPost()
 
 	const isOwn = post.user.id === user?.id
+	const canReply = canReplyToPost(post)
 	const mediaUrls = post.post_media.map((m) => m.external_url)
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
@@ -659,7 +691,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	return (
 		<>
 			<div className="px-5">
-				<div className="flex items-start gap-3 pt-5 pb-2">
+				<div className="flex gap-3 pt-5 pb-2">
 					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
 						<UserAvatar
 							src={post.user.profile_photo}
@@ -668,7 +700,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 							className="cursor-pointer"
 						/>
 					</AuthorHoverCard>
-					<div className="flex-1 min-w-0">
+					<div className="flex flex-col min-w-0">
 						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
 							<p className="font-bold text-[15px] text-foreground leading-tight cursor-pointer hover:underline underline-offset-2 w-fit">
 								{fullname}
@@ -679,7 +711,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</AuthorHoverCard>
 					</div>
 
-					<div onClick={(e) => e.stopPropagation()}>
+					<div onClick={(e) => e.stopPropagation()} className="ml-auto flex">
 						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
 					</div>
 				</div>
@@ -744,11 +776,20 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						>
 							<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
 						</button>
+
 						<button
 							onClick={onCommentClick}
+							aria-label={canReply ? "Comment" : "Comments restricted"}
 							className="flex flex-1 items-center gap-1.5 p-3 rounded-full hover:bg-accent transition-colors cursor-pointer"
 						>
-							<CommentIcon size={22} />
+							<span className="relative inline-flex">
+								<CommentIcon size={22} />
+								{!canReply && (
+									<span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-card ring-1 ring-border flex items-center justify-center">
+										<Lock size={7.5} className="text-muted-foreground" strokeWidth={3} />
+									</span>
+								)}
+							</span>
 						</button>
 
 						<RepostButton
@@ -913,6 +954,7 @@ export function PostDetailView({
 									<CommentRow
 										key={comment.pkid}
 										comment={comment}
+										post={post}
 										highlighted={comment.id === highlightCommentId}
 										ref={comment.id === highlightCommentId ? highlightRef : undefined}
 									/>
