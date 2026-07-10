@@ -1,4 +1,5 @@
 import { socialApi } from "@/lib/api"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { isOriginalComment } from "@/lib/post-helpers"
 import { AddCommentPayload, Comment, CommentsResponse, Post } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -106,6 +107,10 @@ export function useAddComment() {
 			qc.setQueryData<Post>(detailKey, (old) =>
 				old ? { ...old, post_comment_count: old.post_comment_count + 1 } : old,
 			)
+		},
+
+		onError: (error) => {
+			showMutationErrorToast(error, "You can't reply to this post.")
 		},
 	})
 }
