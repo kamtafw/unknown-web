@@ -1,14 +1,17 @@
 "use client"
 
 import { useCreatePost } from "@/hooks/use-create-post"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialApi } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth-store"
-import type { CreatePostPayload,MediaItem,WhoCanReply,WhoCanSee } from "@/types/api"
+import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import { Camera,Image as ImageIcon,Loader2,MapPin,RefreshCw,Smile,X } from "lucide-react"
+import { Camera, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { useRef,useState } from "react"
+import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
@@ -71,6 +74,13 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const cameraInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
@@ -252,18 +262,23 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 						</div>
 
 						{/* Textarea */}
-						<textarea
-							ref={textareaRef}
-							value={text}
-							onChange={(e) => setText(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
-							}}
-							placeholder="What's on your mind?"
-							rows={3}
-							autoFocus
-							className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed mb-3"
-						/>
+						<div ref={mentionContainerRef} className="relative mb-3">
+							<HighlightedTextarea
+								ref={textareaRef}
+								value={text}
+								onChange={setText}
+								onSelect={mention.handleSelect}
+								onKeyDown={(e) => {
+									if (mention.handleKeyDown(e)) return
+									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+								}}
+								placeholder="What's on your mind?"
+								rows={3}
+								autoFocus
+								className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
+							/>
+							<MentionAutocomplete mention={mention} />
+						</div>
 
 						{/* Media grid */}
 						{mediaCount > 0 && (

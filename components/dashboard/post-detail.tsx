@@ -1,17 +1,17 @@
 "use client"
 
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
-import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
-import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
+import { useAddComment,usePrependComment } from "@/hooks/use-comment"
+import { useLikeComment,useRepostComment } from "@/hooks/use-comment-actions"
+import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment,resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
@@ -25,10 +25,10 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { forwardRef, useEffect, useRef, useState } from "react"
+import { forwardRef,useEffect,useRef,useState } from "react"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
+import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
 import {
 	formatCount,
@@ -46,6 +46,9 @@ import {
 import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 
 const EMOJIS = [
 	"😀",
@@ -396,6 +399,13 @@ function CommentComposer({ post }: { post: Post }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
@@ -557,16 +567,23 @@ function CommentComposer({ post }: { post: Post }) {
 				/>
 
 				<div className="flex-1 min-w-0">
-					<textarea
-						ref={textareaRef}
-						value={text}
-						onChange={(e) => setText(e.target.value)}
-						onFocus={() => setFocused(true)}
-						onKeyDown={handleKeyDown}
-						placeholder="Post your reply"
-						rows={focused ? 2 : 1}
-						className="w-full resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed pt-0.5"
-					/>
+					<div ref={mentionContainerRef} className="relative mb-3">
+						<HighlightedTextarea
+							ref={textareaRef}
+							value={text}
+							onChange={setText}
+							onSelect={mention.handleSelect}
+							onFocus={() => setFocused(true)}
+							onKeyDown={(e) => {
+								if (mention.handleKeyDown(e)) return
+								handleKeyDown(e)
+							}}
+							placeholder="Post your reply"
+							rows={focused ? 2 : 1}
+							className="w-full resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed pt-0.5"
+						/>
+						<MentionAutocomplete mention={mention} />
+					</div>
 
 					{/* Media grid */}
 					{mediaItems.length > 0 && (
