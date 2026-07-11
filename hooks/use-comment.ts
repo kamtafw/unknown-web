@@ -27,7 +27,7 @@ function incrementCommentCount(old: FeedCache | undefined, pkid: number): FeedCa
 						...p,
 						original_post: {
 							...p.original_post,
-							post_comment_count: p.original_post.post_comment_count ?? 0 + 1,
+							post_comment_count: (p.original_post.post_comment_count ?? 0) + 1,
 						},
 					}
 				}

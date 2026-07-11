@@ -19,6 +19,7 @@ const eslintConfig = [
 			"hooks/use-read-aloud.ts",
 			"components/auth/create-new-password.tsx",
 			"components/dashboard/add-account-panel.tsx",
+			"components/dashboard/media-lightbox.tsx",
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",

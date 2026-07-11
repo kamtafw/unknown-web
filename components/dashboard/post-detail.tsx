@@ -1,14 +1,15 @@
 "use client"
 
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
-import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
+import { useAddComment,usePrependComment } from "@/hooks/use-comment"
+import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
+import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment,resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
@@ -22,10 +23,10 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { forwardRef, useEffect, useRef, useState } from "react"
+import { forwardRef,useEffect,useRef,useState } from "react"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
+import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
 import {
 	formatCount,
 	MediaGrid,
@@ -39,8 +40,10 @@ import {
 	StatsButton,
 	UserAvatar,
 } from "./post-card"
+import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
+import { MediaLightbox } from "./media-lightbox"
 
 const EMOJIS = [
 	"😀",
@@ -80,6 +83,8 @@ function extractHashtags(str: string) {
 }
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
 	if (!urls.length) return null
 
 	const isAllAudio = urls.every((u) => mediaType(u) === "audio")
@@ -93,29 +98,46 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 		)
 	}
 
+	const visible = urls.slice(0, 4)
+	const imageUrls = urls.filter((url) => mediaType(url) === "image")
+
 	return (
-		<div
-			className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
-				urls.length === 1 ? "grid-cols-1" : "grid-cols-2"
-			}`}
-		>
-			{urls.slice(0, 4).map((url, i) => {
-				const type = mediaType(url)
-				return (
-					<div key={i} className="relative overflow-hidden bg-muted aspect-square">
-						{type === "video" ? (
-							<video src={url} controls className="w-full h-full object-cover" />
-						) : type === "audio" ? (
-							<div className="flex items-center justify-center h-full">
-								<audio controls src={url} className="w-5/6" />
-							</div>
-						) : (
-							<Image src={url} alt="" fill={true} objectFit="cover" />
+		<>
+			<div
+				className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${visible.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+			>
+				{visible.map((url, i) => {
+					const type = mediaType(url)
+					return (
+						<div key={i} className="relative overflow-hidden bg-muted aspect-square">
+							{type === "video" ? (
+								<video src={url} controls className="w-full h-full object-cover" />
+							) : type === "audio" ? (
+								<div className="flex items-center justify-center h-full">
+									<audio controls src={url} className="w-5/6" />
+								</div>
+							) : (
+								<button
+								type="button"
+								onClick={() => setLightboxIndex(imageUrls.indexOf(url))}
+								className="block w-full h-full cursor-zoom-in"
+							>
+								<Image src={url} alt="" fill={true} className="object-cover" />
+							</button>
+							)}
+						</div>
+					)
+				})}
+			</div>
+			{imageUrls.length > 0 && (
+							<MediaLightbox
+								urls={imageUrls}
+								index={lightboxIndex ?? 0}
+								open={lightboxIndex !== null}
+								onOpenChange={(v) => !v && setLightboxIndex(null)}
+							/>
 						)}
-					</div>
-				)
-			})}
-		</div>
+		</>
 	)
 }
 
@@ -138,7 +160,7 @@ const CommentRow = forwardRef<
 	return (
 		<div
 			ref={ref}
-			className={`px-5 py-4 border-b border-border transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+			className={`px-5 py-4 border-b border-border transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
 		>
 			<div className="flex gap-3">
 				{/* Avatar + optional thread line */}
@@ -678,6 +700,10 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
+	const repost = useRepost()
+
+	const [reposted, setReposted] = useState(post.reposted_by_me)
+	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const isOwn = post.user.id === user?.id
 	const canReply = canReplyToPost(post)
@@ -688,9 +714,14 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const shortAddress = address.split(",").slice(-3, -1).join(", ")
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
+	const handleRepost = () => {
+		setReposted((v) => !v)
+		if (!reposted) repost.mutate({ is_repost: true, original_post: post.id })
+	}
+
 	return (
 		<>
-			<div className="px-5">
+			<div className="px-5 animate-in fade-in duration-300">
 				<div className="flex gap-3 pt-5 pb-2">
 					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
 						<UserAvatar
@@ -793,9 +824,9 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.reposted_by_me}
-							onRepost={() => {}}
-							onQuote={() => {}}
+							reposted={reposted}
+							onRepost={handleRepost}
+							onQuote={() => setQuoteOpen(true)}
 							size={22}
 						/>
 
@@ -818,6 +849,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 					</div>
 				</div>
 			</div>
+			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</>
 	)
 }
@@ -868,7 +900,7 @@ export function PostDetailView({
 
 	const [commentOpen, setCommentOpen] = useState(false)
 
-	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData,refetch } = usePostDetail(pkid)
 	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
 	const {
 		data: commentsData,
@@ -928,9 +960,12 @@ export function PostDetailView({
 						))}
 					</>
 				) : isError ? (
-					<p className="px-5 py-16 text-center text-sm text-muted-foreground">
-						Failed to load post.
-					</p>
+  <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+    <p className="text-sm text-muted-foreground">Failed to load post.</p>
+    <button onClick={() => refetch()} className="text-[13px] font-semibold text-primary hover:underline">
+      Try again
+    </button>
+  </div>
 				) : post ? (
 					<>
 						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />
