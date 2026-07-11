@@ -1,5 +1,5 @@
 import { socialApi } from "@/lib/api"
-import { findEngagementEntity, patchEngagementInFeeds } from "@/lib/post-engagement"
+import { findEngagementEntityAnywhere, patchEngagementEverywhere } from "@/lib/post-engagement"
 import { toStandalonePost } from "@/lib/post-helpers"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser, Post, PostUser, RepostPayload } from "@/types/api"
@@ -93,6 +93,7 @@ export function useRepost() {
 		onMutate: async (payload) => {
 			const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
 			await Promise.all(feedKeys_.map((k) => qc.cancelQueries({ queryKey: k })))
+			await qc.cancelQueries({ queryKey: ["post", "detail"] })
 
 			const snapshots = {
 				forYou: qc.getQueryData<FeedCache>(feedKeys.forYou),
@@ -101,10 +102,14 @@ export function useRepost() {
 				tempId: null as string | null,
 			}
 
-			// 1. bump repost_count wherever the original appears — standalone or nested
-			const current = findEngagementEntity(qc, { id: payload.original_post })
-			patchEngagementInFeeds(qc, payload.original_post, {
-				repost_count: Math.max(0, (current?.repost_count ?? 0) + 1),
+			// 1. bump repost_count wherever the original appears — feed cards,
+			// nested inside bare reposts, or its own open detail page
+			const current = findEngagementEntityAnywhere(qc, { id: payload.original_post })
+			const prevRepostCount = current?.repost_count ?? 0
+			const prevRepostedByMe = current?.reposted_by_me ?? false
+
+			patchEngagementEverywhere(qc, payload.original_post, {
+				repost_count: prevRepostCount + 1,
 				reposted_by_me: true,
 			})
 
@@ -118,13 +123,26 @@ export function useRepost() {
 				qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => prependToFeed(old, optimistic))
 			}
 
-			return snapshots
+			return {
+				...snapshots,
+				revert: {
+					id: payload.original_post,
+					repostCount: prevRepostCount,
+					repostedByMe: prevRepostedByMe,
+				},
+			}
 		},
 
 		onError: (_err, _vars, ctx) => {
 			if (ctx?.forYou) qc.setQueryData<FeedCache>(feedKeys.forYou, ctx.forYou)
 			if (ctx?.following) qc.setQueryData<FeedCache>(feedKeys.following, ctx.following)
 			if (ctx?.bookmarks) qc.setQueryData<FeedCache>(feedKeys.bookmarks, ctx.bookmarks)
+			if (ctx?.revert) {
+				patchEngagementEverywhere(qc, ctx.revert.id, {
+					repost_count: ctx.revert.repostCount,
+					reposted_by_me: ctx.revert.repostedByMe,
+				})
+			}
 		},
 
 		onSuccess: (_data, _vars, ctx) => {

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { CreatePostModal } from "./create-post-modal"
+import { isNavItemActive } from "@/lib/nav-active"
 
 const NAV_ITEMS = [
 	{ label: "Home", icon: Home, href: "/home" },
@@ -25,7 +26,7 @@ export function MobileNav() {
 			<nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
 				<div className="flex items-center justify-around h-16 px-2">
 					{NAV_ITEMS.slice(0, 2).map(({ label, icon: Icon, href }) => {
-						const active = pathname === href
+						const active = isNavItemActive(pathname, href)
 						return (
 							<Link
 								key={href}
@@ -50,7 +51,7 @@ export function MobileNav() {
 					</button>
 
 					{NAV_ITEMS.slice(2).map(({ label, icon: Icon, href }) => {
-						const active = pathname === href
+						const active = isNavItemActive(pathname, href)
 						return (
 							<Link
 								key={href}

@@ -38,50 +38,30 @@ export function findEngagementEntity(
 	return undefined
 }
 
-/**
- * finds whichever occurrence of `id` currently holds engagement state — a direct
- * feed post, or nested inside someone's bare repost of it — across every feed
- * cache; bare reposts don't carry their own engagement state, so their
- * `original_post` is checked too
- */
-export function findEngagementEntityById(
-	qc: QueryClient,
-	id: string,
-): Post | OriginalPost | undefined {
-	for (const key of ENGAGEMENT_FEED_KEYS) {
-		const cache = qc.getQueryData<FeedCache>(key)
-		for (const page of cache?.pages ?? []) {
-			for (const p of page.posts) {
-				if (p.id === id) return p
-				if (p.original_post && !isOriginalComment(p.original_post) && p.original_post.id === id) {
-					return p.original_post
-				}
-			}
-		}
+/** searches every currently-mounted post-detail query (["post","detail", pkid]) */
+export function findDetailEntity(qc: QueryClient, matcher: EntityMatcher): Post | undefined {
+	const match =
+		matcher.id !== undefined
+			? (p: Post) => p.id === matcher.id
+			: (p: Post) => p.pkid === matcher.pkid
+
+	const entries = qc.getQueriesData<Post>({ queryKey: ["post", "detail"] })
+	for (const [, data] of entries) {
+		if (data && match(data)) return data
 	}
 	return undefined
 }
 
-export function findEngagementEntityByPkid(
+/**
+ * feeds first (cheap, covers the common case), then falls back to any open
+ * post-detail page — needed because a post reached via direct link/share
+ * may never have been paged into a feed cache
+ */
+export function findEngagementEntityAnywhere(
 	qc: QueryClient,
-	pkid: number,
+	matcher: EntityMatcher,
 ): Post | OriginalPost | undefined {
-	for (const key of ENGAGEMENT_FEED_KEYS) {
-		const cache = qc.getQueryData<FeedCache>(key)
-		for (const page of cache?.pages ?? []) {
-			for (const p of page.posts) {
-				if (p.pkid === pkid) return p
-				if (
-					p.original_post &&
-					!isOriginalComment(p.original_post) &&
-					p.original_post.pkid === pkid
-				) {
-					return p.original_post
-				}
-			}
-		}
-	}
-	return undefined
+	return findEngagementEntity(qc, matcher) ?? findDetailEntity(qc, matcher)
 }
 
 /** applies `patch` to every occurrence of `id` — direct and nested — across all feed caches */
@@ -108,4 +88,17 @@ export function patchEngagementInFeeds(qc: QueryClient, id: string, patch: Parti
 			}
 		})
 	})
+}
+
+/**
+ * mirrors patchEngagementInFeeds but also patches any open post-detail
+ * query for the same post — without this, liking/bookmarking/reposting
+ * from a post's own detail page wouldn't update that page until refetch
+ */
+export function patchEngagementEverywhere(qc: QueryClient, id: string, patch: Partial<Post>) {
+	patchEngagementInFeeds(qc, id, patch)
+
+	qc.setQueriesData<Post>({ queryKey: ["post", "detail"] }, (old) =>
+		old && old.id === id ? { ...old, ...patch } : old,
+	)
 }

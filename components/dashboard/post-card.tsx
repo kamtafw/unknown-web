@@ -40,11 +40,12 @@ import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { AuthorHoverCard } from "./author-hover-card"
 import { BlockUserModal } from "./block-user-modal"
 import { CommentModal } from "./comment-modal"
+import { EditPostModal } from "./edit-post-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
+import { MediaLightbox } from "./media-lightbox"
 import { QuoteModal } from "./quote-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
-import { EditPostModal } from "./edit-post-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -130,6 +131,8 @@ export const UserAvatar = forwardRef<
 })
 
 export function MediaGrid({ urls }: { urls: string[] }) {
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
 	if (!urls.length) return null
 
 	const types = urls.map((url) => mediaType(url))
@@ -146,36 +149,59 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	const visible = urls.slice(0, 4)
 	const overflow = urls.length - 4
 	const count = visible.length
+	const imageUrls = urls.filter((url) => mediaType(url) === "image")
 
 	return (
-		<div
-			className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${count === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-		>
-			{visible.map((url, i) => {
-				const type = mediaType(url)
-				const isLast = i === count - 1 && overflow > 0
-				const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
-				const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
-				return (
-					<div key={i} className={`relative overflow-hidden bg-muted ${spanClass} ${aspectClass}`}>
-						{type === "video" ? (
-							<video src={url} controls className="w-full h-full object-cover" />
-						) : type === "audio" ? (
-							<div className="flex items-center justify-center h-full">
-								<audio controls src={url} className="w-5/6" />
-							</div>
-						) : (
-							<Image src={url} alt="" fill={true} className="object-cover" />
-						)}
-						{isLast && (
-							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-								<span className="text-white text-2xl font-semibold">+{overflow}</span>
-							</div>
-						)}
-					</div>
-				)
-			})}
-		</div>
+		<>
+			<div
+				className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${count === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+			>
+				{visible.map((url, i) => {
+					const type = mediaType(url)
+					const isLast = i === count - 1 && overflow > 0
+					const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
+					const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
+					return (
+						<div
+							key={i}
+							className={`relative overflow-hidden bg-muted ${spanClass} ${aspectClass}`}
+						>
+							{type === "video" ? (
+								<video src={url} controls className="w-full h-full object-cover" />
+							) : type === "audio" ? (
+								<div className="flex items-center justify-center h-full">
+									<audio controls src={url} className="w-5/6" />
+								</div>
+							) : (
+								<button
+									type="button"
+									onClick={(e) => {
+										e.stopPropagation()
+										setLightboxIndex(imageUrls.indexOf(url))
+									}}
+									className="block w-full h-full cursor-zoom-in"
+								>
+									<Image src={url} alt="" fill={true} className="object-cover" />
+								</button>
+							)}
+							{isLast && (
+								<div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
+									<span className="text-white text-2xl font-semibold">+{overflow}</span>
+								</div>
+							)}
+						</div>
+					)
+				})}
+			</div>
+			{imageUrls.length > 0 && (
+				<MediaLightbox
+					urls={imageUrls}
+					index={lightboxIndex ?? 0}
+					open={lightboxIndex !== null}
+					onOpenChange={(v) => !v && setLightboxIndex(null)}
+				/>
+			)}
+		</>
 	)
 }
 
