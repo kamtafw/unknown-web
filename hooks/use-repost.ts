@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { FullUser, Post, PostUser, RepostPayload } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
+import { showMutationErrorToast } from "@/lib/api-error"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -133,7 +134,7 @@ export function useRepost() {
 			}
 		},
 
-		onError: (_err, _vars, ctx) => {
+		onError: (error, _vars, ctx) => {
 			if (ctx?.forYou) qc.setQueryData<FeedCache>(feedKeys.forYou, ctx.forYou)
 			if (ctx?.following) qc.setQueryData<FeedCache>(feedKeys.following, ctx.following)
 			if (ctx?.bookmarks) qc.setQueryData<FeedCache>(feedKeys.bookmarks, ctx.bookmarks)
@@ -143,6 +144,7 @@ export function useRepost() {
 					reposted_by_me: ctx.revert.repostedByMe,
 				})
 			}
+			showMutationErrorToast(error, "Failed to repost. Please try again.")
 		},
 
 		onSuccess: (_data, _vars, ctx) => {

@@ -1,15 +1,17 @@
 "use client"
 
-import { useAddComment,usePrependComment } from "@/hooks/use-comment"
-import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
+import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment,resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
+import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
@@ -23,10 +25,11 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { forwardRef,useEffect,useRef,useState } from "react"
+import { forwardRef, useEffect, useRef, useState } from "react"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
+import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
+import { MediaLightbox } from "./media-lightbox"
 import {
 	formatCount,
 	MediaGrid,
@@ -43,7 +46,6 @@ import {
 import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
-import { MediaLightbox } from "./media-lightbox"
 
 const EMOJIS = [
 	"😀",
@@ -118,26 +120,80 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 								</div>
 							) : (
 								<button
-								type="button"
-								onClick={() => setLightboxIndex(imageUrls.indexOf(url))}
-								className="block w-full h-full cursor-zoom-in"
-							>
-								<Image src={url} alt="" fill={true} className="object-cover" />
-							</button>
+									type="button"
+									onClick={() => setLightboxIndex(imageUrls.indexOf(url))}
+									className="block w-full h-full cursor-zoom-in"
+								>
+									<Image src={url} alt="" fill={true} className="object-cover" />
+								</button>
 							)}
 						</div>
 					)
 				})}
 			</div>
 			{imageUrls.length > 0 && (
-							<MediaLightbox
-								urls={imageUrls}
-								index={lightboxIndex ?? 0}
-								open={lightboxIndex !== null}
-								onOpenChange={(v) => !v && setLightboxIndex(null)}
-							/>
-						)}
+				<MediaLightbox
+					urls={imageUrls}
+					index={lightboxIndex ?? 0}
+					open={lightboxIndex !== null}
+					onOpenChange={(v) => !v && setLightboxIndex(null)}
+				/>
+			)}
 		</>
+	)
+}
+
+function CommentLikeButton({
+	comment,
+	size = 22,
+	alwaysShowCount = true,
+	className,
+}: {
+	comment: Comment
+	size?: number
+	alwaysShowCount?: boolean
+	className?: string
+}) {
+	const likeComment = useLikeComment()
+	const showCount = alwaysShowCount || comment.like_count > 0
+
+	return (
+		<button
+			onClick={() => likeComment.mutate(comment.id)}
+			className={cn(
+				"flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer",
+				className,
+			)}
+		>
+			<Like size={size} color={comment.liked_by_me ? "#6A88D1" : undefined} />
+			{showCount && (
+				<span
+					className={size >= 22 ? "text-sm tabular-nums font-medium" : "text-[11px] tabular-nums"}
+				>
+					{formatCount(comment.like_count)}
+				</span>
+			)}
+		</button>
+	)
+}
+
+function CommentRepostButton({ comment }: { comment: Comment }) {
+	const repostComment = useRepostComment()
+
+	const handleRepost = () => {
+		if (comment.reposted_by_me) return
+		repostComment.mutate({ is_repost: true, original_comment: comment.id })
+	}
+
+	return (
+		<button
+			onClick={handleRepost}
+			disabled={comment.reposted_by_me}
+			className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer disabled:cursor-default"
+		>
+			<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
+			<span className="text-sm tabular-nums font-medium">{formatCount(comment.repost_count)}</span>
+		</button>
 	)
 }
 
@@ -203,12 +259,7 @@ const CommentRow = forwardRef<
 
 					{/* Actions */}
 					<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
-						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-							<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
-							<span className="text-sm tabular-nums font-medium">
-								{formatCount(comment.like_count)}
-							</span>
-						</button>
+						<CommentLikeButton comment={comment} className="flex-1" />
 
 						<button
 							onClick={() => setReplyOpen(true)}
@@ -226,12 +277,7 @@ const CommentRow = forwardRef<
 							<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
 						</button>
 
-						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-							<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-							<span className="text-sm tabular-nums font-medium">
-								{formatCount(comment.repost_count)}
-							</span>
-						</button>
+						<CommentRepostButton comment={comment} />
 
 						<ShareButton postId={comment.id} size={22} />
 					</div>
@@ -298,12 +344,7 @@ function ReplyRow({ reply }: { reply: Comment }) {
 				)}
 				<CommentMediaGrid urls={reply.uploaded_media} />
 				<div className="flex items-center gap-4 mt-1.5">
-					<button className="flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors">
-						<Like size={14} color={reply.liked_by_me ? "#ef4444" : undefined} />
-						{reply.like_count > 0 && (
-							<span className="text-[11px]">{formatCount(reply.like_count)}</span>
-						)}
-					</button>
+					<CommentLikeButton comment={reply} size={14} className="flex-1" />
 				</div>
 			</div>
 		</div>
@@ -702,7 +743,6 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const bookmarkPost = useBookmarkPost()
 	const repost = useRepost()
 
-	const [reposted, setReposted] = useState(post.reposted_by_me)
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const isOwn = post.user.id === user?.id
@@ -715,8 +755,8 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		setReposted((v) => !v)
-		if (!reposted) repost.mutate({ is_repost: true, original_post: post.id })
+		if (post.reposted_by_me) return
+		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -824,7 +864,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={reposted}
+							reposted={post.reposted_by_me}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}
@@ -900,7 +940,13 @@ export function PostDetailView({
 
 	const [commentOpen, setCommentOpen] = useState(false)
 
-	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData,refetch } = usePostDetail(pkid)
+	const {
+		data: rawPost,
+		isLoading: postLoading,
+		isError,
+		isPlaceholderData,
+		refetch,
+	} = usePostDetail(pkid)
 	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
 	const {
 		data: commentsData,
@@ -960,12 +1006,15 @@ export function PostDetailView({
 						))}
 					</>
 				) : isError ? (
-  <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
-    <p className="text-sm text-muted-foreground">Failed to load post.</p>
-    <button onClick={() => refetch()} className="text-[13px] font-semibold text-primary hover:underline">
-      Try again
-    </button>
-  </div>
+					<div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+						<p className="text-sm text-muted-foreground">Failed to load post.</p>
+						<button
+							onClick={() => refetch()}
+							className="text-[13px] font-semibold text-primary hover:underline"
+						>
+							Try again
+						</button>
+					</div>
 				) : post ? (
 					<>
 						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />

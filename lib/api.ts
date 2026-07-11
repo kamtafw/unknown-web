@@ -27,6 +27,7 @@ import {
 	InitiateDeleteAccountResponse,
 	InterestsPayload,
 	InterestsResponse,
+	LikeCommentResponse,
 	LikeResponse,
 	LinkedAccountsResponse,
 	LoginPayload,
@@ -39,6 +40,8 @@ import {
 	PostStatsResponse,
 	ProblemType,
 	ReportProblemResponse,
+	RepostCommentPayload,
+	RepostCommentResponse,
 	RepostPayload,
 	RepostResponse,
 	RequestNoteResponse,
@@ -355,6 +358,14 @@ export const socialApi = {
 
 	repost: (payload: RepostPayload) =>
 		apiClient.post<RepostResponse>("/api/socials/repost", payload).then((r) => r.data),
+
+	likeComment: (payload: { comment: string }) =>
+		apiClient.post<LikeCommentResponse>("/api/socials/like-comment", payload).then((r) => r.data),
+
+	repostComment: (payload: RepostCommentPayload) =>
+		apiClient
+			.post<RepostCommentResponse>("/api/socials/repost-comment", payload)
+			.then((r) => r.data),
 
 	uploadMedia: async (file: File) => {
 		const formData = new FormData()

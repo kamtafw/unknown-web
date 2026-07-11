@@ -295,7 +295,7 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 function ActionBar({
 	post,
 	comments,
-	reposts: initReposts,
+	reposts,
 	repostedByMe,
 	onQuoteClick,
 	onCommentClick,
@@ -312,13 +312,10 @@ function ActionBar({
 	const bookmarkPost = useBookmarkPost()
 	const isOwn = post.user.pkid === user?.pkid
 	const repost = useRepost()
-	const [reposted, setReposted] = useState(repostedByMe)
-	const [reposts, setReposts] = useState(initReposts)
 
 	const handleRepost = () => {
-		setReposted((v) => !v)
-		setReposts((n) => (reposted ? n - 1 : n + 1))
-		if (!reposted) repost.mutate({ is_repost: true, original_post: post.id })
+		if (repostedByMe) return
+		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -343,7 +340,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={reposted}
+					reposted={repostedByMe}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}

@@ -290,7 +290,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 											{isVideo ? (
 												<video src={item.preview} className="w-full h-full object-cover" />
 											) : (
-												<Image src={item.preview} alt="" className="w-full h-full object-cover" />
+												<Image src={item.preview} alt="" fill={true} className="object-cover" />
 											)}
 
 											{item.uploading && (
