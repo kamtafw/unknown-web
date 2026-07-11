@@ -184,7 +184,7 @@ export interface OriginalComment {
 	comment_hashtagged: string[]
 	replies: OriginalComment[] /** The API embeds replies in full on this shape */
 	created_at: string
-	updated_at: string
+	updated_at?: string
 }
 
 export type WhoCanSee = "EVERYONE" | "ONLY_FOLLOWERS"
@@ -278,6 +278,7 @@ export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
 export type LikeResponse = ApiResponse<{ post_is_liked?: boolean }>
 export type BookmarkResponse = ApiResponse<{ created_at?: string }>
 export type PostStatsResponse = ApiResponse<PostStats>
+export type LikeCommentResponse = ApiResponse<Record<string, never>>
 
 export interface PostCommentDetail {
 	pkid: number
@@ -337,6 +338,28 @@ export type RepostResponse = ApiResponse<{
 	repost_id: string
 	repost_created_at: string
 	original_post: { reposts: { pkid: number; id: string }[] }
+}>
+
+export interface RepostCommentPayload {
+	is_repost: true
+	original_comment: string
+	content_text?: string
+	hashtags?: string[]
+	media_urls?: string[]
+	location?: { latitude: string; longitude: string }
+}
+
+export type RepostCommentResponse = ApiResponse<{
+	data: {
+		reposted_by: string
+		repost_id: string
+		repost_content: string
+		repost_created_at: string
+		repost_location: PostLocation[]
+		repost_media: string[]
+		repost_hashtagged: string[]
+		original_comment: OriginalComment
+	}
 }>
 
 export type MediaKind = "image" | "video" | "audio" | "existing"
