@@ -1,11 +1,11 @@
 "use client"
 
-import { useAddComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialApi } from "@/lib/api"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { AddCommentPayload, MediaItem, Post } from "@/types/api"
+import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -62,6 +62,7 @@ interface CommentModalProps {
 export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
+	const prependComment = usePrependComment()
 	const canReply = canReplyToPost(post)
 
 	const [text, setText] = useState("")
@@ -180,7 +181,16 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
-			onSuccess: () => {
+			onSuccess: (res) => {
+				const newComment: Comment = {
+					...res.data,
+					like_count: res.data.like_count ?? 0,
+					replies_count: res.data.replies_count ?? 0,
+					repost_count: res.data.repost_count ?? 0,
+					liked_by_me: res.data.liked_by_me ?? false,
+					reposted_by_me: res.data.reposted_by_me ?? false,
+				}
+				prependComment(post.pkid, newComment)
 				reset()
 				onOpenChange(false)
 			},
