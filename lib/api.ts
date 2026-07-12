@@ -32,6 +32,7 @@ import {
 	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
+	MentionSearchResponse,
 	MuteUserResponse,
 	NotInterestedResponse,
 	NullResponse,
@@ -400,5 +401,10 @@ export const socialApi = {
 	togglePinnedPost: (id: string) =>
 		apiClient
 			.post<TogglePinnedPostResponse>(`/api/socials/post/${id}/toggle-pinned-post`)
+			.then((r) => r.data),
+
+	searchPeople: (query: string) =>
+		apiClient
+			.get<MentionSearchResponse>("/api/socials/search", { params: { filter: "people", q: query } })
 			.then((r) => r.data),
 }

@@ -620,3 +620,17 @@ export interface TogglePinnedPostResponseData {
 	is_pinned: boolean
 }
 export type TogglePinnedPostResponse = ApiResponse<TogglePinnedPostResponseData>
+
+export interface MentionUser {
+	pkid: number
+	id: string
+	email: string
+	username: string
+	first_name: string
+	last_name: string
+	phone_number: string
+	profile_photo: string | null
+	youFollowThisUser: boolean
+}
+
+export type MentionSearchResponse = ApiResponse<PaginatedResponse<MentionUser>>
