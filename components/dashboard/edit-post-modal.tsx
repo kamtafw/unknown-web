@@ -9,11 +9,11 @@ import { Image as ImageIcon, MapPin, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
-import { HighlightedTextarea } from "../shared/highlighted-textarea"
-import { MentionAutocomplete } from "../shared/mention-autocomplete"
 
 const EMOJIS = [
 	"😀",
