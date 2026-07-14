@@ -5,6 +5,7 @@ import { useUserProfileHover } from "@/hooks/use-user-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/api"
+import { useRouter } from "next/navigation"
 import { Avatar, HoverCard } from "radix-ui"
 import { type ReactNode, useState } from "react"
 
@@ -25,6 +26,7 @@ interface AuthorHoverCardProps {
 }
 
 export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardProps) {
+	const router = useRouter()
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 	const isOwnProfile = pkid === currentUserPkid
 
@@ -59,7 +61,16 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 	return (
 		<HoverCard.Root openDelay={450} closeDelay={150} open={open} onOpenChange={setOpen}>
 			<HoverCard.Trigger asChild>
-				<span className="inline-flex cursor-pointer">{children}</span>
+				<span
+					className="inline-flex cursor-pointer"
+					onClick={(e) => {
+						e.stopPropagation()
+						e.preventDefault()
+						router.push(`/profile/${pkid}`)
+					}}
+				>
+					{children}
+				</span>
 			</HoverCard.Trigger>
 			<HoverCard.Portal>
 				<HoverCard.Content

@@ -1,5 +1,10 @@
 import { Settings } from "@/components/dashboard/settings"
+import { Suspense } from "react"
 
 export default function SettingsPage() {
-	return <Settings />
+	return (
+		<Suspense fallback={null}>
+			<Settings />
+		</Suspense>
+	)
 }

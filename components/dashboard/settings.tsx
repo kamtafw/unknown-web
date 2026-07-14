@@ -3,22 +3,14 @@
 import LegalPrivacyPolicy from "@/components/legal/privacy-policy"
 import LegalTerms from "@/components/legal/terms"
 import { useLogout } from "@/hooks/use-auth"
-import {
-	updateProfileKeys,
-	useUpdateCoverPhoto,
-	useUpdateDobVisibility,
-	useUpdatePhoto,
-} from "@/hooks/use-update-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import { useIsMutating } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
 	Bell,
-	Camera,
 	Check,
 	ChevronDown,
 	ChevronRight,
@@ -37,7 +29,6 @@ import {
 	MessageCircle,
 	Monitor,
 	MoreHorizontal,
-	Plus,
 	RotateCcw,
 	Smartphone,
 	Users,
@@ -48,6 +39,7 @@ import {
 	X,
 } from "lucide-react"
 import Image from "next/image"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Avatar } from "radix-ui"
 import type { ComponentType } from "react"
 import { ReactNode, useEffect, useRef, useState } from "react"
@@ -62,7 +54,6 @@ import {
 import { AddAccountPanel } from "./add-account-panel"
 import { BlockedAccountsPanel } from "./blocked-accounts-panel"
 import { ManageSubscriptionPanel } from "./manage-subscription-panel"
-import { PhotoCropModal } from "./photo-crop-modal"
 import {
 	AddExternalLinkPanel,
 	EditBioPanel,
@@ -70,6 +61,7 @@ import {
 	EditExternalLinkPanel,
 	EditLocationPanel,
 	EditNamePanel,
+	EditProfilePanel,
 	EditUsernamePanel,
 } from "./profile-edit-panels"
 import { Calendar, Link, Location } from "./profile-icons"
@@ -1438,317 +1430,6 @@ function ProfilePublicView({ onBack }: { onBack: () => void }) {
 	)
 }
 
-function EditRow({
-	label,
-	value,
-	onClick,
-	destructive,
-	isPending,
-}: {
-	label: string
-	value?: string
-	onClick?: () => void
-	destructive?: boolean
-	isPending?: boolean
-}) {
-	return (
-		<button
-			onClick={onClick}
-			className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50 last:border-0 hover:bg-accent/60 transition-colors text-left"
-		>
-			<span
-				className={cn(
-					"text-[13px] font-medium shrink-0",
-					destructive ? "text-destructive" : "text-foreground",
-				)}
-			>
-				{label}
-			</span>
-			{value !== undefined && (
-				<div className="flex items-center gap-1.5 ml-4 min-w-0">
-					<span className="text-[12.5px] text-muted-foreground truncate max-w-40 text-right">
-						{value}
-					</span>
-					{onClick ? (
-						isPending ? (
-							<Loader2 size={13} className="text-muted-foreground/40 shrink-0 animate-spin" />
-						) : (
-							<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
-						)
-					) : null}
-				</div>
-			)}
-		</button>
-	)
-}
-
-function ToggleRow({
-	label,
-	enabled,
-	onToggle,
-}: {
-	label: string
-	enabled: boolean
-	onToggle: () => void
-}) {
-	return (
-		<div className="w-full flex items-center justify-between px-6 py-3.5 border-b border-border/50">
-			<span className="text-[13px] font-medium text-foreground">{label}</span>
-			<div
-				onClick={onToggle}
-				className={cn(
-					"w-9 h-5 rounded-full flex items-center px-0.5 transition-colors cursor-pointer",
-					enabled ? "bg-primary" : "bg-muted-foreground/30",
-				)}
-			>
-				<div
-					className={cn(
-						"w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-200",
-						enabled ? "translate-x-4" : "translate-x-0",
-					)}
-				/>
-			</div>
-		</div>
-	)
-}
-
-function EditProfilePanel({ onOpenDialog }: { onOpenDialog: (id: string) => void }) {
-	const user = useAuthStore((s) => s.user)
-	const updatePhoto = useUpdatePhoto()
-	const updateCoverPhoto = useUpdateCoverPhoto()
-	const updateDobVisibility = useUpdateDobVisibility()
-
-	const photoInputRef = useRef<HTMLInputElement>(null)
-	const coverInputRef = useRef<HTMLInputElement>(null)
-
-	const [dobVisibility, setDobVisibility] = useState<"full" | "partial">(
-		user?.dob_visibility ?? "partial",
-	)
-
-	const [cropSrc, setCropSrc] = useState<string | null>(null)
-	const [cropMode, setCropMode] = useState<"profile" | "cover">("profile")
-	const [cropOpen, setCropOpen] = useState(false)
-
-	const isUpdatingName = useIsMutating({ mutationKey: updateProfileKeys.name }) > 0
-	const isUpdatingBio = useIsMutating({ mutationKey: updateProfileKeys.bio }) > 0
-	const isUpdatingLocation = useIsMutating({ mutationKey: updateProfileKeys.location }) > 0
-
-	if (!user) return null
-
-	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
-	const bio = user.profile?.about_me
-	const links = user.external_links ?? []
-
-	const openCrop = (file: File, mode: "profile" | "cover") => {
-		if (cropSrc) URL.revokeObjectURL(cropSrc)
-		setCropSrc(URL.createObjectURL(file))
-		setCropMode(mode)
-		setCropOpen(true)
-	}
-
-	const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0]
-		if (!file) return
-		openCrop(file, "profile")
-		e.target.value = ""
-	}
-
-	const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0]
-		if (!file) return
-		openCrop(file, "cover")
-		e.target.value = ""
-	}
-
-	const handleCropModalChange = (open: boolean) => {
-		setCropOpen(open)
-		if (!open && cropSrc) {
-			URL.revokeObjectURL(cropSrc)
-			setCropSrc(null)
-		}
-	}
-
-	const handleCropConfirm = (blob: Blob) => {
-		const fileName = cropMode === "profile" ? "profile.jpg" : "cover.jpg"
-		const file = new File([blob], fileName, { type: "image/jpeg" })
-		if (cropMode === "profile") {
-			updatePhoto.mutate(file)
-		} else {
-			updateCoverPhoto.mutate(file)
-		}
-	}
-
-	const handleToggle = () => {
-		const nextVisibility = dobVisibility === "full" ? "partial" : "full"
-		setDobVisibility(nextVisibility)
-		updateDobVisibility.mutate(
-			{ dob_visibility: nextVisibility },
-			{ onError: () => setDobVisibility(dobVisibility) },
-		)
-	}
-
-	const cropConfig =
-		cropMode === "profile"
-			? { containerW: 260, containerH: 260, outputW: 400, outputH: 400, shape: "circle" as const }
-			: { containerW: 380, containerH: 127, outputW: 1200, outputH: 400, shape: "rect" as const }
-
-	return (
-		<div className="border-l border-border h-full overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col">
-			<div className="px-6 pt-5 pb-4 border-b border-border shrink-0">
-				<h2 className="text-[16px] font-bold text-foreground">Edit profile</h2>
-			</div>
-
-			{/* photo section */}
-			<div className="p-1 border-b border-border shrink-0">
-				<div className="relative">
-					{/* cover thumbnail */}
-					<button
-						onClick={() => coverInputRef.current?.click()}
-						className="w-full h-30 overflow-hidden relative bg-linear-to-br from-primary/20 to-primary/5 block group"
-					>
-						{user.cover_photo ? (
-							<Image src={user.cover_photo} alt="Cover" fill className="object-cover" />
-						) : null}
-						<div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-colors group-hover:bg-black/30">
-							{updateCoverPhoto.isPending ? (
-								<Loader2 size={20} className="animate-spin text-white" />
-							) : (
-								<div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
-									<Camera size={14} className="text-white" />
-								</div>
-							)}
-						</div>
-					</button>
-					<input
-						ref={coverInputRef}
-						type="file"
-						accept="image/*"
-						className="hidden"
-						onChange={handleCoverSelect}
-					/>
-
-					{/* avatar — overlapping cover */}
-					<button
-						onClick={() => photoInputRef.current?.click()}
-						className="absolute left-3 -bottom-5 group"
-					>
-						<div className="relative w-12 h-12 rounded-full border-2 border-card overflow-hidden bg-primary/20 shadow-sm">
-							{user.profile_photo ? (
-								<Image src={user.profile_photo} alt={displayName} fill className="object-cover" />
-							) : (
-								<div className="w-full h-full flex items-center justify-center text-primary text-sm font-bold">
-									{getInitials(user.first_name, user.last_name)}
-								</div>
-							)}
-							<div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-full">
-								{updatePhoto.isPending ? (
-									<Loader2 size={11} className="animate-spin text-white" />
-								) : (
-									<Camera size={11} className="text-white" />
-								)}
-							</div>
-						</div>
-						<input
-							ref={photoInputRef}
-							type="file"
-							accept="image/*"
-							className="hidden"
-							onChange={handlePhotoSelect}
-						/>
-					</button>
-				</div>
-				<div className="mt-8" />
-			</div>
-
-			{/* About You */}
-			<div className="pt-4">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-					About You
-				</p>
-				<EditRow
-					label="Name"
-					value={displayName}
-					onClick={() => onOpenDialog("edit-name")}
-					isPending={isUpdatingName}
-				/>
-				<EditRow
-					label="User Name"
-					value={`@${user.username}`}
-					onClick={() => onOpenDialog("edit-username")}
-				/>
-				<EditRow
-					label="Bio"
-					value={bio || "Add a bio"}
-					onClick={() => onOpenDialog("edit-bio")}
-					isPending={isUpdatingBio}
-				/>
-				<EditRow label="Email" value={user.email} />
-				<EditRow label="Phone No" value={user.phone_number || "Not set"} />
-				<EditRow
-					label="Set date of birth"
-					value={user.dob ? dayjs(user.dob).format("DD-MM-YYYY") : "Not set"}
-					onClick={() => onOpenDialog("edit-dob")}
-				/>
-				<ToggleRow
-					label="Show date of birth"
-					enabled={dobVisibility === "full"}
-					onToggle={handleToggle}
-				/>
-				<EditRow
-					label="Locations"
-					value={[user.state, user.country].filter(Boolean).join(", ") || "Set location"}
-					onClick={() => onOpenDialog("edit-location")}
-					isPending={isUpdatingLocation}
-				/>
-			</div>
-
-			{/* Links */}
-			<div className="pt-4 pb-8">
-				<p className="px-6 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-					Link
-				</p>
-				<button
-					onClick={() => onOpenDialog("add-link")}
-					className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left"
-				>
-					<div className="w-7 h-7 rounded-full border-[1.5px] border-primary flex items-center justify-center shrink-0">
-						<Plus size={13} className="text-primary" />
-					</div>
-					<span className="text-[13px] font-medium text-primary">Add External Link</span>
-				</button>
-				{links.map((link) => (
-					<button
-						key={link.id}
-						onClick={() => onOpenDialog(`edit-link-${link.id}`)}
-						className="w-full flex items-center gap-3 px-6 py-3 hover:bg-accent transition-colors text-left border-t border-border/50"
-					>
-						<div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-							<Link2 size={13} className="text-muted-foreground" />
-						</div>
-						<div className="flex-1 min-w-0">
-							<p className="text-[13px] font-medium text-foreground">{link.label}</p>
-							<p className="text-[11.5px] text-muted-foreground truncate">{link.url}</p>
-						</div>
-						<ChevronRight size={13} className="text-muted-foreground/40 shrink-0" />
-					</button>
-				))}
-			</div>
-
-			<PhotoCropModal
-				open={cropOpen}
-				onOpenChange={handleCropModalChange}
-				imageSrc={cropSrc}
-				shape={cropConfig.shape}
-				containerW={cropConfig.containerW}
-				containerH={cropConfig.containerH}
-				outputW={cropConfig.outputW}
-				outputH={cropConfig.outputH}
-				onCrop={handleCropConfirm}
-			/>
-		</div>
-	)
-}
-
 function ProfileView({
 	onBack,
 	onOpenDialog,
@@ -2050,7 +1731,16 @@ function SettingsListView({
 }
 
 export function Settings() {
-	const [view, setView] = useState<View>("settings")
+	const searchParams = useSearchParams()
+	const router = useRouter()
+
+	const [returnTo] = useState(() => {
+		const raw = searchParams.get("returnTo")
+		return raw && raw.startsWith("/") ? raw : null // basic same-origin guard
+	})
+	const [view, setView] = useState<View>(() =>
+		searchParams.get("view") === "profile" ? "profile" : "settings",
+	)
 	const [activeSection, setActiveSection] = useState<SectionId>("verification")
 	const [mobileView, setMobileView] = useState<"nav" | "panel">("nav")
 	const [activePanel, setActivePanel] = useState<string | null>(null)
@@ -2058,10 +1748,15 @@ export function Settings() {
 
 	const closeDialog = () => setOpenDialog(null)
 
+	const handleProfileViewBack = () => {
+		if (!returnTo) setView("settings")
+		else router.push(returnTo)
+	}
+
 	if (view === "profile") {
 		return (
 			<>
-				<ProfileView onBack={() => setView("settings")} onOpenDialog={setOpenDialog} />
+				<ProfileView onBack={handleProfileViewBack} onOpenDialog={setOpenDialog} />
 				{COMING_SOON.map(({ id, title }) => (
 					<ComingSoonDialog key={id} open={openDialog === id} onClose={closeDialog} title={title} />
 				))}

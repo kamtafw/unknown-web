@@ -3,7 +3,6 @@
 import { flattenFeedPages, useBookmarks } from "@/hooks/use-feed"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Tabs } from "radix-ui"
 import { useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
 
@@ -27,7 +26,7 @@ function PostSkeleton() {
 export function Bookmarks() {
 	const router = useRouter()
 	const sentinel = useRef<HTMLDivElement>(null)
-	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
 		useBookmarks()
 
 	useEffect(() => {
@@ -46,10 +45,18 @@ export function Bookmarks() {
 	const bookmarks = flattenFeedPages(data?.pages)
 
 	return (
-		<Tabs.Root
-			defaultValue="bookmarks"
-			className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden pb-0"
-		>
+		<div className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden">
+			{/* sticky header */}
+			<div className="flex items-center gap-4 px-4 py-3 border-b border-border shrink-0 bg-card">
+				<button
+					onClick={() => router.push("/home")}
+					className="p-2 rounded-full hover:bg-accent transition-colors"
+				>
+					<ArrowLeft size={18} className="text-foreground" />
+				</button>
+				<span className="font-bold text-[17px] text-foreground">Post</span>
+			</div>
+			{/* 
 			<div className="bg-card px-2 rounded-t-2xl border-b border-border shrink-0">
 				<Tabs.List className="flex items-center justify-center">
 					<button
@@ -67,45 +74,46 @@ export function Bookmarks() {
 						Bookmarks
 					</Tabs.Trigger>
 				</Tabs.List>
-			</div>
+			</div> */}
 
-			<div
-				id="feed-scroll"
-				className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none"
-			>
-				<Tabs.Content value="bookmarks" className="focus:outline-none">
-					{isLoading ? (
-						<>
-							{[0, 1, 2].map((i) => (
-								<PostSkeleton key={i} />
-							))}
-						</>
-					) : isError ? (
-						<p className="px-5 py-16 text-center text-[13px] text-muted-foreground">
-							Failed to load bookmarks.
-						</p>
-					) : !bookmarks.length ? (
-						<p className="px-5 py-16 text-center text-[13px] text-muted-foreground">
-							No bookmarks yet.
-						</p>
-					) : (
-						<>
-							{bookmarks.map((post) => (
-								<PostCard key={post.id} post={post} />
-							))}
-							<div ref={sentinel} className="h-1" />
-							{isFetchingNextPage && (
-								<div className="flex justify-center py-8">
-									<Loader2 size={20} className="animate-spin text-primary" />
-								</div>
-							)}
-							{!hasNextPage && bookmarks.length > 0 && (
-								<p className="text-center text-[11px] text-muted-foreground/50 py-8">•</p>
-							)}
-						</>
-					)}
-				</Tabs.Content>
+			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
+				{isLoading ? (
+					<>
+						{[0, 1, 2].map((i) => (
+							<PostSkeleton key={i} />
+						))}
+					</>
+				) : isError ? (
+					<div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+						<p className="text-sm text-muted-foreground">Failed to load bookmarks.</p>
+						<button
+							onClick={() => refetch()}
+							className="text-[13px] font-semibold text-primary hover:underline"
+						>
+							Try again
+						</button>
+					</div>
+				) : !bookmarks.length ? (
+					<p className="px-5 py-16 text-center text-[13px] text-muted-foreground">
+						No bookmarks yet.
+					</p>
+				) : (
+					<>
+						{bookmarks.map((post) => (
+							<PostCard key={post.id} post={post} />
+						))}
+						<div ref={sentinel} className="h-1" />
+						{isFetchingNextPage && (
+							<div className="flex justify-center py-6">
+								<Loader2 size={18} className="animate-spin text-primary" />
+							</div>
+						)}
+						{!hasNextPage && bookmarks.length > 0 && (
+							<p className="text-center text-[11px] text-muted-foreground/50 py-8">•</p>
+						)}
+					</>
+				)}
 			</div>
-		</Tabs.Root>
+		</div>
 	)
 }
