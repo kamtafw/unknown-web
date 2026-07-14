@@ -3,6 +3,7 @@
 import { useCreatePost } from "@/hooks/use-create-post"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialApi } from "@/lib/api"
+import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
 import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -85,7 +86,8 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
-	const canSubmit = hasContent && !anyUploading
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
+	const canSubmit = hasContent && !anyUploading && !mentionBlocked
 
 	const reset = () => {
 		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
@@ -376,7 +378,11 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					</div>
 
 					<div className="px-5 pb-3 shrink-0">
-						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
@@ -450,6 +456,11 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit || createPost.isPending}
+								title={
+									mentionBlocked
+										? "Mention someone before restricting replies to mentions"
+										: undefined
+								}
 								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
 							>
 								{createPost.isPending ? "Posting…" : "Post"}

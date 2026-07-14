@@ -31,7 +31,7 @@ export function ActionDropdown({ trigger, items, clsName, onOpenChange }: Action
 				<button
 					className={clsName}
 					onPointerDown={(e) => e.preventDefault()}
-					onClick={() => setOpen((prev) => !prev)}
+					onClick={() => handleOpenChange(!open)}
 				>
 					{trigger}
 				</button>
@@ -53,7 +53,7 @@ export function ActionDropdown({ trigger, items, clsName, onOpenChange }: Action
 						<DropdownMenu.Item
 							key={item.label}
 							onSelect={item.onSelect}
-							className={`flex items-center justify-between gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer outline-none select-none transition-colors
+							className={`flex items-center justify-between gap-1 px-3.5 py-2 rounded-xl text-sm font-medium cursor-pointer outline-none select-none transition-colors
 									${item.destructive ? "text-destructive data-highlighted:bg-destructive/10" : "text-foreground data-highlighted:bg-accent"}`}
 						>
 							<span>{item.label}</span>

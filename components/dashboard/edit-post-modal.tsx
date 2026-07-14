@@ -2,6 +2,7 @@
 
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { useUpdatePost } from "@/hooks/use-post-actions"
+import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Post, UpdatePostPayload, WhoCanReply, WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -89,6 +90,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 	})
 
 	const mediaUrls = post.post_media.map((m) => m.external_url)
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
 	const isDirty =
 		text.trim() !== (post.content_text ?? "").trim() ||
 		whoCanSee !== post.who_can_see ||
@@ -96,7 +98,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 		locationRemoved ||
 		(!initialLocation && !!location)
 
-	const canSubmit = isDirty && !text.trim() && !updatePost.isPending
+	const canSubmit = isDirty && !updatePost.isPending && !mentionBlocked
 
 	const reset = () => {
 		setText(post.content_text ?? "")
@@ -307,7 +309,11 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 					</div>
 
 					<div className="px-5 pb-3 shrink-0">
-						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
@@ -346,6 +352,11 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit}
+								title={
+									mentionBlocked
+										? "Mention someone before restricting replies to mentions"
+										: undefined
+								}
 								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
 							>
 								{updatePost.isPending ? "Saving…" : "Save"}

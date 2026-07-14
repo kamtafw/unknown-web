@@ -1,17 +1,18 @@
 "use client"
 
-import { useAddComment,usePrependComment } from "@/hooks/use-comment"
-import { useLikeComment,useRepostComment } from "@/hooks/use-comment-actions"
-import { useBookmarkPost,useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies,usePostComments,usePostDetail } from "@/hooks/use-post-detail"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
+import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
 import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment,resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload,Comment,MediaItem,Post } from "@/types/api"
+import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
@@ -25,10 +26,12 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { forwardRef,useEffect,useRef,useState } from "react"
+import { forwardRef, useEffect, useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2,Comment as CommentIcon,Like,Repost } from "./icons"
+import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
 import {
 	formatCount,
@@ -46,9 +49,6 @@ import {
 import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
-import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { HighlightedTextarea } from "../shared/highlighted-textarea"
-import { MentionAutocomplete } from "../shared/mention-autocomplete"
 
 const EMOJIS = [
 	"😀",
@@ -902,7 +902,13 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 							/>
 						</button>
 
-						{isOwn && <StatsButton postId={post.id} size={22} />}
+						{isOwn && (
+							<StatsButton
+								postId={post.id}
+								size={22}
+								hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+							/>
+						)}
 					</div>
 				</div>
 			</div>

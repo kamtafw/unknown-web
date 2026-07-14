@@ -2,6 +2,7 @@
 
 import { useRepost } from "@/hooks/use-repost"
 import { socialApi } from "@/lib/api"
+import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
 	MediaItem,
@@ -95,7 +96,8 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
-	const canSubmit = hasContent && !anyUploading
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
+	const canSubmit = hasContent && !anyUploading && !mentionBlocked
 
 	const reset = () => {
 		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
@@ -370,7 +372,11 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 					</div>
 
 					<div className="px-4 pb-3 shrink-0">
-						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 border-t border-border shrink-0">
