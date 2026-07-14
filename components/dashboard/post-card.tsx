@@ -1,5 +1,6 @@
 "use client"
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
@@ -359,7 +360,12 @@ function ActionBar({
 						bookmarked={post.bookmarked_by_me}
 					/>
 				</button>
-				{isOwn && <StatsButton postId={post.id} />}
+				{isOwn && (
+					<StatsButton
+						postId={post.id}
+						hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+					/>
+				)}
 			</div>
 		</div>
 	)
@@ -420,78 +426,78 @@ export function ShareButton({ postId, size }: { postId: string; size?: number })
 	)
 }
 
-export function StatsButton({ postId, size }: { postId: string; size?: number }) {
-	const [isOpen, setIsOpen] = useState(false)
-	const { data, isLoading } = usePostStats(postId, isOpen)
+function StatItem({ label, value }: { label: string; value: string | number }) {
+	return (
+		<div className="flex flex-col gap-0.5">
+			<span className="text-[11px] text-muted-foreground">{label}</span>
+			<span className="text-sm font-semibold text-foreground tabular-nums">{value}</span>
+		</div>
+	)
+}
 
-	const statItems: ActionDropdownItem[] = [
-		{
-			label: "Views",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_views : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Watch time",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.watch_time : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Reactions",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_reactions : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Comments",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_comments : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Reposts",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_reposts : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Shares",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_shares : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Bookmarks",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_bookmarks : "?"}
-				</span>
-			),
-		},
+function StatsSkeleton({ count }: { count: number }) {
+	return (
+		<div className="grid grid-cols-2 gap-x-4 gap-y-3 animate-pulse">
+			{Array.from({ length: count }).map((_, i) => (
+				<div key={i} className="flex flex-col gap-1.5">
+					<div className="h-2.5 w-14 bg-muted rounded-full" />
+					<div className="h-3.5 w-8 bg-muted rounded-full" />
+				</div>
+			))}
+		</div>
+	)
+}
+
+export function StatsButton({
+	postId,
+	hasVideo = false,
+	size,
+}: {
+	postId: string
+	hasVideo?: boolean
+	size?: number
+}) {
+	const [isOpen, setIsOpen] = useState(false)
+	const { data: stats, isLoading } = usePostStats(postId, isOpen)
+
+	const statItems = [
+		{ label: "Views", value: stats?.total_views },
+		...(hasVideo ? [{ label: "Watch time", value: stats?.watch_time }] : []),
+		{ label: "Reactions", value: stats?.total_reactions },
+		{ label: "Comments", value: stats?.total_comments },
+		{ label: "Reposts", value: stats?.total_reposts },
+		{ label: "Shares", value: stats?.total_shares },
+		{ label: "Bookmarks", value: stats?.total_bookmarks },
 	]
 
 	return (
-		<ActionDropdown
-			trigger={<Stats size={size} />}
-			items={statItems}
-			onOpenChange={(open) => {
-				if (open) setIsOpen(true)
-			}}
-			clsName="flex flex-1 flex-row items-center rounded-full transition-colors cursor-pointer"
-		/>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<PopoverTrigger asChild>
+				<button
+					type="button"
+					aria-label="View post activity"
+					className="flex flex-1 flex-row items-center rounded-full transition-colors hover:text-primary cursor-pointer"
+				>
+					<Stats size={size} />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="end"
+				sideOffset={8}
+				className="w-60 p-4 rounded-2xl border border-border shadow-xl"
+			>
+				<h3 className="font-bold text-foreground text-[13px] mb-3">Post activity</h3>
+				{isLoading || !stats ? (
+					<StatsSkeleton count={statItems.length} />
+				) : (
+					<div className="grid grid-cols-2 gap-x-4 gap-y-3">
+						{statItems.map((item) => (
+							<StatItem key={item.label} label={item.label} value={item.value ?? "—"} />
+						))}
+					</div>
+				)}
+			</PopoverContent>
+		</Popover>
 	)
 }
 
