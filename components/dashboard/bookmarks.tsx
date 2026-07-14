@@ -54,7 +54,7 @@ export function Bookmarks() {
 				>
 					<ArrowLeft size={18} className="text-foreground" />
 				</button>
-				<span className="font-bold text-[17px] text-foreground">Post</span>
+				<span className="font-bold text-[17px] text-foreground">Bookmarks</span>
 			</div>
 			{/* 
 			<div className="bg-card px-2 rounded-t-2xl border-b border-border shrink-0">
