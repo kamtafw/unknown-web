@@ -1,6 +1,8 @@
 "use client"
 
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { useUpdatePost } from "@/hooks/use-post-actions"
+import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Post, UpdatePostPayload, WhoCanReply, WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -8,6 +10,8 @@ import { Image as ImageIcon, MapPin, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
@@ -62,9 +66,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 	const [text, setText] = useState(post.content_text ?? "")
 	const [whoCanSee, setWhoCanSee] = useState<WhoCanSee>(post.who_can_see)
 	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>(post.who_can_reply)
-
 	const [showEmoji, setShowEmoji] = useState(false)
-
 	const initialLocation = post.post_location[0] ?? null
 	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(
 		initialLocation
@@ -79,9 +81,16 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 	const [fetchingLocation, setFetchingLocation] = useState(false)
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const mediaUrls = post.post_media.map((m) => m.external_url)
-
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
 	const isDirty =
 		text.trim() !== (post.content_text ?? "").trim() ||
 		whoCanSee !== post.who_can_see ||
@@ -89,7 +98,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 		locationRemoved ||
 		(!initialLocation && !!location)
 
-	const canSubmit = isDirty && !text.trim() && !updatePost.isPending
+	const canSubmit = isDirty && !updatePost.isPending && !mentionBlocked
 
 	const reset = () => {
 		setText(post.content_text ?? "")
@@ -232,18 +241,23 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 							</div>
 						</div>
 
-						<textarea
-							ref={textareaRef}
-							value={text}
-							onChange={(e) => setText(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
-							}}
-							placeholder="What's on your mind?"
-							rows={3}
-							autoFocus
-							className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed mb-3"
-						/>
+						<div ref={mentionContainerRef} className="relative mb-3">
+							<HighlightedTextarea
+								ref={textareaRef}
+								value={text}
+								onChange={setText}
+								onSelect={mention.handleSelect}
+								onKeyDown={(e) => {
+									if (mention.handleKeyDown(e)) return
+									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+								}}
+								placeholder="What's on your mind?"
+								rows={3}
+								autoFocus
+								className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed mb-3"
+							/>
+							<MentionAutocomplete mention={mention} />
+						</div>
 
 						{mediaUrls.length > 0 && (
 							<>
@@ -295,7 +309,11 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 					</div>
 
 					<div className="px-5 pb-3 shrink-0">
-						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
@@ -334,6 +352,11 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit}
+								title={
+									mentionBlocked
+										? "Mention someone before restricting replies to mentions"
+										: undefined
+								}
 								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
 							>
 								{updatePost.isPending ? "Saving…" : "Save"}

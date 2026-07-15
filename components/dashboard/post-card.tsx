@@ -1,5 +1,6 @@
 "use client"
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
@@ -40,11 +41,12 @@ import { ActionDropdown, ActionDropdownItem } from "./action-dropdown"
 import { AuthorHoverCard } from "./author-hover-card"
 import { BlockUserModal } from "./block-user-modal"
 import { CommentModal } from "./comment-modal"
+import { EditPostModal } from "./edit-post-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
+import { MediaLightbox } from "./media-lightbox"
 import { QuoteModal } from "./quote-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
-import { EditPostModal } from "./edit-post-modal"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -130,6 +132,8 @@ export const UserAvatar = forwardRef<
 })
 
 export function MediaGrid({ urls }: { urls: string[] }) {
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
 	if (!urls.length) return null
 
 	const types = urls.map((url) => mediaType(url))
@@ -146,36 +150,59 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	const visible = urls.slice(0, 4)
 	const overflow = urls.length - 4
 	const count = visible.length
+	const imageUrls = urls.filter((url) => mediaType(url) === "image")
 
 	return (
-		<div
-			className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${count === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-		>
-			{visible.map((url, i) => {
-				const type = mediaType(url)
-				const isLast = i === count - 1 && overflow > 0
-				const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
-				const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
-				return (
-					<div key={i} className={`relative overflow-hidden bg-muted ${spanClass} ${aspectClass}`}>
-						{type === "video" ? (
-							<video src={url} controls className="w-full h-full object-cover" />
-						) : type === "audio" ? (
-							<div className="flex items-center justify-center h-full">
-								<audio controls src={url} className="w-5/6" />
-							</div>
-						) : (
-							<Image src={url} alt="" fill={true} className="object-cover" />
-						)}
-						{isLast && (
-							<div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-								<span className="text-white text-2xl font-semibold">+{overflow}</span>
-							</div>
-						)}
-					</div>
-				)
-			})}
-		</div>
+		<>
+			<div
+				className={`mt-3 rounded-2xl overflow-hidden grid gap-0.5 ${count === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+			>
+				{visible.map((url, i) => {
+					const type = mediaType(url)
+					const isLast = i === count - 1 && overflow > 0
+					const spanClass = count === 3 && i === 0 ? "row-span-2" : ""
+					const aspectClass = count === 1 ? "aspect-video" : "aspect-square"
+					return (
+						<div
+							key={i}
+							className={`relative overflow-hidden bg-muted ${spanClass} ${aspectClass}`}
+						>
+							{type === "video" ? (
+								<video src={url} controls className="w-full h-full object-cover" />
+							) : type === "audio" ? (
+								<div className="flex items-center justify-center h-full">
+									<audio controls src={url} className="w-5/6" />
+								</div>
+							) : (
+								<button
+									type="button"
+									onClick={(e) => {
+										e.stopPropagation()
+										setLightboxIndex(imageUrls.indexOf(url))
+									}}
+									className="block w-full h-full cursor-zoom-in"
+								>
+									<Image src={url} alt="" fill={true} className="object-cover" />
+								</button>
+							)}
+							{isLast && (
+								<div className="absolute inset-0 bg-black/45 flex items-center justify-center pointer-events-none">
+									<span className="text-white text-2xl font-semibold">+{overflow}</span>
+								</div>
+							)}
+						</div>
+					)
+				})}
+			</div>
+			{imageUrls.length > 0 && (
+				<MediaLightbox
+					urls={imageUrls}
+					index={lightboxIndex ?? 0}
+					open={lightboxIndex !== null}
+					onOpenChange={(v) => !v && setLightboxIndex(null)}
+				/>
+			)}
+		</>
 	)
 }
 
@@ -269,7 +296,7 @@ export function QuotedPostCard({ post }: { post: OriginalPost }) {
 function ActionBar({
 	post,
 	comments,
-	reposts: initReposts,
+	reposts,
 	repostedByMe,
 	onQuoteClick,
 	onCommentClick,
@@ -286,13 +313,10 @@ function ActionBar({
 	const bookmarkPost = useBookmarkPost()
 	const isOwn = post.user.pkid === user?.pkid
 	const repost = useRepost()
-	const [reposted, setReposted] = useState(repostedByMe)
-	const [reposts, setReposts] = useState(initReposts)
 
 	const handleRepost = () => {
-		setReposted((v) => !v)
-		setReposts((n) => (reposted ? n - 1 : n + 1))
-		if (!reposted) repost.mutate({ is_repost: true, original_post: post.id })
+		if (repostedByMe) return
+		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -317,7 +341,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={reposted}
+					reposted={repostedByMe}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -336,7 +360,12 @@ function ActionBar({
 						bookmarked={post.bookmarked_by_me}
 					/>
 				</button>
-				{isOwn && <StatsButton postId={post.id} />}
+				{isOwn && (
+					<StatsButton
+						postId={post.id}
+						hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+					/>
+				)}
 			</div>
 		</div>
 	)
@@ -397,78 +426,78 @@ export function ShareButton({ postId, size }: { postId: string; size?: number })
 	)
 }
 
-export function StatsButton({ postId, size }: { postId: string; size?: number }) {
-	const [isOpen, setIsOpen] = useState(false)
-	const { data, isLoading } = usePostStats(postId, isOpen)
+function StatItem({ label, value }: { label: string; value: string | number }) {
+	return (
+		<div className="flex flex-col gap-0.5">
+			<span className="text-[11px] text-muted-foreground">{label}</span>
+			<span className="text-sm font-semibold text-foreground tabular-nums">{value}</span>
+		</div>
+	)
+}
 
-	const statItems: ActionDropdownItem[] = [
-		{
-			label: "Views",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_views : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Watch time",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.watch_time : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Reactions",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_reactions : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Comments",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_comments : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Reposts",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_reposts : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Shares",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_shares : "?"}
-				</span>
-			),
-		},
-		{
-			label: "Bookmarks",
-			icon: (
-				<span className="text-sm font-semibold text-foreground">
-					{data && !isLoading ? data.total_bookmarks : "?"}
-				</span>
-			),
-		},
+function StatsSkeleton({ count }: { count: number }) {
+	return (
+		<div className="grid grid-cols-2 gap-x-4 gap-y-3 animate-pulse">
+			{Array.from({ length: count }).map((_, i) => (
+				<div key={i} className="flex flex-col gap-1.5">
+					<div className="h-2.5 w-14 bg-muted rounded-full" />
+					<div className="h-3.5 w-8 bg-muted rounded-full" />
+				</div>
+			))}
+		</div>
+	)
+}
+
+export function StatsButton({
+	postId,
+	hasVideo = false,
+	size,
+}: {
+	postId: string
+	hasVideo?: boolean
+	size?: number
+}) {
+	const [isOpen, setIsOpen] = useState(false)
+	const { data: stats, isLoading } = usePostStats(postId, isOpen)
+
+	const statItems = [
+		{ label: "Views", value: stats?.total_views },
+		...(hasVideo ? [{ label: "Watch time", value: stats?.watch_time }] : []),
+		{ label: "Reactions", value: stats?.total_reactions },
+		{ label: "Comments", value: stats?.total_comments },
+		{ label: "Reposts", value: stats?.total_reposts },
+		{ label: "Shares", value: stats?.total_shares },
+		{ label: "Bookmarks", value: stats?.total_bookmarks },
 	]
 
 	return (
-		<ActionDropdown
-			trigger={<Stats size={size} />}
-			items={statItems}
-			onOpenChange={(open) => {
-				if (open) setIsOpen(true)
-			}}
-			clsName="flex flex-1 flex-row items-center rounded-full transition-colors cursor-pointer"
-		/>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<PopoverTrigger asChild>
+				<button
+					type="button"
+					aria-label="View post activity"
+					className="flex flex-1 flex-row items-center rounded-full transition-colors hover:text-primary cursor-pointer"
+				>
+					<Stats size={size} />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="end"
+				sideOffset={8}
+				className="w-60 p-4 rounded-2xl border border-border shadow-xl"
+			>
+				<h3 className="font-bold text-foreground text-[13px] mb-3">Post activity</h3>
+				{isLoading || !stats ? (
+					<StatsSkeleton count={statItems.length} />
+				) : (
+					<div className="grid grid-cols-2 gap-x-4 gap-y-3">
+						{statItems.map((item) => (
+							<StatItem key={item.label} label={item.label} value={item.value ?? "—"} />
+						))}
+					</div>
+				)}
+			</PopoverContent>
+		</Popover>
 	)
 }
 

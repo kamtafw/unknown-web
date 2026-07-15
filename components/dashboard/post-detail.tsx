@@ -1,12 +1,16 @@
 "use client"
 
 import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
+import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
 import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import dayjs from "dayjs"
@@ -23,9 +27,12 @@ import {
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { forwardRef, useEffect, useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
+import { MediaLightbox } from "./media-lightbox"
 import {
 	formatCount,
 	MediaGrid,
@@ -39,6 +46,7 @@ import {
 	StatsButton,
 	UserAvatar,
 } from "./post-card"
+import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 
@@ -80,6 +88,8 @@ function extractHashtags(str: string) {
 }
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
 	if (!urls.length) return null
 
 	const isAllAudio = urls.every((u) => mediaType(u) === "audio")
@@ -93,29 +103,100 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 		)
 	}
 
+	const visible = urls.slice(0, 4)
+	const imageUrls = urls.filter((url) => mediaType(url) === "image")
+
 	return (
-		<div
-			className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
-				urls.length === 1 ? "grid-cols-1" : "grid-cols-2"
-			}`}
+		<>
+			<div
+				className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${visible.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+			>
+				{visible.map((url, i) => {
+					const type = mediaType(url)
+					return (
+						<div key={i} className="relative overflow-hidden bg-muted aspect-square">
+							{type === "video" ? (
+								<video src={url} controls className="w-full h-full object-cover" />
+							) : type === "audio" ? (
+								<div className="flex items-center justify-center h-full">
+									<audio controls src={url} className="w-5/6" />
+								</div>
+							) : (
+								<button
+									type="button"
+									onClick={() => setLightboxIndex(imageUrls.indexOf(url))}
+									className="block w-full h-full cursor-zoom-in"
+								>
+									<Image src={url} alt="" fill={true} className="object-cover" />
+								</button>
+							)}
+						</div>
+					)
+				})}
+			</div>
+			{imageUrls.length > 0 && (
+				<MediaLightbox
+					urls={imageUrls}
+					index={lightboxIndex ?? 0}
+					open={lightboxIndex !== null}
+					onOpenChange={(v) => !v && setLightboxIndex(null)}
+				/>
+			)}
+		</>
+	)
+}
+
+function CommentLikeButton({
+	comment,
+	size = 22,
+	alwaysShowCount = true,
+	className,
+}: {
+	comment: Comment
+	size?: number
+	alwaysShowCount?: boolean
+	className?: string
+}) {
+	const likeComment = useLikeComment()
+	const showCount = alwaysShowCount || comment.like_count > 0
+
+	return (
+		<button
+			onClick={() => likeComment.mutate(comment.id)}
+			className={cn(
+				"flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer",
+				className,
+			)}
 		>
-			{urls.slice(0, 4).map((url, i) => {
-				const type = mediaType(url)
-				return (
-					<div key={i} className="relative overflow-hidden bg-muted aspect-square">
-						{type === "video" ? (
-							<video src={url} controls className="w-full h-full object-cover" />
-						) : type === "audio" ? (
-							<div className="flex items-center justify-center h-full">
-								<audio controls src={url} className="w-5/6" />
-							</div>
-						) : (
-							<Image src={url} alt="" fill={true} objectFit="cover" />
-						)}
-					</div>
-				)
-			})}
-		</div>
+			<Like size={size} color={comment.liked_by_me ? "#6A88D1" : undefined} />
+			{showCount && (
+				<span
+					className={size >= 22 ? "text-sm tabular-nums font-medium" : "text-[11px] tabular-nums"}
+				>
+					{formatCount(comment.like_count)}
+				</span>
+			)}
+		</button>
+	)
+}
+
+function CommentRepostButton({ comment }: { comment: Comment }) {
+	const repostComment = useRepostComment()
+
+	const handleRepost = () => {
+		if (comment.reposted_by_me) return
+		repostComment.mutate({ is_repost: true, original_comment: comment.id })
+	}
+
+	return (
+		<button
+			onClick={handleRepost}
+			disabled={comment.reposted_by_me}
+			className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer disabled:cursor-default"
+		>
+			<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
+			<span className="text-sm tabular-nums font-medium">{formatCount(comment.repost_count)}</span>
+		</button>
 	)
 }
 
@@ -138,7 +219,7 @@ const CommentRow = forwardRef<
 	return (
 		<div
 			ref={ref}
-			className={`px-5 py-4 border-b border-border transition-colors ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+			className={`px-5 py-4 border-b border-border transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
 		>
 			<div className="flex gap-3">
 				{/* Avatar + optional thread line */}
@@ -181,12 +262,7 @@ const CommentRow = forwardRef<
 
 					{/* Actions */}
 					<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
-						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-							<Like size={22} color={comment.liked_by_me ? "#6A88D1" : undefined} />
-							<span className="text-sm tabular-nums font-medium">
-								{formatCount(comment.like_count)}
-							</span>
-						</button>
+						<CommentLikeButton comment={comment} className="flex-1" />
 
 						<button
 							onClick={() => setReplyOpen(true)}
@@ -204,12 +280,7 @@ const CommentRow = forwardRef<
 							<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
 						</button>
 
-						<button className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer">
-							<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-							<span className="text-sm tabular-nums font-medium">
-								{formatCount(comment.repost_count)}
-							</span>
-						</button>
+						<CommentRepostButton comment={comment} />
 
 						<ShareButton postId={comment.id} size={22} />
 					</div>
@@ -276,12 +347,7 @@ function ReplyRow({ reply }: { reply: Comment }) {
 				)}
 				<CommentMediaGrid urls={reply.uploaded_media} />
 				<div className="flex items-center gap-4 mt-1.5">
-					<button className="flex items-center gap-1 text-muted-foreground hover:text-destructive transition-colors">
-						<Like size={14} color={reply.liked_by_me ? "#ef4444" : undefined} />
-						{reply.like_count > 0 && (
-							<span className="text-[11px]">{formatCount(reply.like_count)}</span>
-						)}
-					</button>
+					<CommentLikeButton comment={reply} size={14} className="flex-1" />
 				</div>
 			</div>
 		</div>
@@ -333,6 +399,13 @@ function CommentComposer({ post }: { post: Post }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
@@ -494,16 +567,23 @@ function CommentComposer({ post }: { post: Post }) {
 				/>
 
 				<div className="flex-1 min-w-0">
-					<textarea
-						ref={textareaRef}
-						value={text}
-						onChange={(e) => setText(e.target.value)}
-						onFocus={() => setFocused(true)}
-						onKeyDown={handleKeyDown}
-						placeholder="Post your reply"
-						rows={focused ? 2 : 1}
-						className="w-full resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed pt-0.5"
-					/>
+					<div ref={mentionContainerRef} className="relative mb-3">
+						<HighlightedTextarea
+							ref={textareaRef}
+							value={text}
+							onChange={setText}
+							onSelect={mention.handleSelect}
+							onFocus={() => setFocused(true)}
+							onKeyDown={(e) => {
+								if (mention.handleKeyDown(e)) return
+								handleKeyDown(e)
+							}}
+							placeholder="Post your reply"
+							rows={focused ? 2 : 1}
+							className="w-full resize-none bg-transparent text-[13.5px] text-foreground placeholder:text-muted-foreground outline-none leading-relaxed pt-0.5"
+						/>
+						<MentionAutocomplete mention={mention} />
+					</div>
 
 					{/* Media grid */}
 					{mediaItems.length > 0 && (
@@ -678,6 +758,9 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
+	const repost = useRepost()
+
+	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const isOwn = post.user.id === user?.id
 	const canReply = canReplyToPost(post)
@@ -688,9 +771,14 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const shortAddress = address.split(",").slice(-3, -1).join(", ")
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
+	const handleRepost = () => {
+		if (post.reposted_by_me) return
+		repost.mutate({ is_repost: true, original_post: post.id })
+	}
+
 	return (
 		<>
-			<div className="px-5">
+			<div className="px-5 animate-in fade-in duration-300">
 				<div className="flex gap-3 pt-5 pb-2">
 					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
 						<UserAvatar
@@ -794,8 +882,8 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 
 						<RepostButton
 							reposted={post.reposted_by_me}
-							onRepost={() => {}}
-							onQuote={() => {}}
+							onRepost={handleRepost}
+							onQuote={() => setQuoteOpen(true)}
 							size={22}
 						/>
 
@@ -814,10 +902,17 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 							/>
 						</button>
 
-						{isOwn && <StatsButton postId={post.id} size={22} />}
+						{isOwn && (
+							<StatsButton
+								postId={post.id}
+								size={22}
+								hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+							/>
+						)}
 					</div>
 				</div>
 			</div>
+			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</>
 	)
 }
@@ -868,7 +963,13 @@ export function PostDetailView({
 
 	const [commentOpen, setCommentOpen] = useState(false)
 
-	const { data: rawPost, isLoading: postLoading, isError, isPlaceholderData } = usePostDetail(pkid)
+	const {
+		data: rawPost,
+		isLoading: postLoading,
+		isError,
+		isPlaceholderData,
+		refetch,
+	} = usePostDetail(pkid)
 	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
 	const {
 		data: commentsData,
@@ -928,9 +1029,15 @@ export function PostDetailView({
 						))}
 					</>
 				) : isError ? (
-					<p className="px-5 py-16 text-center text-sm text-muted-foreground">
-						Failed to load post.
-					</p>
+					<div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
+						<p className="text-sm text-muted-foreground">Failed to load post.</p>
+						<button
+							onClick={() => refetch()}
+							className="text-[13px] font-semibold text-primary hover:underline"
+						>
+							Try again
+						</button>
+					</div>
 				) : post ? (
 					<>
 						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />

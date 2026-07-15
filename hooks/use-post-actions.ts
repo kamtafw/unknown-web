@@ -142,6 +142,13 @@ export function useTogglePinnedPost() {
 			qc.setQueryData<FeedCache>(feedKeys.following, applyPatch)
 			qc.setQueryData<FeedCache>(feedKeys.bookmarks, applyPatch)
 
+			// profile page tabs (posts / media / liked / reposts) share the exact
+			// same { pages: [{ posts: Post[] }] } shape as the main feeds — "replies"
+			// is excluded, its pages are shaped { replies: UserReplyItem[] } instead
+			;(["posts", "media", "liked", "reposts"] as const).forEach((kind) => {
+				qc.setQueriesData<FeedCache>({ queryKey: ["profile-feed", kind] }, applyPatch)
+			})
+
 			qc.setQueriesData<Post>({ queryKey: ["post", "detail"] }, (old) =>
 				old && old.id === id ? { ...old, is_pinned } : old,
 			)

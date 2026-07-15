@@ -1,6 +1,6 @@
 import { userApi } from "@/lib/api"
-import { FollowerUser, Post, PostUser, SuggestionUser } from "@/types/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
+import { FollowerUser,Post,PostUser,SuggestionUser } from "@/types/api"
+import { InfiniteData,useMutation,useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
 import { usersKeys } from "./use-users"
 
@@ -19,7 +19,20 @@ type AuthorFlagPatch = Partial<
 
 function patchPostAuthor(post: Post, pkid: number, patch: AuthorFlagPatch): Post {
 	if (post.user.pkid !== pkid) return post
-	return { ...post, user: { ...post.user, ...patch } }
+
+	const user = { ...post.user, ...patch }
+
+	// ONLY_FOLLOWERS reply restriction is just youFollowThisUser under the hood —
+	// recompute it the instant that flag changes instead of waiting on a refetch
+	// to overwrite the stale server snapshot
+	const viewer_permissions =
+		post.viewer_permissions &&
+		post.who_can_reply === "ONLY_FOLLOWERS" &&
+		patch.youFollowThisUser !== undefined
+			? { ...post.viewer_permissions, can_reply: patch.youFollowThisUser }
+			: post.viewer_permissions
+
+	return { ...post, user, viewer_permissions }
 }
 
 /**

@@ -1,15 +1,18 @@
 "use client"
 
-import { useAddComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialApi } from "@/lib/api"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { AddCommentPayload, MediaItem, Post } from "@/types/api"
+import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { UserAvatar, getInitials, renderText } from "./post-card"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 
@@ -59,6 +62,7 @@ interface CommentModalProps {
 export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
+	const prependComment = usePrependComment()
 	const canReply = canReplyToPost(post)
 
 	const [text, setText] = useState("")
@@ -70,6 +74,13 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
@@ -170,7 +181,16 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
-			onSuccess: () => {
+			onSuccess: (res) => {
+				const newComment: Comment = {
+					...res.data,
+					like_count: res.data.like_count ?? 0,
+					replies_count: res.data.replies_count ?? 0,
+					repost_count: res.data.repost_count ?? 0,
+					liked_by_me: res.data.liked_by_me ?? false,
+					reposted_by_me: res.data.reposted_by_me ?? false,
+				}
+				prependComment(post.pkid, newComment)
 				reset()
 				onOpenChange(false)
 			},
@@ -262,18 +282,23 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 								</div>
 
 								<div className="flex-1 min-w-0 pt-1">
-									<textarea
-										ref={textareaRef}
-										value={text}
-										onChange={(e) => setText(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
-										}}
-										placeholder="Post your comment"
-										rows={2}
-										autoFocus
-										className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
-									/>
+									<div ref={mentionContainerRef} className="relative mb-3">
+										<HighlightedTextarea
+											ref={textareaRef}
+											value={text}
+											onChange={setText}
+											onSelect={mention.handleSelect}
+											onKeyDown={(e) => {
+												if (mention.handleKeyDown(e)) return
+												if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+											}}
+											placeholder="Post your comment"
+											rows={2}
+											autoFocus
+											className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
+										/>
+										<MentionAutocomplete mention={mention} />
+									</div>
 
 									{mediaItems.length > 0 && (
 										<div

@@ -1,14 +1,18 @@
 "use client"
 
 import { useCreatePost } from "@/hooks/use-create-post"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialApi } from "@/lib/api"
+import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { CreatePostPayload,MediaItem,WhoCanReply,WhoCanSee } from "@/types/api"
+import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import { Camera,Image as ImageIcon,Loader2,MapPin,RefreshCw,Smile,X } from "lucide-react"
+import { Camera, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
-import { useRef,useState } from "react"
+import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
@@ -71,11 +75,19 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const cameraInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
 
 	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
 	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
-	const canSubmit = hasContent && !anyUploading
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
+	const canSubmit = hasContent && !anyUploading && !mentionBlocked
 
 	const reset = () => {
 		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
@@ -252,18 +264,23 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 						</div>
 
 						{/* Textarea */}
-						<textarea
-							ref={textareaRef}
-							value={text}
-							onChange={(e) => setText(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
-							}}
-							placeholder="What's on your mind?"
-							rows={3}
-							autoFocus
-							className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed mb-3"
-						/>
+						<div ref={mentionContainerRef} className="relative mb-3">
+							<HighlightedTextarea
+								ref={textareaRef}
+								value={text}
+								onChange={setText}
+								onSelect={mention.handleSelect}
+								onKeyDown={(e) => {
+									if (mention.handleKeyDown(e)) return
+									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+								}}
+								placeholder="What's on your mind?"
+								rows={3}
+								autoFocus
+								className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
+							/>
+							<MentionAutocomplete mention={mention} />
+						</div>
 
 						{/* Media grid */}
 						{mediaCount > 0 && (
@@ -290,7 +307,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 											{isVideo ? (
 												<video src={item.preview} className="w-full h-full object-cover" />
 											) : (
-												<Image src={item.preview} alt="" className="w-full h-full object-cover" />
+												<Image src={item.preview} alt="" fill={true} className="object-cover" />
 											)}
 
 											{item.uploading && (
@@ -361,7 +378,11 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 					</div>
 
 					<div className="px-5 pb-3 shrink-0">
-						<WhoCanReplyPicker value={whoCanReply} onChange={setWhoCanReply} />
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
 					</div>
 
 					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
@@ -435,6 +456,11 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 							<button
 								onClick={handleSubmit}
 								disabled={!canSubmit || createPost.isPending}
+								title={
+									mentionBlocked
+										? "Mention someone before restricting replies to mentions"
+										: undefined
+								}
 								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
 							>
 								{createPost.isPending ? "Posting…" : "Post"}

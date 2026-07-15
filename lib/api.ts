@@ -27,10 +27,12 @@ import {
 	InitiateDeleteAccountResponse,
 	InterestsPayload,
 	InterestsResponse,
+	LikeCommentResponse,
 	LikeResponse,
 	LinkedAccountsResponse,
 	LoginPayload,
 	LoginResponseData,
+	MentionSearchResponse,
 	MuteUserResponse,
 	NotInterestedResponse,
 	NullResponse,
@@ -39,6 +41,8 @@ import {
 	PostStatsResponse,
 	ProblemType,
 	ReportProblemResponse,
+	RepostCommentPayload,
+	RepostCommentResponse,
 	RepostPayload,
 	RepostResponse,
 	RequestNoteResponse,
@@ -73,6 +77,7 @@ import {
 	UploadMediaResponse,
 	UserListResponse,
 	UserProfileResponse,
+	UserRepliesResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 	VerifyTotpResponse,
@@ -356,6 +361,14 @@ export const socialApi = {
 	repost: (payload: RepostPayload) =>
 		apiClient.post<RepostResponse>("/api/socials/repost", payload).then((r) => r.data),
 
+	likeComment: (payload: { comment: string }) =>
+		apiClient.post<LikeCommentResponse>("/api/socials/like-comment", payload).then((r) => r.data),
+
+	repostComment: (payload: RepostCommentPayload) =>
+		apiClient
+			.post<RepostCommentResponse>("/api/socials/repost-comment", payload)
+			.then((r) => r.data),
+
 	uploadMedia: async (file: File) => {
 		const formData = new FormData()
 		formData.append("file", file)
@@ -390,4 +403,12 @@ export const socialApi = {
 		apiClient
 			.post<TogglePinnedPostResponse>(`/api/socials/post/${id}/toggle-pinned-post`)
 			.then((r) => r.data),
+
+	searchPeople: (query: string) =>
+		apiClient
+			.get<MentionSearchResponse>("/api/socials/search", { params: { filter: "people", q: query } })
+			.then((r) => r.data),
+
+	getUserRepliesByPath: (path: string) =>
+		apiClient.get<UserRepliesResponse>(path).then((r) => r.data),
 }
