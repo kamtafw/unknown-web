@@ -77,6 +77,7 @@ import {
 	UploadMediaResponse,
 	UserListResponse,
 	UserProfileResponse,
+	UserRepliesResponse,
 	VerifyOtpPayload,
 	VerifyOtpResponseData,
 	VerifyTotpResponse,
@@ -407,4 +408,7 @@ export const socialApi = {
 		apiClient
 			.get<MentionSearchResponse>("/api/socials/search", { params: { filter: "people", q: query } })
 			.then((r) => r.data),
+
+	getUserRepliesByPath: (path: string) =>
+		apiClient.get<UserRepliesResponse>(path).then((r) => r.data),
 }

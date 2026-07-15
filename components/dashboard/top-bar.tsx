@@ -240,8 +240,11 @@ export function TopBar() {
 										data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
 										origin-top-right"
 								>
-									{/* ── Current user ── */}
-									<div className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 pointer-events-none select-none">
+									{/* Current user */}
+									<div
+										className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 cursor-pointer select-none outline-none transition-colors hover:bg-accent"
+										onClick={() => router.push(`/profile/${user?.pkid}`)}
+									>
 										<Avatar.Root className="w-9 h-9 rounded-full overflow-hidden shrink-0">
 											<Avatar.Image
 												src={user?.profile_photo}
@@ -265,7 +268,7 @@ export function TopBar() {
 										</span>
 									</div>
 
-									{/* ── Other linked accounts ── */}
+									{/* Other linked accounts */}
 									{accountsLoading ? (
 										<div className="flex items-center justify-center py-2.5">
 											<Loader2 size={14} className="animate-spin text-muted-foreground" />

@@ -634,3 +634,32 @@ export interface MentionUser {
 }
 
 export type MentionSearchResponse = ApiResponse<PaginatedResponse<MentionUser>>
+
+export interface UserReplyParentComment {
+	id: string
+	pkid: number
+	user: PostUser
+	message: string | null
+	created_at: string
+}
+
+export interface UserReplyItem {
+	id: string
+	pkid: number
+	user: PostUser
+	post: Post
+	message: string | null
+	parent_comment: UserReplyParentComment
+	created_at: string
+	updated_at: string
+	uploaded_media: string[]
+	comment_location: PostLocation | null
+	comment_hashtagged: string[]
+	like_count: number
+	replies_count: number
+	repost_count: number
+	liked_by_me: boolean
+	reposted_by_me: boolean
+}
+
+export type UserRepliesResponse = ApiResponse<PaginatedResponse<UserReplyItem>>
