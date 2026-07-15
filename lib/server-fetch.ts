@@ -35,7 +35,7 @@ export async function fetchJson<T = unknown>(
 	url: string,
 	init: FetchJsonOptions = {},
 ): Promise<UpstreamResult<T>> {
-	const { timeoutMs = 15000, ...fetchInit } = init
+	const { timeoutMs = 30000, ...fetchInit } = init
 
 	let res: Response
 	try {
