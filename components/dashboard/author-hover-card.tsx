@@ -36,8 +36,7 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 
 	const followUser = useFollowUser()
 	const unfollowUser = useUnfollowUser()
-	const [followOverride, setFollowOverride] = useState<boolean | null>(null)
-	const isFollowed = followOverride ?? profile?.is_user_you_follow ?? false
+	const isFollowed = profile?.is_user_you_follow ?? false
 
 	const displayName =
 		[profile?.first_name ?? fallback.first_name, profile?.last_name ?? fallback.last_name]
@@ -49,13 +48,8 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 	const handleFollowToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation()
 		e.preventDefault()
-		if (isFollowed) {
-			setFollowOverride(false)
-			unfollowUser.mutate(pkid, { onError: () => setFollowOverride(true) })
-		} else {
-			setFollowOverride(true)
-			followUser.mutate(pkid, { onError: () => setFollowOverride(false) })
-		}
+		if (isFollowed) unfollowUser.mutate(pkid)
+		else followUser.mutate(pkid)
 	}
 
 	return (
