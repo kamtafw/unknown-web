@@ -12,7 +12,7 @@ import {
 } from "@/hooks/use-post-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
-import { useRepost } from "@/hooks/use-repost"
+import { useRepost, useUndoRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
 import { cn } from "@/lib/utils"
@@ -47,6 +47,9 @@ import { MediaLightbox } from "./media-lightbox"
 import { QuoteModal } from "./quote-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
+import { findMyRepostPkid } from "@/lib/post-engagement"
+import { toast } from "@/lib/toast"
+import { useQueryClient } from "@tanstack/react-query"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -308,16 +311,26 @@ function ActionBar({
 	onQuoteClick: () => void
 	onCommentClick: () => void
 }) {
+	const qc = useQueryClient()
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 	const isOwn = post.user.pkid === user?.pkid
 	const repost = useRepost()
+	const undoRepost = useUndoRepost()
 
 	const handleRepost = () => {
-		if (repostedByMe) return
-		repost.mutate({ is_repost: true, original_post: post.id })
+	if (repostedByMe) {
+		const repostPkid = user ? findMyRepostPkid(qc, post.id, user.pkid) : undefined
+		if (repostPkid === undefined) {
+			toast.error("Couldn't find your repost to undo. Please refresh and try again.")
+			return
+		}
+		undoRepost.mutate({ originalPostId: post.id, repostPkid })
+		return
 	}
+	repost.mutate({ is_repost: true, original_post: post.id })
+}
 
 	return (
 		<div className="flex items-center mt-4 text-muted-foreground">

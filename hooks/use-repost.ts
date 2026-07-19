@@ -1,11 +1,12 @@
 import { socialApi } from "@/lib/api"
+import { showMutationErrorToast } from "@/lib/api-error"
 import { findEngagementEntityAnywhere, patchEngagementEverywhere } from "@/lib/post-engagement"
 import { toStandalonePost } from "@/lib/post-helpers"
+import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser, Post, PostUser, RepostPayload } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
-import { showMutationErrorToast } from "@/lib/api-error"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -39,6 +40,22 @@ function removeFromFeed(old: FeedCache | undefined, id: string): FeedCache | und
 		...old,
 		pages: old.pages.map((page) => ({ ...page, posts: page.posts.filter((p) => p.id !== id) })),
 	}
+}
+
+function removeRepostCardFromFeeds(qc: ReturnType<typeof useQueryClient>, repostPkid: number) {
+	const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
+	feedKeys_.forEach((key) => {
+		qc.setQueryData<FeedCache>(key, (old) => {
+			if (!old) return old
+			return {
+				...old,
+				pages: old.pages.map((page) => ({
+					...page,
+					posts: page.posts.filter((p) => p.pkid !== repostPkid),
+				})),
+			}
+		})
+	})
 }
 
 function buildOptimisticPost(payload: RepostPayload, originalPost: Post, user: FullUser): Post {
@@ -153,6 +170,62 @@ export function useRepost() {
 				qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => removeFromFeed(old, ctx.tempId!))
 			}
 			qc.invalidateQueries({ queryKey: feedKeys.forYou })
+		},
+	})
+}
+
+interface UndoRepostVars {
+	originalPostId: string
+	repostPkid: number
+}
+
+export function useUndoRepost() {
+	const qc = useQueryClient()
+
+	return useMutation({
+		// repostPkid is resolved by the caller BEFORE mutate() runs — never
+		// re-derive it inside onMutate/mutationFn, since onMutate fires first
+		// and will have already stripped the card out of the feed cache
+		mutationFn: ({ repostPkid }: UndoRepostVars) => socialApi.deletePost(repostPkid),
+
+		onMutate: async ({ originalPostId, repostPkid }) => {
+			const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
+			await Promise.all(feedKeys_.map((k) => qc.cancelQueries({ queryKey: k })))
+
+			const snapshots = {
+				forYou: qc.getQueryData<FeedCache>(feedKeys.forYou),
+				following: qc.getQueryData<FeedCache>(feedKeys.following),
+				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks),
+			}
+
+			const current = findEngagementEntityAnywhere(qc, { id: originalPostId })
+			const prevRepostCount = current?.repost_count ?? 0
+
+			patchEngagementEverywhere(qc, originalPostId, {
+				repost_count: Math.max(0, prevRepostCount - 1),
+				reposted_by_me: false,
+			})
+
+			removeRepostCardFromFeeds(qc, repostPkid)
+
+			return { ...snapshots, revert: { id: originalPostId, repostCount: prevRepostCount } }
+		},
+
+		onSuccess: () => {
+			toast.success("Repost undone")
+		},
+
+		onError: (error, _vars, ctx) => {
+			if (ctx?.forYou) qc.setQueryData<FeedCache>(feedKeys.forYou, ctx.forYou)
+			if (ctx?.following) qc.setQueryData<FeedCache>(feedKeys.following, ctx.following)
+			if (ctx?.bookmarks) qc.setQueryData<FeedCache>(feedKeys.bookmarks, ctx.bookmarks)
+			if (ctx?.revert) {
+				patchEngagementEverywhere(qc, ctx.revert.id, {
+					repost_count: ctx.revert.repostCount,
+					reposted_by_me: true,
+				})
+			}
+			showMutationErrorToast(error, "Failed to undo repost. Please try again.")
 		},
 	})
 }
