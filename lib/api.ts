@@ -18,6 +18,8 @@ import {
 	CreatePostPayload,
 	CreatePostResponse,
 	DeletePostResponse,
+	FeedCheckResponse,
+	FeedPollType,
 	FeedResponse,
 	FollowersResponse,
 	FollowingsResponse,
@@ -411,4 +413,7 @@ export const socialApi = {
 
 	getUserRepliesByPath: (path: string) =>
 		apiClient.get<UserRepliesResponse>(path).then((r) => r.data),
+
+	checkNewPosts: (params: { feed_type: FeedPollType; since_timestamp: string }) =>
+		apiClient.get<FeedCheckResponse>("/api/socials/feed-check", { params }).then((r) => r.data),
 }

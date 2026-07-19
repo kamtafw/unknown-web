@@ -8,7 +8,7 @@ export const feedKeys = {
 	bookmarks: ["feed", "bookmarks"] as const,
 }
 
-const feedBase = {
+export const feedBase = {
 	forYou: "/api/socials/for-you-feed" as const,
 	following: "/api/socials/following-feed" as const,
 	bookmarks: "/api/socials/bookmarks" as const,
