@@ -1,7 +1,7 @@
 import { feedKeys } from "@/hooks/use-feed"
-import { isOriginalComment } from "@/lib/post-helpers"
-import { OriginalPost,Post } from "@/types/api"
-import { InfiniteData,QueryClient } from "@tanstack/react-query"
+import { isOriginalComment, isUnquotedPostRepost } from "@/lib/post-helpers"
+import { OriginalPost, Post } from "@/types/api"
+import { InfiniteData, QueryClient } from "@tanstack/react-query"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -101,4 +101,27 @@ export function patchEngagementEverywhere(qc: QueryClient, id: string, patch: Pa
 	qc.setQueriesData<Post>({ queryKey: ["post", "detail"] }, (old) =>
 		old && old.id === id ? { ...old, ...patch } : old,
 	)
+}
+
+/** finds the pkid of *my* bare repost of `originalPostId`, if it's in any loaded feed cache */
+export function findMyRepostPkid(
+	qc: QueryClient,
+	originalPostId: string,
+	myPkid: number,
+): number | undefined {
+	for (const key of ENGAGEMENT_FEED_KEYS) {
+		const cache = qc.getQueryData<FeedCache>(key)
+		for (const page of cache?.pages ?? []) {
+			for (const p of page.posts) {
+				if (
+					isUnquotedPostRepost(p) &&
+					p.user.pkid === myPkid &&
+					p.original_post.id === originalPostId
+				) {
+					return p.pkid
+				}
+			}
+		}
+	}
+	return undefined
 }

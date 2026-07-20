@@ -5,7 +5,7 @@ import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { useRepost } from "@/hooks/use-repost"
+import { useRepost, useUndoRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
 import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
@@ -49,6 +49,9 @@ import {
 import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "@/lib/toast"
+import { findMyRepostPkid } from "@/lib/post-engagement"
 
 const EMOJIS = [
 	"😀",
@@ -755,10 +758,12 @@ function CommentComposer({ post }: { post: Post }) {
 }
 
 function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => void }) {
+	const qc = useQueryClient()
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 	const repost = useRepost()
+	const undoRepost = useUndoRepost()
 
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
@@ -772,7 +777,15 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.reposted_by_me) return
+		if (post.reposted_by_me) {
+			const repostPkid = user ? findMyRepostPkid(qc, post.id, user.pkid) : undefined
+			if (repostPkid === undefined) {
+				toast.error("Couldn't find your repost to undo. Please refresh and try again.")
+				return
+			}
+			undoRepost.mutate({ originalPostId: post.id, repostPkid })
+			return
+		}
 		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
