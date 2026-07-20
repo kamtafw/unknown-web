@@ -516,8 +516,6 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 	const muteUser = useMuteUser()
 	const unmuteUser = useUnmuteUser()
 
-	const [followOverride, setFollowOverride] = useState<boolean | null>(null)
-	const [muteOverride, setMuteOverride] = useState<boolean | null>(null)
 	const [blockModalOpen, setBlockModalOpen] = useState(false)
 	const [activeTab, setActiveTab] = useState<ProfileTab>("Posts")
 
@@ -585,27 +583,17 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 		)
 	}
 
-	const isFollowed = followOverride ?? profile.is_user_you_follow
-	const isMuted = muteOverride ?? profile.is_muted
+	const isFollowed = profile.is_user_you_follow
+	const isMuted = profile.is_muted
 
 	const handleFollowToggle = () => {
-		if (isFollowed) {
-			setFollowOverride(false)
-			unfollowUser.mutate(pkid, { onError: () => setFollowOverride(true) })
-		} else {
-			setFollowOverride(true)
-			followUser.mutate(pkid, { onError: () => setFollowOverride(false) })
-		}
+		if (isFollowed) unfollowUser.mutate(pkid)
+		else followUser.mutate(pkid)
 	}
 
 	const handleMuteToggle = () => {
-		if (isMuted) {
-			setMuteOverride(false)
-			unmuteUser.mutate(pkid, { onError: () => setMuteOverride(true) })
-		} else {
-			setMuteOverride(true)
-			muteUser.mutate(pkid, { onError: () => setMuteOverride(false) })
-		}
+		if (isMuted) unmuteUser.mutate(pkid)
+		else muteUser.mutate(pkid)
 	}
 
 	const data: NormalizedProfile = {

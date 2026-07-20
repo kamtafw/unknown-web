@@ -663,3 +663,12 @@ export interface UserReplyItem {
 }
 
 export type UserRepliesResponse = ApiResponse<PaginatedResponse<UserReplyItem>>
+
+export type FeedPollType = "user_feed" | "following_feed"
+
+export interface FeedCheckData {
+	has_new_posts: boolean
+	count: number
+}
+
+export type FeedCheckResponse = ApiResponse<FeedCheckData>

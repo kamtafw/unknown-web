@@ -1,7 +1,15 @@
 import { userApi } from "@/lib/api"
-import { FollowerUser,Post,PostUser,SuggestionUser } from "@/types/api"
-import { InfiniteData,useMutation,useQueryClient } from "@tanstack/react-query"
+import {
+	FollowerUser,
+	Post,
+	PostUser,
+	SuggestionUser,
+	UserProfileData,
+	UserProfileResponse,
+} from "@/types/api"
+import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
+import { userProfileKeys } from "./use-user-profile"
 import { usersKeys } from "./use-users"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
@@ -17,31 +25,55 @@ type AuthorFlagPatch = Partial<
 	Pick<PostUser, "youFollowThisUser" | "youMutedThisUser" | "youBlockedThisUser">
 >
 
-function patchPostAuthor(post: Post, pkid: number, patch: AuthorFlagPatch): Post {
-	if (post.user.pkid !== pkid) return post
+/** patches original_post.user if it matches pkid — both OriginalPost and OriginalComment carry a PostUser */
+function patchOriginalAuthor(
+	original: Post["original_post"],
+	pkid: number,
+	patch: AuthorFlagPatch,
+): Post["original_post"] {
+	if (!original || original.user.pkid !== pkid) return original
+	return { ...original, user: { ...original.user, ...patch } } as Post["original_post"]
+}
 
-	const user = { ...post.user, ...patch }
+function patchPostAuthor(post: Post, pkid: number, patch: AuthorFlagPatch): Post {
+	const userMatches = post.user.pkid === pkid
+	const patchedOriginal = patchOriginalAuthor(post.original_post, pkid, patch)
+
+	if (!userMatches && patchedOriginal === post.original_post) return post
+
+	const user = userMatches ? { ...post.user, ...patch } : post.user
 
 	// ONLY_FOLLOWERS reply restriction is just youFollowThisUser under the hood —
 	// recompute it the instant that flag changes instead of waiting on a refetch
 	// to overwrite the stale server snapshot
 	const viewer_permissions =
+		userMatches &&
 		post.viewer_permissions &&
 		post.who_can_reply === "ONLY_FOLLOWERS" &&
 		patch.youFollowThisUser !== undefined
 			? { ...post.viewer_permissions, can_reply: patch.youFollowThisUser }
 			: post.viewer_permissions
 
-	return { ...post, user, viewer_permissions }
+	return { ...post, user, original_post: patchedOriginal, viewer_permissions }
+}
+
+function authorFlagToProfilePatch(patch: AuthorFlagPatch): Partial<UserProfileData> {
+	const out: Partial<UserProfileData> = {}
+	if (patch.youFollowThisUser !== undefined) out.is_user_you_follow = patch.youFollowThisUser
+	if (patch.youMutedThisUser !== undefined) out.is_muted = patch.youMutedThisUser
+	if (patch.youBlockedThisUser !== undefined) out.is_blocked = patch.youBlockedThisUser
+	return out
 }
 
 /**
  * patches the viewer's relationship flags (youFollowThisUser, youMutedThisUser,
- * youBlockedThisUser) directly on `post.user` wherever that author appears —
- * across every feed cache and any open post-detail cache; this is the single
- * source of truth for those flags; so a follow/mute/block action taken from a
- * hover card, the post menu, or the blocked-accounts panel all stay consistent
- * everywhere the author's posts are rendered.
+ * youBlockedThisUser) wherever that author appears — every feed cache (including
+ * nested original_post.user on quote-reposts), any open post-detail cache, and
+ * the author's own ["users", "profile", pkid] cache; this is the single source of
+ * truth: a follow/mute/block taken from a hover card, the post menu, the
+ * featured-accounts panel, or the blocked-accounts panel all stay in sync
+ * everywhere the author shows up — including their own profile page — with no
+ * manual refresh required
  */
 export function patchAuthorFlagInFeeds(
 	qc: ReturnType<typeof useQueryClient>,
@@ -68,6 +100,13 @@ export function patchAuthorFlagInFeeds(
 			qc.setQueryData<Post>(key, (old) => (old ? patchPostAuthor(old, pkid, patch) : old))
 		}
 	})
+
+	const profilePatch = authorFlagToProfilePatch(patch)
+	if (Object.keys(profilePatch).length > 0) {
+		qc.setQueryData<UserProfileResponse>(userProfileKeys.detail(pkid), (old) =>
+			old?.data ? { ...old, data: { ...old.data, ...profilePatch } } : old,
+		)
+	}
 }
 
 export function removeUserFromSuggestionsCache(
@@ -157,7 +196,7 @@ export function useUnfollowUser() {
 		onError: (_err, pkid, ctx) => {
 			if (ctx?.followersPrev)
 				qc.setQueryData<FollowersCache>(usersKeys.followers, ctx.followersPrev)
-			patchAuthorFlagInFeeds(qc, pkid, { youFollowThisUser: false })
+			patchAuthorFlagInFeeds(qc, pkid, { youFollowThisUser: true })
 		},
 
 		onSettled: () => invalidateAllQueries(qc),
