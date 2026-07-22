@@ -45,6 +45,7 @@ export function resolveEngagementPost(post: Post): Post {
 		liked_by_me: original.liked_by_me ?? false,
 		bookmarked_by_me: original.bookmarked_by_me ?? false,
 		reposted_by_me: original.reposted_by_me ?? false,
+		my_repost_pkid: original.my_repost_pkid ?? null,
 	}
 }
 
@@ -70,6 +71,7 @@ export function toStandalonePost(entity: Post | OriginalPost): Post {
 		bookmarked_by_me: original.bookmarked_by_me ?? false,
 		liked_by_me: original.liked_by_me ?? false,
 		reposted_by_me: original.reposted_by_me ?? false,
+		my_repost_pkid: original.my_repost_pkid ?? null,
 		who_can_see: "EVERYONE",
 		who_can_reply: "EVERYONE",
 		created_at: original.created_at,

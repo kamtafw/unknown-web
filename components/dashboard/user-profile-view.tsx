@@ -31,6 +31,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ReactNode, useEffect, useRef, useState } from "react"
 import { Pin } from "../posts/icons"
+import { FollowButton } from "../shared/follow-button"
 import { ActionDropdown } from "./action-dropdown"
 import { BlockUserModal } from "./block-user-modal"
 import { PostCard, renderText, UserAvatar } from "./post-card"
@@ -605,8 +606,8 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 		coverPhoto: profile.cover_photo,
 		bio: profile.profile?.about_me ?? "",
 		location: [profile.state, profile.country].filter(Boolean).join(", "),
-		dob: profile.date_joined ?? "", // TODO: get DOB from backend and fix here
-		dobVisibility: "partial",
+		dob: profile.dob,
+		dobVisibility: profile.dob_visibility,
 		dateJoined: profile.date_joined,
 		externalLinks: profile.external_links ?? [],
 		followerCount: profile.follower_count,
@@ -634,21 +635,15 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 							>
 								<MessageCircle size={16} />
 							</button>
-							<button
+
+							<FollowButton
+								isFollowed={isFollowed}
+								followsYou={profile.is_following_you}
 								onClick={handleFollowToggle}
 								disabled={followUser.isPending || unfollowUser.isPending}
-								className={cn(
-									"group h-9 px-5 rounded-full text-[13.5px] font-semibold transition-all active:scale-[0.97] disabled:opacity-60",
-									isFollowed
-										? "border border-border text-foreground hover:border-destructive hover:text-destructive hover:bg-destructive/5"
-										: "bg-foreground text-background hover:opacity-85",
-								)}
-							>
-								<span className={isFollowed ? "group-hover:hidden" : ""}>
-									{isFollowed ? "Following" : profile.is_following_you ? "Follow Back" : "Follow"}
-								</span>
-								{isFollowed && <span className="hidden group-hover:inline">Unfollow</span>}
-							</button>
+								className="h-9 px-5 text-[13.5px]"
+							/>
+
 							<ActionDropdown
 								trigger={<MoreHorizontal size={18} />}
 								clsName="w-9 h-9 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-accent transition-colors"
