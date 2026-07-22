@@ -47,9 +47,6 @@ import { MediaLightbox } from "./media-lightbox"
 import { QuoteModal } from "./quote-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
-import { findMyRepostPkid } from "@/lib/post-engagement"
-import { toast } from "@/lib/toast"
-import { useQueryClient } from "@tanstack/react-query"
 
 export function formatCount(count: number) {
 	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -311,7 +308,6 @@ function ActionBar({
 	onQuoteClick: () => void
 	onCommentClick: () => void
 }) {
-	const qc = useQueryClient()
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
@@ -320,17 +316,12 @@ function ActionBar({
 	const undoRepost = useUndoRepost()
 
 	const handleRepost = () => {
-	if (repostedByMe) {
-		const repostPkid = user ? findMyRepostPkid(qc, post.id, user.pkid) : undefined
-		if (repostPkid === undefined) {
-			toast.error("Couldn't find your repost to undo. Please refresh and try again.")
+		if (post.my_repost_pkid != null) {
+			undoRepost.mutate({ originalPostId: post.id, repostPkid: post.my_repost_pkid })
 			return
 		}
-		undoRepost.mutate({ originalPostId: post.id, repostPkid })
-		return
+		repost.mutate({ is_repost: true, original_post: post.id })
 	}
-	repost.mutate({ is_repost: true, original_post: post.id })
-}
 
 	return (
 		<div className="flex items-center mt-4 text-muted-foreground">
@@ -355,6 +346,7 @@ function ActionBar({
 
 				<RepostButton
 					reposted={repostedByMe}
+					hasUnquotedRepost={post.my_repost_pkid != null}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -386,12 +378,14 @@ function ActionBar({
 
 export function RepostButton({
 	reposted,
+	hasUnquotedRepost,
 	reposts,
 	onRepost,
 	onQuote,
 	size,
 }: {
 	reposted: boolean
+	hasUnquotedRepost: boolean
 	reposts?: number
 	onRepost: () => void
 	onQuote: () => void
@@ -407,7 +401,7 @@ export function RepostButton({
 			}
 			items={[
 				{
-					label: reposted ? "Undo repost" : "Repost",
+					label: hasUnquotedRepost ? "Undo repost" : "Repost",
 					icon: <Repost size={20} color="currentColor" />,
 					onSelect: onRepost,
 				},

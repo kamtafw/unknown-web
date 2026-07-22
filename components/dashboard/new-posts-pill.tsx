@@ -11,6 +11,8 @@ interface NewPostsPillProps {
 }
 
 export function NewPostsPill({ count, avatarUrls, loading, onClick }: NewPostsPillProps) {
+	if (loading) return
+
 	return (
 		<div className="sticky top-2 z-20 flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-2 duration-300">
 			<button

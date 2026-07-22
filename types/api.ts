@@ -167,6 +167,7 @@ export interface OriginalPost {
 	liked_by_me?: boolean
 	bookmarked_by_me?: boolean
 	reposted_by_me?: boolean
+	my_repost_pkid?: number | null
 	post_like_count?: number
 	post_comment_count?: number
 	repost_count?: number
@@ -214,6 +215,7 @@ export interface Post {
 	bookmarked_by_me: boolean
 	liked_by_me: boolean
 	reposted_by_me: boolean
+	my_repost_pkid: number | null
 	who_can_see: WhoCanSee
 	who_can_reply: WhoCanReply
 	created_at: string
@@ -556,6 +558,8 @@ export interface UserProfileData {
 	first_name: string | null
 	last_name: string | null
 	phone_number: string
+	dob: string
+	dob_visibility: "full" | "partial"
 	profile_photo: string | null
 	cover_photo: string | null
 	country: string

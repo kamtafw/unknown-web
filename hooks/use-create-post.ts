@@ -28,16 +28,6 @@ function prependToFeed(old: FeedCache | undefined, post: Post): FeedCache | unde
 	}
 }
 
-/** remove a post by id (used to evict the temp post before the real one arrives) */
-function removeFromFeed(old: FeedCache | undefined, id: string): FeedCache | undefined {
-	if (!old) return old
-
-	return {
-		...old,
-		pages: old.pages.map((page) => ({ ...page, posts: page.posts.filter((p) => p.id !== id) })),
-	}
-}
-
 function buildOptimisticPost(payload: CreatePostPayload, user: FullUser): Post {
 	return {
 		pkid: -Date.now(),
@@ -52,6 +42,7 @@ function buildOptimisticPost(payload: CreatePostPayload, user: FullUser): Post {
 		bookmarked_by_me: false,
 		liked_by_me: false,
 		reposted_by_me: false,
+		my_repost_pkid: null,
 		who_can_see: payload.who_can_see,
 		who_can_reply: payload.who_can_reply,
 		created_at: new Date().toISOString(),

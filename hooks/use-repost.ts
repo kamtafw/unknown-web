@@ -81,6 +81,7 @@ function buildOptimisticPost(payload: RepostPayload, originalPost: Post, user: F
 		bookmarked_by_me: false,
 		liked_by_me: false,
 		reposted_by_me: false,
+		my_repost_pkid: null,
 		who_can_see: "EVERYONE",
 		who_can_reply: payload.who_can_reply ?? "EVERYONE",
 		created_at: new Date().toISOString(),
@@ -183,9 +184,6 @@ export function useUndoRepost() {
 	const qc = useQueryClient()
 
 	return useMutation({
-		// repostPkid is resolved by the caller BEFORE mutate() runs — never
-		// re-derive it inside onMutate/mutationFn, since onMutate fires first
-		// and will have already stripped the card out of the feed cache
 		mutationFn: ({ repostPkid }: UndoRepostVars) => socialApi.deletePost(repostPkid),
 
 		onMutate: async ({ originalPostId, repostPkid }) => {
@@ -204,11 +202,15 @@ export function useUndoRepost() {
 			patchEngagementEverywhere(qc, originalPostId, {
 				repost_count: Math.max(0, prevRepostCount - 1),
 				reposted_by_me: false,
+				my_repost_pkid: null,
 			})
 
 			removeRepostCardFromFeeds(qc, repostPkid)
 
-			return { ...snapshots, revert: { id: originalPostId, repostCount: prevRepostCount } }
+			return {
+				...snapshots,
+				revert: { id: originalPostId, repostCount: prevRepostCount, repostPkid },
+			}
 		},
 
 		onSuccess: () => {
@@ -223,6 +225,7 @@ export function useUndoRepost() {
 				patchEngagementEverywhere(qc, ctx.revert.id, {
 					repost_count: ctx.revert.repostCount,
 					reposted_by_me: true,
+					my_repost_pkid: ctx.revert.repostPkid,
 				})
 			}
 			showMutationErrorToast(error, "Failed to undo repost. Please try again.")
