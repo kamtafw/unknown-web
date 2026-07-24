@@ -1,6 +1,7 @@
 "use client"
 
 import { socialApi } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
 import { FeedPollType, Post } from "@/types/api"
 import { InfiniteData, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -52,6 +53,7 @@ export function useFeedFreshness({
 }: UseFeedFreshnessArgs) {
 	const qc = useQueryClient()
 	const documentVisible = useDocumentVisible()
+	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 
 	const [anchor, setAnchor] = useState<string | null>(null)
 	const anchorSeededRef = useRef(false)
@@ -77,24 +79,38 @@ export function useFeedFreshness({
 		staleTime: 0,
 	})
 
-	const hasNewPosts = checkQuery.data?.data.has_new_posts ?? false
-	const newPostCount = checkQuery.data?.data.count ?? 0
+	const rawHasNewPosts = checkQuery.data?.data.has_new_posts ?? false
+	const rawNewPostCount = checkQuery.data?.data.count ?? 0
 
 	// prefetches the real posts as soon as `check` says there's something new,
 	// so the pill can show avatars and clicking it is instant, not a spinner;
 	// keying on newPostCount means a growing tally while the pill is showing
 	// (someone else posts again before you click) silently pulls in the bigger batch
 	const pendingQuery = useQuery({
-		queryKey: ["feed", "pending", feedType, anchor, newPostCount],
+		queryKey: ["feed", "pending", feedType, anchor, rawNewPostCount],
 		queryFn: () =>
 			socialApi
 				.getFeedByPath(buildDeltaPath(basePath, anchor!, deltaSort))
 				.then((res) => res.data.results as Post[]),
-		enabled: pollingEnabled && hasNewPosts,
+		enabled: pollingEnabled && rawHasNewPosts,
 		staleTime: 0,
 	})
 
-	const pendingPosts = useMemo(() => pendingQuery.data ?? [], [pendingQuery.data])
+	const rawPending = pendingQuery.data ?? []
+
+	const pendingPosts = useMemo(() => {
+		if (!rawPending) return []
+
+		const cache = qc.getQueryData<FeedCache>(feedQueryKey)
+		const alreadyVisibleIds = new Set(
+			cache?.pages.flatMap((page) => page.posts.map((p) => p.id)) ?? [],
+		)
+
+		return rawPending.filter((p) => p.user.pkid !== currentUserPkid && !alreadyVisibleIds.has(p.id))
+	}, [rawPending, currentUserPkid, qc, feedQueryKey])
+
+	const hasNewPosts = pendingPosts.length > 0
+	const newPostCount = pendingPosts.length
 
 	const applyNewPosts = useCallback((): string[] => {
 		if (!pendingPosts.length) return []
@@ -115,7 +131,7 @@ export function useFeedFreshness({
 		hasNewPosts,
 		newPostCount,
 		pendingPosts,
-		isLoadingPending: pendingQuery.isFetching && pendingPosts.length === 0,
+		isLoadingPending: rawHasNewPosts && pendingQuery.isFetching && rawPending.length === 0,
 		applyNewPosts,
 	}
 }
