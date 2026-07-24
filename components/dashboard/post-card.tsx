@@ -12,9 +12,9 @@ import {
 } from "@/hooks/use-post-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
-import { useRepost, useUndoRepost } from "@/hooks/use-repost"
+import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
-import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment, isSettledRepostPkid, resolveEngagementPost } from "@/lib/post-helpers"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { OriginalComment, OriginalPost, Post } from "@/types/api"
@@ -297,14 +297,12 @@ function ActionBar({
 	post,
 	comments,
 	reposts,
-	repostedByMe,
 	onQuoteClick,
 	onCommentClick,
 }: {
 	post: Post
 	comments: number
 	reposts: number
-	repostedByMe: boolean
 	onQuoteClick: () => void
 	onCommentClick: () => void
 }) {
@@ -313,14 +311,21 @@ function ActionBar({
 	const bookmarkPost = useBookmarkPost()
 	const isOwn = post.user.pkid === user?.pkid
 	const repost = useRepost()
-	const undoRepost = useUndoRepost()
+	const undoRepost = useDeletePost()
 
 	const handleRepost = () => {
-		if (post.my_repost_pkid != null) {
-			undoRepost.mutate({ originalPostId: post.id, repostPkid: post.my_repost_pkid })
+		if (post.my_repost_pkid == null) {
+			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		repost.mutate({ is_repost: true, original_post: post.id })
+		if (isSettledRepostPkid(post.my_repost_pkid)) {
+			undoRepost.mutate({
+				pkid: post.my_repost_pkid,
+				originalPost: { id: post.id, wasBareRepost: true },
+			})
+		}
+		// else: still settling from the create — ignore the click rather than
+		// delete with a temp pkid
 	}
 
 	return (
@@ -345,8 +350,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={repostedByMe}
-					hasUnquotedRepost={post.my_repost_pkid != null}
+					reposted={post.my_repost_pkid != null}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -378,14 +382,12 @@ function ActionBar({
 
 export function RepostButton({
 	reposted,
-	hasUnquotedRepost,
 	reposts,
 	onRepost,
 	onQuote,
 	size,
 }: {
 	reposted: boolean
-	hasUnquotedRepost: boolean
 	reposts?: number
 	onRepost: () => void
 	onQuote: () => void
@@ -401,7 +403,7 @@ export function RepostButton({
 			}
 			items={[
 				{
-					label: hasUnquotedRepost ? "Undo repost" : "Repost",
+					label: reposted ? "Undo repost" : "Repost",
 					icon: <Repost size={20} color="currentColor" />,
 					onSelect: onRepost,
 				},
@@ -610,12 +612,19 @@ export function PostOptionsMenu({
 	const handleTogglePinned = () => togglePinnedPost.mutate(post.id)
 
 	const handleDeleteConfirm = () => {
-		deletePost.mutate(post.pkid, {
-			onSuccess: () => {
-				setDeleteConfirmOpen(false)
-				if (pathname.startsWith(`/posts/${post.pkid}`)) router.push("/home")
+		const originalPost =
+			post.is_repost && post.original_post && !isOriginalComment(post.original_post)
+				? { id: post.original_post.id, wasBareRepost: !post.content_text?.trim() }
+				: undefined
+		deletePost.mutate(
+			{ pkid: post.pkid, id: post.id, originalPost },
+			{
+				onSuccess: () => {
+					setDeleteConfirmOpen(false)
+					if (pathname.startsWith(`/posts/${post.pkid}`)) router.push("/home")
+				},
 			},
-		})
+		)
 	}
 
 	const ownItems: ActionDropdownItem[] = [
@@ -841,7 +850,6 @@ export function PostCard({ post }: { post: Post }) {
 					post={engagementPost}
 					comments={engagementPost.post_comment_count}
 					reposts={engagementPost.repost_count}
-					repostedByMe={engagementPost.reposted_by_me}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
 				/>

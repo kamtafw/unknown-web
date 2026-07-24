@@ -1,10 +1,15 @@
 import { socialApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
-import { findEngagementEntity, patchEngagementInFeeds } from "@/lib/post-engagement"
+import {
+	findEngagementEntity,
+	findEngagementEntityAnywhere,
+	patchEngagementEverywhere,
+	patchEngagementInFeeds,
+} from "@/lib/post-engagement"
 import { toStandalonePost } from "@/lib/post-helpers"
 import { toast } from "@/lib/toast"
-import { Post, UpdatePostPayload, UpdatePostResponseData } from "@/types/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Post,UpdatePostPayload,UpdatePostResponseData } from "@/types/api"
+import { InfiniteData,useMutation,useQueryClient } from "@tanstack/react-query"
 import { feedKeys } from "./use-feed"
 import { postDetailKeys } from "./use-post-detail"
 
@@ -92,13 +97,25 @@ export function useUpdatePost() {
 	})
 }
 
+interface DeletePostVars {
+	pkid: number
+	/** the deleted post's own id — pass directly when known; falls back to a
+	 * cache lookup by pkid when the caller doesn't have it (e.g. "Undo repost"
+	 * fired from the original post's card, which only knows my_repost_pkid) */
+	id?: string
+	/** set when the post being deleted is itself a repost, so the post it
+	 * reposted gets its repost_count (and shaded state, if this was the
+	 * bare/unquoted repost) rolled back everywhere it's cached */
+	originalPost?: { id: string; wasBareRepost: boolean }
+}
+
 export function useDeletePost() {
 	const qc = useQueryClient()
 
 	return useMutation({
-		mutationFn: (pkid: number) => socialApi.deletePost(pkid),
+		mutationFn: ({ pkid }: DeletePostVars) => socialApi.deletePost(pkid),
 
-		onMutate: async (pkid) => {
+		onMutate: async ({ pkid, id, originalPost }) => {
 			const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
 			await Promise.all(feedKeys_.map((k) => qc.cancelQueries({ queryKey: k })))
 
@@ -108,20 +125,45 @@ export function useDeletePost() {
 				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks),
 			}
 
-			const current = findEngagementEntity(qc, { pkid })
+			let originalRevert: {
+				id: string
+				repostCount: number
+				myRepostPkid: number | null
+			} | null = null
 
-			if (current) removePostFromAllFeeds(qc, current.id)
+			if (originalPost) {
+				const current = findEngagementEntityAnywhere(qc, { id: originalPost.id })
+				const prevCount = current?.repost_count ?? 0
+				originalRevert = {
+					id: originalPost.id,
+					repostCount: prevCount,
+					myRepostPkid: current?.my_repost_pkid ?? null,
+				}
 
-			return snapshot
+				const patch: Partial<Post> = { repost_count: Math.max(0, prevCount - 1) }
+				if (originalPost.wasBareRepost) patch.my_repost_pkid = null
+				patchEngagementEverywhere(qc, originalPost.id, patch)
+			}
+
+			const resolvedId = id ?? findEngagementEntity(qc, { pkid })?.id
+			if (resolvedId) removePostFromAllFeeds(qc, resolvedId)
+
+			return { snapshot, originalRevert }
 		},
 
-		onSuccess: (_data, pkid) => {
+		onSuccess: (_data, { pkid, originalPost }) => {
 			qc.removeQueries({ queryKey: postDetailKeys.detail(pkid) })
-			toast.success("Post deleted")
+			toast.success(originalPost?.wasBareRepost ? "Repost removed" : "Post deleted")
 		},
 
-		onError: (error, _pkid, snapshot) => {
-			restoreSnapshot(qc, snapshot)
+		onError: (error, _vars, ctx) => {
+			restoreSnapshot(qc, ctx?.snapshot)
+			if (ctx?.originalRevert) {
+				patchEngagementEverywhere(qc, ctx.originalRevert.id, {
+					repost_count: ctx.originalRevert.repostCount,
+					my_repost_pkid: ctx.originalRevert.myRepostPkid,
+				})
+			}
 			showMutationErrorToast(error, "Failed to delete post. Please try again.")
 		},
 	})

@@ -6,6 +6,14 @@ export function isOriginalComment(
 	return !!obj && "message" in obj
 }
 
+/** true once my_repost_pkid holds a real sever-assigned pkid rather than the
+ * temporary negative sentinel used while a bare-repost mutation is in flight
+ * (see useRepost) — guards "Undo repost" from firing on a pkid that doesn't
+ * exist on the server yet */
+export function isSettledRepostPkid(pkid: number | null): pkid is number {
+	return pkid != null && pkid > 0
+}
+
 /** true when `post` is a bare repost — no quote text — of another Post (not a Comment) */
 export function isUnquotedPostRepost(post: Post): post is Post & { original_post: OriginalPost } {
 	return (
