@@ -7,11 +7,12 @@ import {
 } from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
 import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
-import { cn } from "@/lib/utils"
 import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 import { Avatar, ScrollArea } from "radix-ui"
 import { useEffect, useRef, useState } from "react"
+import { FollowButton } from "../shared/follow-button"
 
 function flattenSuggestions(users: SuggestionUser[]) {
 	const seen = new Set<number>()
@@ -38,6 +39,7 @@ const AVATAR_COLORS = [
 ]
 
 function Row({ user, index }: { user: SuggestionUser; index: number }) {
+	const router = useRouter()
 	const qc = useQueryClient()
 	const followUser = useFollowUser()
 	const unfollowUser = useUnfollowUser()
@@ -86,37 +88,44 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 	return (
 		<div className="flex items-center gap-3 py-2.5">
-			<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
-				<Avatar.Image
-					src={user?.profile_photo ?? DEFAULT_PROFILE_PHOTO}
-					alt={displayName}
-					className="w-full h-full object-cover"
-				/>
-				<Avatar.Fallback
-					className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
-				>
-					{getInitials(user.first_name ?? "", user.last_name ?? "")}
-				</Avatar.Fallback>
-			</Avatar.Root>
-
-			<div className="flex-1 min-w-0">
-				<p className="text-sm font-semibold text-foreground truncate leading-tight">
-					{displayName}
-				</p>
-				<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
-			</div>
-
 			<button
-				onClick={isFollowed ? handleUnfollow : handleFollow}
-				className={cn(
-					"shrink-0 text-xs font-semibold py-1.5 rounded-full min-w-22 text-center transition-colors cursor-pointer disabled:opacity-50",
-					isFollowed
-						? "border border-primary text-muted-foreground hover:text-primary"
-						: "bg-primary text-primary-foreground hover:bg-primary/80",
-				)}
+				type="button"
+				onClick={() => router.push(`/profile/${user.pkid}`)}
+				className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
 			>
-				{isFollowed ? "Following" : user.followsYou ? "Follow Back" : "Follow"}
+				<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>
+					<Avatar.Image
+						src={user?.profile_photo ?? DEFAULT_PROFILE_PHOTO}
+						alt={displayName}
+						className="w-full h-full object-cover"
+					/>
+					<Avatar.Fallback
+						className={`w-full h-full flex items-center justify-center text-[13px] font-bold ${colorCls}`}
+					>
+						{getInitials(user.first_name ?? "", user.last_name ?? "")}
+					</Avatar.Fallback>
+				</Avatar.Root>
+
+				<div className="flex-1 min-w-0">
+					<p className="text-sm font-semibold text-foreground truncate leading-tight">
+						{displayName}
+					</p>
+					<div className="flex items-center gap-1.5 mt-0.5">
+						<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
+						{user.followsYou && (
+							<span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded leading-none">
+								Follows you
+							</span>
+						)}
+					</div>
+				</div>
 			</button>
+
+			<FollowButton
+				isFollowed={isFollowed}
+				onClick={isFollowed ? handleUnfollow : handleFollow}
+				className="min-w-22 py-1.5"
+			/>
 		</div>
 	)
 }

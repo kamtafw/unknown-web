@@ -71,7 +71,7 @@ function AccountCard({
 			onClick={() => router.push(`/profile/${user.pkid}`)}
 			className={cn(
 				"group flex items-start gap-3 py-3.5 cursor-pointer",
-				nested && "pl-2.5 border-l-2 border-primary/15",
+				nested && "border-primary/15",
 			)}
 		>
 			<Avatar.Root className="w-11 h-11 rounded-full overflow-hidden shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -115,11 +115,14 @@ function AccountCard({
 						isBlocked
 							? "bg-destructive/10 text-destructive hover:bg-destructive/20"
 							: isFollowed
-								? "border border-border text-muted-foreground hover:border-destructive hover:text-destructive"
+								? "border border-primary text-muted-foreground hover:border-destructive hover:text-destructive hover:bg-destructive/5"
 								: "bg-primary text-primary-foreground hover:bg-primary/85",
 					)}
 				>
-					{isBlocked ? "Unblock" : isFollowed ? "Following" : "Follow"}
+					<span className={!isBlocked && isFollowed ? "group-hover:hidden" : ""}>
+						{isBlocked ? "Unblock" : isFollowed ? "Following" : "Follow"}
+					</span>
+					{!isBlocked && isFollowed && <span className="hidden group-hover:inline">Unfollow</span>}
 				</button>
 			)}
 		</div>

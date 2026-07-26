@@ -2,6 +2,7 @@ import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { FullUser } from "@/types/api"
 import * as Avatar from "@radix-ui/react-avatar"
 import { useState } from "react"
+import { FollowButton } from "../shared/follow-button"
 
 const AVATAR_COLORS = [
 	"bg-violet-200 text-violet-700",
@@ -65,16 +66,11 @@ function UserRow({ user, index }: { user: FullUser; index: number }) {
 				<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
 			</div>
 
-			<button
+			<FollowButton
+				isFollowed={followed}
 				onClick={followed ? handleUnfollow : handleFollow}
-				className={
-					followed
-						? "shrink-0 text-xs font-semibold px-3 sm:px-4 py-1.5 rounded-full border border-primary text-primary opacity-70 cursor-pointer disabled:opacity-50 transition-colors"
-						: "shrink-0 text-xs font-semibold px-3 sm:px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50"
-				}
-			>
-				{followed ? "Following" : "Follow"}
-			</button>
+				className="px-3 sm:px-4 py-1.5 h-auto"
+			/>
 		</div>
 	)
 }

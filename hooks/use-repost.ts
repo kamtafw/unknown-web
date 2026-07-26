@@ -81,7 +81,8 @@ function buildOptimisticPost(payload: RepostPayload, originalPost: Post, user: F
 		bookmarked_by_me: false,
 		liked_by_me: false,
 		reposted_by_me: false,
-		who_can_see: "EVERYONE",
+		my_repost_pkid: null,
+		who_can_see: payload.who_can_see ?? "EVERYONE",
 		who_can_reply: payload.who_can_reply ?? "EVERYONE",
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString(),
@@ -125,10 +126,13 @@ export function useRepost() {
 			const current = findEngagementEntityAnywhere(qc, { id: payload.original_post })
 			const prevRepostCount = current?.repost_count ?? 0
 			const prevRepostedByMe = current?.reposted_by_me ?? false
+			const prevMyRepostPkid = current?.my_repost_pkid ?? null
+			const isBareRepost = !payload.content_text?.trim()
 
 			patchEngagementEverywhere(qc, payload.original_post, {
 				repost_count: prevRepostCount + 1,
 				reposted_by_me: true,
+				...(isBareRepost ? { my_repost_pkid: -Date.now() } : {}),
 			})
 
 			// 2. prepend a fake repost card to the For You feed
@@ -147,6 +151,7 @@ export function useRepost() {
 					id: payload.original_post,
 					repostCount: prevRepostCount,
 					repostedByMe: prevRepostedByMe,
+					myRepostPkid: prevMyRepostPkid,
 				},
 			}
 		},
@@ -159,15 +164,23 @@ export function useRepost() {
 				patchEngagementEverywhere(qc, ctx.revert.id, {
 					repost_count: ctx.revert.repostCount,
 					reposted_by_me: ctx.revert.repostedByMe,
+					my_repost_pkid: ctx.revert.myRepostPkid,
 				})
 			}
 			showMutationErrorToast(error, "Failed to repost. Please try again.")
 		},
 
-		onSuccess: (_data, _vars, ctx) => {
+		onSuccess: (data, vars, ctx) => {
 			// remove optimistic post the invalidate to bring post from server at correct position
 			if (ctx.tempId) {
 				qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => removeFromFeed(old, ctx.tempId!))
+			}
+
+			if (!vars.content_text?.trim()) {
+				const realPkid = data.data.original_post.reposts?.[0].pkid
+				if (realPkid != null) {
+					patchEngagementEverywhere(qc, vars.original_post, { my_repost_pkid: realPkid })
+				}
 			}
 			qc.invalidateQueries({ queryKey: feedKeys.forYou })
 		},
@@ -183,9 +196,6 @@ export function useUndoRepost() {
 	const qc = useQueryClient()
 
 	return useMutation({
-		// repostPkid is resolved by the caller BEFORE mutate() runs — never
-		// re-derive it inside onMutate/mutationFn, since onMutate fires first
-		// and will have already stripped the card out of the feed cache
 		mutationFn: ({ repostPkid }: UndoRepostVars) => socialApi.deletePost(repostPkid),
 
 		onMutate: async ({ originalPostId, repostPkid }) => {
@@ -204,11 +214,15 @@ export function useUndoRepost() {
 			patchEngagementEverywhere(qc, originalPostId, {
 				repost_count: Math.max(0, prevRepostCount - 1),
 				reposted_by_me: false,
+				my_repost_pkid: null,
 			})
 
 			removeRepostCardFromFeeds(qc, repostPkid)
 
-			return { ...snapshots, revert: { id: originalPostId, repostCount: prevRepostCount } }
+			return {
+				...snapshots,
+				revert: { id: originalPostId, repostCount: prevRepostCount, repostPkid },
+			}
 		},
 
 		onSuccess: () => {
@@ -223,6 +237,7 @@ export function useUndoRepost() {
 				patchEngagementEverywhere(qc, ctx.revert.id, {
 					repost_count: ctx.revert.repostCount,
 					reposted_by_me: true,
+					my_repost_pkid: ctx.revert.repostPkid,
 				})
 			}
 			showMutationErrorToast(error, "Failed to undo repost. Please try again.")

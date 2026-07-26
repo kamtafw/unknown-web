@@ -3,12 +3,12 @@
 import { useAddComment, usePrependComment } from "@/hooks/use-comment"
 import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useBookmarkPost, useDeletePost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { useRepost, useUndoRepost } from "@/hooks/use-repost"
+import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment, isSettledRepostPkid, resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
@@ -31,7 +31,7 @@ import { HighlightedTextarea } from "../shared/highlighted-textarea"
 import { MentionAutocomplete } from "../shared/mention-autocomplete"
 import { AuthorHoverCard } from "./author-hover-card"
 import { CommentModal } from "./comment-modal"
-import { Bookmark2, Comment as CommentIcon, Like, Repost } from "./icons"
+import { Bookmark2, Comment as CommentIcon, Like } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
 import {
 	formatCount,
@@ -46,12 +46,10 @@ import {
 	StatsButton,
 	UserAvatar,
 } from "./post-card"
+import { QuoteCommentModal } from "./quote-comment-modal"
 import { QuoteModal } from "./quote-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
-import { useQueryClient } from "@tanstack/react-query"
-import { toast } from "@/lib/toast"
-import { findMyRepostPkid } from "@/lib/post-engagement"
 
 const EMOJIS = [
 	"😀",
@@ -185,6 +183,7 @@ function CommentLikeButton({
 
 function CommentRepostButton({ comment }: { comment: Comment }) {
 	const repostComment = useRepostComment()
+	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const handleRepost = () => {
 		if (comment.reposted_by_me) return
@@ -192,14 +191,16 @@ function CommentRepostButton({ comment }: { comment: Comment }) {
 	}
 
 	return (
-		<button
-			onClick={handleRepost}
-			disabled={comment.reposted_by_me}
-			className="flex flex-1 flex-row items-center gap-1 transition-colors hover:text-primary cursor-pointer disabled:cursor-default"
-		>
-			<Repost size={22} color={comment.reposted_by_me ? "#6A88D1" : undefined} />
-			<span className="text-sm tabular-nums font-medium">{formatCount(comment.repost_count)}</span>
-		</button>
+		<>
+			<RepostButton
+				reposted={comment.reposted_by_me}
+				reposts={comment.repost_count}
+				onRepost={handleRepost}
+				onQuote={() => setQuoteOpen(true)}
+				size={22}
+			/>
+			<QuoteCommentModal comment={comment} open={quoteOpen} onOpenChange={setQuoteOpen} />
+		</>
 	)
 }
 
@@ -758,12 +759,11 @@ function CommentComposer({ post }: { post: Post }) {
 }
 
 function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => void }) {
-	const qc = useQueryClient()
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 	const repost = useRepost()
-	const undoRepost = useUndoRepost()
+	const undoRepost = useDeletePost()
 
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
@@ -777,16 +777,16 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.reposted_by_me) {
-			const repostPkid = user ? findMyRepostPkid(qc, post.id, user.pkid) : undefined
-			if (repostPkid === undefined) {
-				toast.error("Couldn't find your repost to undo. Please refresh and try again.")
-				return
-			}
-			undoRepost.mutate({ originalPostId: post.id, repostPkid })
+		if (post.my_repost_pkid == null) {
+			repost.mutate({ is_repost: true, original_post: post.id })
+		}
+		if (isSettledRepostPkid(post.my_repost_pkid)) {
+			undoRepost.mutate({
+				pkid: post.my_repost_pkid,
+				originalPost: { id: post.id, wasBareRepost: true },
+			})
 			return
 		}
-		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -894,7 +894,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.reposted_by_me}
+							reposted={post.my_repost_pkid != null}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}

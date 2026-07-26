@@ -241,9 +241,9 @@ export function TopBar() {
 										origin-top-right"
 								>
 									{/* Current user */}
-									<div
-										className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 cursor-pointer select-none outline-none transition-colors hover:bg-accent"
-										onClick={() => router.push(`/profile/${user?.pkid}`)}
+									<DropdownMenu.Item
+										className="flex items-center gap-2.5 px-3 pt-2.5 pb-2 rounded-xl cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent data-disabled:opacity-50 data-disabled:cursor-default"
+										onSelect={() => router.push(`/profile/${user?.pkid}`)}
 									>
 										<Avatar.Root className="w-9 h-9 rounded-full overflow-hidden shrink-0">
 											<Avatar.Image
@@ -266,7 +266,7 @@ export function TopBar() {
 										<span className="text-[9.5px] font-bold text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full leading-none shrink-0 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
 											Active
 										</span>
-									</div>
+									</DropdownMenu.Item>
 
 									{/* Other linked accounts */}
 									{accountsLoading ? (
@@ -324,7 +324,7 @@ export function TopBar() {
 
 									<DropdownMenu.Separator className="h-px bg-border -mx-1.5 my-1" />
 
-									{/* ── Account actions ── */}
+									{/* Account actions */}
 									<DropdownMenu.Item
 										onSelect={() => router.push("/settings")}
 										className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] cursor-pointer select-none outline-none transition-colors hover:bg-accent data-highlighted:bg-accent"

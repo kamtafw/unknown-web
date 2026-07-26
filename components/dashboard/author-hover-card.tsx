@@ -2,12 +2,12 @@
 
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
-import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/api"
 import { useRouter } from "next/navigation"
 import { Avatar, HoverCard } from "radix-ui"
 import { type ReactNode, useState } from "react"
+import { FollowButton } from "../shared/follow-button"
 
 function getInitials(first?: string | null, last?: string | null) {
 	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
@@ -114,21 +114,12 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 								</Avatar.Root>
 
 								{profile && !profile.is_blocked && !isOwnProfile && (
-									<button
+									<FollowButton
+										isFollowed={isFollowed}
+										followsYou={profile.is_following_you}
 										onClick={handleFollowToggle}
 										disabled={followUser.isPending || unfollowUser.isPending}
-										className={cn(
-											"group shrink-0 h-8 px-4 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] cursor-pointer disabled:opacity-60",
-											isFollowed
-												? "border border-border text-foreground hover:border-destructive hover:text-destructive hover:bg-destructive/5"
-												: "bg-foreground text-background hover:opacity-85",
-										)}
-									>
-										<span className={isFollowed ? "group-hover:hidden" : ""}>
-											{isFollowed ? "Following" : "Follow"}
-										</span>
-										{isFollowed && <span className="hidden group-hover:inline">Unfollow</span>}
-									</button>
+									/>
 								)}
 							</div>
 
