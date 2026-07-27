@@ -3,12 +3,12 @@
 import { useAddComment, usePrependComment } from "@/hooks/use-comment"
 import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { useBookmarkPost, useLikePost } from "@/hooks/use-post-actions"
+import { useBookmarkPost, useDeletePost, useLikePost } from "@/hooks/use-post-actions"
 import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { useRepost, useUndoRepost } from "@/hooks/use-repost"
+import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialApi } from "@/lib/api"
-import { isOriginalComment, resolveEngagementPost } from "@/lib/post-helpers"
+import { isOriginalComment, isSettledRepostPkid, resolveEngagementPost } from "@/lib/post-helpers"
 import { canReplyToPost } from "@/lib/post-permissions"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
@@ -194,7 +194,6 @@ function CommentRepostButton({ comment }: { comment: Comment }) {
 		<>
 			<RepostButton
 				reposted={comment.reposted_by_me}
-				hasUnquotedRepost={comment.reposted_by_me}
 				reposts={comment.repost_count}
 				onRepost={handleRepost}
 				onQuote={() => setQuoteOpen(true)}
@@ -764,7 +763,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 	const repost = useRepost()
-	const undoRepost = useUndoRepost()
+	const undoRepost = useDeletePost()
 
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
@@ -778,11 +777,16 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.my_repost_pkid != null) {
-			undoRepost.mutate({ originalPostId: post.id, repostPkid: post.my_repost_pkid })
+		if (post.my_repost_pkid == null) {
+			repost.mutate({ is_repost: true, original_post: post.id })
+		}
+		if (isSettledRepostPkid(post.my_repost_pkid)) {
+			undoRepost.mutate({
+				pkid: post.my_repost_pkid,
+				originalPost: { id: post.id, wasBareRepost: true },
+			})
 			return
 		}
-		repost.mutate({ is_repost: true, original_post: post.id })
 	}
 
 	return (
@@ -890,8 +894,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.reposted_by_me}
-							hasUnquotedRepost={post.my_repost_pkid != null}
+							reposted={post.my_repost_pkid != null}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}
