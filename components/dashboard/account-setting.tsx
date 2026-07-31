@@ -205,23 +205,33 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 	const PROBLEMS: { value: ProblemType; label: string; description: string }[] = [
 		{
 			value: "bug",
-			label: "App crashes or freezes frequently",
-			description: "Something broke or behaved unexpectedly",
+			label: "Bug or unexpected behavior",
+			description: "Something isn't working as expected or behaves incorrectly.",
 		},
 		{
 			value: "performance",
-			label: "Slow or laggy experience",
-			description: "Media, feeds, or actions feel sluggish",
+			label: "App is slow or laggy",
+			description: "The app feels sluggish, takes too long to load, or responds slowly.",
 		},
 		{
-			value: "ui",
-			label: "Display or layout issue",
-			description: "Something looks wrong or off-screen",
+			value: "crash",
+			label: "App crashes or freezes",
+			description: "The app closes unexpectedly, freezes, or becomes unresponsive.",
 		},
 		{
-			value: "feature",
-			label: "Feature request or suggestion",
-			description: "Something you'd like to see added",
+			value: "login",
+			label: "Can't sign in",
+			description: "Having trouble logging in, creating an account, or accessing your account.",
+		},
+		// {
+		// 	value: "payment",
+		// 	label: "Payment issue",
+		// 	description: "Problems with subscriptions, purchases, billing, or payment processing.",
+		// },
+		{
+			value: "other",
+			label: "Something else",
+			description: "Report any issue that doesn't fit the categories above.",
 		},
 	]
 
@@ -257,7 +267,6 @@ export function ReportProblemPanel({ onBack }: { onBack: () => void }) {
 						{PROBLEMS.map((p) => (
 							<RadioItem key={p.value} value={p.value} label={p.label} />
 						))}
-						<RadioItem value="other" label="Other" />
 					</RadioGroup.Root>
 
 					<div className="mt-5">
