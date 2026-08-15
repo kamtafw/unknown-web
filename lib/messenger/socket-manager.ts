@@ -36,8 +36,25 @@ class MessengerSocketManager {
 	/** replay functions for room joins, keyed so a feature can re-register
 	 * without duplicating; replayed on every `connect` event, including
 	 * reconnects — room membership belongs to the old connection and is
-	 * lost when it drops (confirmed by the guide, §"Group socket events"). */
+	 * lost when it drops (confirmed by the guide, SN"Group socket events"). */
 	private roomJoins = new Map<string, () => void>()
+
+	/**
+	 * BUG FIX (2026-08-14): `doConnect()` awaits a real HTTP round-trip
+	 * (the credential fetch) before `this.socket` is ever assigned. Any
+	 * `on()` call made during that window used to silently no-op — nothing
+	 * remembered it, so once the socket *did* connect a moment later, that
+	 * listener was simply never attached. This was intermittent by nature
+	 * (whether a given caller's effect ran before or after the credential
+	 * fetch resolved), which is exactly the "typing never shows / messages
+	 * arrive inconsistently" symptom reported after real-world testing.
+	 *
+	 * Fix: `on()` always registers here first, and attaches to `this.socket`
+	 * immediately only if it already exists. Whenever a socket is (re)created
+	 * in `doConnect()`, every registered listener is replayed onto it — so
+	 * call order relative to `connect()` completing no longer matters.
+	 */
+	private listeners = new Map<string, Set<EventHandler>>()
 
 	connect(): Promise<void> {
 		if (this.socket?.connected) return Promise.resolve()
@@ -64,6 +81,12 @@ class MessengerSocketManager {
 			auth: connectAuth.auth,
 			query: connectAuth.query,
 		})
+
+		// Re-attach every listener registered via on() before this socket
+		// existed — see the class-level comment on `listeners`.
+		for (const [event, handlers] of this.listeners) {
+			for (const handler of handlers) this.socket.on(event, handler)
+		}
 
 		this.bindLifecycleEvents(this.socket)
 
@@ -122,13 +145,25 @@ class MessengerSocketManager {
 	/** Subscribe to a server event. Returns an unsubscribe function — always
 	 * capture and call it on unmount so listeners don't accumulate across
 	 * remounts (the guide's "remove old listeners before attaching new
-	 * ones" rule). */
-
+	 * ones" rule). Safe to call before the socket exists — see the
+	 * `listeners` field comment.*/
 	on<T = unknown>(event: string, handler: EventHandler<T>): () => void {
-		this.socket?.on(event, handler as EventHandler)
-		return () => this.socket?.off(event, handler as EventHandler)
+		const h = handler as EventHandler
+		if (!this.listeners.has(event)) this.listeners.set(event, new Set())
+		this.listeners.get(event)!.add(h)
+		this.socket?.on(event, h)
+
+		return () => {
+			this.listeners.get(event)?.delete(h)
+			this.socket?.off(event, h)
+		}
 	}
 
+	/** Fire-and-drop if the socket isn't connected yet — deliberately NOT
+	 * queued like `on()`'s listeners. Emits carry a point-in-time payload
+	 * (e.g. typing state); replaying a stale one later once the socket
+	 * connects could show incorrect state, unlike a listener registration
+	 * which is safe to attach whenever the connection becomes ready. */
 	emit(event: string, payload?: unknown): void {
 		this.socket?.emit(event, payload)
 	}
