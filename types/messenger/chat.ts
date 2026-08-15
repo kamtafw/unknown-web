@@ -1,15 +1,16 @@
 /**
  * Core message/chat types.
  *
- * Source: messenger-web-implementation-guide.md §"Core message model" and
- * §"One-to-one chats" — this is the highest-confidence, fully-documented
- * part of the Messenger contract, so these types are taken close to
- * verbatim rather than inferred.
+ * Field names verified 2026-08-12 against the real mobile contract
+ * (`hooks/messenger/types.ts`), not just the guide — the guide's shapes
+ * were close but not exact (e.g. `reaction_count` vs. the real
+ * `reactions_count`). This supersedes the M0 version of this file.
  *
  * Deliberately NOT included here: poll/call/live-specific metadata shapes,
- * schedule types, community types. Those belong to their own milestones
- * (M6/M8/M9/M11) and should be added when that milestone starts, using the
- * same evidence-first approach — not speculatively pre-built now.
+ * schedule types, community types — those belong to their own milestones.
+ * E2EE fields (`nonce`, `sender_ephemeral_key`) are also omitted: the guide
+ * confirms encryption is non-functional on mobile today, so there's
+ * nothing meaningful for the web client to do with them yet.
  */
 
 import { Pkid, Uuid } from "./identity"
@@ -45,59 +46,77 @@ export interface MediaAttachment {
 	caption?: string
 }
 
+export interface MessageSender {
+	id: Uuid
+	pkid: Pkid
+	username: string
+	first_name: string | null
+	last_name: string | null
+	profile_photo?: string | null
+}
+
 /** Payload for `POST chats/messages`. `receiver_id` (PKID) for a direct
  * message, `group_id` for a group message — exactly one should be set. */
 export interface SendMessagePayload {
 	receiver_id?: Pkid
-	group_id: number
+	group_id?: number
 	message_type: MessageType
 	content?: string
 	media?: MediaAttachment[]
 	reply_to?: number
 	excluded_users?: Pkid[]
 	metadata?: Record<string, unknown>
+	nonce?: string
+	sender_ephemeral_key?: string
 }
 
 /** A message is returned by the server */
 export interface Message {
 	id: number
-	sender: {
-		userUuid: Uuid
-		userPkid: Pkid
-		displayName: string
-		avatarUrl: string | null
-	}
+	sender: MessageSender
+	receiver: MessageSender | null
+	group: string | null
 	message_type: MessageType
-	content: string | null
+	content: string
 	media: MediaAttachment[] | null
-	status: MessageStatus
-	collection_id: string
-	reply_to: number | null
 	metadata: Record<string, unknown> | null
-	reaction_count: number
-	reply_count: number
+	deleted?: boolean
+	is_pinned: boolean
+	collection_id: string
+	status: MessageStatus
+	reply_to: number | null
+	forwarded_from: unknown | null
+	is_hidden_by_me?: boolean
+	is_deleted_for_all?: boolean
+	reactions_count?: number
+	views_count?: number
+	replies_count?: number
 	created_at: string
 	updated_at: string
 }
 
-/** A row from `GET chats/lists`. */
+/** A row from `GET chats/lists` (and reused for `GET chats/users` search
+ * results — same underlying shape, unread/preview fields just default to
+ * empty for a user you haven't messaged yet). Field names match the real
+ * `ChatListUser` contract, not the guide's paraphrase of it. */
 export interface ChatListItem {
-	userUuid: Uuid
-	userPkid: Pkid
-	displayName: string
+	id: Uuid
+	pkid: Pkid
+	first_name: string | null
+	last_name: string | null
 	username: string
-	avatarUrl: string | null
-	unreadCount: number
-	lastMessagePreview: string | null
-	lastMessageType: MessageType | null
-	lastMessageAt: string | null
-	isPinned: boolean
-	isBlocked: boolean
-	isMuted: boolean
-	isReverseBlocked: boolean
+	profile_photo: string
+	unread_count: number
+	last_message_preview: string | null
+	last_message_time: string | null
+	last_message_type?: MessageType | string | null
+	is_pinned: boolean
+	is_blocked: boolean
+	has_blocked_me: boolean
+	is_muted: boolean
 }
 
-export type ChatListFilter = "all" | "unread" | "pinned"
+export type ChatListFilter = "all" | "unread" | "favorites"
 
 /**
  * The guide is explicit that pagination is not uniform: chat/group history
@@ -108,13 +127,4 @@ export type ChatListFilter = "all" | "unread" | "pinned"
 export interface CursorPage<T> {
 	results: T[]
 	next: string | null
-}
-
-/** Local-only outbox entry for the optimistic send flow described in the
- * guide (§"Sending a message"). Never sent to the server as-is. */
-export interface OutboxMessage {
-	localId: string
-	payload: SendMessagePayload
-	status: Extract<MessageStatus, "queued" | "sending" | "failed">
-	createdAt: string
 }

@@ -1,17 +1,18 @@
 import { getAccessToken } from "@/lib/cookies"
 import { DJANGO_API_URL } from "@/lib/server-config"
 import { proxyJson } from "@/lib/server-fetch"
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
-	const { uuid } = await params
+/** Proxies `GET chats/lists/unread-count` — the fallback total-unread
+ * endpoint from the guide §4, used for the TopBar Messenger-icon badge. */
+export async function GET() {
 	const accessToken = await getAccessToken()
 
 	if (!accessToken) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	return proxyJson(`${DJANGO_API_URL}/chats/history/${uuid}${req.nextUrl.search}`, {
+	return proxyJson(`${DJANGO_API_URL}/chats/lists/unread-count`, {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",

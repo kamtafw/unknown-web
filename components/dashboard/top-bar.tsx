@@ -1,5 +1,6 @@
 "use client"
 
+import { useUnreadChatCount } from "@/hooks/messenger/use-chat-list"
 import { useLinkedAccounts, useSwitchAccount } from "@/hooks/use-linked-accounts"
 import { authApi } from "@/lib/api"
 import { resolveMediaUrl } from "@/lib/server-config"
@@ -15,7 +16,7 @@ import { Bell, Event, Marketplace, Message, Social } from "./icons"
 
 const CATEGORY_ICONS = [
 	{ label: "Social", icon: Social },
-	{ label: "Messenger", icon: Message },
+	{ label: "Messenger", icon: Message, href: "/messenger" },
 	{ label: "Event", icon: Event },
 	{ label: "Marketplace", icon: Marketplace },
 ]
@@ -119,6 +120,8 @@ export function TopBar() {
 	const [searchOpen, setSearchOpen] = useState(false)
 	const [logoutOpen, setLogoutOpen] = useState(false)
 
+	const { data: unreadCount } = useUnreadChatCount()
+
 	const displayName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 		: "Loading…"
@@ -181,13 +184,19 @@ export function TopBar() {
 
 					{/* Category nav */}
 					<nav className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
-						{CATEGORY_ICONS.map(({ label, icon: Icon }) => (
+						{CATEGORY_ICONS.map(({ label, icon: Icon, href }) => (
 							<button
 								key={label}
 								title={label}
-								className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-muted-foreground border border-border hover:bg-accent hover:text-primary transition-colors"
+								onClick={href ? () => router.push(href) : undefined}
+								className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-muted-foreground border border-border hover:bg-accent hover:text-primary transition-colors"
 							>
 								<Icon />
+								{label === "Messenger" && !!unreadCount && (
+									<span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+										{unreadCount > 99 ? "99+" : unreadCount}
+									</span>
+								)}
 							</button>
 						))}
 					</nav>
