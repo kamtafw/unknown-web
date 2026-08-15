@@ -26,6 +26,14 @@ export const chatKeys = {
 
 	histories: () => [...chatKeys.all, "history"] as const,
 	history: (userUuid: Uuid) => [...chatKeys.histories(), userUuid] as const,
+
+	searchUsers: (search: string) => [...chatKeys.all, "search-users", search] as const,
+
+	/** Primed client-side when a conversation is opened from search (no
+	 * list entry exists yet) or read from the "all" list cache otherwise —
+	 * see hooks/messenger/use-peer-profile.ts for why there's no direct
+	 * fetch-by-uuid fallback. */
+	peer: (userUuid: Uuid) => [...chatKeys.all, "peer", userUuid] as const,
 }
 
 export const groupKeys = {
