@@ -54,6 +54,20 @@
 
 ---
 
+## D-005 — Socket listener registration must not depend on call order relative to `connect()`
+
+**Context:** Real-world testing after M1 surfaced intermittent typing indicators, inconsistent realtime message delivery, and an unreliable unread badge — all pointing at the same underlying cause rather than three separate bugs.
+
+**Root cause:** `doConnect()` awaits the credential fetch (a real HTTP round-trip, D-003) *before* `this.socket` is ever assigned. `on()` previously did `this.socket?.on(...)` directly — if a feature hook's effect (e.g. `useChatSocket`, `useTyping`) ran during that window, the call silently no-op'd and the handler was **never attached, permanently**, since nothing remembered the registration for later. Whether a given page load lost this race depended on network timing, which is exactly why the symptom was intermittent rather than a clean always-fails bug.
+
+**Decision:** `MessengerSocketManager` now keeps a persistent `listeners` map. `on()` always registers there first and attaches immediately only if a socket already exists; whenever `doConnect()` creates a socket, every registered listener is replayed onto it. Call order relative to `connect()` completing no longer matters. `emit()` is deliberately left as fire-and-drop, not queued — an emit carries a point-in-time payload (e.g. typing state) where replaying a stale one later would show incorrect state, unlike a listener registration.
+
+**Status:** Implemented, 2026-08-14.
+
+**Consequence:** No feature-hook code changed — this was entirely internal to `socket-manager.ts`, which is the whole point of keeping the lifecycle behind one abstraction (D-002). Worth a fresh empirical pass on the "typing/realtime/badge" symptoms to confirm this was the full explanation rather than assuming it — see MESSENGER.md.
+
+---
+
 ## Log
 
 | Date | Decision | Status change |
@@ -62,3 +76,5 @@
 | 2026-08-11 | D-002 | Draft hypothesis → empirically validated for chat + group |
 | 2026-08-11 | D-003 | Draft → temporary implementation confirmed working against real backend; production still Pending |
 | 2026-08-12 | D-004 established (M1 kickoff) | — |
+| 2026-08-14 | D-004 | Planned → Implemented |
+| 2026-08-14 | D-005 established | Socket listener registration race fixed |
