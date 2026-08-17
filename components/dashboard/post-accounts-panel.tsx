@@ -2,15 +2,15 @@
 
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
-import { usePostDetail } from "@/hooks/use-post-detail"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
-import { resolveEngagementPost } from "@/lib/post-helpers"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { PostUser } from "@/types/api"
+import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { getInitials } from "./post-card"
+import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
+import { usePostDetail } from "@/hooks/socials/use-post-detail"
 
 function formatCount(n: number) {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -129,10 +129,10 @@ function AccountCard({
 	)
 }
 
-export function PostAccountsPanel({ pkid }: { pkid: number }) {
+export function PostAccountsPanel({ id }: { id: string }) {
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
-	const { data: rawPost, isLoading } = usePostDetail(pkid)
-	const post = rawPost ? resolveEngagementPost(rawPost) : undefined
+	const { data: rawPost, isLoading } = usePostDetail(id)
+	const post = rawPost ? resolveEngagementContent(rawPost) : undefined
 
 	if (isLoading && !post) {
 		return (
@@ -149,7 +149,7 @@ export function PostAccountsPanel({ pkid }: { pkid: number }) {
 
 	if (!post) return null
 
-	const original = post.original_post
+	const original = post.original
 	const showOriginal = !!original && original.user.pkid !== post.user.pkid
 
 	return (

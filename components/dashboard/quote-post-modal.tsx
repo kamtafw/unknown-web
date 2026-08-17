@@ -1,23 +1,22 @@
 "use client"
 
-import { useRepost } from "@/hooks/use-repost"
-import { socialApi } from "@/lib/api"
+import { useRepost } from "@/hooks/socials/use-repost"
 import { hasAnyMention } from "@/lib/mentions"
+import { socialsApi } from "@/lib/socials/api"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
 	MediaItem,
-	OriginalPost,
-	Post,
 	RepostPayload,
+	SocialContent,
 	WhoCanReply,
 	WhoCanSee,
-} from "@/types/api"
+} from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import { QuotedPostCard, getInitials } from "./post-card"
+import { QuotedContentCard, getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
 
@@ -58,26 +57,13 @@ function extractHashtags(str: string): string[] {
 	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
 }
 
-function asOriginalPost(post: Post): OriginalPost {
-	return {
-		id: post.id,
-		pkid: post.pkid,
-		content_text: post.content_text,
-		user: post.user,
-		post_location: post.post_location,
-		post_media: post.post_media,
-		post_hashtagged: post.post_hashtagged,
-		created_at: post.created_at,
-	}
-}
-
-interface QuoteModalProps {
-	post: Post
+interface QuotePostModalProps {
+	post: SocialContent
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
 
-export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
+export function QuotePostModal({ post, open, onOpenChange }: QuotePostModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const repost = useRepost()
 
@@ -115,7 +101,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -193,7 +179,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 		const payload: RepostPayload = {
 			is_repost: true,
 			original_post: post.id,
-			content_text: text.trim() || undefined,
+			content: text.trim() || undefined,
 			hashtags: hashtags.length ? hashtags : undefined,
 			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
@@ -366,7 +352,7 @@ export function QuoteModal({ post, open, onOpenChange }: QuoteModalProps) {
 
 							{/* Quoted post card  */}
 							<div className="mt-1.5">
-								<QuotedPostCard post={asOriginalPost(post)} />
+								<QuotedContentCard content={post} />
 							</div>
 						</div>
 					</div>

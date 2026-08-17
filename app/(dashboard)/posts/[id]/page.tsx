@@ -6,17 +6,17 @@ export default async function PostPage({
 	params,
 	searchParams,
 }: {
-	params: Promise<{ pkid: number }>
+	params: Promise<{ id: string }>
 	searchParams: Promise<{ comment?: string }>
 }) {
-	const { pkid } = await params
+	const { id } = await params
 	const { comment } = await searchParams
 
 	return (
 		<div className="flex flex-1 gap-5 h-full min-h-0 overflow-hidden">
-			<PostDetailView pkid={Number(pkid)} highlightCommentId={comment} />
+			<PostDetailView id={id} highlightCommentId={comment} />
 			<div className="flex flex-col gap-5 shrink-0 h-full min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-				<PostAccountsPanel pkid={Number(pkid)} />
+				<PostAccountsPanel id={id} />
 				<FriendSuggestions />
 			</div>
 		</div>

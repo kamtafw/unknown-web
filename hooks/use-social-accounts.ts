@@ -1,7 +1,7 @@
 import { userApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
-import { SocialAccountsResponse } from "@/types/api"
+import { SocialAccountsResponse } from "@/types/socials/api"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const socialAccountsKey = ["users", "social-accounts"] as const

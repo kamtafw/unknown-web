@@ -2,7 +2,7 @@ import { authApi, userApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import { FullUser, OtpDefault } from "@/types/api"
+import { FullUser, OtpDefault } from "@/types/socials/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { authKeys } from "./use-auth"
 

@@ -1,10 +1,10 @@
 "use client"
 
-import { flattenFeedPages, useBookmarks } from "@/hooks/use-feed"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
+import { flattenFeedPages, useBookmarks } from "@/hooks/socials/use-feed"
 
 function PostSkeleton() {
 	return (

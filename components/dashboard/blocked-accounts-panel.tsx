@@ -2,7 +2,7 @@
 
 import { useBlockedUsers, useUnblockUsers } from "@/hooks/use-block-actions"
 import { cn } from "@/lib/utils"
-import { BlockedUser } from "@/types/api"
+import { BlockedUser } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ArrowLeft, Loader2, ShieldOff, Users } from "lucide-react"
 import { Avatar } from "radix-ui"

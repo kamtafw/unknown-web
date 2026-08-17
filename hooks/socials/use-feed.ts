@@ -1,12 +1,7 @@
-import { socialApi } from "@/lib/api"
-import { Post } from "@/types/api"
+import { socialsApi } from "@/lib/socials/api"
+import { feedKeys } from "@/lib/socials/query-keys"
+import { Post } from "@/types/socials/api"
 import { useInfiniteQuery } from "@tanstack/react-query"
-
-export const feedKeys = {
-	forYou: ["feed", "for-you"] as const,
-	following: ["feed", "following"] as const,
-	bookmarks: ["feed", "bookmarks"] as const,
-}
 
 export const feedBase = {
 	forYou: "/api/socials/for-you-feed" as const,
@@ -24,16 +19,16 @@ function toPath(basePath: string, fullUrl: string): string {
 }
 
 async function fetchFeed(path: string) {
-	const res = await socialApi.getFeedByPath(path)
+	const res = await socialsApi.getFeedByPath(path)
 	return {
-		posts: res.data.results as Post[],
-		nextPage: res.data.next as string | null,
+		posts: res.results as Post[],
+		nextPage: res.next as string | null,
 	}
 }
 
 export function useForYouFeed() {
 	return useInfiniteQuery({
-		queryKey: feedKeys.forYou,
+		queryKey: feedKeys.forYou(),
 		queryFn: ({ pageParam }) => fetchFeed(pageParam as string),
 		initialPageParam: feedBase.forYou as string,
 		getNextPageParam: (last) =>
@@ -44,7 +39,7 @@ export function useForYouFeed() {
 
 export function useFollowingFeed() {
 	return useInfiniteQuery({
-		queryKey: feedKeys.following,
+		queryKey: feedKeys.following(),
 		queryFn: ({ pageParam }) => fetchFeed(pageParam as string),
 		initialPageParam: feedBase.following as string,
 		getNextPageParam: (last) =>
@@ -55,7 +50,7 @@ export function useFollowingFeed() {
 
 export function useBookmarks() {
 	return useInfiniteQuery({
-		queryKey: feedKeys.bookmarks,
+		queryKey: feedKeys.bookmarks(),
 		queryFn: ({ pageParam }) => fetchFeed(pageParam as string),
 		initialPageParam: feedBase.bookmarks as string,
 		getNextPageParam: (last) =>

@@ -1,11 +1,11 @@
 "use client"
 
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { socialApi } from "@/lib/api"
-import { canReplyToPost } from "@/lib/post-permissions"
+import { socialsApi } from "@/lib/socials/api"
+import { canReplyTo } from "@/lib/socials/content-permissions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import type { CreateCommentPayload, MediaItem, SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -54,7 +54,7 @@ function extractHashtags(str: string) {
 }
 
 interface CommentModalProps {
-	post: Post
+	post: SocialContent
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
@@ -62,8 +62,8 @@ interface CommentModalProps {
 export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
-	const prependComment = usePrependComment()
-	const canReply = canReplyToPost(post)
+	const prependContent = usePrependContent()
+	const canReply = canReplyTo(post)
 
 	const [text, setText] = useState("")
 	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
@@ -101,7 +101,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -173,24 +173,17 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const handleSubmit = () => {
 		if (!canSubmit) return
 		const hashtags = extractHashtags(text)
-		const payload: AddCommentPayload = {
-			post: post.pkid,
-			message: text.trim() || undefined,
+		const payload: CreateCommentPayload = {
+			post_id: post.id,
+			content: text.trim(),
 			hashtags: hashtags.length ? hashtags : undefined,
-			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
+			medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
 			onSuccess: (res) => {
-				const newComment: Comment = {
-					...res.data,
-					like_count: res.data.like_count ?? 0,
-					replies_count: res.data.replies_count ?? 0,
-					repost_count: res.data.repost_count ?? 0,
-					liked_by_me: res.data.liked_by_me ?? false,
-					reposted_by_me: res.data.reposted_by_me ?? false,
-				}
-				prependComment(post.pkid, newComment)
+				if (!res.success) return
+				prependContent(post.id, res.data)
 				reset()
 				onOpenChange(false)
 			},
@@ -254,9 +247,9 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
 									<span className="text-muted-foreground text-[13px]">@{post.user.username}</span>
 								</div>
-								{!!post.content_text && (
+								{!!post.message && (
 									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">
-										{renderText(post.content_text)}
+										{renderText(post.message)}
 									</p>
 								)}
 								<p className="text-xs text-muted-foreground mt-1.5">
@@ -383,7 +376,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 						) : (
 							<div className="mt-1">
 								<ReplyRestrictedNotice
-									whoCanReply={post.who_can_reply}
+									whoCanReply={post.permissions.reply_policy}
 									username={post.user.username}
 									compact
 								/>

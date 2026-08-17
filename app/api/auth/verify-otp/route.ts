@@ -1,7 +1,7 @@
 import { setAuthCookies } from "@/lib/cookies"
 import { DJANGO_API_URL } from "@/lib/server-config"
 import { fetchJson, UpstreamError } from "@/lib/server-fetch"
-import { ApiResponse, FullUser, VerifyOtpResponseData } from "@/types/api"
+import { ApiResponse, FullUser, VerifyOtpResponseData } from "@/types/socials/api"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {

@@ -1,18 +1,10 @@
 "use client"
 
-import {
-	feedBase,
-	feedKeys,
-	flattenFeedPages,
-	useFollowingFeed,
-	useForYouFeed,
-} from "@/hooks/use-feed"
-import { useFeedFreshness } from "@/hooks/use-feed-freshness"
-import { Post } from "@/types/api"
+import { flattenFeedPages, useFollowingFeed, useForYouFeed } from "@/hooks/socials/use-feed"
+import { Post } from "@/types/socials/api"
 import { Loader2 } from "lucide-react"
 import { Tabs } from "radix-ui"
-import { RefObject, useEffect, useRef, useState } from "react"
-import { NewPostsPill } from "./new-posts-pill"
+import { RefObject, useEffect, useRef } from "react"
 import { PostCard } from "./post-card"
 
 function PostSkeleton() {
@@ -41,7 +33,6 @@ interface FeedContentProps {
 	fetchNextPage: () => void
 	feedType: "for-you" | "following"
 	sentinel: RefObject<HTMLDivElement | null>
-	flashIds: Set<string>
 }
 
 function FeedContent({
@@ -53,7 +44,6 @@ function FeedContent({
 	fetchNextPage,
 	feedType,
 	sentinel,
-	flashIds,
 }: FeedContentProps) {
 	useEffect(() => {
 		const el = sentinel.current
@@ -95,18 +85,9 @@ function FeedContent({
 
 	return (
 		<>
-			{posts.map((post) =>
-				flashIds.has(post.id) ? (
-					<div
-						key={post.id}
-						className="animate-in fade-in slide-in-from-top-3 duration-500 bg-primary/5"
-					>
-						<PostCard post={post} />
-					</div>
-				) : (
-					<PostCard key={post.id} post={post} />
-				),
-			)}
+			{posts.map((post) => (
+				<PostCard key={post.id} post={post} />
+			))}
 			<div ref={sentinel} className="h-1" />
 			{isFetchingNextPage && (
 				<div className="flex justify-center py-8">
@@ -120,116 +101,65 @@ function FeedContent({
 	)
 }
 
-function scrollFeedToTop() {
-	document.getElementById("feed-scroll")?.scrollTo({ top: 0, behavior: "smooth" })
-}
-
-function ForYouPanel({ isActive }: { isActive: boolean }) {
+function ForYouPanel() {
 	const sentinel = useRef<HTMLDivElement>(null)
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useForYouFeed()
-	const [flashIds, setFlashIds] = useState<Set<string>>(new Set())
+
+	useEffect(() => {
+		const el = sentinel.current
+		if (!el) return
+		const obs = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+			},
+			{ rootMargin: "200px" },
+		)
+		obs.observe(el)
+		return () => obs.disconnect()
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
 	const posts = flattenFeedPages(data?.pages)
 
-	const freshness = useFeedFreshness({
-		feedType: "user_feed",
-		feedQueryKey: feedKeys.forYou,
-		basePath: feedBase.forYou,
-		deltaSort: "newest",
-		currentPosts: posts,
-		isActive,
-	})
-
-	const handleApply = () => {
-		const insertedIds = freshness.applyNewPosts()
-		if (!insertedIds.length) return
-		setFlashIds(new Set(insertedIds))
-		scrollFeedToTop()
-		setTimeout(() => setFlashIds(new Set()), 1500)
-	}
-
 	return (
-		<>
-			{freshness.hasNewPosts && (
-				<NewPostsPill
-					count={freshness.newPostCount}
-					avatarUrls={freshness.pendingPosts.slice(0, 3).map((p) => p.user.profile_photo)}
-					loading={freshness.isLoadingPending}
-					onClick={handleApply}
-				/>
-			)}
-			<FeedContent
-				posts={posts}
-				isLoading={isLoading}
-				isError={isError}
-				isFetchingNextPage={isFetchingNextPage}
-				hasNextPage={hasNextPage}
-				fetchNextPage={fetchNextPage}
-				feedType="for-you"
-				sentinel={sentinel}
-				flashIds={flashIds}
-			/>
-		</>
+		<FeedContent
+			posts={posts}
+			isLoading={isLoading}
+			isError={isError}
+			isFetchingNextPage={isFetchingNextPage}
+			hasNextPage={hasNextPage}
+			fetchNextPage={fetchNextPage}
+			feedType="for-you"
+			sentinel={sentinel}
+		/>
 	)
 }
 
-function FollowingPanel({ isActive }: { isActive: boolean }) {
+function FollowingPanel() {
 	const sentinel = useRef<HTMLDivElement>(null)
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useFollowingFeed()
-	const [flashIds, setFlashIds] = useState<Set<string>>(new Set())
 
 	const posts = flattenFeedPages(data?.pages)
 
-	const freshness = useFeedFreshness({
-		feedType: "following_feed",
-		feedQueryKey: feedKeys.following,
-		basePath: feedBase.following,
-		currentPosts: posts,
-		isActive,
-	})
-
-	const handleApply = () => {
-		const insertedIds = freshness.applyNewPosts()
-		if (!insertedIds.length) return
-		setFlashIds(new Set(insertedIds))
-		scrollFeedToTop()
-		setTimeout(() => setFlashIds(new Set()), 1500)
-	}
-
 	return (
-		<>
-			{freshness.hasNewPosts && (
-				<NewPostsPill
-					count={freshness.newPostCount}
-					avatarUrls={freshness.pendingPosts.slice(0, 3).map((p) => p.user.profile_photo)}
-					loading={freshness.isLoadingPending}
-					onClick={handleApply}
-				/>
-			)}
-			<FeedContent
-				posts={posts}
-				isLoading={isLoading}
-				isError={isError}
-				isFetchingNextPage={isFetchingNextPage}
-				hasNextPage={hasNextPage}
-				fetchNextPage={fetchNextPage}
-				feedType="following"
-				sentinel={sentinel}
-				flashIds={flashIds}
-			/>
-		</>
+		<FeedContent
+			posts={posts}
+			isLoading={isLoading}
+			isError={isError}
+			isFetchingNextPage={isFetchingNextPage}
+			hasNextPage={hasNextPage}
+			fetchNextPage={fetchNextPage}
+			feedType="following"
+			sentinel={sentinel}
+		/>
 	)
 }
 
 export function Feed() {
-	const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you")
-
 	return (
 		<Tabs.Root
-			value={activeTab}
-			onValueChange={(v) => setActiveTab(v as "for-you" | "following")}
+			defaultValue="for-you"
 			className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden pb-0"
 		>
 			<div className="bg-card px-2 rounded-t-2xl border-b border-border shrink-0">
@@ -264,14 +194,14 @@ export function Feed() {
 				className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none"
 			>
 				<Tabs.Content value="for-you" className="focus:outline-none">
-					<ForYouPanel isActive={activeTab === "for-you"} />
+					<ForYouPanel />
 				</Tabs.Content>
 				<Tabs.Content
 					value="following"
 					forceMount
 					className="focus:outline-none data-[state=inactive]:hidden"
 				>
-					<FollowingPanel isActive={activeTab === "following"} />
+					<FollowingPanel />
 				</Tabs.Content>
 			</div>
 		</Tabs.Root>

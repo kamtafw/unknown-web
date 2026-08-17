@@ -13,7 +13,6 @@ import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useUserProfile } from "@/hooks/use-user-profile"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { ExternalLink, Post, UserReplyItem } from "@/types/api"
 import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
@@ -35,6 +34,8 @@ import { FollowButton } from "../shared/follow-button"
 import { ActionDropdown } from "./action-dropdown"
 import { BlockUserModal } from "./block-user-modal"
 import { PostCard, renderText, UserAvatar } from "./post-card"
+import { Post, SocialContent } from "@/types/socials/api"
+import { ExternalLink } from "@/types/api"
 
 function getInitials(first?: string | null, last?: string | null) {
 	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
@@ -52,8 +53,8 @@ function formatDob(dob: string, dob_visibility: "full" | "partial") {
 }
 
 function sortPinnedFirst(posts: Post[]): Post[] {
-	const pinned = posts.filter((p) => p.is_pinned)
-	const rest = posts.filter((p) => !p.is_pinned)
+	const pinned = posts.filter((p) => p.flags.pinned)
+	const rest = posts.filter((p) => !p.flags.pinned)
 	return [...pinned, ...rest]
 }
 
@@ -150,7 +151,7 @@ function PostFeedTabPanel({
 		<>
 			{posts.map((post) => (
 				<>
-					{pinFirst && post.is_pinned && (
+					{pinFirst && post.flags.pinned && (
 						<div className="flex items-center gap-2 px-5 pt-3 text-muted-foreground">
 							<Pin size={13} />
 							<span className="text-[12px] font-semibold">Pinned</span>
@@ -169,127 +170,71 @@ function PostFeedTabPanel({
 	)
 }
 
-function ReplyThreadCard({ reply }: { reply: UserReplyItem }) {
+/**
+ * The pre-migration version of this card showed a three-tier preview: the
+ * root post, the immediate parent comment, and the reply itself — all from
+ * one fetch, because `UserReplyItem` embedded full `post`/`parent_comment`
+ * snapshots. The canonical `SocialContent` a reply is now doesn't carry
+ * those — only `post_id`/`parent_id` as bare references, per the contract.
+ *
+ * Rather than a per-row fetch to reconstruct those previews (N+1, against
+ * the migration doc's "no speculative fetching" guidance — see
+ * docs/social/social-content-migration-inspection.md §17), this renders
+ * the reply itself and links into its thread via `post_id`, which the
+ * canonical object does carry. If the richer preview is wanted back, it
+ * needs a backend contract addition (a lightweight parent-preview field
+ * alongside the canonical reply object) — flagged there as an open
+ * question, not silently worked around here.
+ */
+function ReplyThreadCard({ reply }: { reply: SocialContent }) {
 	const router = useRouter()
-	const postTimeAgo = useTimeAgo(reply.post.created_at)
-	const replyTimeAgo = useTimeAgo(reply.created_at)
-
-	const postAuthorName =
-		[reply.post.user.first_name, reply.post.user.last_name].filter(Boolean).join(" ") ||
-		reply.post.user.username
-	const parentAuthorName =
-		[reply.parent_comment.user.first_name, reply.parent_comment.user.last_name]
-			.filter(Boolean)
-			.join(" ") || reply.parent_comment.user.username
-	const replyAuthorName =
+	const timeAgo = useTimeAgo(reply.created_at)
+	const fullname =
 		[reply.user.first_name, reply.user.last_name].filter(Boolean).join(" ") || reply.user.username
 
-	const postMediaUrl = reply.post.post_media[0]?.external_url
-
-	if (!reply.message?.trim() && reply.uploaded_media.length === 0) return null
+	if (!reply.message?.trim() && reply.media.length === 0) return null
 
 	return (
-		<div className="border-b border-border">
-			{/* Root post — the thread this reply lives in */}
-			<button
-				onClick={() => router.push(`/posts/${reply.post.pkid}`)}
-				className="w-full text-left px-5 pt-4 hover:bg-accent/30 transition-colors"
-			>
-				<div className="flex gap-3">
-					<div className="flex flex-col items-center shrink-0">
-						<UserAvatar
-							src={reply.post.user.profile_photo}
-							first={reply.post.user.first_name}
-							last={reply.post.user.last_name}
-						/>
-						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-3" />
+		<button
+			onClick={() => router.push(`/posts/${reply.post_id}?comment=${reply.id}`)}
+			className="w-full text-left px-5 py-4 border-b border-border hover:bg-accent/30 transition-colors"
+		>
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+				<MessageCircle size={12} />
+				<span>Replied in a thread</span>
+			</div>
+			<div className="flex gap-3">
+				<UserAvatar
+					src={reply.user.profile_photo}
+					first={reply.user.first_name}
+					last={reply.user.last_name}
+				/>
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-1.5 flex-wrap">
+						<span className="font-semibold text-sm text-foreground">{fullname}</span>
+						<span className="text-muted-foreground text-[13px]">@{reply.user.username}</span>
+						<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
 					</div>
-					<div className="flex-1 min-w-0 pb-3">
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
-							<span className="text-muted-foreground text-[13px]">@{reply.post.user.username}</span>
-							<span className="text-muted-foreground/70 text-xs">· {postTimeAgo}</span>
+					{!!reply.message?.trim() && (
+						<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
+							{renderText(reply.message)}
+						</p>
+					)}
+					{reply.media[0] && (
+						<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
+							<Image src={reply.media[0]} alt="" fill className="object-cover" />
 						</div>
-						{!!reply.post.content_text && (
-							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5 line-clamp-3">
-								{renderText(reply.post.content_text)}
-							</p>
-						)}
-						{postMediaUrl && (
-							<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
-								<Image src={postMediaUrl} alt="" fill className="object-cover" />
-							</div>
-						)}
-					</div>
-				</div>
-			</button>
-
-			{/* Immediate parent — the comment this reply responds to */}
-			<div className="px-5">
-				<div className="flex gap-3">
-					<div className="flex flex-col items-center shrink-0">
-						<UserAvatar
-							src={reply.parent_comment.user.profile_photo}
-							first={reply.parent_comment.user.first_name}
-							last={reply.parent_comment.user.last_name}
-							size="sm"
-						/>
-						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-3" />
-					</div>
-					<div className="flex-1 min-w-0 pb-3">
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-[13px] text-foreground">{parentAuthorName}</span>
-							<span className="text-muted-foreground text-[12px]">
-								@{reply.parent_comment.user.username}
-							</span>
-						</div>
-						{!!reply.parent_comment.message?.trim() && (
-							<p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
-								{renderText(reply.parent_comment.message)}
-							</p>
-						)}
-					</div>
+					)}
 				</div>
 			</div>
-
-			{/* This reply — the actual content this tab is listing */}
-			<button
-				onClick={() => router.push(`/posts/${reply.post.pkid}?comment=${reply.id}`)}
-				className="w-full text-left px-5 pb-4 hover:bg-accent/30 transition-colors"
-			>
-				<div className="flex gap-3">
-					<UserAvatar
-						src={reply.user.profile_photo}
-						first={reply.user.first_name}
-						last={reply.user.last_name}
-					/>
-					<div className="flex-1 min-w-0">
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground">{replyAuthorName}</span>
-							<span className="text-muted-foreground text-[13px]">@{reply.user.username}</span>
-							<span className="text-muted-foreground/70 text-xs">· {replyTimeAgo}</span>
-						</div>
-						{!!reply.message?.trim() && (
-							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
-								{renderText(reply.message)}
-							</p>
-						)}
-						{reply.uploaded_media[0] && (
-							<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
-								<Image src={reply.uploaded_media[0]} alt="" fill className="object-cover" />
-							</div>
-						)}
-					</div>
-				</div>
-			</button>
-		</div>
+		</button>
 	)
 }
 
 function RepliesTabPanel({
 	query,
 }: {
-	query: UseInfiniteQueryResult<InfiniteData<{ replies: UserReplyItem[]; nextPage: string | null }>>
+	query: UseInfiniteQueryResult<InfiniteData<{ replies: SocialContent[]; nextPage: string | null }>>
 }) {
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = query
 	const sentinel = useSentinel(!!hasNextPage, isFetchingNextPage, fetchNextPage)

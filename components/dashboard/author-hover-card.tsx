@@ -3,7 +3,7 @@
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
 import { useAuthStore } from "@/stores/auth-store"
-import { PostUser } from "@/types/api"
+import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar, HoverCard } from "radix-ui"
 import { type ReactNode, useState } from "react"

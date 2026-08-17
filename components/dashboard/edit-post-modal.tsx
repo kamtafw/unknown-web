@@ -1,10 +1,10 @@
 "use client"
 
+import { useUpdatePost } from "@/hooks/socials/use-post-actions"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { useUpdatePost } from "@/hooks/use-post-actions"
 import { hasAnyMention } from "@/lib/mentions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { Post, UpdatePostPayload, WhoCanReply, WhoCanSee } from "@/types/api"
+import type { Post, UpdatePostPayload, WhoCanReply, WhoCanSee } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, MapPin, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -63,19 +63,19 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 	const user = useAuthStore((s) => s.user)
 	const updatePost = useUpdatePost()
 
-	const [text, setText] = useState(post.content_text ?? "")
-	const [whoCanSee, setWhoCanSee] = useState<WhoCanSee>(post.who_can_see)
-	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>(post.who_can_reply)
+	const [text, setText] = useState(post.message ?? "")
+	const [whoCanSee, setWhoCanSee] = useState<WhoCanSee>(post.permissions.visibility)
+	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>(post.permissions.reply_policy)
 	const [showEmoji, setShowEmoji] = useState(false)
-	const initialLocation = post.post_location[0] ?? null
+	const initialLocation = post.location
 	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(
 		initialLocation
-			? { longitude: initialLocation.longitude, latitude: initialLocation.latitude }
+			? { longitude: String(initialLocation.longitude), latitude: String(initialLocation.latitude) }
 			: null,
 	)
 	const [locationRemoved, setLocationRemoved] = useState(false)
 	const [locationLabel, setLocationLabel] = useState<string | null>(
-		initialLocation?.address ??
+		initialLocation?.address ||
 			(initialLocation ? `${initialLocation.latitude}, ${initialLocation.longitude}` : null),
 	)
 	const [fetchingLocation, setFetchingLocation] = useState(false)
@@ -89,26 +89,29 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 		containerRef: mentionContainerRef,
 	})
 
-	const mediaUrls = post.post_media.map((m) => m.external_url)
+	const mediaUrls = post.media
 	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
 	const isDirty =
-		text.trim() !== (post.content_text ?? "").trim() ||
-		whoCanSee !== post.who_can_see ||
-		whoCanReply !== post.who_can_reply ||
+		text.trim() !== (post.message ?? "").trim() ||
+		whoCanSee !== post.permissions.visibility ||
+		whoCanReply !== post.permissions.reply_policy ||
 		locationRemoved ||
 		(!initialLocation && !!location)
 
 	const canSubmit = isDirty && !updatePost.isPending && !mentionBlocked
 
 	const reset = () => {
-		setText(post.content_text ?? "")
-		setWhoCanSee(post.who_can_see)
-		setWhoCanReply(post.who_can_reply)
+		setText(post.message ?? "")
+		setWhoCanSee(post.permissions.visibility)
+		setWhoCanReply(post.permissions.reply_policy)
 		setShowEmoji(false)
 		setLocationRemoved(false)
 		setLocation(
 			initialLocation
-				? { longitude: initialLocation.longitude, latitude: initialLocation.latitude }
+				? {
+						longitude: String(initialLocation.longitude),
+						latitude: String(initialLocation.latitude),
+					}
 				: null,
 		)
 		setLocationLabel(initialLocation?.address ?? null)
@@ -159,7 +162,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 
 		const hashtags = extractHashtags(text)
 		const payload: UpdatePostPayload = {
-			content_text: text.trim(),
+			content: text.trim(),
 			who_can_see: whoCanSee,
 			who_can_reply: whoCanReply,
 			hashtags,
@@ -167,7 +170,7 @@ export function EditPostModal({ post, open, onOpenChange }: EditPostModalProps) 
 		}
 
 		updatePost.mutate(
-			{ pkid: post.pkid, payload },
+			{ id: post.id, payload },
 			{
 				onSuccess: (res) => {
 					if (res.success) onOpenChange(false)

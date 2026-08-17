@@ -1,9 +1,9 @@
 import { socialApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
+import { feedKeys } from "@/lib/socials/query-keys"
 import { toast } from "@/lib/toast"
-import { Post } from "@/types/api"
+import { Post } from "@/types/socials/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-import { feedKeys } from "./use-feed"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -25,16 +25,16 @@ function removePost(old: FeedCache | undefined, postId: string): FeedCache | und
 }
 
 function removePostFromAllFeeds(qc: ReturnType<typeof useQueryClient>, postId: string) {
-	qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => removePost(old, postId))
-	qc.setQueryData<FeedCache>(feedKeys.following, (old) => removePost(old, postId))
-	qc.setQueryData<FeedCache>(feedKeys.bookmarks, (old) => removePost(old, postId))
+	qc.setQueryData<FeedCache>(feedKeys.forYou(), (old) => removePost(old, postId))
+	qc.setQueryData<FeedCache>(feedKeys.following(), (old) => removePost(old, postId))
+	qc.setQueryData<FeedCache>(feedKeys.bookmarks(), (old) => removePost(old, postId))
 }
 
 function restoreSnapshot(qc: ReturnType<typeof useQueryClient>, snapshot?: FeedSnapshot) {
 	if (!snapshot) return
-	if (snapshot.forYou) qc.setQueryData<FeedCache>(feedKeys.forYou, snapshot.forYou)
-	if (snapshot.following) qc.setQueryData<FeedCache>(feedKeys.following, snapshot.following)
-	if (snapshot.bookmarks) qc.setQueryData<FeedCache>(feedKeys.bookmarks, snapshot.bookmarks)
+	if (snapshot.forYou) qc.setQueryData<FeedCache>(feedKeys.forYou(), snapshot.forYou)
+	if (snapshot.following) qc.setQueryData<FeedCache>(feedKeys.following(), snapshot.following)
+	if (snapshot.bookmarks) qc.setQueryData<FeedCache>(feedKeys.bookmarks(), snapshot.bookmarks)
 }
 
 /**
@@ -53,9 +53,9 @@ export function useUndoNotInterested() {
 		onMutate: ({ snapshot }) => restoreSnapshot(qc, snapshot),
 
 		onError: (error, { postId }) => {
-			qc.setQueryData<FeedCache>(feedKeys.forYou, (old) => removePost(old, postId))
-			qc.setQueryData<FeedCache>(feedKeys.following, (old) => removePost(old, postId))
-			qc.setQueryData<FeedCache>(feedKeys.bookmarks, (old) => removePost(old, postId))
+			qc.setQueryData<FeedCache>(feedKeys.forYou(), (old) => removePost(old, postId))
+			qc.setQueryData<FeedCache>(feedKeys.following(), (old) => removePost(old, postId))
+			qc.setQueryData<FeedCache>(feedKeys.bookmarks(), (old) => removePost(old, postId))
 			showMutationErrorToast(error, "Couldn't undo — this post will stay hidden.")
 		},
 	})
@@ -69,13 +69,12 @@ export function useNotInterested() {
 		mutationFn: (id: string) => socialApi.notInterested({ post_id: id }),
 
 		onMutate: async (id): Promise<FeedSnapshot> => {
-			const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
-			await Promise.all(feedKeys_.map((k) => qc.cancelQueries({ queryKey: k })))
+			await Promise.all(feedKeys.engagement().map((k) => qc.cancelQueries({ queryKey: k })))
 
 			const snapshot: FeedSnapshot = {
-				forYou: qc.getQueryData<FeedCache>(feedKeys.forYou),
-				following: qc.getQueryData<FeedCache>(feedKeys.following),
-				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks),
+				forYou: qc.getQueryData<FeedCache>(feedKeys.forYou()),
+				following: qc.getQueryData<FeedCache>(feedKeys.following()),
+				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks()),
 			}
 
 			removePostFromAllFeeds(qc, id)
