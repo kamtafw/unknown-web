@@ -1,5 +1,5 @@
 import { socialApi } from "@/lib/api"
-import { Post } from "@/types/api"
+import { Post } from "@/types/socials/api"
 import { useInfiniteQuery } from "@tanstack/react-query"
 
 export const profileFeedKeys = {

@@ -5,7 +5,7 @@ import LegalTerms from "@/components/legal/terms"
 import { useLogout } from "@/hooks/use-auth"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { ExternalLink } from "@/types/api"
+import { ExternalLink } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import dayjs from "dayjs"
 import {

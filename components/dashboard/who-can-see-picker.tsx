@@ -1,7 +1,7 @@
 "use client"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import type { WhoCanSee } from "@/types/api"
+import type { WhoCanSee } from "@/types/socials/api"
 import { Check, ChevronDown } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { Everyone, Followers } from "../posts/icons"

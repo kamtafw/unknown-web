@@ -1,11 +1,11 @@
 "use client"
 
-import { useAddComment, usePrependReply } from "@/hooks/use-comment"
+import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { socialApi } from "@/lib/api"
-import { canReplyToPost } from "@/lib/post-permissions"
+import { socialsApi } from "@/lib/socials/api"
+import { canReplyTo } from "@/lib/socials/content-permissions"
 import { useAuthStore } from "@/stores/auth-store"
-import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import type { CreateReplyPayload, MediaItem, SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -54,17 +54,21 @@ function extractHashtags(str: string) {
 }
 
 interface ReplyModalProps {
-	comment: Comment
-	post: Post
+	/** the direct parent being replied to — may itself be a reply, not just
+	 * a top-level comment. Its `.id` becomes `parent_id` on submit, never
+	 * the root post's id. See docs/social/social-content-migration-inspection.md §10. */
+	parent: SocialContent
+	/** root post, used only for permission inheritance (canReplyTo) */
+	post: SocialContent
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
 
-export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProps) {
+export function ReplyModal({ parent, post, open, onOpenChange }: ReplyModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
-	const prependReply = usePrependReply()
-	const canReply = canReplyToPost(post)
+	const prependContent = usePrependContent()
+	const canReply = canReplyTo(post)
 
 	const [text, setText] = useState("")
 	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
@@ -102,7 +106,7 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -177,25 +181,17 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 		if (!canSubmit) return
 
 		const hashtags = extractHashtags(text)
-		const payload: AddCommentPayload = {
-			post: comment.post,
-			parent_comment: comment.pkid,
-			message: text.trim() || undefined,
+		const payload: CreateReplyPayload = {
+			parent_id: parent.id,
+			content: text.trim(),
 			hashtags: hashtags.length ? hashtags : undefined,
-			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
+			medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
 			onSuccess: (res) => {
-				const newComment: Comment = {
-					...res.data,
-					like_count: res.data.like_count ?? 0,
-					replies_count: res.data.replies_count ?? 0,
-					repost_count: res.data.repost_count ?? 0,
-					liked_by_me: res.data.liked_by_me ?? false,
-					reposted_by_me: res.data.reposted_by_me ?? false,
-				}
-				prependReply(comment.id, comment.post, newComment)
+				if (!res.success) return
+				prependContent(parent.id, res.data)
 
 				reset()
 				onOpenChange(false)
@@ -204,8 +200,8 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 	}
 
 	const commentAuthorName =
-		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
-		comment.user.username
+		[parent.user.first_name, parent.user.last_name].filter(Boolean).join(" ") ||
+		parent.user.username
 
 	const myName = user
 		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -252,9 +248,9 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 						<div className="flex gap-3">
 							<div className="flex flex-col items-center shrink-0">
 								<UserAvatar
-									src={comment.user.profile_photo}
-									first={comment.user.first_name}
-									last={comment.user.last_name}
+									src={parent.user.profile_photo}
+									first={parent.user.first_name}
+									last={parent.user.last_name}
 								/>
 
 								<div className="w-0.5 bg-border flex-1 mt-2 min-h-7" />
@@ -264,16 +260,16 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 								<div className="flex items-center gap-1.5 flex-wrap">
 									<span className="font-semibold text-sm text-foreground">{commentAuthorName}</span>
 									<span className="text-muted-foreground text-[13px]">
-										@{comment.user.username}
+										@{parent.user.username}
 									</span>
 								</div>
-								{!!comment.message && (
+								{!!parent.message && (
 									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">
-										{renderText(comment.message)}
+										{renderText(parent.message)}
 									</p>
 								)}
 								<p className="text-xs text-muted-foreground mt-1.5">
-									Replying to <span className="text-primary">@{comment.user.username}</span>
+									Replying to <span className="text-primary">@{parent.user.username}</span>
 								</p>
 							</div>
 						</div>
@@ -402,7 +398,7 @@ export function ReplyModal({ comment, post, open, onOpenChange }: ReplyModalProp
 						) : (
 							<div className="mt-1">
 								<ReplyRestrictedNotice
-									whoCanReply={post.who_can_reply}
+									whoCanReply={post.permissions.reply_policy}
 									username={post.user.username}
 									compact
 								/>

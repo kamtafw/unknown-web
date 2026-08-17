@@ -1,15 +1,15 @@
 "use client"
 
-import { useRepostComment } from "@/hooks/use-comment-actions"
-import { socialApi } from "@/lib/api"
+import { useRepostComment } from "@/hooks/socials/use-comment-actions"
+import { socialsApi } from "@/lib/socials/api"
 import { useAuthStore } from "@/stores/auth-store"
-import type { Comment, MediaItem, OriginalComment, RepostCommentPayload } from "@/types/api"
+import type { MediaItem, RepostCommentPayload, SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import { getInitials, QuotedCommentCard } from "./post-card"
+import { getInitials, QuotedContentCard } from "./post-card"
 
 const EMOJIS = [
 	"😀",
@@ -48,24 +48,8 @@ function extractHashtags(str: string): string[] {
 	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
 }
 
-function asOriginalComment(comment: Comment): OriginalComment {
-	return {
-		id: comment.id,
-		pkid: comment.pkid,
-		user: comment.user,
-		post: comment.post,
-		message: comment.message,
-		uploaded_media: comment.uploaded_media,
-		comment_location: comment.comment_location,
-		comment_hashtagged: comment.comment_hashtagged,
-		replies: [],
-		created_at: comment.created_at,
-		updated_at: comment.updated_at,
-	}
-}
-
 interface QuoteCommentModalProps {
-	comment: Comment
+	comment: SocialContent
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
@@ -101,7 +85,7 @@ export function QuoteCommentModal({ comment, open, onOpenChange }: QuoteCommentM
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -179,7 +163,7 @@ export function QuoteCommentModal({ comment, open, onOpenChange }: QuoteCommentM
 		const payload: RepostCommentPayload = {
 			is_repost: true,
 			original_comment: comment.id,
-			content_text: text.trim() || undefined,
+			content: text.trim() || undefined,
 			hashtags: hashtags.length ? hashtags : undefined,
 			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
@@ -339,7 +323,7 @@ export function QuoteCommentModal({ comment, open, onOpenChange }: QuoteCommentM
 								)}
 
 								<div className="mt-1.5">
-									<QuotedCommentCard comment={asOriginalComment(comment)} />
+									<QuotedContentCard content={comment} />
 								</div>
 							</div>
 						</div>

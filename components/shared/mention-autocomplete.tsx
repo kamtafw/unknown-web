@@ -1,7 +1,7 @@
 "use client"
 
 import type { MentionAutocompleteState } from "@/hooks/use-mention-autocomplete"
-import { MentionUser } from "@/types/api"
+import { MentionUser } from "@/types/socials/api"
 import { Loader2 } from "lucide-react"
 import { Avatar, Popover } from "radix-ui"
 

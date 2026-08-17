@@ -1,7 +1,7 @@
 "use client"
 
 import { getCaretCoordinates } from "@/lib/caret-position"
-import { MentionUser } from "@/types/api"
+import { MentionUser } from "@/types/socials/api"
 import { RefObject, useCallback, useEffect, useMemo, useState } from "react"
 import { useDebouncedValue } from "./use-debounced-value"
 import { useMentionSearch } from "./use-mention-search"

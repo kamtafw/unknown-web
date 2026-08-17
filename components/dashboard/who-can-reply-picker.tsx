@@ -2,7 +2,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import type { WhoCanReply } from "@/types/api"
+import type { WhoCanReply } from "@/types/socials/api"
 import { AtSign, Check, ChevronDown } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { Everyone, Followers, Following, Mention, Verified } from "../posts/icons"

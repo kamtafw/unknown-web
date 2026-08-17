@@ -8,9 +8,10 @@ import {
 	UserProfileResponse,
 } from "@/types/api"
 import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-import { feedKeys } from "./use-feed"
+
 import { userProfileKeys } from "./use-user-profile"
 import { usersKeys } from "./use-users"
+import { feedKeys } from "@/lib/socials/query-keys"
 
 type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
 
@@ -80,9 +81,7 @@ export function patchAuthorFlagInFeeds(
 	pkid: number,
 	patch: AuthorFlagPatch,
 ) {
-	const feedKeys_ = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
-
-	feedKeys_.forEach((key) => {
+	feedKeys.engagement().forEach((key) => {
 		qc.setQueryData<FeedCache>(key, (old) => {
 			if (!old) return old
 			return {
@@ -144,7 +143,7 @@ function patchFollowers(
 function invalidateAllQueries(qc: ReturnType<typeof useQueryClient>) {
 	qc.invalidateQueries({ queryKey: usersKeys.followers })
 	qc.invalidateQueries({ queryKey: usersKeys.followings })
-	qc.invalidateQueries({ queryKey: feedKeys.following })
+	qc.invalidateQueries({ queryKey: feedKeys.following() })
 }
 
 export function useFollowUser() {
