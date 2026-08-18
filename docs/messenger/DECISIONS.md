@@ -78,3 +78,4 @@
 | 2026-08-12 | D-004 established (M1 kickoff) | — |
 | 2026-08-14 | D-004 | Planned → Implemented |
 | 2026-08-14 | D-005 established | Socket listener registration race fixed |
+| 2026-08-15 | M1 closed | 2 known issues (badge inconsistency, delayed seen-tick) documented and deferred — see MESSENGER.md |
