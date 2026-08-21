@@ -1,7 +1,7 @@
 "use client"
 
 import { useSocialAccounts, useUnlinkSocialAccount } from "@/hooks/use-social-accounts"
-import { SocialAccount } from "@/types/socials/api"
+import { SocialAccount } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ArrowLeft, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

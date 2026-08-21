@@ -17,7 +17,7 @@ import {
 import { extractFieldErrors } from "@/lib/api-error"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { ExternalLink } from "@/types/socials/api"
+import { ExternalLink } from "@/types/api"
 import { useIsMutating } from "@tanstack/react-query"
 import { Country, ICountry, IState, State } from "country-state-city"
 import dayjs from "dayjs"

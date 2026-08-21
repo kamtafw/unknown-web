@@ -10,7 +10,7 @@ import type {
 	SignupPayload,
 	SwitchOtpDefaultPayload,
 	VerifyOtpPayload,
-} from "@/types/socials/api"
+} from "@/types/api"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AxiosError } from "axios"
 import { useRouter } from "next/navigation"

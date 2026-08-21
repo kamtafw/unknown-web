@@ -4,7 +4,7 @@ import { TwoFactorVerification, TwoFAMethod } from "@/components/auth/two-factor
 import { useResendOtp, useSwitchOtpDefault, useVerifyOtp } from "@/hooks/use-auth"
 import { extractFieldErrors, extractMessage, extractOtpMessage } from "@/lib/api-error"
 import { useAuthStore } from "@/stores/auth-store"
-import { OtpDefault } from "@/types/socials/api"
+import { OtpDefault } from "@/types/api"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
