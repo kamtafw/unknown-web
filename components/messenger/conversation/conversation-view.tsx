@@ -1,19 +1,22 @@
 "use client"
 
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
+import { useMessageActions } from "@/hooks/messenger/use-message-actions"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
-import { chatApi } from "@/lib/messenger/api"
+import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { derivePeerFromMessages } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Composer } from "./composer"
 import { ConversationHeader } from "./conversation-header"
+import { DeleteMessageDialog } from "./delete-message-dialog"
+import { ForwardDialog } from "./forward-dialog"
 import { MessageList } from "./message-list"
 
 interface ConversationViewProps {
@@ -52,6 +55,14 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		null
 
 	const { send, retry } = useSendMessage(uuid, (derivedPkid ?? 0) as Pkid)
+	const { forward, pinMessage, unpinMessage, deleteMessage } = useMessageActions(
+		uuid,
+		(derivedPkid ?? 0) as Pkid,
+	)
+
+	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
+	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
 
 	// Fixes "conversations don't get marked read, badge persists after
 	// refresh": nothing was ever calling the confirmed seen endpoint when a
@@ -91,11 +102,21 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 			toast.error("Can't send yet — open this conversation from the chat list or search.")
 			return
 		}
-		void send(content)
+		void send(content, replyingTo?.id)
 	}
 
 	const handleRetry = (message: Message) => {
 		void retry(message)
+	}
+
+	const handleForwardConfirm = (targets: { type: "user"; id: number }[]) => {
+		if (!forwardTarget) return
+		void forward(forwardTarget, targets)
+	}
+
+	const handleDeleteConfirm = (deleteType: MessageDeleteType) => {
+		if (!deleteTarget) return
+		void deleteMessage(deleteTarget, deleteType)
 	}
 
 	return (
@@ -110,8 +131,30 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 				onLoadOlder={() => fetchNextPage()}
 				remoteTyping={remoteTyping}
 				onRetry={handleRetry}
+				onReply={setReplyingTo}
+				onForward={setForwardTarget}
+				onPin={(m) => void pinMessage(m)}
+				onUnpin={(m) => void unpinMessage(m)}
+				onDelete={setDeleteTarget}
 			/>
-			<Composer onSend={handleSend} onTypingChange={emitTyping} />
+			<Composer
+				onSend={handleSend}
+				onTypingChange={emitTyping}
+				replyingTo={replyingTo}
+				onCancelReply={() => setReplyingTo(null)}
+			/>
+
+			<ForwardDialog
+				open={!!forwardTarget}
+				onOpenChange={(open) => !open && setForwardTarget(null)}
+				message={forwardTarget}
+				onForward={handleForwardConfirm}
+			/>
+			<DeleteMessageDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				onConfirm={handleDeleteConfirm}
+			/>
 		</div>
 	)
 }

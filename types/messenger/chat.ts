@@ -8,9 +8,10 @@
  *
  * Deliberately NOT included here: poll/call/live-specific metadata shapes,
  * schedule types, community types — those belong to their own milestones.
- * E2EE fields (`nonce`, `sender_ephemeral_key`) are also omitted: the guide
- * confirms encryption is non-functional on mobile today, so there's
- * nothing meaningful for the web client to do with them yet.
+ * E2EE fields (`nonce`, `sender_ephemeral_key`) have been added: the
+ * backend has set these fields as required when making an API call;
+ * these fields currently accept random values as encryption is 
+ * non-functional today.
  */
 
 import { Pkid, Uuid } from "./identity"
@@ -29,7 +30,6 @@ export type MessageType =
 	| "poll"
 	| "call"
 	| "share"
-
 export type MessageStatus =
 	| "queued" // client-side only: optimistic, not yet sent
 	| "sending" // client-side only: in flight

@@ -17,6 +17,11 @@ interface MessageListProps {
 	onLoadOlder: () => void
 	remoteTyping: boolean
 	onRetry: (message: Message) => void
+	onReply: (message: Message) => void
+	onForward: (message: Message) => void
+	onPin: (message: Message) => void
+	onUnpin: (message: Message) => void
+	onDelete: (message: Message) => void
 }
 
 export function MessageList({
@@ -28,6 +33,11 @@ export function MessageList({
 	onLoadOlder,
 	remoteTyping,
 	onRetry,
+	onReply,
+	onForward,
+	onPin,
+	onUnpin,
+	onDelete,
 }: MessageListProps) {
 	const scrollRef = useRef<HTMLDivElement>(null)
 	const topSentinelRef = useRef<HTMLDivElement>(null)
@@ -101,6 +111,11 @@ export function MessageList({
 								showSender={showSender}
 								repliedMessage={repliedMessage}
 								onRetry={onRetry}
+								onReply={onReply}
+								onForward={onForward}
+								onPin={onPin}
+								onUnpin={onUnpin}
+								onDelete={onDelete}
 							/>
 						)
 					})}

@@ -3,6 +3,7 @@
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types/messenger"
+import { MessageActionMenu } from "./message-action-menu"
 import {
 	AlertCircle,
 	BarChart3,
@@ -26,6 +27,11 @@ interface MessageBubbleProps {
 	showSender: boolean
 	repliedMessage?: Message
 	onRetry?: (message: Message) => void
+	onReply?: (message: Message) => void
+	onForward?: (message: Message) => void
+	onPin?: (message: Message) => void
+	onUnpin?: (message: Message) => void
+	onDelete?: (message: Message) => void
 }
 
 function formatTime(iso: string): string {
@@ -59,6 +65,10 @@ function StatusTick({ status }: { status: Message["status"] }) {
  * whichever milestone actually owns sending these types, not a gap here.
  */
 function MessageContent({ message }: { message: Message }) {
+	if (message.deleted) {
+		return <p className="text-sm italic opacity-60">This message was deleted</p>
+	}
+
 	switch (message.message_type) {
 		case "text":
 			return <p className="whitespace-pre-wrap wrap-break-word text-sm">{message.content}</p>
@@ -112,48 +122,72 @@ export function MessageBubble({
 	showSender,
 	repliedMessage,
 	onRetry,
+	onReply,
+	onForward,
+	onPin,
+	onUnpin,
+	onDelete,
 }: MessageBubbleProps) {
 	const failed = message.status === "failed"
 	const pending = isOptimisticMessage(message) && !failed
+	const showActions = !pending && !message.deleted && onReply && onForward && onPin && onUnpin && onDelete
 
 	return (
-		<div className={cn("flex flex-col mb-1", isOwn ? "items-end" : "items-start")}>
+		<div className={cn("group flex flex-col mb-1", isOwn ? "items-end" : "items-start")}>
 			{showSender && !isOwn && (
 				<span className="text-xs font-medium text-muted-foreground mb-0.5 px-1">
 					{message.sender.first_name ?? message.sender.username}
 				</span>
 			)}
 
-			<div
-				className={cn(
-					"max-w-[70%] rounded-2xl px-3.5 py-2.5",
-					isOwn
-						? "bg-primary text-primary-foreground rounded-br-sm"
-						: "bg-card border border-border rounded-bl-sm",
-					pending && "opacity-60",
-					failed && "border border-destructive",
-				)}
-			>
-				{repliedMessage && (
-					<div
-						className={cn(
-							"mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
-							isOwn ? "border-primary-foreground/40" : "border-primary/40",
-						)}
-					>
-						<p className="font-medium">
-							{repliedMessage.sender.first_name ?? repliedMessage.sender.username}
-						</p>
-						<p className="truncate max-w-55">{repliedMessage.content || "Message"}</p>
-					</div>
+			<div className={cn("flex items-end gap-1 max-w-[85%]", isOwn ? "flex-row-reverse" : "flex-row")}>
+				{showActions && (
+					<MessageActionMenu
+						message={message}
+						isOwn={isOwn}
+						align={isOwn ? "end" : "start"}
+						onReply={() => onReply!(message)}
+						onForward={() => onForward!(message)}
+						onPin={() => onPin!(message)}
+						onUnpin={() => onUnpin!(message)}
+						onDelete={() => onDelete!(message)}
+					/>
 				)}
 
-				<MessageContent message={message} />
+				<div
+					className={cn(
+						"rounded-2xl px-3.5 py-2.5 min-w-0",
+						isOwn
+							? "bg-primary/200 text-primary-foreground rounded-br-sm"
+							: "bg-card border border-border rounded-bl-sm",
+						pending && "opacity-60",
+						failed && "border border-destructive",
+					)}
+				>
+					{repliedMessage && !message.deleted && (
+						<div
+							className={cn(
+								"mb-1.5 pl-2 border-l-2 border-primary rounded-sm text-xs opacity-80",
+								isOwn ? "bg-neutral-200" : "bg-accent",
+							)}
+						>
+							<p className="font-medium">
+								{repliedMessage.sender.first_name ?? repliedMessage.sender.username}
+							</p>
+							<p className="truncate max-w-55">{repliedMessage.content || "Message"}</p>
+						</div>
+					)}
+
+					<MessageContent message={message} />
+				</div>
 			</div>
 
 			<div className="flex items-center gap-1 mt-0.5 px-1">
 				<span className="text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
-				{isOwn && <StatusTick status={message.status} />}
+				{isOwn && !message.deleted && <StatusTick status={message.status} />}
+				{message.is_pinned && !message.deleted && (
+					<span className="text-[11px] text-muted-foreground">· Pinned</span>
+				)}
 				{failed && onRetry && (
 					<button
 						onClick={() => onRetry(message)}
