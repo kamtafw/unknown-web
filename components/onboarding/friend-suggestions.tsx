@@ -1,5 +1,5 @@
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
-import { FullUser } from "@/types/socials/api"
+import { FullUser } from "@/types/api"
 import * as Avatar from "@radix-ui/react-avatar"
 import { useState } from "react"
 import { FollowButton } from "../shared/follow-button"
