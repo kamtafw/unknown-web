@@ -3,12 +3,17 @@
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useBulkSelection } from "@/hooks/messenger/use-bulk-selection"
 import { useChatList } from "@/hooks/messenger/use-chat-list"
+import { useFavorites } from "@/hooks/messenger/use-favorites"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { toast } from "@/lib/toast"
-import type { ChatListFilter,Uuid } from "@/types/messenger"
-import { Archive,Heart,MessageSquarePlus,Search } from "lucide-react"
+import type { ChatListFilter, ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
+import { Archive, CheckSquare, Heart, MessageSquarePlus, Search } from "lucide-react"
+import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { AddToListDialog } from "./add-to-list-dialog"
+import { BulkSelectionBar } from "./bulk-selection-bar"
 import { ChatFilterChips } from "./chat-filter-chips"
 import { ChatListEmptyState } from "./chat-list-empty-state"
 import { ChatListItem } from "./chat-list-item"
@@ -24,31 +29,73 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [search, setSearch] = useState("")
 	const debouncedSearch = useDebouncedValue(search, 300)
 	const [newChatOpen, setNewChatOpen] = useState(false)
+	const [listDialogChat, setListDialogChat] = useState<ChatListItemType | null>(null)
+	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 
-	const { data, isLoading } = useChatList(filter, debouncedSearch)
+	// Favorites is a genuinely separate collection (M2 correction — see
+	// lib/messenger/api.ts), not a status filter on the main list, so it
+	// goes through its own hook rather than useChatList.
+	const mainList = useChatList(filter === "favorites" ? "all" : filter, debouncedSearch)
+	const favoritesList = useFavorites()
+	const isFavoritesTab = filter === "favorites"
+	const { data, isLoading } = isFavoritesTab
+		? {
+				data: favoritesList.data ? { users: favoritesList.data } : undefined,
+				isLoading: favoritesList.isLoading,
+			}
+		: mainList
 	const chats = data?.users ?? []
+
+	const bulk = useBulkSelection(chats)
 
 	return (
 		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
-			<div className="flex items-center justify-between px-4 pt-4 pb-3">
-				<h1 className="text-xl font-bold">Chats</h1>
+			{bulk.active ? (
+				<BulkSelectionBar
+					selectedCount={bulk.selectedCount}
+					onSelectAll={bulk.selectAll}
+					onCancel={bulk.stop}
+					onArchive={bulk.bulkArchive}
+					onClear={bulk.bulkClear}
+				/>
+			) : (
+				<div className="flex items-center justify-between px-4 pt-4 pb-3">
+					<h1 className="text-xl font-bold">Chats</h1>
 
-				<div className="flex items-center gap-4 shrink-0">
-					<button
-						onClick={() => setNewChatOpen(true)}
-						className="shrink-0 px-2 py-1.5 rounded-full font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-					>
-						<MessageSquarePlus size={20} />
-					</button>
-					<button
-						title="More options — coming soon"
-						onClick={() => toast.info("Chat list options are coming in a later milestone")}
-						className="text-muted-foreground hover:text-foreground transition-colors"
-					>
-						<span className="sr-only">More options</span>⋮
-					</button>
+					<div className="flex items-center gap-4 shrink-0">
+						<button
+							onClick={() => setNewChatOpen(true)}
+							className="shrink-0 px-2 py-1.5 rounded-full font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+						>
+							<MessageSquarePlus size={20} />
+						</button>
+
+						<DropdownMenu.Root open={headerMenuOpen} onOpenChange={setHeaderMenuOpen}>
+							<DropdownMenu.Trigger asChild>
+								<button className="text-muted-foreground hover:text-foreground transition-colors">
+									<span className="sr-only">More options</span>⋮
+								</button>
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Portal>
+								<DropdownMenu.Content
+									align="end"
+									sideOffset={4}
+									className="z-150 min-w-48 bg-popover border border-border rounded-2xl p-1.5 shadow-xl
+										data-[state=open]:animate-in data-[state=closed]:animate-out
+										data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+								>
+									<DropdownMenu.Item
+										className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
+										onSelect={() => bulk.start()}
+									>
+										<CheckSquare size={16} /> Select chats
+									</DropdownMenu.Item>
+								</DropdownMenu.Content>
+							</DropdownMenu.Portal>
+						</DropdownMenu.Root>
+					</div>
 				</div>
-			</div>
+			)}
 
 			<div className="px-4 pb-3">
 				<div className="relative">
@@ -72,19 +119,21 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 			</div>
 
 			<ScrollArea className="flex-1">
-				{/* Archive: real, confirmed capability (chats/archive), but
-				 * viewing archived chats is chat-list *behavior* deferred to M2
-				 * — rendered as a static, inert row rather than wired or
-				 * omitted, per M1 product decision 4. */}
-				<button
-					onClick={() => toast.info("Archive is coming in a later milestone")}
-					className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
-				>
-					<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-						<Archive size={18} />
-					</span>
-					<span className="text-sm font-medium text-muted-foreground">Archive</span>
-				</button>
+				{!isFavoritesTab && (
+					// Archive: real, confirmed capability, but *viewing* the
+					// archived list is deferred past M2 (M2 only covers
+					// archiving *from* the main list) — inert per the same
+					// reasoning as M1 product decision 4.
+					<button
+						onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
+						className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
+					>
+						<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+							<Archive size={18} />
+						</span>
+						<span className="text-sm font-medium text-muted-foreground">Archive</span>
+					</button>
+				)}
 
 				{isLoading && (
 					<div className="px-4 py-2 space-y-4">
@@ -100,19 +149,16 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 					</div>
 				)}
 
-				{!isLoading && filter === "favorites" && chats.length === 0 && (
+				{!isLoading && isFavoritesTab && chats.length === 0 && (
 					<ChatListEmptyState
 						icon={Heart}
 						title="Add to favourites"
 						description="Make it easy to find the people and groups that matter most across AppsCombo"
-						action={{
-							label: "Create list",
-							onClick: () => toast.info("Coming in a later milestone"),
-						}}
+						action={{ label: "Browse chats", onClick: () => setFilter("all") }}
 					/>
 				)}
 
-				{!isLoading && filter !== "favorites" && chats.length === 0 && (
+				{!isLoading && !isFavoritesTab && chats.length === 0 && (
 					<ChatListEmptyState
 						icon={MessageSquarePlus}
 						title={debouncedSearch ? "No results" : "No conversations yet"}
@@ -136,11 +182,20 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 							chat={chat}
 							isActive={chat.id === activeUuid}
 							isTyping={typingUuids.has(chat.id)}
+							bulkMode={bulk.active}
+							selected={bulk.selected.has(chat.id)}
+							onToggleSelect={bulk.toggle}
+							onAddToList={setListDialogChat}
 						/>
 					))}
 			</ScrollArea>
 
 			<NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />
+			<AddToListDialog
+				open={!!listDialogChat}
+				onOpenChange={(open) => !open && setListDialogChat(null)}
+				chat={listDialogChat}
+			/>
 		</div>
 	)
 }

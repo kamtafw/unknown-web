@@ -1,9 +1,12 @@
 "use client"
 
 import { resolvePreviewFallbackLabel, resolvePreviewIcon } from "@/lib/messenger/preview"
+import { chatKeys } from "@/lib/messenger/query-keys"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
+import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import type { ChatListItem as ChatListItemType } from "@/types/messenger"
+import type { ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
+import { useQueryClient } from "@tanstack/react-query"
 import {
 	BarChart3,
 	FileText,
@@ -18,6 +21,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
+import { ChatListItemMenu, markChatRead } from "./chat-list-item-menu"
 
 const PREVIEW_ICONS = {
 	image: ImageIcon,
@@ -41,9 +45,22 @@ interface ChatListItemProps {
 	chat: ChatListItemType
 	isActive: boolean
 	isTyping?: boolean
+	bulkMode?: boolean
+	selected?: boolean
+	onToggleSelect?: (uuid: Uuid) => void
+	onAddToList?: (chat: ChatListItemType) => void
 }
 
-export function ChatListItem({ chat, isActive, isTyping }: ChatListItemProps) {
+export function ChatListItem({
+	chat,
+	isActive,
+	isTyping,
+	bulkMode,
+	selected,
+	onToggleSelect,
+	onAddToList,
+}: ChatListItemProps) {
+	const queryClient = useQueryClient()
 	const name = getDisplayName(chat)
 	const PreviewIcon = resolvePreviewIcon(chat.last_message_type)
 	const Icon = PreviewIcon ? PREVIEW_ICONS[PreviewIcon] : null
@@ -51,14 +68,37 @@ export function ChatListItem({ chat, isActive, isTyping }: ChatListItemProps) {
 		chat.last_message_preview ||
 		(chat.last_message_type ? resolvePreviewFallbackLabel(chat.last_message_type) : "")
 
-	return (
-		<Link
-			href={`/messenger/${chat.id}`}
-			className={cn(
-				"flex items-center gap-3 px-4 py-3 transition-colors",
-				isActive ? "bg-accent" : "hover:bg-accent/50",
+	const handleMarkedRead = async () => {
+		try {
+			await markChatRead(chat.id)
+			queryClient.setQueriesData<{ users: ChatListItemType[]; metadata: unknown }>(
+				{ queryKey: chatKeys.lists() },
+				(old) =>
+					old
+						? {
+								...old,
+								users: old.users.map((u) => (u.id === chat.id ? { ...u, unread_count: 0 } : u)),
+							}
+						: old,
+			)
+			queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+		} catch {
+			toast.error("Couldn't mark as read — try again")
+		}
+	}
+
+	const rowContent = (
+		<>
+			{bulkMode && (
+				<input
+					type="checkbox"
+					checked={!!selected}
+					onChange={() => onToggleSelect?.(chat.id)}
+					onClick={(e) => e.stopPropagation()}
+					className="h-4 w-4 shrink-0 rounded border-border accent-primary"
+				/>
 			)}
-		>
+
 			<Avatar.Root className="relative h-11 w-11 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
 				<Avatar.Image src={chat.profile_photo} alt={name} className="h-full w-full object-cover" />
 				<Avatar.Fallback className="text-sm font-medium text-muted-foreground">
@@ -89,11 +129,38 @@ export function ChatListItem({ chat, isActive, isTyping }: ChatListItemProps) {
 							{chat.unread_count > 99 ? "99+" : chat.unread_count}
 						</span>
 					)}
-					{/* Read-only reflection of real is_pinned data — not a pin
-					 * control. Pinning as an action belongs to M2 (APPC-6/7). */}
+					{/* Real is_pinned data, kept in sync by the pin/unpin action
+					 * in ChatListItemMenu — not just a passive reflection anymore. */}
 					{chat.is_pinned && <Pin size={12} className="shrink-0 text-muted-foreground rotate-45" />}
 				</div>
 			</div>
+
+			{!bulkMode && (
+				<ChatListItemMenu
+					chat={chat}
+					onMarkedRead={handleMarkedRead}
+					onAddToList={() => onAddToList?.(chat)}
+				/>
+			)}
+		</>
+	)
+
+	const rowClass = cn(
+		"group flex items-center gap-3 px-4 py-3 transition-colors",
+		isActive ? "bg-accent" : "hover:bg-accent/50",
+	)
+
+	if (bulkMode) {
+		return (
+			<div className={cn(rowClass, "cursor-pointer")} onClick={() => onToggleSelect?.(chat.id)}>
+				{rowContent}
+			</div>
+		)
+	}
+
+	return (
+		<Link href={`/messenger/${chat.id}`} className={rowClass}>
+			{rowContent}
 		</Link>
 	)
 }

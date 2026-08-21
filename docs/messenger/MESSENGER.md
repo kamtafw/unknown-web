@@ -16,7 +16,7 @@ A web Messenger client (`unknown-web`, Next.js 15) porting the existing React Na
 
 ## Current milestone
 
-**M1 — Core Messenger shell: CLOSED (2026-08-15).** Chat list, direct conversation, optimistic send, delivery/seen, and typing are built, pushed, and confirmed working through real-world testing across two rounds of bugfixes. Two known issues remain, deliberately deferred rather than left blocking — see "M1 known issues (deferred)" below. **Next: M2 — Chat-list & message interactions.**
+**M2 — Chat-list & message interactions: built, verified, ready for real-world testing (2026-08-18).** All confirmed Jira/mobile-scoped actions implemented: pin/unpin, mute/unmute, archive/unarchive, favorite/unfavorite, block/unblock, clear chat, custom lists, explicit mark-as-read, bulk select/archive/clear (chat-list side); reply, forward, pin/unpin, delete self/both (message side). Reactions deliberately left as stretch/not started — core came first per the agreed boundary. M1's two deferred issues (badge inconsistency, delayed seen-tick) remain open and untouched by this milestone.
 
 ## Milestone roadmap
 
@@ -36,7 +36,7 @@ Full milestone plan (dependency reasoning, what's in/out of scope per milestone)
 - Tiered scope: Tier 1 (chat, interactions, profile, groups, status) gets strongest production treatment; Tier 2 (scheduling, polls, calling) built where mobile/guide evidence is sufficient; Tier 3 (communities, AI moderation, Live) attempted but tracked as highest-risk.
 - **Evidence discipline carries forward into every milestone:** actual mobile behavior > Jira > stale docs/manifests. Don't invent backend capability. Surface conflicts rather than quietly resolving them.
 - **No Messenger feature may know how the socket credential is obtained.** All socket auth goes through `socketAuthProvider` — this is what makes the temporary-to-production auth migration (D-003) a one-file change instead of a rewrite.
-- **TypeScript baseline:** `npx tsc --noEmit -p tsconfig.json` has **10 pre-existing errors, all in `__tests__/*`**, confirmed unrelated to Messenger (zero overlap with any `messenger`-path file). This baseline was established before Messenger work began. Every milestone's verification step should report: pre-existing failures (this baseline) / failures introduced by the milestone / unrelated environmental-tooling failures — as three distinct buckets, not lumped together.
+- **TypeScript baseline:** `npx tsc --noEmit -p tsconfig.json` has **66 pre-existing errors as of 2026-08-18** — the original 10 in `__tests__/*`, plus **56 new ones introduced by an unrelated, apparently-incomplete parallel refactor** (`socials-polymorphic-migration`, merged separately from Messenger work) that moved types out of `types/api.ts` into `types/socials/api.ts` without finishing all the exports (`FullUser`, `OtpDefault`, `ExternalLink`, etc. are missing from the new location). Confirmed zero overlap with any `messenger`-path file. **This also currently breaks `next build` entirely for the whole app** (Next's build-time type-check fails on the same missing exports) — worth flagging to whoever owns that migration, since it's not something Messenger work should fix, but it does mean a full production build can't be used to verify _any_ feature (including Messenger) until it's resolved. Every milestone's verification step should report pre-existing / introduced / environmental failures as three distinct buckets against this updated baseline.
 
 ## M1 known issues (deferred)
 
@@ -91,6 +91,13 @@ Full reasoning for each in the M1 kickoff conversation. Once resolved, remove fr
 
 Full reasoning for all decisions: `DECISIONS.md`.
 
+## M2 findings worth knowing
+
+- **Favorites is a genuinely separate collection**, not a status filter on the main chat list (M1 had this wrong — corrected in M2, see `lib/messenger/api.ts`).
+- **Mute endpoint ambiguity resolved**: `chats/mute`/`chats/unmute` confirmed as the only implementation with any call site anywhere in mobile; the alternate `messenger/conversations/:id` PATCH is dead code.
+- **Two real bugs found and fixed in `chatApi.list`**: the cursor param was being written under the `search` key (broke pagination silently), and a missing `?` produced a malformed query string whenever any filter/search was active. Both pre-dated M2 but were only caught while extending this file.
+- **New reusable pattern (D-006)**: `lib/messenger/list-overlay.ts` generalizes mobile's documented favorites read-after-write lag workaround for reuse across pin/mute/archive/block.
+
 ## Immediate next action
 
-Start **M2 — Chat-list & message interactions** (APPC-6/7): long-press-equivalent actions on chat-list rows and messages — reply, forward, pin/unpin, delete, react, mark-as-read, archive, favorites, custom lists, block. Built on M1's shell and conversation primitives; M1's two deferred issues stay tracked above, not silently dropped.
+Real-world test M2 against the live backend — pin/mute/archive/favorite/block especially, since those are the ones exercising the new overlay pattern under actual backend timing rather than just passing type-checks. Once confirmed, start **M3 — Groups core**.

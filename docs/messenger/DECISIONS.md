@@ -68,6 +68,20 @@
 
 ---
 
+## D-006 — Read-after-write overlay for chat-list mutations
+
+**Context:** Mobile's `use-chats.ts` documents a confirmed backend quirk: a successful POST/DELETE on `/chats/favorites` is occasionally not reflected by the very next GET, so a naive refetch-after-mutation can show stale data for a few seconds. Mobile works around this with a favorites-specific tombstone/pending-add mechanism. M2 needed the same protection for pin/mute/archive/block too — same API family, same plausible risk, and no reason to assume only favorites has it.
+
+**Decision:** Generalized mobile's mechanism into one small reusable module (`lib/messenger/list-overlay.ts`, ~60 lines) instead of five copy-pasted versions. One overlay = one pending mutation's effect on one list, expressed as an `apply` transform plus an `isSettled` check; reconciled every time fresh server data lands (via each list query's `select`). Explicitly not a generic state-management framework — no subscriptions, no middleware, nothing beyond one in-memory Map per logical list.
+
+**Why:** Proportional to the actual, evidence-confirmed problem (toggle/membership mutations on the chat list having read-after-write lag), not a speculative abstraction. Every M2 mutation that needed it (pin, mute, archive, block, favorite add/remove) uses the exact same ~10-line pattern rather than five different ad-hoc workarounds.
+
+**Status:** Implemented, 2026-08-18.
+
+**Consequence:** If a genuinely different shape of staleness problem shows up later (not "an optimistic list mutation racing a lagged read"), solve that directly rather than stretching this module to cover it — that's the deliberate boundary on what this is for.
+
+---
+
 ## Log
 
 | Date | Decision | Status change |
@@ -79,3 +93,4 @@
 | 2026-08-14 | D-004 | Planned → Implemented |
 | 2026-08-14 | D-005 established | Socket listener registration race fixed |
 | 2026-08-15 | M1 closed | 2 known issues (badge inconsistency, delayed seen-tick) documented and deferred — see MESSENGER.md |
+| 2026-08-18 | D-006, D-007 established (M2) | Overlay pattern implemented |

@@ -34,6 +34,12 @@ export const chatKeys = {
 	 * see hooks/messenger/use-peer-profile.ts for why there's no direct
 	 * fetch-by-uuid fallback. */
 	peer: (userUuid: Uuid) => [...chatKeys.all, "peer", userUuid] as const,
+
+	/** Genuinely separate collection from `lists()` */
+	favorites: () => [...chatKeys.all, "favorites"] as const,
+
+	customLists: () => [...chatKeys.all, "custom-lists"] as const,
+	customListMembers: (listId: number) => [...chatKeys.customLists(), listId, "members"] as const,
 }
 
 export const groupKeys = {

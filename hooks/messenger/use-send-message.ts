@@ -12,7 +12,7 @@ type HistoryPage = CursorPage<Message> & { previous: string | null }
 type HistoryData = InfiniteData<HistoryPage>
 
 /**
- * Implements the guide's SN"Sending a message" flow exactly:
+ * Implements the guide's S~"Sending a message" flow exactly:
  * queued → sending → (HTTP response replaces it) sent, or failed + retry.
  * Never treats a socket event as the send acknowledgement — only the HTTP
  * response is authoritative, per the guide.
@@ -77,13 +77,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 	)
 
 	const send = useCallback(
-		async (content: string) => {
+		async (content: string, replyTo?: number) => {
 			if (!currentUser) return
 
 			const payload: SendMessagePayload = {
 				receiver_id: receiverPkid,
 				message_type: "text",
 				content,
+				...(replyTo ? { reply_to: replyTo } : {}),
 				nonce: NONCE,
 				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
 			}
