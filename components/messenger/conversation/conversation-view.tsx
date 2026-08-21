@@ -18,6 +18,7 @@ import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
 import { MessageList } from "./message-list"
+import { PinnedMessageBanner } from "./pinned-message-banner"
 
 interface ConversationViewProps {
 	uuid: Uuid
@@ -64,17 +65,12 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
 
-	// Fixes "conversations don't get marked read, badge persists after
-	// refresh": nothing was ever calling the confirmed seen endpoint when a
-	// conversation is *opened* — only for messages arriving while already
-	// open. Runs once per uuid (and again if the tab was hidden and
-	// becomes visible again while this conversation stays open).
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
 		void chatApi.markSeen(uuid).catch(() => undefined)
 
 		// Optimistically zero this row's badge and reduce the TopBar total
-		// by whatever it was — don't wait for a refetch to reflect it.
+		// by whatever it was — don't have to wait for a refetch to reflect it.
 		let clearedAmount = 0
 		queryClient.setQueriesData<{ users: ChatListItem[]; metadata: { next: string | null } }>(
 			{ queryKey: chatKeys.lists() },
@@ -109,9 +105,9 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		void retry(message)
 	}
 
-	const handleForwardConfirm = (targets: { type: "user"; id: number }[]) => {
+	const handleForwardConfirm = (targets: { type: "user"; id: number }[], targetUuids: Uuid[]) => {
 		if (!forwardTarget) return
-		void forward(forwardTarget, targets)
+		void forward(forwardTarget, targets, targetUuids)
 	}
 
 	const handleDeleteConfirm = (deleteType: MessageDeleteType) => {
@@ -122,6 +118,7 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<ConversationHeader peer={derivedPeer} />
+			<PinnedMessageBanner chatType="user" peerPkid={derivedPkid as Pkid} peerUuid={uuid} />
 			<MessageList
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}

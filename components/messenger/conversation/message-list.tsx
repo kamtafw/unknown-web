@@ -1,12 +1,12 @@
 "use client"
 
 import { groupMessagesByDay } from "@/lib/messenger/date-separators"
-import { DateSeparator } from "./date-separator"
-import { MessageBubble } from "./message-bubble"
-import { TypingIndicator } from "./typing-indicator"
 import type { Message } from "@/types/messenger"
 import { Loader2 } from "lucide-react"
 import { useEffect, useMemo, useRef } from "react"
+import { DateSeparator } from "./date-separator"
+import { MessageBubble } from "./message-bubble"
+import { TypingIndicator } from "./typing-indicator"
 
 interface MessageListProps {
 	messages: Message[]

@@ -26,6 +26,7 @@ export const chatKeys = {
 
 	histories: () => [...chatKeys.all, "history"] as const,
 	history: (userUuid: Uuid) => [...chatKeys.histories(), userUuid] as const,
+	pinnedMessages: (userUuid: Uuid) => [...chatKeys.all, "pinned-messages", userUuid] as const,
 
 	searchUsers: (search: string) => [...chatKeys.all, "search-users", search] as const,
 

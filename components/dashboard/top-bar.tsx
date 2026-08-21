@@ -15,7 +15,7 @@ import { useState } from "react"
 import { Bell, Event, Marketplace, Message, Social } from "./icons"
 
 const CATEGORY_ICONS = [
-	{ label: "Social", icon: Social },
+	{ label: "Social", icon: Social, href: "/home" },
 	{ label: "Messenger", icon: Message, href: "/messenger" },
 	{ label: "Event", icon: Event },
 	{ label: "Marketplace", icon: Marketplace },

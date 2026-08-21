@@ -1,21 +1,21 @@
 "use client"
 
-import { useSearchUsers } from "@/hooks/messenger/use-search-users"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { ChatListItem, Message } from "@/types/messenger"
-import { Avatar } from "radix-ui"
+import { useSearchUsers } from "@/hooks/messenger/use-search-users"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
+import type { ChatListItem, Message, Uuid } from "@/types/messenger"
 import { Check, Search } from "lucide-react"
+import { Avatar } from "radix-ui"
 import { useState } from "react"
 
 interface ForwardDialogProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	message: Message | null
-	onForward: (targets: { type: "user"; id: number }[]) => void
+	onForward: (targets: { type: "user"; id: number }[], targetUuids: Uuid[]) => void
 }
 
 export function ForwardDialog({ open, onOpenChange, message, onForward }: ForwardDialogProps) {
@@ -35,7 +35,11 @@ export function ForwardDialog({ open, onOpenChange, message, onForward }: Forwar
 
 	const handleForward = () => {
 		if (selected.size === 0 || !message) return
-		onForward(Array.from(selected.keys()).map((id) => ({ type: "user" as const, id })))
+		const items = Array.from(selected.values())
+		onForward(
+			items.map((u) => ({ type: "user" as const, id: u.pkid })),
+			items.map((u) => u.id),
+		)
 		setSelected(new Map())
 		setSearch("")
 		onOpenChange(false)
@@ -49,7 +53,10 @@ export function ForwardDialog({ open, onOpenChange, message, onForward }: Forwar
 				</DialogHeader>
 
 				<div className="relative">
-					<Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+					<Search
+						size={16}
+						className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+					/>
 					<Input
 						autoFocus
 						placeholder="Search by name or username"

@@ -1,8 +1,10 @@
 "use client"
 
+import { extractMessage } from "@/lib/api-error"
 import { chatApi, FavoriteItem, isFavoriteUserTarget } from "@/lib/messenger/api"
 import { clearListOverlay, projectWithOverlays, setListOverlay } from "@/lib/messenger/list-overlay"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { toast } from "@/lib/toast"
 import type { ChatListItem, Pkid, Uuid } from "@/types/messenger"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
@@ -70,6 +72,7 @@ export function useFavoriteActions() {
 			} catch (err) {
 				clearListOverlay(OVERLAY_KEY, overlayKey)
 				touch()
+				toast.error(extractMessage(err, "Couldn't add to favorites — try again"))
 				throw err
 			}
 		},
@@ -91,6 +94,7 @@ export function useFavoriteActions() {
 			} catch (err) {
 				clearListOverlay(OVERLAY_KEY, overlayKey)
 				touch()
+				toast.error(extractMessage(err, "Couldn't remove from favorites — try again"))
 				throw err
 			}
 		},

@@ -9,7 +9,7 @@ import { useFavorites } from "@/hooks/messenger/use-favorites"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { toast } from "@/lib/toast"
 import type { ChatListFilter, ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
-import { Archive, CheckSquare, Heart, MessageSquarePlus, Search } from "lucide-react"
+import { Archive, CheckSquare, Heart, List, MessageSquarePlus, Search } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { AddToListDialog } from "./add-to-list-dialog"
@@ -17,6 +17,7 @@ import { BulkSelectionBar } from "./bulk-selection-bar"
 import { ChatFilterChips } from "./chat-filter-chips"
 import { ChatListEmptyState } from "./chat-list-empty-state"
 import { ChatListItem } from "./chat-list-item"
+import { CustomListsDialog } from "./custom-lists-dialog"
 import { NewChatDialog } from "./new-chat-dialog"
 
 interface ChatListPanelProps {
@@ -31,6 +32,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [newChatOpen, setNewChatOpen] = useState(false)
 	const [listDialogChat, setListDialogChat] = useState<ChatListItemType | null>(null)
 	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
+	const [listsDialogOpen, setListsDialogOpen] = useState(false)
 
 	// Favorites is a genuinely separate collection (M2 correction — see
 	// lib/messenger/api.ts), not a status filter on the main list, so it
@@ -89,6 +91,12 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 										onSelect={() => bulk.start()}
 									>
 										<CheckSquare size={16} /> Select chats
+									</DropdownMenu.Item>
+									<DropdownMenu.Item
+										className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
+										onSelect={() => setListsDialogOpen(true)}
+									>
+										<List size={16} /> View lists
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Portal>
@@ -196,6 +204,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				onOpenChange={(open) => !open && setListDialogChat(null)}
 				chat={listDialogChat}
 			/>
+			<CustomListsDialog open={listsDialogOpen} onOpenChange={setListsDialogOpen} />
 		</div>
 	)
 }
