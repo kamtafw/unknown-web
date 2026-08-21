@@ -1,63 +1,10 @@
-```text
-appscombo/
-├── lib/
-│   └── schemas.ts            # Zod schemas
-│
-├── app/                      # App Router based routing
-│   ├── (auth)/               # Route groups for authentication pages
-│   │   ├── login(sign-in)/page.tsx
-│   │   ├── sign-up/page.tsx
-│   │   ├── forgot-password/page.tsx
-│   │   └── create-new-password/page.tsx
-│   ├── (onboarding)/
-│   │   ├── verify/page.tsx
-│   │   ├── security-verification/page.tsx
-│   │   ├── complete-profile/page.tsx
-│   │   ├── interests/page.tsx
-│   │   └── friend-suggestions/page.tsx
-│   ├── dashboard/            # Protected routes
-│   │   └── page.tsx
-│   └── layout.tsx            # Root layout
-│
-├── components/
-│   ├── ui/                  # Shadcn-generated components
-│   ├── layout/              # Layout-related components
-│   ├── shared/              # Common UI: buttons, cards, etc.
-│   ├── auth/
-│   │   ├── sign-in.tsx
-│   │   ├── sign-up.tsx
-│   │   ├── forgot-password.tsx
-│   │   ├── create-new-password.tsx
-│   │   ├── terms-dialog.tsx
-│   │   └── success-dialog.tsx
-│   └── onboarding/
-│       ├── otp-verification.tsx
-│       ├── security-verification.tsx
-│       ├── complete-profile.tsx
-│       ├── choose-interests.tsx
-│       └── friend-suggestions.tsx
-│
-├── hooks/                   # Reusable hooks
-│   ├── useAuth.ts           # Auth context hook (Lucia)
-│   └── useUser.ts           # User fetching hook (React Query)
-│
-├── lib/                     # Core logic and config
-│   ├── auth/                # Lucia auth config, middleware
-│   ├── api/                 # API wrappers (e.g., axios or fetch logic)
-│   ├── queryClient.ts       # React Query client config
-│   └── utils.ts             # Utility functions
-│
-├── store/                   # Zustand global state
-│   └── userStore.ts
-│
-├── types/                   # TypeScript types/interfaces
-│   └── index.d.ts
-│
-├── styles/                  # Tailwind base styles
-│   └── globals.css
-│
-├── middleware.ts            # Next.js Middleware (e.g. auth checks)
-├── tailwind.config.ts
-├── tsconfig.json
-└── next.config.js
-```
+# M1 closure — documentation only — apply to `appscombo_frontend`
+
+No code changes in this package — the previous two bugfix zips already cover everything code-side. This is just the documentation catching up to the decision to close M1 with two known, deferred issues.
+
+- **`docs/messenger/MESSENGER.md`** — Current milestone marked M1 closed, roadmap updated, and a new "M1 known issues (deferred)" section with: what's already been ruled out for each bug, current leading hypotheses ranked by likelihood, the exact next diagnostic step, and two specific questions worth putting to the backend team. Immediate next action points at M2.
+- **`docs/messenger/DECISIONS.md`** — one line in the log table marking the closure.
+
+## Why document instead of leaving it as "known flaky"
+
+Both remaining issues are real and both survived confirmed fixes, which is itself useful information — it's evidence they're either genuinely different from what's already been tried, or backend-side rather than client-side. The MESSENGER.md entry is written so that whoever picks this up next (possibly you, possibly someone else) doesn't have to re-derive what's already been ruled out.
