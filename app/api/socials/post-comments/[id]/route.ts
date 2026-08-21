@@ -3,8 +3,8 @@ import { DJANGO_API_URL } from "@/lib/server-config"
 import { proxyJson } from "@/lib/server-fetch"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ pkid: number }> }) {
-	const { pkid } = await params
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const { id } = await params
 	const accessToken = await getAccessToken()
 
 	if (!accessToken) {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ pkid
 
 	const page = req.nextUrl.searchParams.get("page") ?? "1"
 
-	return proxyJson(`${DJANGO_API_URL}/socials/post/comment/list/${pkid}?page=${page}`, {
+	return proxyJson(`${DJANGO_API_URL}/socials/post/comment/list/${id}?page=${page}`, {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",
