@@ -40,3 +40,13 @@ export const contentKeys = {
 	children: () => [...contentKeys.all, "children"] as const,
 	child: (parentId: string) => [...contentKeys.children(), parentId] as const,
 }
+
+export const profileFeedKeys = {
+	all: ["profile-feed"] as const,
+
+	posts: (id: string) => [...profileFeedKeys.all, "posts", id] as const,
+	reposts: (id: string) => [...profileFeedKeys.all, "reposts", id] as const,
+	liked: (id: string) => [...profileFeedKeys.all, "liked", id] as const,
+	media: (id: string) => [...profileFeedKeys.all, "media", id] as const,
+	replies: (id: string) => [...profileFeedKeys.all, "replies", id] as const,
+}

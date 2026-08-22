@@ -199,6 +199,11 @@ export interface UpdatePostPayload extends UpdateContentPayload {
 	who_can_reply?: WhoCanReply
 }
 
+export interface LikeContentPayload {
+	type: "post" | "comment" | "reply"
+	entity_uuid: string
+}
+
 /** `original_post`/`original_comment` field names on the repost payloads
  * below are kept as-is (not renamed to e.g. `original_id`) — they already
  * send a UUID string today (`types/api.ts` pre-migration), and the field
