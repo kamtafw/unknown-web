@@ -191,7 +191,7 @@ export function useLikePost() {
 	const qc = useQueryClient()
 
 	return useMutation({
-		mutationFn: (id: string) => socialsApi.likePost({ post: id }),
+		mutationFn: (id: string) => socialsApi.likeContent({ type: "post", entity_uuid: id }),
 		onMutate: async (id) => {
 			await Promise.all(feedKeys.engagement().map((key) => qc.cancelQueries({ queryKey: key })))
 

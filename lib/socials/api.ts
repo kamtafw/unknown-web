@@ -12,20 +12,28 @@ import {
 	CreatePostPayload,
 	CreateReplyPayload,
 	FeedResponse,
+	LikeContentPayload,
 	RepostCommentPayload,
 	RepostPayload,
 	UpdatePostPayload,
+	UserRepliesResponse,
 } from "@/types/socials/api"
 import { apiClient } from "../axios"
 
 export const socialsApi = {
 	getFeedByPath: (path: string) => apiClient.get<FeedResponse>(path).then((r) => r.data.data),
 
+	getUserRepliesByPath: (path: string) =>
+		apiClient.get<UserRepliesResponse>(path).then((r) => r.data.data),
+
 	createPost: (payload: CreatePostPayload) =>
 		apiClient.post("/api/socials/create-post", payload).then((r) => r.data),
 
 	repost: (payload: RepostPayload) =>
 		apiClient.post("/api/socials/repost", payload).then((r) => r.data),
+
+	likeContent: (payload: LikeContentPayload) =>
+		apiClient.post("/api/socials/content/like", payload).then((r) => r.data),
 
 	likePost: (payload: { post: string }) =>
 		apiClient.post("/api/socials/like-post", payload).then((r) => r.data),
