@@ -17,7 +17,6 @@ import {
 	ConfirmPasswordResponse,
 	CreatePostPayload,
 	CreatePostResponse,
-	DeletePostResponse,
 	FeedCheckResponse,
 	FeedPollType,
 	FeedResponse,
@@ -39,7 +38,6 @@ import {
 	NotInterestedResponse,
 	NullResponse,
 	OtpDefault,
-	PostDetailResponse,
 	PostStatsResponse,
 	ProblemType,
 	ReportProblemResponse,
@@ -72,8 +70,6 @@ import {
 	UpdateExternalLinkResponse,
 	UpdateLocationResponse,
 	UpdateNameResponse,
-	UpdatePostPayload,
-	UpdatePostResponse,
 	UpdateProfilePhotoResponse,
 	UpdateUsernameResponse,
 	UploadMediaResponse,
@@ -315,8 +311,8 @@ export const userApi = {
 	blockUser: (payload: { user_id: number }) =>
 		apiClient.post<BlockUserResponse>("/api/users/privacy/block-user", payload).then((r) => r.data),
 
-	getUserProfile: (pkid: number) =>
-		apiClient.get<UserProfileResponse>(`/api/users/${pkid}/profile`).then((r) => r.data),
+	getUserProfile: (id: string) =>
+		apiClient.get<UserProfileResponse>(`/api/users/${id}/profile`).then((r) => r.data),
 }
 
 export const socialApi = {
@@ -343,14 +339,6 @@ export const socialApi = {
 		await apiClient
 			.get<PostStatsResponse>(`/api/socials/post-stats/${id}`)
 			.then((r) => r.data.data),
-
-	getPostDetail: (pkid: number) =>
-		apiClient.get<PostDetailResponse>(`/api/socials/post/${pkid}`).then((r) => r.data),
-
-	getPostComments: (pkid: number, page: number) =>
-		apiClient
-			.get<CommentsResponse>(`/api/socials/post-comments/${pkid}?page=${page}`)
-			.then((r) => r.data),
 
 	getCommentReplies: (commentId: string) =>
 		apiClient
@@ -394,12 +382,6 @@ export const socialApi = {
 
 	requestCommunityNote: (payload: { post: string; reason?: string }) =>
 		apiClient.post<RequestNoteResponse>("/api/socials/request-note", payload).then((r) => r.data),
-
-	updatePost: (pkid: number, payload: UpdatePostPayload) =>
-		apiClient.patch<UpdatePostResponse>(`/api/socials/post/${pkid}`, payload).then((r) => r.data),
-
-	deletePost: (pkid: number) =>
-		apiClient.delete<DeletePostResponse>(`/api/socials/post/${pkid}`).then((r) => r.data),
 
 	togglePinnedPost: (id: string) =>
 		apiClient
