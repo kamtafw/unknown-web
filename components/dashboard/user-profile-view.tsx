@@ -1,19 +1,20 @@
 "use client"
 
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
-import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
+import { useParentPreviews } from "@/hooks/socials/use-content-preview"
 import {
 	flattenProfileFeedPages,
 	useUserLikedPosts,
 	useUserMediaPosts,
 	useUserPosts,
 	useUserReplies,
-} from "@/hooks/use-profile-feeds"
+} from "@/hooks/socials/use-profile-feed"
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useUserProfile } from "@/hooks/use-user-profile"
-import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { ExternalLink, Post, UserReplyItem } from "@/types/api"
+import { ExternalLink } from "@/types/api"
+import { Post, SocialContent } from "@/types/socials/api"
 import { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import {
@@ -24,40 +25,40 @@ import {
 	MapPin,
 	MessageCircle,
 	MoreHorizontal,
+	Pin,
 	ShieldOff,
 	UserX,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ReactNode, useEffect, useRef, useState } from "react"
-import { Pin } from "../posts/icons"
 import { FollowButton } from "../shared/follow-button"
 import { ActionDropdown } from "./action-dropdown"
 import { BlockUserModal } from "./block-user-modal"
 import { PostCard, renderText, UserAvatar } from "./post-card"
 
-function getInitials(first?: string | null, last?: string | null) {
+export function getInitials(first?: string | null, last?: string | null) {
 	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
 }
 
-function formatCount(n: number) {
+export function formatCount(n: number) {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
 	return String(n)
 }
 
-function formatDob(dob: string, dob_visibility: "full" | "partial") {
+export function formatDob(dob: string, dob_visibility: "full" | "partial") {
 	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"
 	return dayjs(dob).format(format)
 }
 
-function sortPinnedFirst(posts: Post[]): Post[] {
-	const pinned = posts.filter((p) => p.is_pinned)
-	const rest = posts.filter((p) => !p.is_pinned)
+export function sortPinnedFirst(posts: Post[]): Post[] {
+	const pinned = posts.filter((p) => p.flags.pinned)
+	const rest = posts.filter((p) => !p.flags.pinned)
 	return [...pinned, ...rest]
 }
 
-interface NormalizedProfile {
+export interface NormalizedProfile {
 	displayName: string
 	initials: string
 	username: string
@@ -74,10 +75,10 @@ interface NormalizedProfile {
 	connectionCount: number
 }
 
-const PROFILE_TABS = ["Posts", "Replies", "Media", "Likes"] as const
-type ProfileTab = (typeof PROFILE_TABS)[number]
+export const PROFILE_TABS = ["Posts", "Replies", "Media", "Likes"] as const
+export type ProfileTab = (typeof PROFILE_TABS)[number]
 
-function StatBlock({ label, value }: { label: string; value: number }) {
+export function StatBlock({ label, value }: { label: string; value: number }) {
 	return (
 		<div className="flex flex-1 flex-col">
 			<span className="text-[15px] font-bold text-foreground">{formatCount(value)}</span>
@@ -86,7 +87,11 @@ function StatBlock({ label, value }: { label: string; value: number }) {
 	)
 }
 
-function useSentinel(hasNextPage: boolean, isFetchingNextPage: boolean, fetchNextPage: () => void) {
+export function useSentinel(
+	hasNextPage: boolean,
+	isFetchingNextPage: boolean,
+	fetchNextPage: () => void,
+) {
 	const sentinel = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -105,7 +110,7 @@ function useSentinel(hasNextPage: boolean, isFetchingNextPage: boolean, fetchNex
 	return sentinel
 }
 
-function TabSkeleton() {
+export function TabSkeleton() {
 	return (
 		<div className="animate-pulse">
 			{[0, 1, 2].map((i) => (
@@ -122,7 +127,7 @@ function TabSkeleton() {
 	)
 }
 
-function PostFeedTabPanel({
+export function PostFeedTabPanel({
 	query,
 	emptyMessage,
 	pinFirst = false,
@@ -149,15 +154,15 @@ function PostFeedTabPanel({
 	return (
 		<>
 			{posts.map((post) => (
-				<>
-					{pinFirst && post.is_pinned && (
+				<div key={post.id}>
+					{pinFirst && post.flags.pinned && (
 						<div className="flex items-center gap-2 px-5 pt-3 text-muted-foreground">
 							<Pin size={13} />
 							<span className="text-[12px] font-semibold">Pinned</span>
 						</div>
 					)}
-					<PostCard key={post.id} post={post} />
-				</>
+					<PostCard post={post} />
+				</div>
 			))}
 			<div ref={sentinel} className="h-1" />
 			{isFetchingNextPage && (
@@ -169,131 +174,112 @@ function PostFeedTabPanel({
 	)
 }
 
-function ReplyThreadCard({ reply }: { reply: UserReplyItem }) {
+/**
+ * Rich version: shows who the reply was responding to and what they said,
+ * via `parentPreview` — a real SocialContent for the parent, batch-fetched
+ * by RepliesTabPanel below (see hooks/socials/use-content-previews.ts),
+ * not a bespoke type. Renders correctly with or without it: while it's
+ * loading, or if the fetch fails, this falls back to the simplified
+ * "Replied in a thread" version rather than blocking the reply itself.
+ */
+export function ReplyThreadCard({
+	reply,
+	parentPreview,
+}: {
+	reply: SocialContent
+	parentPreview?: SocialContent
+}) {
 	const router = useRouter()
-	const postTimeAgo = useTimeAgo(reply.post.created_at)
-	const replyTimeAgo = useTimeAgo(reply.created_at)
-
-	const postAuthorName =
-		[reply.post.user.first_name, reply.post.user.last_name].filter(Boolean).join(" ") ||
-		reply.post.user.username
-	const parentAuthorName =
-		[reply.parent_comment.user.first_name, reply.parent_comment.user.last_name]
-			.filter(Boolean)
-			.join(" ") || reply.parent_comment.user.username
-	const replyAuthorName =
+	const timeAgo = useTimeAgo(reply.created_at)
+	const fullname =
 		[reply.user.first_name, reply.user.last_name].filter(Boolean).join(" ") || reply.user.username
 
-	const postMediaUrl = reply.post.post_media[0]?.external_url
+	if (!reply.message?.trim() && reply.media.length === 0) return null
 
-	if (!reply.message?.trim() && reply.uploaded_media.length === 0) return null
+	const parentName = parentPreview
+		? [parentPreview.user.first_name, parentPreview.user.last_name].filter(Boolean).join(" ") ||
+			parentPreview.user.username
+		: null
 
 	return (
-		<div className="border-b border-border">
-			{/* Root post — the thread this reply lives in */}
-			<button
-				onClick={() => router.push(`/posts/${reply.post.pkid}`)}
-				className="w-full text-left px-5 pt-4 hover:bg-accent/30 transition-colors"
-			>
-				<div className="flex gap-3">
-					<div className="flex flex-col items-center shrink-0">
-						<UserAvatar
-							src={reply.post.user.profile_photo}
-							first={reply.post.user.first_name}
-							last={reply.post.user.last_name}
-						/>
-						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-3" />
-					</div>
-					<div className="flex-1 min-w-0 pb-3">
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
-							<span className="text-muted-foreground text-[13px]">@{reply.post.user.username}</span>
-							<span className="text-muted-foreground/70 text-xs">· {postTimeAgo}</span>
-						</div>
-						{!!reply.post.content_text && (
-							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5 line-clamp-3">
-								{renderText(reply.post.content_text)}
-							</p>
-						)}
-						{postMediaUrl && (
-							<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
-								<Image src={postMediaUrl} alt="" fill className="object-cover" />
-							</div>
-						)}
-					</div>
-				</div>
-			</button>
+		<button
+			onClick={() => router.push(`/posts/${reply.post_id}?comment=${reply.id}`)}
+			className="w-full text-left px-5 py-4 border-b border-border hover:bg-accent/30 transition-colors"
+		>
+			<div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+				<MessageCircle size={12} />
+				<span>Replied in a thread</span>
+			</div>
 
-			{/* Immediate parent — the comment this reply responds to */}
-			<div className="px-5">
-				<div className="flex gap-3">
+			{/* Parent tier — only renders once the batched preview resolves.
+			 * Absence isn't an error state, just "not loaded yet / unavailable". */}
+			{parentPreview && (
+				<div className="flex gap-3 mb-2 pb-2 border-b border-border/60">
 					<div className="flex flex-col items-center shrink-0">
 						<UserAvatar
-							src={reply.parent_comment.user.profile_photo}
-							first={reply.parent_comment.user.first_name}
-							last={reply.parent_comment.user.last_name}
+							src={parentPreview.user.profile_photo}
+							first={parentPreview.user.first_name}
+							last={parentPreview.user.last_name}
 							size="sm"
 						/>
 						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-3" />
 					</div>
-					<div className="flex-1 min-w-0 pb-3">
-						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-[13px] text-foreground">{parentAuthorName}</span>
-							<span className="text-muted-foreground text-[12px]">
-								@{reply.parent_comment.user.username}
-							</span>
-						</div>
-						{!!reply.parent_comment.message?.trim() && (
-							<p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
-								{renderText(reply.parent_comment.message)}
-							</p>
-						)}
-					</div>
-				</div>
-			</div>
-
-			{/* This reply — the actual content this tab is listing */}
-			<button
-				onClick={() => router.push(`/posts/${reply.post.pkid}?comment=${reply.id}`)}
-				className="w-full text-left px-5 pb-4 hover:bg-accent/30 transition-colors"
-			>
-				<div className="flex gap-3">
-					<UserAvatar
-						src={reply.user.profile_photo}
-						first={reply.user.first_name}
-						last={reply.user.last_name}
-					/>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-1.5 flex-wrap">
-							<span className="font-semibold text-sm text-foreground">{replyAuthorName}</span>
-							<span className="text-muted-foreground text-[13px]">@{reply.user.username}</span>
-							<span className="text-muted-foreground/70 text-xs">· {replyTimeAgo}</span>
+							<span className="font-semibold text-[13px] text-foreground">{parentName}</span>
+							<span className="text-muted-foreground text-[12px]">
+								@{parentPreview.user.username}
+							</span>
 						</div>
-						{!!reply.message?.trim() && (
-							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
-								{renderText(reply.message)}
+						{!!parentPreview.message?.trim() && (
+							<p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+								{renderText(parentPreview.message)}
 							</p>
-						)}
-						{reply.uploaded_media[0] && (
-							<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
-								<Image src={reply.uploaded_media[0]} alt="" fill className="object-cover" />
-							</div>
 						)}
 					</div>
 				</div>
-			</button>
-		</div>
+			)}
+
+			<div className="flex gap-3">
+				<UserAvatar
+					src={reply.user.profile_photo}
+					first={reply.user.first_name}
+					last={reply.user.last_name}
+				/>
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-1.5 flex-wrap">
+						<span className="font-semibold text-sm text-foreground">{fullname}</span>
+						<span className="text-muted-foreground text-[13px]">@{reply.user.username}</span>
+						<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
+					</div>
+					{!!reply.message?.trim() && (
+						<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
+							{renderText(reply.message)}
+						</p>
+					)}
+					{reply.media[0] && (
+						<div className="mt-2 rounded-xl overflow-hidden relative bg-muted aspect-video max-w-90">
+							<Image src={reply.media[0]} alt="" fill className="object-cover" />
+						</div>
+					)}
+				</div>
+			</div>
+		</button>
 	)
 }
 
-function RepliesTabPanel({
+export function RepliesTabPanel({
 	query,
 }: {
-	query: UseInfiniteQueryResult<InfiniteData<{ replies: UserReplyItem[]; nextPage: string | null }>>
+	query: UseInfiniteQueryResult<InfiniteData<{ replies: SocialContent[]; nextPage: string | null }>>
 }) {
 	const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = query
 	const sentinel = useSentinel(!!hasNextPage, isFetchingNextPage, fetchNextPage)
 	const replies = data?.pages.flatMap((p) => p.replies) ?? []
+
+	// batched, deduplicated, scoped to just the replies currently on screen —
+	// see hooks/socials/use-content-previews.ts for why this doesn't become N+1
+	const parentPreviews = useParentPreviews(replies.map((r) => r.parent_id))
 
 	if (isLoading) return <TabSkeleton />
 	if (isError)
@@ -308,7 +294,11 @@ function RepliesTabPanel({
 	return (
 		<>
 			{replies.map((reply) => (
-				<ReplyThreadCard key={reply.id} reply={reply} />
+				<ReplyThreadCard
+					key={reply.id}
+					reply={reply}
+					parentPreview={reply.parent_id ? parentPreviews.get(reply.parent_id) : undefined}
+				/>
 			))}
 			<div ref={sentinel} className="h-1" />
 			{isFetchingNextPage && (
@@ -320,7 +310,7 @@ function RepliesTabPanel({
 	)
 }
 
-function ProfileTabsContent({ id, activeTab }: { id: string; activeTab: ProfileTab }) {
+export function ProfileTabsContent({ id, activeTab }: { id: string; activeTab: ProfileTab }) {
 	const postsQuery = useUserPosts(id, activeTab === "Posts")
 	const repliesQuery = useUserReplies(id, activeTab === "Replies")
 	const mediaQuery = useUserMediaPosts(id, activeTab === "Media")
@@ -334,7 +324,8 @@ function ProfileTabsContent({ id, activeTab }: { id: string; activeTab: ProfileT
 		return <PostFeedTabPanel query={likesQuery} emptyMessage="No liked posts yet." />
 	return <RepliesTabPanel query={repliesQuery} />
 }
-function ProfileSkeleton() {
+
+export function ProfileSkeleton() {
 	return (
 		<div className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border overflow-hidden animate-pulse">
 			<div className="h-44 sm:h-52 bg-muted shrink-0" />
@@ -349,7 +340,7 @@ function ProfileSkeleton() {
 	)
 }
 
-function ProfileShell({
+export function ProfileShell({
 	data,
 	onBack,
 	actions,
@@ -482,12 +473,11 @@ function ProfileShell({
 								<button
 									key={tab}
 									onClick={() => onTabChange(tab)}
-									className={cn(
-										"flex-1 py-3.5 text-[13.5px] font-medium transition-colors relative",
+									className={`flex-1 py-3.5 text-[13.5px] font-medium transition-colors relative ${
 										activeTab === tab
 											? "text-foreground"
-											: "text-muted-foreground hover:text-foreground",
-									)}
+											: "text-muted-foreground hover:text-foreground"
+									}`}
 								>
 									{tab}
 									{activeTab === tab && (
@@ -505,6 +495,8 @@ function ProfileShell({
 }
 
 export function UserProfileView({ pkid }: { pkid: number }) {
+	console.log("INCOMING PKID::", pkid)
+	
 	const router = useRouter()
 	const currentUser = useAuthStore((s) => s.user)
 	const isOwnProfile = currentUser?.pkid === pkid
