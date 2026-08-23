@@ -3,7 +3,7 @@
 import { groupMessagesByDay } from "@/lib/messenger/date-separators"
 import type { Message } from "@/types/messenger"
 import { Loader2 } from "lucide-react"
-import { useEffect, useMemo, useRef } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { DateSeparator } from "./date-separator"
 import { MessageBubble } from "./message-bubble"
 import { TypingIndicator } from "./typing-indicator"
@@ -24,25 +24,50 @@ interface MessageListProps {
 	onDelete: (message: Message) => void
 }
 
-export function MessageList({
-	messages,
-	currentUserUuid,
-	isLoading,
-	hasOlder,
-	isFetchingOlder,
-	onLoadOlder,
-	remoteTyping,
-	onRetry,
-	onReply,
-	onForward,
-	onPin,
-	onUnpin,
-	onDelete,
-}: MessageListProps) {
+export interface MessageListHandle {
+	/** Returns false and no-ops if the message isn't in the currently loaded
+	 * window — see MESSENGER.md known limitations; no auto-pagination in M2. */
+	scrollToMessage: (messageId: number) => boolean
+}
+
+export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(
+	{
+		messages,
+		currentUserUuid,
+		isLoading,
+		hasOlder,
+		isFetchingOlder,
+		onLoadOlder,
+		remoteTyping,
+		onRetry,
+		onReply,
+		onForward,
+		onPin,
+		onUnpin,
+		onDelete,
+	},
+	ref,
+) {
+	const messageNodeRefs = useRef<Map<number, HTMLDivElement>>(new Map())
+	const [highlightedId, setHighlightedId] = useState<number | null>(null)
 	const scrollRef = useRef<HTMLDivElement>(null)
 	const topSentinelRef = useRef<HTMLDivElement>(null)
 	const messageById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
 	const dayGroups = useMemo(() => groupMessagesByDay(messages), [messages])
+
+	useImperativeHandle(ref, () => ({
+		scrollToMessage: (messageId) => {
+			const node = messageNodeRefs.current.get(messageId)
+			if (!node) return false
+			node.scrollIntoView({ behavior: "smooth", block: "center" })
+			setHighlightedId(messageId)
+			setTimeout(
+				() => setHighlightedId((current) => (current === messageId ? null : current)),
+				1500,
+			)
+			return true
+		},
+	}))
 
 	// Load older messages when the top sentinel scrolls into view.
 	useEffect(() => {
@@ -110,6 +135,11 @@ export function MessageList({
 								isOwn={message.sender.id === currentUserUuid}
 								showSender={showSender}
 								repliedMessage={repliedMessage}
+								isHighlighted={highlightedId === message.id}
+								ref={(node: HTMLDivElement | null) => {
+									if (node) messageNodeRefs.current.set(message.id, node)
+									else messageNodeRefs.current.delete(message.id)
+								}}
 								onRetry={onRetry}
 								onReply={onReply}
 								onForward={onForward}
@@ -125,4 +155,4 @@ export function MessageList({
 			{remoteTyping && <TypingIndicator />}
 		</div>
 	)
-}
+})

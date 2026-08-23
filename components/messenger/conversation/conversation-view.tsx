@@ -12,12 +12,12 @@ import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Composer } from "./composer"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
-import { MessageList } from "./message-list"
+import { MessageList, MessageListHandle } from "./message-list"
 import { PinnedMessageBanner } from "./pinned-message-banner"
 
 interface ConversationViewProps {
@@ -64,6 +64,8 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
+
+	const messageListRef = useRef<MessageListHandle>(null)
 
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
@@ -115,11 +117,25 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		void deleteMessage(deleteTarget, deleteType)
 	}
 
+	const handleJumpToMessage = (message: Message) => {
+		const jumped = messageListRef.current?.scrollToMessage(message.id)
+		if (!jumped) {
+			toast.info("That message is further back — scroll up to load more history, then try again.")
+		}
+	}
+
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<ConversationHeader peer={derivedPeer} />
-			<PinnedMessageBanner chatType="user" peerPkid={derivedPkid as Pkid} peerUuid={uuid} />
+			<PinnedMessageBanner
+				chatType="user"
+				peerPkid={derivedPkid as Pkid}
+				peerUuid={uuid}
+				onJumpToMessage={handleJumpToMessage}
+				onUnpin={(m) => void unpinMessage(m)}
+			/>
 			<MessageList
+				ref={messageListRef}
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}
 				isLoading={isLoading}

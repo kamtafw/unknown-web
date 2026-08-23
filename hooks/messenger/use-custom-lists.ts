@@ -36,3 +36,12 @@ export function useAddToCustomList() {
 		onError: () => toast.error("Couldn't add to the list — try again"),
 	})
 }
+
+export function useCustomListMembers(listId: number | null) {
+	return useQuery({
+		queryKey: chatKeys.customListMembers(listId ?? 0),
+		queryFn: () => chatApi.listCustomListMembers(listId as number),
+		enabled: listId !== null && listId > 0,
+		staleTime: 30_000,
+	})
+}
