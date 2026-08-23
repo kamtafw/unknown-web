@@ -19,6 +19,7 @@ import {
 	Video,
 } from "lucide-react"
 import Image from "next/image"
+import { forwardRef } from "react"
 import { MessageActionMenu } from "./message-action-menu"
 
 interface MessageBubbleProps {
@@ -26,6 +27,7 @@ interface MessageBubbleProps {
 	isOwn: boolean
 	showSender: boolean
 	repliedMessage?: Message
+	isHighlighted?: boolean
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -116,25 +118,36 @@ function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label:
 	)
 }
 
-export function MessageBubble({
-	message,
-	isOwn,
-	showSender,
-	repliedMessage,
-	onRetry,
-	onReply,
-	onForward,
-	onPin,
-	onUnpin,
-	onDelete,
-}: MessageBubbleProps) {
+export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(function MessageBubble(
+	{
+		message,
+		isOwn,
+		showSender,
+		repliedMessage,
+		isHighlighted,
+		onRetry,
+		onReply,
+		onForward,
+		onPin,
+		onUnpin,
+		onDelete,
+	},
+	ref,
+) {
 	const failed = message.status === "failed"
 	const pending = isOptimisticMessage(message) && !failed
 	const showActions =
 		!pending && !message.deleted && onReply && onForward && onPin && onUnpin && onDelete
 
 	return (
-		<div className={cn("group flex flex-col mb-1", isOwn ? "items-end" : "items-start")}>
+		<div
+			ref={ref}
+			className={cn(
+				"group flex flex-col mb-1",
+				isOwn ? "items-end" : "items-start",
+				isHighlighted && "bg-primary/10",
+			)}
+		>
 			{showSender && !isOwn && (
 				<span className="text-xs font-medium text-muted-foreground mb-0.5 px-1">
 					{message.sender.first_name ?? message.sender.username}
@@ -202,4 +215,4 @@ export function MessageBubble({
 			</div>
 		</div>
 	)
-}
+})

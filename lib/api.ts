@@ -311,7 +311,7 @@ export const userApi = {
 	blockUser: (payload: { user_id: number }) =>
 		apiClient.post<BlockUserResponse>("/api/users/privacy/block-user", payload).then((r) => r.data),
 
-	getUserProfile: (id: string) =>
+	getUserProfile: (id: number) =>
 		apiClient.get<UserProfileResponse>(`/api/users/${id}/profile`).then((r) => r.data),
 }
 

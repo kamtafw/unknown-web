@@ -1,38 +1,76 @@
 "use client"
 
 import { usePinnedMessages } from "@/hooks/messenger/use-message-actions"
-import type { Pkid, Uuid } from "@/types/messenger"
-import { Pin } from "lucide-react"
+import type { Message, Pkid, Uuid } from "@/types/messenger"
+import { ChevronRight, Pin, X } from "lucide-react"
 import { useState } from "react"
 
 interface PinnedMessageBannerProps {
 	chatType: "user" | "group"
 	peerPkid: Pkid
 	peerUuid: Uuid
+	onJumpToMessage: (message: Message) => void
+	onUnpin: (message: Message) => void
 }
 
-export function PinnedMessageBanner({ chatType, peerPkid, peerUuid }: PinnedMessageBannerProps) {
+/** Ported from mobile's PinnedMessageBanner fallback logic — `content` is
+ * empty for most non-text types, so `content || "Message"` (old web
+ * behavior) always showed the generic label. */
+function resolvePreviewText(message: Message): string {
+	if (message.message_type === "text") {
+		return message.content.replace(/\s+/g, " ").trim() || "Message"
+	}
+	if (message.message_type === "location") return "Location"
+	if (message.message_type === "voice" || message.message_type === "audio") return "Voice message"
+	if (message.media?.length) {
+		return message.message_type.charAt(0).toUpperCase() + message.message_type.slice(1)
+	}
+	return message.content || message.message_type
+}
+
+export function PinnedMessageBanner({
+	chatType,
+	peerPkid,
+	peerUuid,
+	onJumpToMessage,
+	onUnpin,
+}: PinnedMessageBannerProps) {
 	const { data: pinned } = usePinnedMessages(chatType, peerPkid, peerUuid)
 	const [index, setIndex] = useState(0)
 
 	if (!pinned || pinned.length === 0) return null
-
 	const currentIndex = index % pinned.length
 	const current = pinned[currentIndex]
+	const hasMultiple = pinned.length > 1
 
 	return (
-		<button
-			onClick={() => setIndex((i) => i + 1)}
-			title={pinned.length > 1 ? "Show next pinned message" : undefined}
-			className="w-full flex items-center gap-2.5 px-4 py-2 border-b border-border bg-muted/40 hover:bg-muted/70 transition-colors text-left shrink-0"
-		>
+		<div className="w-full flex items-center gap-2.5 px-4 py-2 border-b border-border bg-muted/40 shrink-0">
 			<Pin size={14} className="text-primary shrink-0 rotate-45" />
-			<div className="min-w-0 flex-1">
+
+			<button onClick={() => onJumpToMessage(current)} className="flex-1 min-w-0 text-left">
 				<p className="text-xs font-medium text-primary">
-					Pinned message{pinned.length > 1 ? ` (${currentIndex + 1} of ${pinned.length})` : ""}
+					Pinned message{hasMultiple ? ` (${currentIndex + 1} of ${pinned.length})` : ""}
 				</p>
-				<p className="text-xs text-muted-foreground truncate">{current.content || "Message"}</p>
-			</div>
-		</button>
+				<p className="text-xs text-muted-foreground truncate">{resolvePreviewText(current)}</p>
+			</button>
+
+			{hasMultiple && (
+				<button
+					onClick={() => setIndex((i) => i + 1)}
+					title="Show next pinned message"
+					className="shrink-0 p-1 rounded-full hover:bg-accent text-muted-foreground transition-colors"
+				>
+					<ChevronRight size={14} />
+				</button>
+			)}
+
+			<button
+				onClick={() => onUnpin(current)}
+				title="Unpin message"
+				className="shrink-0 p-1 rounded-full hover:bg-accent text-muted-foreground transition-colors"
+			>
+				<X size={14} />
+			</button>
+		</div>
 	)
 }

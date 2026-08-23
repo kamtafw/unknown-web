@@ -5,18 +5,20 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useBulkSelection } from "@/hooks/messenger/use-bulk-selection"
 import { useChatList } from "@/hooks/messenger/use-chat-list"
+import { useCustomListMembers } from "@/hooks/messenger/use-custom-lists"
 import { useFavorites } from "@/hooks/messenger/use-favorites"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { toast } from "@/lib/toast"
-import type { ChatListFilter, ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
+import type { ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
 import { Archive, CheckSquare, Heart, List, MessageSquarePlus, Search } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { AddToListDialog } from "./add-to-list-dialog"
 import { BulkSelectionBar } from "./bulk-selection-bar"
-import { ChatFilterChips } from "./chat-filter-chips"
+import { ActiveChatFilter, ChatFilterChips } from "./chat-filter-chips"
 import { ChatListEmptyState } from "./chat-list-empty-state"
 import { ChatListItem } from "./chat-list-item"
+import { CustomListMemberRow } from "./custom-list-member-row"
 import { CustomListsDialog } from "./custom-lists-dialog"
 import { NewChatDialog } from "./new-chat-dialog"
 
@@ -26,7 +28,8 @@ interface ChatListPanelProps {
 }
 
 export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
-	const [filter, setFilter] = useState<ChatListFilter>("all")
+	const [filter, setFilter] = useState<ActiveChatFilter>("all")
+	const isCustomListTab = typeof filter === "object"
 	const [search, setSearch] = useState("")
 	const debouncedSearch = useDebouncedValue(search, 300)
 	const [newChatOpen, setNewChatOpen] = useState(false)
@@ -34,21 +37,22 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 	const [listsDialogOpen, setListsDialogOpen] = useState(false)
 
-	// Favorites is a genuinely separate collection (M2 correction — see
-	// lib/messenger/api.ts), not a status filter on the main list, so it
-	// goes through its own hook rather than useChatList.
-	const mainList = useChatList(filter === "favorites" ? "all" : filter, debouncedSearch)
+	const mainList = useChatList(
+		isCustomListTab ? "all" : filter === "favorites" ? "all" : filter,
+		debouncedSearch,
+	)
 	const favoritesList = useFavorites()
+	const customListMembers = useCustomListMembers(isCustomListTab ? filter.id : null)
 	const isFavoritesTab = filter === "favorites"
-	const { data, isLoading } = isFavoritesTab
-		? {
-				data: favoritesList.data ? { users: favoritesList.data } : undefined,
-				isLoading: favoritesList.isLoading,
-			}
-		: mainList
-	const chats = data?.users ?? []
 
-	const bulk = useBulkSelection(chats)
+	const chats = isFavoritesTab ? (favoritesList.data ?? []) : (mainList.data?.users ?? [])
+	const isLoading = isCustomListTab
+		? customListMembers.isLoading
+		: isFavoritesTab
+			? favoritesList.isLoading
+			: mainList.isLoading
+
+	const bulk = useBulkSelection(isCustomListTab ? [] : chats)
 
 	return (
 		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
@@ -86,12 +90,14 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 										data-[state=open]:animate-in data-[state=closed]:animate-out
 										data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 								>
-									<DropdownMenu.Item
-										className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
-										onSelect={() => bulk.start()}
-									>
-										<CheckSquare size={16} /> Select chats
-									</DropdownMenu.Item>
+									{!isCustomListTab && (
+										<DropdownMenu.Item
+											className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
+											onSelect={() => bulk.start()}
+										>
+											<CheckSquare size={16} /> Select chats
+										</DropdownMenu.Item>
+									)}
 									<DropdownMenu.Item
 										className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
 										onSelect={() => setListsDialogOpen(true)}
@@ -157,16 +163,44 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 					</div>
 				)}
 
-				{!isLoading && isFavoritesTab && chats.length === 0 && (
+				{isCustomListTab ? (
+					customListMembers.isLoading ? (
+						<div className="px-4 py-2 space-y-4">
+							{[...Array(6)].map((_, i) => (
+								<div key={i} className="flex items-center gap-3">
+									<Skeleton className="h-11 w-11 rounded-full" />
+									<div className="flex-1 space-y-2">
+										<Skeleton className="h-3.5 w-2/3" />
+										<Skeleton className="h-3 w-1/2" />
+									</div>
+								</div>
+							))}
+						</div>
+					) : (customListMembers.data?.results ?? []).filter(
+							(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
+								m.type === "user" && !!m.target_user,
+					  ).length === 0 ? (
+						<ChatListEmptyState
+							icon={List}
+							title="No members yet"
+							description="Add chats to this list from a chat's “Add to list” action."
+						/>
+					) : (
+						customListMembers
+							.data!.results.filter(
+								(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
+									m.type === "user" && !!m.target_user,
+							)
+							.map((member) => <CustomListMemberRow key={member.id} member={member} />)
+					)
+				) : isFavoritesTab && chats.length === 0 ? (
 					<ChatListEmptyState
 						icon={Heart}
 						title="Add to favourites"
 						description="Make it easy to find the people and groups that matter most across AppsCombo"
 						action={{ label: "Browse chats", onClick: () => setFilter("all") }}
 					/>
-				)}
-
-				{!isLoading && !isFavoritesTab && chats.length === 0 && (
+				) : !isFavoritesTab && chats.length === 0 ? (
 					<ChatListEmptyState
 						icon={MessageSquarePlus}
 						title={debouncedSearch ? "No results" : "No conversations yet"}
@@ -181,9 +215,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 								: { label: "Start new chat", onClick: () => setNewChatOpen(true) }
 						}
 					/>
-				)}
-
-				{!isLoading &&
+				) : (
 					chats.map((chat) => (
 						<ChatListItem
 							key={chat.id}
@@ -195,7 +227,8 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 							onToggleSelect={bulk.toggle}
 							onAddToList={setListDialogChat}
 						/>
-					))}
+					))
+				)}
 			</ScrollArea>
 
 			<NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />
