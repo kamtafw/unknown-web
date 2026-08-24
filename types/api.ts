@@ -364,16 +364,11 @@ export type RepostCommentResponse = ApiResponse<{
 	}
 }>
 
-export type MediaKind = "image" | "video" | "audio" | "existing"
-
-export interface MediaItem {
-	id: string
-	file: File
-	preview: string
-	urls: string[] | null
-	uploading: boolean
-	error: boolean
-}
+// MediaKind / MediaItem removed — both duplicated verbatim in
+// @/types/socials/api.ts, which is the copy every consumer actually uses
+// (MediaItem) or the only copy that existed as dead code either way
+// (MediaKind — unused from both locations). Kept the socials copy as the
+// one source of truth for these composer-adjacent types.
 
 export type UploadMediaResponse = ApiResponse<{ media_type: string; media_urls: string[] }>
 

@@ -20,18 +20,19 @@ function formatCount(n: number) {
 }
 
 interface AuthorHoverCardProps {
+	id: string
 	pkid: number
 	fallback: Pick<PostUser, "username" | "first_name" | "last_name" | "profile_photo">
 	children: ReactNode
 }
 
-export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardProps) {
+export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCardProps) {
 	const router = useRouter()
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 	const isOwnProfile = pkid === currentUserPkid
 
 	const [open, setOpen] = useState(false)
-	const { data, isLoading } = useUserProfileHover(pkid, open)
+	const { data, isLoading } = useUserProfileHover(id, open)
 	const profile = data?.data
 
 	const followUser = useFollowUser()
@@ -60,7 +61,7 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 					onClick={(e) => {
 						e.stopPropagation()
 						e.preventDefault()
-						router.push(`/profile/${pkid}`)
+						router.push(`/profile/${id}`)
 					}}
 				>
 					{children}

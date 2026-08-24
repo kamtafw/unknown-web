@@ -6,13 +6,11 @@ import {
 	SocialContentPatch,
 } from "@/lib/socials/content-engagement"
 import { PENDING_REPOST_ID_PREFIX, toStandaloneContent } from "@/lib/socials/content-resolvers"
-import { contentKeys, feedKeys } from "@/lib/socials/query-keys"
+import { contentKeys, FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
 import { RepostPayload, SocialContent, SocialContentUser } from "@/types/socials/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 function fullUserToContentUser(user: FullUser): SocialContentUser {
 	return {

@@ -1,12 +1,10 @@
 import { showMutationErrorToast } from "@/lib/api-error"
 import { socialsApi } from "@/lib/socials/api"
-import { feedKeys } from "@/lib/socials/query-keys"
+import { FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
 import { CreatePostPayload, SocialContent, SocialContentUser } from "@/types/socials/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 /** SocialContentUser doesn't carry email/phone_number — that's fine, they
  * were never part of the canonical author shape (migration doc S~2.7's note

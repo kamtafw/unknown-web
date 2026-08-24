@@ -228,7 +228,7 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<AuthorHoverCard pkid={content.user.pkid} fallback={content.user}>
+				<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 					<UserAvatar
 						src={content.user.profile_photo}
 						first={content.user.first_name}
@@ -237,12 +237,12 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 					/>
 				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<AuthorHoverCard pkid={content.user.pkid} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 							{fullname}
 						</span>
 					</AuthorHoverCard>
-					<AuthorHoverCard pkid={content.user.pkid} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<span>@{content.user.username}</span>
 					</AuthorHoverCard>
 					<span>•</span>
@@ -758,7 +758,11 @@ export function PostCard({ post }: { post: SocialContent }) {
 
 			<div onClick={() => router.push(contentHref(displayPost))} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+					<AuthorHoverCard
+						id={displayPost.user.id}
+						pkid={displayPost.user.pkid}
+						fallback={displayPost.user}
+					>
 						<UserAvatar
 							src={displayPost.user.profile_photo}
 							first={displayPost.user.first_name}
@@ -766,12 +770,20 @@ export function PostCard({ post }: { post: SocialContent }) {
 						/>
 					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>{" "}
-						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="text-muted-foreground text-[13.5px]">
 								@{displayPost.user.username}
 							</span>

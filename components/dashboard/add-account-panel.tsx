@@ -8,17 +8,17 @@ import {
 	useSwitchAccount,
 } from "@/hooks/use-linked-accounts"
 import { authApi } from "@/lib/api"
-import { extractFieldErrors, extractMessage, showMutationErrorToast } from "@/lib/api-error"
+import { extractFieldErrors,extractMessage,showMutationErrorToast } from "@/lib/api-error"
 import { otpSchema } from "@/lib/schemas"
 import { resolveMediaUrl } from "@/lib/server-config"
 import { toast } from "@/lib/toast"
-import { cn } from "@/lib/utils"
+import { cn,getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { LinkedAccount, OtpDefault } from "@/types/api"
+import { LinkedAccount,OtpDefault } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
-import { ArrowLeft, Eye, EyeOff, Loader2, Plus } from "lucide-react"
-import { Avatar, Form, unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
-import { FormEvent, useEffect, useState } from "react"
+import { ArrowLeft,Eye,EyeOff,Loader2,Plus } from "lucide-react"
+import { Avatar,Form,unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
+import { FormEvent,useEffect,useState } from "react"
 import { ResendButton } from "../shared/resend-button"
 import { Unlink } from "./account-setting-icons"
 
@@ -57,10 +57,6 @@ function getMethodConfig(otpDefault: OtpDefault) {
 				type: "otp" as const,
 			}
 	}
-}
-
-function getInitials(first: string, last: string) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
 }
 
 function PanelHeader({ title, onBack }: { title: string; onBack: () => void }) {
