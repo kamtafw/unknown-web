@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+	return twMerge(clsx(inputs))
 }
 
 /**
@@ -24,7 +24,7 @@ export function cn(...inputs: ClassValue[]) {
  *   was deliberately left alone rather than pulled into this pass.
  */
 export function getInitials(first?: string | null, last?: string | null) {
-  return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
+	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
 }
 
 /**
@@ -39,7 +39,7 @@ export function getInitials(first?: string | null, last?: string | null) {
  * flagged here rather than silently absorbed.
  */
 export function formatCount(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return String(n)
+	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+	return String(n)
 }
