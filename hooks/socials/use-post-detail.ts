@@ -1,10 +1,8 @@
 import { socialsApi } from "@/lib/socials/api"
 import { toStandaloneContent } from "@/lib/socials/content-resolvers"
-import { contentKeys, feedKeys } from "@/lib/socials/query-keys"
+import { contentKeys, FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { CommentsResponse, SocialContent } from "@/types/socials/api"
-import { InfiniteData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export function usePostDetail(id: string | undefined) {
 	const qc = useQueryClient()

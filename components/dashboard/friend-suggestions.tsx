@@ -90,7 +90,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 		<div className="flex items-center gap-3 py-2.5">
 			<button
 				type="button"
-				onClick={() => router.push(`/profile/${user.pkid}`)}
+				onClick={() => router.push(`/profile/${user.id}`)}
 				className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
 			>
 				<Avatar.Root className={`w-9 h-9 rounded-full overflow-hidden shrink-0 ${colorCls}`}>

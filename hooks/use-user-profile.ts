@@ -2,24 +2,23 @@ import { userApi } from "@/lib/api"
 import { useQuery } from "@tanstack/react-query"
 
 export const userProfileKeys = {
-	detail: (pkid: number) => ["users", "profile", pkid] as const,
+	detail: (id: string) => ["users", "profile", id] as const,
 }
 
-
-export function useUserProfileHover(pkid: number, enabled: boolean) {
+export function useUserProfileHover(id: string, enabled: boolean) {
 	return useQuery({
-		queryKey: userProfileKeys.detail(pkid),
-		queryFn: () => userApi.getUserProfile(pkid),
-		enabled: enabled && !!pkid,
+		queryKey: userProfileKeys.detail(id),
+		queryFn: () => userApi.getUserProfile(id),
+		enabled: enabled && !!id,
 		staleTime: 1000 * 60 * 3,
 	})
 }
 
-export function useUserProfile(pkid: number, enabled: boolean) {
+export function useUserProfile(id: string, enabled: boolean) {
 	return useQuery({
-		queryKey: userProfileKeys.detail(pkid),
-		queryFn: () => userApi.getUserProfile(pkid),
-		enabled: enabled && !!pkid,
+		queryKey: userProfileKeys.detail(id),
+		queryFn: () => userApi.getUserProfile(id),
+		enabled: enabled && !!id,
 		staleTime: 1000 * 60 * 3,
 	})
 }

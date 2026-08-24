@@ -2,6 +2,9 @@
  * Centralized Socials query-key registry.
  */
 
+import { SocialContent } from "@/types/socials/api"
+import { InfiniteData } from "@tanstack/react-query"
+
 export const feedKeys = {
 	all: ["feed"] as const,
 
@@ -50,3 +53,20 @@ export const profileFeedKeys = {
 	media: (id: string) => [...profileFeedKeys.all, "media", id] as const,
 	replies: (id: string) => [...profileFeedKeys.all, "replies", id] as const,
 }
+
+/**
+ * Consolidated from 9 identical local definitions across
+ * hooks/socials/use-post-actions.ts, use-create-post.ts, use-post-detail.ts,
+ * use-repost.ts, lib/socials/content-engagement.ts, and (previously typed
+ * against a different, unrelated Post interface) hooks/use-block-actions.ts,
+ * use-post-interactions.ts, use-mute-actions.ts, use-follow-actions.ts.
+ *
+ * One of those nine (use-block-actions.ts) was importing `Post` from the
+ * old, pre-migration `@/types/api` — a structurally different, dead type
+ * (still had `pkid`/`content_text`) rather than the canonical
+ * `SocialContent` alias every other file used. It happened not to error
+ * because the only field that file actually touches (`p.user.pkid`) exists
+ * on both shapes — but the annotation was wrong regardless. This
+ * consolidation corrects that as a side effect, not a separate change.
+ */
+export type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>

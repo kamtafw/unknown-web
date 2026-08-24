@@ -1,16 +1,12 @@
 "use client"
 
 import { useBlockedUsers, useUnblockUsers } from "@/hooks/use-block-actions"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { BlockedUser } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { ArrowLeft, Loader2, ShieldOff, Users } from "lucide-react"
 import { Avatar } from "radix-ui"
 import { useState } from "react"
-
-function getInitials(first: string, last: string) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
 
 function PanelHeader({
 	onBack,

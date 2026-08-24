@@ -1,6 +1,6 @@
 import { CommentsResponse, SocialContent } from "@/types/socials/api"
 import { InfiniteData, QueryClient } from "@tanstack/react-query"
-import { contentKeys, feedKeys } from "./query-keys"
+import { contentKeys, FeedCache, feedKeys } from "./query-keys"
 
 // Replaces the pre-migration lib/post-engagement.ts (posts-only) and
 // lib/comment-engagement.ts (comments-only) — two independent systems doing
@@ -41,7 +41,6 @@ export function applyContentPatch(base: SocialContent, patch: SocialContentPatch
 	}
 }
 
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
 type ChildrenCache = InfiniteData<CommentsResponse>
 
 /**
