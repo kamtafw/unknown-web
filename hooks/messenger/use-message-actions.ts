@@ -100,8 +100,17 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 	return { forward, pinMessage, unpinMessage, deleteMessage }
 }
 
-/** Separate from useMessageActions since it's a read, not an action — kept
- * in this file rather than a new one, tightly coupled to same domain. */
+/**
+ * Separate from useMessageActions since it's a read, not an action — kept
+ * in this file rather than a new one, tightly coupled to same domain.
+ * 
+ * NOT wired up for direct/user chats — confirmed via mobile
+ * (chat/[id].tsx: "the dedicated /chats/messages/pinned:id endpoint
+ * 404s on this backend or returns empty") that chat_type=user is 
+ * unreliable here. Direct chats derive pinned messages from loaded
+ * history instead (see ConversationView). Retained for chat_type=group,
+ * which mobile's useGetPinnedChatMessages does call successfully.
+ */
 export function usePinnedMessages(
 	chatType: "user" | "group" = "user",
 	targetPkid: Pkid,
