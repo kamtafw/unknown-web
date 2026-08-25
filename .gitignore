@@ -52,4 +52,8 @@ vitest.config.ts.timestamp-*
 
 bugs-and-incomplete.md
 
+<<<<<<< HEAD
 bundle-code.ps1
+=======
+bundle-code.ps1
+>>>>>>> 03c119198a013a578e9122debd3246740c7d4d04
