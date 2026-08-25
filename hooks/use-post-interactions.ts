@@ -1,11 +1,8 @@
 import { socialApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
-import { feedKeys } from "@/lib/socials/query-keys"
+import { FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { toast } from "@/lib/toast"
-import { Post } from "@/types/socials/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 interface FeedSnapshot {
 	forYou?: FeedCache

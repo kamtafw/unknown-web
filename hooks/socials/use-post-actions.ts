@@ -9,12 +9,10 @@ import {
 	SocialContentPatch,
 } from "@/lib/socials/content-engagement"
 import { toStandaloneContent } from "@/lib/socials/content-resolvers"
-import { contentKeys, feedKeys } from "@/lib/socials/query-keys"
+import { contentKeys, FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { toast } from "@/lib/toast"
 import { SocialContent, UpdatePostPayload } from "@/types/socials/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 interface FeedSnapshot {
 	forYou?: FeedCache

@@ -494,14 +494,12 @@ export function ProfileShell({
 	)
 }
 
-export function UserProfileView({ pkid }: { pkid: number }) {
-	console.log("INCOMING PKID::", pkid)
-	
+export function UserProfileView({ id }: { id: string }) {
 	const router = useRouter()
 	const currentUser = useAuthStore((s) => s.user)
-	const isOwnProfile = currentUser?.pkid === pkid
+	const isOwnProfile = currentUser?.id === id
 
-	const { data: userProfileData, isLoading, isError } = useUserProfile(pkid, !isOwnProfile)
+	const { data: userProfileData, isLoading, isError } = useUserProfile(id, !isOwnProfile)
 	const profile = userProfileData?.data
 
 	const followUser = useFollowUser()
@@ -548,7 +546,7 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 					<button
 						onClick={() =>
 							router.push(
-								`/settings?view=profile&returnTo=${encodeURIComponent(`/profile/${pkid}`)}`,
+								`/settings?view=profile&returnTo=${encodeURIComponent(`/profile/${currentUser.id}`)}`,
 							)
 						}
 						className="h-9 px-5 rounded-full border border-border text-[13.5px] font-semibold text-foreground hover:bg-accent transition-colors"
@@ -580,13 +578,13 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 	const isMuted = profile.is_muted
 
 	const handleFollowToggle = () => {
-		if (isFollowed) unfollowUser.mutate(pkid)
-		else followUser.mutate(pkid)
+		if (isFollowed) unfollowUser.mutate(profile.pkid)
+		else followUser.mutate(profile.pkid)
 	}
 
 	const handleMuteToggle = () => {
-		if (isMuted) unmuteUser.mutate(pkid)
-		else muteUser.mutate(pkid)
+		if (isMuted) unmuteUser.mutate(profile.pkid)
+		else muteUser.mutate(profile.pkid)
 	}
 
 	const data: NormalizedProfile = {
@@ -621,7 +619,7 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 					profile.is_blocked ? null : (
 						<div className="flex items-center gap-2">
 							<button
-								onClick={() => console.log("TODO: open DM with", pkid)}
+								onClick={() => console.log("TODO: open DM with", profile.pkid)}
 								className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-foreground hover:bg-accent transition-colors"
 								title="Message"
 							>
@@ -658,7 +656,7 @@ export function UserProfileView({ pkid }: { pkid: number }) {
 				}
 			/>
 			<BlockUserModal
-				pkid={pkid}
+				pkid={profile.pkid}
 				username={profile.username}
 				open={blockModalOpen}
 				onOpenChange={setBlockModalOpen}

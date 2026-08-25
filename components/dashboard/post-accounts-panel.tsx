@@ -1,16 +1,16 @@
 "use client"
 
+import { usePostDetail } from "@/hooks/socials/use-post-detail"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
+import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { getInitials } from "./post-card"
-import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
-import { usePostDetail } from "@/hooks/socials/use-post-detail"
 
 function formatCount(n: number) {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -45,7 +45,7 @@ function AccountCard({
 	// eager warming: fetch immediately (not gated behind hover) so clicking
 	// through to the profile is instant, and so follow/block state here stays
 	// in lockstep with the profile page via the shared ["users","profile",pkid] cache
-	const { data, isLoading } = useUserProfileHover(user.pkid, true)
+	const { data, isLoading } = useUserProfileHover(user.id, true)
 	const profile = data?.data
 
 	const followUser = useFollowUser()

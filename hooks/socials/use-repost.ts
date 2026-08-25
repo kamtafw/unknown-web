@@ -6,13 +6,11 @@ import {
 	SocialContentPatch,
 } from "@/lib/socials/content-engagement"
 import { PENDING_REPOST_ID_PREFIX, toStandaloneContent } from "@/lib/socials/content-resolvers"
-import { contentKeys, feedKeys } from "@/lib/socials/query-keys"
+import { contentKeys, FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import { FullUser } from "@/types/api"
 import { RepostPayload, SocialContent, SocialContentUser } from "@/types/socials/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-
-type FeedCache = InfiniteData<{ posts: SocialContent[]; nextPage: string | null }>
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 function fullUserToContentUser(user: FullUser): SocialContentUser {
 	return {
@@ -162,9 +160,16 @@ export function useRepost() {
 			}
 
 			if (!vars.content?.trim()) {
-				const realId = data.data.original_post.reposts?.[0]?.id
+				// `repost_id` is the flat, contract-documented field — the previous
+				// `original_post.reposts?.[0]?.id` path assumed an unverified nested
+				// shape and threw when `original_post` wasn't present, silently
+				// aborting this handler before invalidateQueries below ever ran.
+				const realId = data.data.repost_id
 				if (realId != null) {
-					patchEngagementEverywhere(qc, vars.original_post, { my_repost_id: realId })
+					patchEngagementEverywhere(qc, vars.original_post, {
+						my_repost_id: realId,
+						viewer: { reposted: true },
+					})
 				}
 			}
 			qc.invalidateQueries({ queryKey: feedKeys.forYou() })
