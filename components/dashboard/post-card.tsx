@@ -263,12 +263,14 @@ function ActionBar({
 	reposts,
 	onQuoteClick,
 	onCommentClick,
+	myRepostId,
 }: {
 	post: SocialContent
 	comments: number
 	reposts: number
 	onQuoteClick: () => void
 	onCommentClick: () => void
+	myRepostId?: string
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
@@ -282,18 +284,22 @@ function ActionBar({
 	const undoRepost = useDeletePost()
 
 	const handleRepost = () => {
-		if (post.my_repost_id == null) {
+		if (!post.viewer.reposted) {
 			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		if (isSettledRepostId(post.my_repost_id)) {
-			undoRepost.mutate({
-				id: post.my_repost_id,
-				originalPost: { id: post.id, wasBareRepost: true },
-			})
+		const deletableId =
+			post.my_repost_id && isSettledRepostId(post.my_repost_id) ? post.my_repost_id : myRepostId
+		if (deletableId) {
+			undoRepost.mutate({ id: deletableId, originalPost: { id: post.id, wasBareRepost: true } })
+			return
 		}
-		// else: still settling from the create — ignore the click rather than
-		// delete with a temp pkid
+		// viewer.reposted is true, but neither id is available: a plain (non
+		// repost-card) view of content reposted in an *earlier* session, and
+		// the backend confirmed it doesn't return a repost identifier on GET.
+		// Same class of gap as AuthorHoverCard's missing pkid — no safe id to
+		// delete by, so no-op rather than guessing. Worth raising with backend
+		// as a `viewer`-level field, alongside that one.
 	}
 
 	return (
@@ -318,7 +324,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={post.my_repost_id != null}
+					reposted={post.viewer.reposted || post.my_repost_id != null}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -725,9 +731,13 @@ export function PostCard({ post }: { post: SocialContent }) {
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const bareRepost = isBareRepost(post)
-	const isMyRepost = post.user.pkid === user?.pkid
-
+	const isMyRepost = post.user.id === user?.id
 	const engagementPost = resolveEngagementContent(post)
+
+	// Only knowable case where "my repost's id" is real backend data rather than
+	// a locally-invented field.
+	const myRepostId = bareRepost && isMyRepost ? post.id : undefined
+
 	// displayPost.message/.media/.location now work uniformly regardless of
 	// kind — the old code special-cased "is the original a Comment" with a
 	// separate normaliseCommentOriginal() field-name mapper
@@ -826,6 +836,7 @@ export function PostCard({ post }: { post: SocialContent }) {
 					reposts={engagementPost.metrics.reposts}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
+					myRepostId={myRepostId}
 				/>
 			</div>
 
