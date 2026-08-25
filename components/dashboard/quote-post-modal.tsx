@@ -3,6 +3,8 @@
 import { useRepost } from "@/hooks/socials/use-repost"
 import { hasAnyMention } from "@/lib/mentions"
 import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
 	MediaItem,
@@ -16,46 +18,9 @@ import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide
 import Image from "next/image"
 import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
-import { QuotedContentCard, getInitials } from "./post-card"
+import { QuotedContentCard } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
-
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string): string[] {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
-}
 
 interface QuotePostModalProps {
 	post: SocialContent

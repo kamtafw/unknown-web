@@ -3,6 +3,8 @@
 import { useUpdatePost } from "@/hooks/socials/use-post-actions"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { hasAnyMention } from "@/lib/mentions"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Post, UpdatePostPayload, WhoCanReply, WhoCanSee } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -12,46 +14,8 @@ import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
 import { HighlightedTextarea } from "../shared/highlighted-textarea"
 import { MentionAutocomplete } from "../shared/mention-autocomplete"
-import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
-
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string): string[] {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.replace("#", ""))
-}
 
 interface EditPostModalProps {
 	post: Post

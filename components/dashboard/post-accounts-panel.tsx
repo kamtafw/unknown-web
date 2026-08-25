@@ -5,18 +5,11 @@ import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
 import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
-import { cn } from "@/lib/utils"
+import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
-import { getInitials } from "./post-card"
-
-function formatCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-	return String(n)
-}
 
 function AccountCardSkeleton() {
 	return (

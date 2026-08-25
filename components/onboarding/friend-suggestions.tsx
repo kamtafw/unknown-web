@@ -1,4 +1,5 @@
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { getInitials } from "@/lib/utils"
 import { FullUser } from "@/types/api"
 import * as Avatar from "@radix-ui/react-avatar"
 import { useState } from "react"
@@ -14,10 +15,6 @@ const AVATAR_COLORS = [
 	"bg-orange-200 text-orange-700",
 	"bg-indigo-200 text-indigo-700",
 ]
-
-function getInitials(first: string | null, last: string | null) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
 
 function UserRow({ user, index }: { user: FullUser; index: number }) {
 	const [followed, setFollowed] = useState(false)

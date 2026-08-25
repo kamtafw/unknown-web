@@ -3,7 +3,7 @@
 import LegalPrivacyPolicy from "@/components/legal/privacy-policy"
 import LegalTerms from "@/components/legal/terms"
 import { useLogout } from "@/hooks/use-auth"
-import { cn } from "@/lib/utils"
+import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -1053,16 +1053,6 @@ const COMING_SOON: { id: string; title: string }[] = [
 	{ id: "linked-devices", title: "Linked devices" },
 	{ id: "edit-phone", title: "Phone number" },
 ]
-
-function getInitials(first: string | null, last: string | null) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
-
-function formatCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-	return String(n)
-}
 
 function formatDob(dob: string, dob_visibility: "full" | "partial") {
 	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"
