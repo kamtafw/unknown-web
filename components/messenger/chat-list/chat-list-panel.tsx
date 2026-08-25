@@ -133,38 +133,24 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 			</div>
 
 			<ScrollArea className="flex-1">
-				{!isFavoritesTab && (
-					// Archive: real, confirmed capability, but *viewing* the
-					// archived list is deferred past M2 (M2 only covers
-					// archiving *from* the main list) — inert per the same
-					// reasoning as M1 product decision 4.
-					<button
-						onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
-						className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
-					>
-						<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-							<Archive size={18} />
-						</span>
-						<span className="text-sm font-medium text-muted-foreground">Archive</span>
-					</button>
-				)}
+				<div className="w-0 min-w-full">
+					{!isFavoritesTab && (
+						// Archive: real, confirmed capability, but *viewing* the
+						// archived list is deferred past M2 (M2 only covers
+						// archiving *from* the main list) — inert per the same
+						// reasoning as M1 product decision 4.
+						<button
+							onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
+							className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
+						>
+							<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+								<Archive size={18} />
+							</span>
+							<span className="text-sm font-medium text-muted-foreground">Archive</span>
+						</button>
+					)}
 
-				{isLoading && (
-					<div className="px-4 py-2 space-y-4">
-						{[...Array(6)].map((_, i) => (
-							<div key={i} className="flex items-center gap-3">
-								<Skeleton className="h-11 w-11 rounded-full" />
-								<div className="flex-1 space-y-2">
-									<Skeleton className="h-3.5 w-2/3" />
-									<Skeleton className="h-3 w-1/2" />
-								</div>
-							</div>
-						))}
-					</div>
-				)}
-
-				{isCustomListTab ? (
-					customListMembers.isLoading ? (
+					{isLoading && (
 						<div className="px-4 py-2 space-y-4">
 							{[...Array(6)].map((_, i) => (
 								<div key={i} className="flex items-center gap-3">
@@ -176,59 +162,75 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 								</div>
 							))}
 						</div>
-					) : (customListMembers.data?.results ?? []).filter(
-							(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
-								m.type === "user" && !!m.target_user,
-					  ).length === 0 ? (
-						<ChatListEmptyState
-							icon={List}
-							title="No members yet"
-							description="Add chats to this list from a chat's “Add to list” action."
-						/>
-					) : (
-						customListMembers
-							.data!.results.filter(
+					)}
+
+					{isCustomListTab ? (
+						customListMembers.isLoading ? (
+							<div className="px-4 py-2 space-y-4">
+								{[...Array(6)].map((_, i) => (
+									<div key={i} className="flex items-center gap-3">
+										<Skeleton className="h-11 w-11 rounded-full" />
+										<div className="flex-1 space-y-2">
+											<Skeleton className="h-3.5 w-2/3" />
+											<Skeleton className="h-3 w-1/2" />
+										</div>
+									</div>
+								))}
+							</div>
+						) : (customListMembers.data?.results ?? []).filter(
 								(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
 									m.type === "user" && !!m.target_user,
-							)
-							.map((member) => <CustomListMemberRow key={member.id} member={member} />)
-					)
-				) : isFavoritesTab && chats.length === 0 ? (
-					<ChatListEmptyState
-						icon={Heart}
-						title="Add to favourites"
-						description="Make it easy to find the people and groups that matter most across AppsCombo"
-						action={{ label: "Browse chats", onClick: () => setFilter("all") }}
-					/>
-				) : !isFavoritesTab && chats.length === 0 ? (
-					<ChatListEmptyState
-						icon={MessageSquarePlus}
-						title={debouncedSearch ? "No results" : "No conversations yet"}
-						description={
-							debouncedSearch
-								? "Try a different name or username."
-								: "Start a new chat to get your first conversation going."
-						}
-						action={
-							debouncedSearch
-								? undefined
-								: { label: "Start new chat", onClick: () => setNewChatOpen(true) }
-						}
-					/>
-				) : (
-					chats.map((chat) => (
-						<ChatListItem
-							key={chat.id}
-							chat={chat}
-							isActive={chat.id === activeUuid}
-							isTyping={typingUuids.has(chat.id)}
-							bulkMode={bulk.active}
-							selected={bulk.selected.has(chat.id)}
-							onToggleSelect={bulk.toggle}
-							onAddToList={setListDialogChat}
+						  ).length === 0 ? (
+							<ChatListEmptyState
+								icon={List}
+								title="No members yet"
+								description="Add chats to this list from a chat's “Add to list” action."
+							/>
+						) : (
+							customListMembers
+								.data!.results.filter(
+									(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
+										m.type === "user" && !!m.target_user,
+								)
+								.map((member) => <CustomListMemberRow key={member.id} member={member} />)
+						)
+					) : isFavoritesTab && chats.length === 0 ? (
+						<ChatListEmptyState
+							icon={Heart}
+							title="Add to favourites"
+							description="Make it easy to find the people and groups that matter most across AppsCombo"
+							action={{ label: "Browse chats", onClick: () => setFilter("all") }}
 						/>
-					))
-				)}
+					) : !isFavoritesTab && chats.length === 0 ? (
+						<ChatListEmptyState
+							icon={MessageSquarePlus}
+							title={debouncedSearch ? "No results" : "No conversations yet"}
+							description={
+								debouncedSearch
+									? "Try a different name or username."
+									: "Start a new chat to get your first conversation going."
+							}
+							action={
+								debouncedSearch
+									? undefined
+									: { label: "Start new chat", onClick: () => setNewChatOpen(true) }
+							}
+						/>
+					) : (
+						chats.map((chat) => (
+							<ChatListItem
+								key={chat.id}
+								chat={chat}
+								isActive={chat.id === activeUuid}
+								isTyping={typingUuids.has(chat.id)}
+								bulkMode={bulk.active}
+								selected={bulk.selected.has(chat.id)}
+								onToggleSelect={bulk.toggle}
+								onAddToList={setListDialogChat}
+							/>
+						))
+					)}
+				</div>
 			</ScrollArea>
 
 			<NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />

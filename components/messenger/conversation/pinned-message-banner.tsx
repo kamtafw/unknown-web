@@ -1,14 +1,11 @@
 "use client"
 
-import { usePinnedMessages } from "@/hooks/messenger/use-message-actions"
-import type { Message, Pkid, Uuid } from "@/types/messenger"
+import type { Message } from "@/types/messenger"
 import { ChevronRight, Pin, X } from "lucide-react"
 import { useState } from "react"
 
 interface PinnedMessageBannerProps {
-	chatType: "user" | "group"
-	peerPkid: Pkid
-	peerUuid: Uuid
+	pinnedMessages: Message[]
 	onJumpToMessage: (message: Message) => void
 	onUnpin: (message: Message) => void
 }
@@ -28,20 +25,27 @@ function resolvePreviewText(message: Message): string {
 	return message.content || message.message_type
 }
 
+/**
+ * BUG FIX (M2 retest): previously fetched via usePinnedMessages (GET
+ * chats/messages/pinned?chat_type=user&...). Confirmed via mobile
+ * (chat/[id].tsx) that this endpoint 404s or returns empty on this
+ * backend for direct/user chats — mobile derives pinned state from
+ * the loaded history's `is_pinned` flag instead of fetching it.
+ * `pinnedMessages` is now that same derived list, passed down from
+ * ConversationView, so `current.id` is always a real id already
+ * present in `messageNodeRefs`.
+ */
 export function PinnedMessageBanner({
-	chatType,
-	peerPkid,
-	peerUuid,
+	pinnedMessages,
 	onJumpToMessage,
 	onUnpin,
 }: PinnedMessageBannerProps) {
-	const { data: pinned } = usePinnedMessages(chatType, peerPkid, peerUuid)
 	const [index, setIndex] = useState(0)
 
-	if (!pinned || pinned.length === 0) return null
-	const currentIndex = index % pinned.length
-	const current = pinned[currentIndex]
-	const hasMultiple = pinned.length > 1
+	if (pinnedMessages.length === 0) return null
+	const currentIndex = index % pinnedMessages.length
+	const current = pinnedMessages[currentIndex]
+	const hasMultiple = pinnedMessages.length > 1
 
 	return (
 		<div className="w-full flex items-center gap-2.5 px-4 py-2 border-b border-border bg-muted/40 shrink-0">
@@ -49,7 +53,7 @@ export function PinnedMessageBanner({
 
 			<button onClick={() => onJumpToMessage(current)} className="flex-1 min-w-0 text-left">
 				<p className="text-xs font-medium text-primary">
-					Pinned message{hasMultiple ? ` (${currentIndex + 1} of ${pinned.length})` : ""}
+					Pinned message{hasMultiple ? ` (${currentIndex + 1} of ${pinnedMessages.length})` : ""}
 				</p>
 				<p className="text-xs text-muted-foreground truncate">{resolvePreviewText(current)}</p>
 			</button>
