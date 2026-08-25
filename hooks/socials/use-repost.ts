@@ -160,9 +160,16 @@ export function useRepost() {
 			}
 
 			if (!vars.content?.trim()) {
-				const realId = data.data.original_post.reposts?.[0]?.id
+				// `repost_id` is the flat, contract-documented field — the previous
+				// `original_post.reposts?.[0]?.id` path assumed an unverified nested
+				// shape and threw when `original_post` wasn't present, silently
+				// aborting this handler before invalidateQueries below ever ran.
+				const realId = data.data.repost_id
 				if (realId != null) {
-					patchEngagementEverywhere(qc, vars.original_post, { my_repost_id: realId })
+					patchEngagementEverywhere(qc, vars.original_post, {
+						my_repost_id: realId,
+						viewer: { reposted: true },
+					})
 				}
 			}
 			qc.invalidateQueries({ queryKey: feedKeys.forYou() })
