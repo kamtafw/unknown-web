@@ -1,9 +1,11 @@
 "use client"
 
 import { groupApi } from "@/lib/messenger/group-api"
+import { projectWithOverlays } from "@/lib/messenger/list-overlay"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import type { GroupListItem } from "@/types/messenger"
 import { useInfiniteQuery } from "@tanstack/react-query"
+export const GROUP_LIST_OVERLAY_KEY = "group-list"
 
 /** Confirmed via mobile's `useGetGroups`: the server returns correct
  * `last_message_time` values but doesn't reliably order by them, so a
@@ -25,7 +27,10 @@ export function useGroupList() {
 		select: (data) => ({
 			pages: data.pages,
 			pageParams: data.pageParams,
-			groups: data.pages.flatMap((page) => page.groups).sort(byLastMessageDesc),
+			groups: projectWithOverlays<GroupListItem>(
+				GROUP_LIST_OVERLAY_KEY,
+				data.pages.flatMap((page) => page.groups).sort(byLastMessageDesc),
+			),
 		}),
 		staleTime: 30_000,
 	})

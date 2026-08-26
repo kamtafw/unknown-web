@@ -6,31 +6,35 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useGroupList } from "@/hooks/messenger/use-group-list"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { Users } from "lucide-react"
+import { Plus, Users } from "lucide-react"
+import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { CreateGroupDialog } from "./create-group-list"
 import { GroupListItem } from "./group-list-item"
 
 interface GroupListPanelProps {
 	activeGroupId: number | null
 }
 
+const menuItemClass =
+	"flex items-center px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm font-medium transition-colors hover:bg-accent data-highlighted:bg-accent"
+
 /**
- * Groups/Communities panel, reached from the rail's "Groups" item — a
- * top-level section distinct from the direct-chat list, not a filter
- * chip within it (resolves M1's open "Contacts/Lists" question — see
- * DECISIONS.md). Communities is Tier 3 — inert here.
+ * Groups/Communities panel, reached from the rail's "Groups" item — see
+ * DECISIONS.md. Communities and "Schedule message" on the FAB are inert
+ * (Tier 3 / Tier 2 respectively, not M3) — only "New Group" is wired.
  *
- * No search input: mobile's `useGetGroups` only accepts a cursor param,
- * no `search` — unlike `chatApi.list`. Not building a client-only search
- * box with no backend behind it. Flagged in MESSENGER.md.
+ * No search input on the list itself: mobile's `useGetGroups` only
+ * accepts a cursor param, no `search`.
  */
 export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 	const [tab, setTab] = useState<"groups" | "communities">("groups")
+	const [createOpen, setCreateOpen] = useState(false)
 	const { data, isLoading } = useGroupList()
 	const groups = data?.groups ?? []
 
 	return (
-		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
+		<div className="relative w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
 			<div className="flex items-center justify-between px-4 pt-4 pb-3">
 				<h1 className="text-xl font-bold">Groups</h1>
 			</div>
@@ -94,6 +98,46 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 					)}
 				</div>
 			</ScrollArea>
+
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					<button
+						title="New"
+						className="absolute bottom-5 right-5 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+					>
+						<Plus size={22} />
+					</button>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Portal>
+					<DropdownMenu.Content
+						align="end"
+						side="top"
+						sideOffset={10}
+						className="z-150 min-w-52 bg-popover border border-border rounded-2xl p-1.5 shadow-xl
+							data-[state=open]:animate-in data-[state=closed]:animate-out
+							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+					>
+						<DropdownMenu.Item className={menuItemClass} onSelect={() => setCreateOpen(true)}>
+							New Group
+						</DropdownMenu.Item>
+						<DropdownMenu.Item
+							className={menuItemClass}
+							onSelect={() => toast.info("Communities are coming in a later milestone")}
+						>
+							New Community
+						</DropdownMenu.Item>
+						<DropdownMenu.Item
+							className={menuItemClass}
+							onSelect={() => toast.info("Scheduled messages are coming in a later milestone")}
+						>
+							Schedule message
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Portal>
+			</DropdownMenu.Root>
+
+			<CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
 		</div>
 	)
 }

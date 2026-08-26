@@ -219,3 +219,38 @@ export interface RemoveGroupMemberPayload {
 export interface SyncGroupMembersPayload {
 	userPkids: Pkid[]
 }
+
+export interface CreateGroupMember {
+	user_id: Pkid
+	role: GroupRole
+}
+
+/** POST chats/groups. `icon_url` is optional on the wire, but every
+ * confirmed caller always sends a concrete value — mirrored here as
+ * required to match how it's actually used, not the looser type. */
+export interface CreateGroupPayload {
+	name: string
+	icon_url: string
+	can_members_edit_info?: boolean
+	can_members_add_users?: boolean
+	can_members_send_messages?: boolean
+	admin_have_to_approve_new_members?: boolean
+	members: CreateGroupMember[]
+}
+
+/**
+ * NAMING TRAP: `group_name`, not `name` — differs from both the request
+ * payload and the `Group`/`GroupListItem` shapes. Also thinner than
+ * `Group` (no `members_count`/`created_by`/`member_preview`) — don't
+ * construct a full `Group` from this; navigate to the group and let
+ * useGroupDetail fetch it fresh.
+ */
+export interface CreateGroupResponse {
+	id: number
+	group_name: string
+	icon_url: string
+	can_members_edit_info: boolean
+	can_members_add_users: boolean
+	can_members_send_messages: boolean
+	admin_have_to_approve_new_members: boolean
+}

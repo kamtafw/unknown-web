@@ -9,7 +9,15 @@
  */
 
 import { ApiResponse } from "@/types/api"
-import { Group, GroupChatHistoryData, GroupListData } from "@/types/messenger"
+import {
+	CreateGroupPayload,
+	CreateGroupResponse,
+	Group,
+	GroupChatHistoryData,
+	GroupListData,
+	GroupMessage,
+	SendMessagePayload,
+} from "@/types/messenger"
 import { apiClient } from "../axios"
 
 export const groupApi = {
@@ -42,4 +50,20 @@ export const groupApi = {
 	},
 
 	markSeen: (groupId: number) => apiClient.post(`/api/chats/groups/${groupId}/seen`, {}),
+
+	/**
+	 * Same endpoint as chatApi.send(`/api/chats/messages`). Typed separately
+	 * because the real response for a group send comes back GroupMessage-shaped
+	 * (`group: GroupInfo` object), not Message-shaped (`group: string | null`)
+	 * — reusing chatApi.send's return type here would silently lie about the shape.
+	 */
+	send: (payload: SendMessagePayload) =>
+		apiClient
+			.post<ApiResponse<GroupMessage>>("/api/chats/messages", payload)
+			.then((r) => r.data.data),
+
+	create: (payload: CreateGroupPayload) =>
+		apiClient
+			.post<ApiResponse<CreateGroupResponse>>("/api/chats/groups", payload)
+			.then((r) => r.data.data),
 }
