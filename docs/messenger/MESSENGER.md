@@ -98,6 +98,8 @@ Full reasoning for all decisions: `DECISIONS.md`.
 - **Two real bugs found and fixed in `chatApi.list`**: the cursor param was being written under the `search` key (broke pagination silently), and a missing `?` produced a malformed query string whenever any filter/search was active. Both pre-dated M2 but were only caught while extending this file.
 - **New reusable pattern (D-006)**: `lib/messenger/list-overlay.ts` generalizes mobile's documented favorites read-after-write lag workaround for reuse across pin/mute/archive/block.
 
-## Immediate next action
+## M3 findings worth knowing
 
-Real-world test M2 against the live backend — pin/mute/archive/favorite/block especially, since those are the ones exercising the new overlay pattern under actual backend timing rather than just passing type-checks. Once confirmed, start **M3 — Groups core**.
+- **M3 read-path slice complete:** group types/contracts, `groupApi` (list/detail/history/markSeen), `useGroupList`/`useGroupDetail`/`useGroupHistory`, `GroupListPanel`/`GroupListItem`, `GroupConversationHeader`/`GroupConversationView` (read-only, reuses `MessageList`/`MessageBubble` via `groupMessageToMessage`), routes under `/messenger/groups` rail repurposed.
+- **Known gaps, deliberately deferred to the next slice:** sending, permission-aware composer (pause vs. `can_members_send_messages` vs. admin override — still needs the verification you flagged: does pause override admin?), socket (`GROUP_SOCKET_EVENTS`, room join/rejoin, `group:delete` after HTTP delete), admin surfaces (members list/add/remove/role, permissions, pause toggle), threaded replies UI, no search on the Groups list (no confirmed backend param for it).
+- **Confirmed risk carried forward:** `GroupChatHistoryData.next` = older messages (opposite naming from 1:1's `previous`) — documented in code, don't "fix" it to match.
