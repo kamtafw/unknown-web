@@ -208,16 +208,16 @@ export interface UpdateGroupPermissionsPayload {
 }
 
 export interface ManageGroupMemberRolePayload {
-	userPkid: Pkid
+	user_id: Pkid
 	role: GroupRole
 }
 
 export interface RemoveGroupMemberPayload {
-	userPkid: Pkid
+	user_id: Pkid
 }
 
 export interface SyncGroupMembersPayload {
-	userPkids: Pkid[]
+	user_ids: Pkid[]
 }
 
 export interface CreateGroupMember {

@@ -7,13 +7,13 @@ import { useChatList } from "@/hooks/messenger/use-chat-list"
 import { useCreateGroup } from "@/hooks/messenger/use-create-group"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
-import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem } from "@/types/messenger"
 import { ArrowLeft, Camera, Check, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { useState } from "react"
+import { PermissionToggleRow } from "../group-conversation/permission-toggle-row"
 
 interface CreateGroupDialogProps {
 	open: boolean
@@ -241,37 +241,5 @@ export function CreateGroupDialog({ open, onOpenChange }: CreateGroupDialogProps
 				)}
 			</DialogContent>
 		</Dialog>
-	)
-}
-
-function PermissionToggleRow({
-	label,
-	checked,
-	onChange,
-}: {
-	label: string
-	checked: boolean
-	onChange: (value: boolean) => void
-}) {
-	return (
-		<button
-			onClick={() => onChange(!checked)}
-			className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-accent transition-colors text-left"
-		>
-			<span className="text-sm">{label}</span>
-			<span
-				className={cn(
-					"relative h-5 w-9 rounded-full transition-colors shrink-0",
-					checked ? "bg-primary" : "bg-muted",
-				)}
-			>
-				<span
-					className={cn(
-						"absolute top-0.5 h-4 w-4 rounded-full bg-background transition-transform",
-						checked ? "translate-x-4" : "translate-x-0.5",
-					)}
-				/>
-			</span>
-		</button>
 	)
 }

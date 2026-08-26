@@ -7,15 +7,23 @@ import type { GroupListItem } from "@/types/messenger"
 import { useInfiniteQuery } from "@tanstack/react-query"
 export const GROUP_LIST_OVERLAY_KEY = "group-list"
 
-/** Confirmed via mobile's `useGetGroups`: the server returns correct
- * `last_message_time` values but doesn't reliably order by them, so a
- * just-messaged group can sit in its stale slot until the next refetch.
- * This client-side sort is mobile's actual fix for a confirmed backend
- * quirk, not an invented enrichment — carried over as-is. */
+/**
+ * `created_at` isn't available on GroupListItem (confirmed absent from
+ * the actual payload — only Group's DETAIL endpoint has it), so a true
+ * "created-then-last-message" sort isn't possible from this response
+ * alone without an extra per-group detail fetch, which isn't worth it
+ * here. As a proxy: groups with no messages yet sort ABOVE groups that
+ * do have one (instead of the previous epoch-0 fallback sending them to
+ * the very bottom), with Array.sort's stability preserving whatever
+ * order the backend already returned them in among themselves. This is
+ * a mitigation, not the literal fix requested — documented as a known
+ * limitation in MESSENGER.md.
+ */
 function byLastMessageDesc(a: GroupListItem, b: GroupListItem): number {
-	const aMs = a.last_message_time ? new Date(a.last_message_time).getTime() : 0
-	const bMs = b.last_message_time ? new Date(b.last_message_time).getTime() : 0
-	return bMs - aMs
+	if (!a.last_message_time && !b.last_message_time) return 0
+	if (!a.last_message_time) return -1
+	if (!b.last_message_time) return 1
+	return new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
 }
 
 export function useGroupList() {
