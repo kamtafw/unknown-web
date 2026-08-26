@@ -3,7 +3,9 @@
 import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
 import { canReplyTo } from "@/lib/socials/content-permissions"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { CreateReplyPayload, MediaItem, SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -13,45 +15,8 @@ import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
 import { HighlightedTextarea } from "../shared/highlighted-textarea"
 import { MentionAutocomplete } from "../shared/mention-autocomplete"
-import { UserAvatar, getInitials, renderText } from "./post-card"
+import { UserAvatar, renderText } from "./post-card"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
-
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string) {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
-}
 
 interface ReplyModalProps {
 	/** the direct parent being replied to — may itself be a reply, not just
@@ -259,9 +224,7 @@ export function ReplyModal({ parent, post, open, onOpenChange }: ReplyModalProps
 							<div className="flex-1 min-w-0 pb-3">
 								<div className="flex items-center gap-1.5 flex-wrap">
 									<span className="font-semibold text-sm text-foreground">{commentAuthorName}</span>
-									<span className="text-muted-foreground text-[13px]">
-										@{parent.user.username}
-									</span>
+									<span className="text-muted-foreground text-[13px]">@{parent.user.username}</span>
 								</div>
 								{!!parent.message && (
 									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">

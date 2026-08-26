@@ -12,6 +12,7 @@ import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useUserProfile } from "@/hooks/use-user-profile"
+import { formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
 import { Post, SocialContent } from "@/types/socials/api"
@@ -36,16 +37,6 @@ import { FollowButton } from "../shared/follow-button"
 import { ActionDropdown } from "./action-dropdown"
 import { BlockUserModal } from "./block-user-modal"
 import { PostCard, renderText, UserAvatar } from "./post-card"
-
-export function getInitials(first?: string | null, last?: string | null) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
-
-export function formatCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-	return String(n)
-}
 
 export function formatDob(dob: string, dob_visibility: "full" | "partial") {
 	const format = dob_visibility === "partial" ? "D MMM" : "D MMM, YYYY"

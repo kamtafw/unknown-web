@@ -19,7 +19,7 @@ import {
 	isSettledRepostId,
 	resolveEngagementContent,
 } from "@/lib/socials/content-resolvers"
-import { cn } from "@/lib/utils"
+import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -52,12 +52,6 @@ import { QuotePostModal } from "./quote-post-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
 
-export function formatCount(count: number) {
-	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
-	if (count >= 1_000) return `${(count / 1_000).toFixed(0)}k`
-	return String(count)
-}
-
 export function shortAddress(address: string) {
 	const parts = address
 		.split(",")
@@ -71,10 +65,6 @@ export function mediaType(url: string): "image" | "video" | "audio" {
 	if (["mp4", "mov", "webm"].includes(ext)) return "video"
 	if (["mp3", "wav", "ogg", "m4a"].includes(ext)) return "audio"
 	return "image"
-}
-
-export function getInitials(first: string, last: string) {
-	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
 
 export function renderText(text: string) {
@@ -275,7 +265,7 @@ function ActionBar({
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
-	const isOwn = post.user.pkid === user?.pkid
+	const isOwn = post.user.id === user?.id
 	const repost = useRepost()
 	// undo-repost reuses useDeletePost — deleting a repost IS deleting the
 	// Post object it created (confirmed against the pre-migration call
@@ -539,7 +529,7 @@ export function PostOptionsMenu({
 	feedItemId,
 }: {
 	post: SocialContent
-	currentUserId?: number
+	currentUserId?: string
 	feedItemId?: string
 }) {
 	// `post` here is the *resolved engagement entity* (see PostCard below) —
@@ -550,7 +540,7 @@ export function PostOptionsMenu({
 	// belongs in the thread view, not this feed-card dropdown — that's
 	// wired up separately where the new comment/reply edit-delete UI lives
 	// (migration doc S~8/S~11), not duplicated here.
-	const isOwn = post.user.pkid === currentUserId && post.kind === "post"
+	const isOwn = post.user.id === currentUserId && post.kind === "post"
 	const pkid = post.user.pkid
 
 	const router = useRouter()
@@ -810,11 +800,7 @@ export function PostCard({ post }: { post: SocialContent }) {
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu
-							post={engagementPost}
-							currentUserId={user?.pkid}
-							feedItemId={post.id}
-						/>
+						<PostOptionsMenu post={engagementPost} currentUserId={user?.id} feedItemId={post.id} />
 					</div>
 				</div>
 

@@ -13,9 +13,10 @@ import { useRepost } from "@/hooks/socials/use-repost"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
 import { canReplyTo } from "@/lib/socials/content-permissions"
 import { isSettledRepostId, resolveEngagementContent } from "@/lib/socials/content-resolvers"
-import { cn } from "@/lib/utils"
+import { cn, formatCount } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import {
 	CreateCommentPayload,
@@ -44,7 +45,6 @@ import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
 import {
-	formatCount,
 	MediaGrid,
 	mediaType,
 	PostOptionsMenu,
@@ -71,43 +71,6 @@ import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 // Replying while focused sends `parent_id = focusedContent.id` — never the
 // root post's id — which is the one rule this whole rework exists to
 // protect (migration doc §10's "never blur post_id vs parent_id").
-
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string) {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
-}
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
 	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -765,7 +728,7 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()} className="ml-auto flex">
-						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
+						<PostOptionsMenu post={post} currentUserId={user?.id} />
 					</div>
 				</div>
 
