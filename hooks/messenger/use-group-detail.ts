@@ -9,6 +9,7 @@ export function useGroupDetail(groupId: number | undefined) {
 		queryKey: groupKeys.detail(groupId ?? 0),
 		queryFn: () => groupApi.detail(groupId as number),
 		enabled: !!groupId,
-		staleTime: 30_000,
+		refetchOnMount: "always",
+		// staleTime: 30_000,
 	})
 }

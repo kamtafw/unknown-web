@@ -40,6 +40,7 @@ export function useGroupList() {
 				data.pages.flatMap((page) => page.groups).sort(byLastMessageDesc),
 			),
 		}),
-		staleTime: 30_000,
+		refetchOnMount: "always",
+		// staleTime: 30_000,
 	})
 }
