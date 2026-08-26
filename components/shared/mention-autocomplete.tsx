@@ -1,13 +1,10 @@
 "use client"
 
 import type { MentionAutocompleteState } from "@/hooks/use-mention-autocomplete"
-import { MentionUser } from "@/types/api"
+import { getInitials } from "@/lib/utils"
+import { MentionUser } from "@/types/socials/api"
 import { Loader2 } from "lucide-react"
 import { Avatar, Popover } from "radix-ui"
-
-function getInitials(first: string, last: string) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
 
 function HighlightMatch({ text, query }: { text: string; query: string }) {
 	if (!query) return <>{text}</>

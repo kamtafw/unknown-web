@@ -1,8 +1,8 @@
-import { replyRestrictionMessage } from "@/lib/post-permissions"
-import type { WhoCanReply } from "@/types/api"
+import type { WhoCanReply } from "@/types/socials/api"
 import { Lock } from "lucide-react"
 import type { ComponentType } from "react"
 import { Followers, Following, Mention, Verified } from "../posts/icons"
+import { replyRestrictionMessage } from "@/lib/socials/content-permissions"
 
 type IconComp = ComponentType<{ size?: number; color?: string }>
 

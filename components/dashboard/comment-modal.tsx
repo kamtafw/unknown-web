@@ -1,11 +1,14 @@
 "use client"
 
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
+import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
+import { useLocationPicker } from "@/hooks/socials/use-location-picker"
+import { useMediaUpload } from "@/hooks/socials/use-media-upload"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { socialApi } from "@/lib/api"
-import { canReplyToPost } from "@/lib/post-permissions"
+import { EMOJIS, extractHashtags, insertEmojiAtCursor } from "@/lib/socials/composer"
+import { canReplyTo } from "@/lib/socials/content-permissions"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import type { CreateCommentPayload, SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -13,48 +16,11 @@ import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
 import { HighlightedTextarea } from "../shared/highlighted-textarea"
 import { MentionAutocomplete } from "../shared/mention-autocomplete"
-import { UserAvatar, getInitials, renderText } from "./post-card"
+import { UserAvatar, renderText } from "./post-card"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string) {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
-}
-
 interface CommentModalProps {
-	post: Post
+	post: SocialContent
 	open: boolean
 	onOpenChange: (open: boolean) => void
 }
@@ -62,15 +28,27 @@ interface CommentModalProps {
 export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
-	const prependComment = usePrependComment()
-	const canReply = canReplyToPost(post)
+	const prependContent = usePrependContent()
+	const canReply = canReplyTo(post)
 
 	const [text, setText] = useState("")
-	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
 	const [showEmoji, setShowEmoji] = useState(false)
-	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(null)
-	const [locationLabel, setLocationLabel] = useState<string | null>(null)
-	const [fetchingLocation, setFetchingLocation] = useState(false)
+	const {
+		mediaItems,
+		addFiles,
+		removeMedia,
+		retryUpload,
+		uploadedUrls,
+		anyUploading,
+		reset: resetMedia,
+	} = useMediaUpload()
+	const {
+		location,
+		locationLabel,
+		fetchingLocation,
+		toggleLocation: handleLocation,
+		reset: resetLocation,
+	} = useLocationPicker()
 
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -82,115 +60,40 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 		containerRef: mentionContainerRef,
 	})
 
-	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
-	const anyUploading = mediaItems.some((m) => m.uploading)
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
 	const canSubmit = hasContent && !anyUploading
 
 	const reset = () => {
-		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
+		resetMedia()
 		setText("")
-		setMediaItems([])
 		setShowEmoji(false)
-		setLocation(null)
-		setLocationLabel(null)
-	}
-
-	const uploadFile = async (id: string, file: File) => {
-		setMediaItems((prev) =>
-			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
-		)
-		try {
-			const urls = await socialApi.uploadMedia(file)
-			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
-		} catch {
-			setMediaItems((prev) =>
-				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
-			)
-		}
+		resetLocation()
 	}
 
 	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const remaining = 4 - mediaItems.length
-		const files = Array.from(e.target.files ?? []).slice(0, remaining)
-		files.forEach((file) => {
-			const id = crypto.randomUUID()
-			const preview = URL.createObjectURL(file)
-			setMediaItems((prev) => [
-				...prev,
-				{ id, file, preview, urls: null, uploading: true, error: false },
-			])
-			uploadFile(id, file)
-		})
+		addFiles(e.target.files)
 		e.target.value = ""
 	}
 
-	const removeMedia = (id: string) => {
-		setMediaItems((prev) => {
-			const item = prev.find((m) => m.id === id)
-			if (item) URL.revokeObjectURL(item.preview)
-			return prev.filter((m) => m.id !== id)
-		})
-	}
-
 	const handleEmojiClick = (emoji: string) => {
-		const ta = textareaRef.current
-		if (ta) {
-			const start = ta.selectionStart ?? text.length
-			const end = ta.selectionEnd ?? text.length
-			const next = text.slice(0, start) + emoji + text.slice(end)
-			setText(next)
-			setTimeout(() => {
-				ta.selectionStart = ta.selectionEnd = start + emoji.length
-				ta.focus()
-			}, 0)
-		} else {
-			setText((t) => t + emoji)
-		}
+		insertEmojiAtCursor(textareaRef.current, text, setText, emoji)
 		setShowEmoji(false)
-	}
-
-	const handleLocation = () => {
-		if (!navigator.geolocation || locationLabel) {
-			setLocation(null)
-			setLocationLabel(null)
-			return
-		}
-		setFetchingLocation(true)
-		navigator.geolocation.getCurrentPosition(
-			(pos) => {
-				setLocation({
-					longitude: String(pos.coords.longitude),
-					latitude: String(pos.coords.latitude),
-				})
-				setLocationLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`)
-				setFetchingLocation(false)
-			},
-			() => setFetchingLocation(false),
-		)
 	}
 
 	const handleSubmit = () => {
 		if (!canSubmit) return
 		const hashtags = extractHashtags(text)
-		const payload: AddCommentPayload = {
-			post: post.pkid,
-			message: text.trim() || undefined,
+		const payload: CreateCommentPayload = {
+			post_id: post.id,
+			content: text.trim(),
 			hashtags: hashtags.length ? hashtags : undefined,
-			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
+			medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
 			location: location ?? undefined,
 		}
 		addComment.mutate(payload, {
 			onSuccess: (res) => {
-				const newComment: Comment = {
-					...res.data,
-					like_count: res.data.like_count ?? 0,
-					replies_count: res.data.replies_count ?? 0,
-					repost_count: res.data.repost_count ?? 0,
-					liked_by_me: res.data.liked_by_me ?? false,
-					reposted_by_me: res.data.reposted_by_me ?? false,
-				}
-				prependComment(post.pkid, newComment)
+				if (!res.success) return
+				prependContent(post.id, res.data)
 				reset()
 				onOpenChange(false)
 			},
@@ -254,9 +157,9 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 									<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
 									<span className="text-muted-foreground text-[13px]">@{post.user.username}</span>
 								</div>
-								{!!post.content_text && (
+								{!!post.message && (
 									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">
-										{renderText(post.content_text)}
+										{renderText(post.message)}
 									</p>
 								)}
 								<p className="text-xs text-muted-foreground mt-1.5">
@@ -327,7 +230,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 														<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
 															<span className="text-white text-[11px]">Upload failed</span>
 															<button
-																onClick={() => uploadFile(item.id, item.file)}
+																onClick={() => retryUpload(item.id, item.file)}
 																className="flex items-center gap-1 text-white text-[11px] bg-white/20 hover:bg-white/30 rounded-full px-2.5 py-1 transition-colors"
 															>
 																<RefreshCw size={11} /> Retry
@@ -351,13 +254,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 										<div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
 											<MapPin size={11} />
 											{locationLabel}
-											<button
-												onClick={() => {
-													setLocation(null)
-													setLocationLabel(null)
-												}}
-												className="ml-0.5 hover:opacity-60"
-											>
+											<button onClick={resetLocation} className="ml-0.5 hover:opacity-60">
 												<X size={10} />
 											</button>
 										</div>
@@ -383,7 +280,7 @@ export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
 						) : (
 							<div className="mt-1">
 								<ReplyRestrictedNotice
-									whoCanReply={post.who_can_reply}
+									whoCanReply={post.permissions.reply_policy}
 									username={post.user.username}
 									compact
 								/>

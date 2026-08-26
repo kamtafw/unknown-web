@@ -15,7 +15,7 @@ import {
 	useUpdateUsername,
 } from "@/hooks/use-update-profile"
 import { extractFieldErrors } from "@/lib/api-error"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
 import { useIsMutating } from "@tanstack/react-query"
@@ -41,10 +41,6 @@ import { PhotoCropModal } from "./photo-crop-modal"
 
 const BIO_MAX = 200
 const NAME_MAX = 20
-
-function getInitials(first: string | null, last: string | null) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
 
 /** accepts raw keystrokes and returns DD/MM/YYYY formatted string */
 function formatDob(raw: string): string {

@@ -1,23 +1,27 @@
 "use client"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useUnblockUsers } from "@/hooks/use-block-actions"
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
-import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import {
 	useBookmarkPost,
 	useDeletePost,
 	useLikePost,
 	useTogglePinnedPost,
-} from "@/hooks/use-post-actions"
+} from "@/hooks/socials/use-post-actions"
+import { useRepost } from "@/hooks/socials/use-repost"
+import { useUnblockUsers } from "@/hooks/use-block-actions"
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
-import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
-import { isOriginalComment, isSettledRepostPkid, resolveEngagementPost } from "@/lib/post-helpers"
-import { cn } from "@/lib/utils"
+import {
+	isBareRepost,
+	isSettledRepostId,
+	resolveEngagementContent,
+} from "@/lib/socials/content-resolvers"
+import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { OriginalComment, OriginalPost, Post } from "@/types/api"
+import type { SocialContent } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Loader2, MoreHorizontal, Users } from "lucide-react"
 import Image from "next/image"
@@ -44,15 +48,9 @@ import { CommentModal } from "./comment-modal"
 import { EditPostModal } from "./edit-post-modal"
 import { Bookmark2, Comment, Like, Repost, Share, Stats } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
-import { QuoteModal } from "./quote-modal"
+import { QuotePostModal } from "./quote-post-modal"
 import { ReadAloudModal } from "./read-aloud-modal"
 import { RequestNoteModal } from "./request-note-modal"
-
-export function formatCount(count: number) {
-	if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
-	if (count >= 1_000) return `${(count / 1_000).toFixed(0)}k`
-	return String(count)
-}
 
 export function shortAddress(address: string) {
 	const parts = address
@@ -69,10 +67,6 @@ export function mediaType(url: string): "image" | "video" | "audio" {
 	return "image"
 }
 
-export function getInitials(first: string, last: string) {
-	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
-}
-
 export function renderText(text: string) {
 	return text.split(/([@#]\w+)/g).map((part, i) =>
 		/^[@#]/.test(part) ? (
@@ -85,19 +79,13 @@ export function renderText(text: string) {
 	)
 }
 
-function normaliseCommentOriginal(original: OriginalPost | OriginalComment) {
-	if (isOriginalComment(original)) {
-		return {
-			message: original.message,
-			mediaUrls: original.uploaded_media,
-			replyCount: original.replies.length,
-		}
-	}
-	return {
-		message: original.content_text,
-		mediaUrls: original.post_media?.map((m) => m.external_url) ?? [],
-		replyCount: 0,
-	}
+/** the URL for any piece of content — a post opens directly, a comment/reply
+ * opens the root post with itself highlighted via the `?comment=` param.
+ * Replaces the scattered per-kind `/posts/${post.pkid}` / `/posts/${comment.post}`
+ * construction that used to live at 7 different call sites (migration doc §5). */
+export function contentHref(content: SocialContent): string {
+	if (content.kind === "post") return `/posts/${content.id}`
+	return `/posts/${content.post_id}?comment=${content.id}`
 }
 
 export const UserAvatar = forwardRef<
@@ -206,89 +194,55 @@ export function MediaGrid({ urls }: { urls: string[] }) {
 	)
 }
 
-export function QuotedCommentCard({ comment }: { comment: OriginalComment }) {
+/**
+ * Replaces the pre-migration QuotedCommentCard/QuotedPostCard split.
+ * `original` is the same canonical SocialContent regardless of kind, so
+ * there's no longer a structural reason for two components — the only
+ * thing that varied between them (message field name, media shape, nested
+ * reply-count source) was an artifact of the old fragmented types, not a
+ * real presentation difference. See migration doc S~6/S~12/S~20.
+ */
+export function QuotedContentCard({ content }: { content: SocialContent }) {
 	const router = useRouter()
-	const { message, mediaUrls } = normaliseCommentOriginal(comment)
-	const timeAgo = useTimeAgo(comment.created_at)
+	const timeAgo = useTimeAgo(content.created_at)
 	const fullname =
-		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
-		comment.user.username
+		[content.user.first_name, content.user.last_name].filter(Boolean).join(" ") ||
+		content.user.username
 
 	return (
 		<div
-			onClick={() => router.push(`/posts/${comment.post}?comment=${comment.id}`)}
+			onClick={(e) => {
+				e.stopPropagation()
+				router.push(contentHref(content))
+			}}
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+				<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 					<UserAvatar
-						src={comment.user.profile_photo}
-						first={comment.user.first_name}
-						last={comment.user.last_name}
+						src={content.user.profile_photo}
+						first={content.user.first_name}
+						last={content.user.last_name}
 						size="sm"
 					/>
 				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 							{fullname}
 						</span>
 					</AuthorHoverCard>
-					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
-						<span>@{comment.user.username}</span>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+						<span>@{content.user.username}</span>
 					</AuthorHoverCard>
 					<span>•</span>
 					<span>{timeAgo}</span>
 				</div>
 			</div>
-			{!!message && (
-				<p className="text-[13px] text-foreground leading-relaxed">{renderText(message)}</p>
+			{!!content.message && (
+				<p className="text-[13px] text-foreground leading-relaxed">{renderText(content.message)}</p>
 			)}
-			<MediaGrid urls={mediaUrls} />
-		</div>
-	)
-}
-
-export function QuotedPostCard({ post }: { post: OriginalPost }) {
-	const router = useRouter()
-	const timeAgo = useTimeAgo(post.created_at)
-	const mediaUrls = post.post_media?.map((m) => m.external_url) ?? []
-	const fullname =
-		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
-
-	return (
-		<div
-			onClick={() => router.push(`/posts/${post.pkid}`)}
-			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
-		>
-			<div className="flex items-center gap-2 mb-2">
-				<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
-					<UserAvatar
-						src={post.user.profile_photo}
-						first={post.user.first_name}
-						last={post.user.last_name}
-						size="sm"
-					/>
-				</AuthorHoverCard>
-				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
-						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-							{fullname}
-						</span>
-					</AuthorHoverCard>
-					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
-						<span>@{post.user.username}</span>
-					</AuthorHoverCard>
-					<span>•</span>
-					<span>{timeAgo}</span>
-				</div>
-			</div>
-			{!!post.content_text && (
-				<p className="text-[13px] text-foreground leading-relaxed">
-					{renderText(post.content_text)}
-				</p>
-			)}
-			<MediaGrid urls={mediaUrls} />
+			<MediaGrid urls={content.media} />
 		</div>
 	)
 }
@@ -299,33 +253,43 @@ function ActionBar({
 	reposts,
 	onQuoteClick,
 	onCommentClick,
+	myRepostId,
 }: {
-	post: Post
+	post: SocialContent
 	comments: number
 	reposts: number
 	onQuoteClick: () => void
 	onCommentClick: () => void
+	myRepostId?: string
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
-	const isOwn = post.user.pkid === user?.pkid
+	const isOwn = post.user.id === user?.id
 	const repost = useRepost()
+	// undo-repost reuses useDeletePost — deleting a repost IS deleting the
+	// Post object it created (confirmed against the pre-migration call
+	// site rather than assumed; see hooks/socials/use-repost.ts's note on why there
+	// isn't a separate undo hook)
 	const undoRepost = useDeletePost()
 
 	const handleRepost = () => {
-		if (post.my_repost_pkid == null) {
+		if (!post.viewer.reposted) {
 			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		if (isSettledRepostPkid(post.my_repost_pkid)) {
-			undoRepost.mutate({
-				pkid: post.my_repost_pkid,
-				originalPost: { id: post.id, wasBareRepost: true },
-			})
+		const deletableId =
+			post.my_repost_id && isSettledRepostId(post.my_repost_id) ? post.my_repost_id : myRepostId
+		if (deletableId) {
+			undoRepost.mutate({ id: deletableId, originalPost: { id: post.id, wasBareRepost: true } })
+			return
 		}
-		// else: still settling from the create — ignore the click rather than
-		// delete with a temp pkid
+		// viewer.reposted is true, but neither id is available: a plain (non
+		// repost-card) view of content reposted in an *earlier* session, and
+		// the backend confirmed it doesn't return a repost identifier on GET.
+		// Same class of gap as AuthorHoverCard's missing pkid — no safe id to
+		// delete by, so no-op rather than guessing. Worth raising with backend
+		// as a `viewer`-level field, alongside that one.
 	}
 
 	return (
@@ -335,9 +299,9 @@ function ActionBar({
 					onClick={() => likePost.mutate(post.id)}
 					className="flex flex-1 flex-row items-center gap-1.5 transition-colors hover:text-primary cursor-pointer"
 				>
-					<Like color={post.liked_by_me ? "#6A88D1" : undefined} />
+					<Like color={post.viewer.liked ? "#6A88D1" : undefined} />
 					<span className="text-sm tabular-nums font-medium">
-						{formatCount(post.post_like_count)}
+						{formatCount(post.metrics.likes)}
 					</span>
 				</button>
 
@@ -350,7 +314,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={post.my_repost_pkid != null}
+					reposted={post.viewer.reposted || post.my_repost_id != null}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -365,14 +329,14 @@ function ActionBar({
 					className="flex items-center ml-auto transition-colors hover:text-primary cursor-pointer"
 				>
 					<Bookmark2
-						color={post.bookmarked_by_me ? "#6A88D1" : undefined}
-						bookmarked={post.bookmarked_by_me}
+						color={post.viewer.bookmarked ? "#6A88D1" : undefined}
+						bookmarked={post.viewer.bookmarked}
 					/>
 				</button>
 				{isOwn && (
 					<StatsButton
 						postId={post.id}
-						hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+						hasVideo={post.media.some((url) => mediaType(url) === "video")}
 					/>
 				)}
 			</div>
@@ -564,11 +528,19 @@ export function PostOptionsMenu({
 	currentUserId,
 	feedItemId,
 }: {
-	post: Post
-	currentUserId?: number
+	post: SocialContent
+	currentUserId?: string
 	feedItemId?: string
 }) {
-	const isOwn = post.user.pkid === currentUserId
+	// `post` here is the *resolved engagement entity* (see PostCard below) —
+	// for a bare repost of someone else's comment/reply, that can itself be
+	// kind "comment"/"reply", not just "post". Pin/edit/delete-post below
+	// are genuinely post-only concepts, so ownItems only offers them when
+	// `post.kind === "post"`. Managing a comment/reply you own (edit/delete)
+	// belongs in the thread view, not this feed-card dropdown — that's
+	// wired up separately where the new comment/reply edit-delete UI lives
+	// (migration doc S~8/S~11), not duplicated here.
+	const isOwn = post.user.id === currentUserId && post.kind === "post"
 	const pkid = post.user.pkid
 
 	const router = useRouter()
@@ -612,16 +584,15 @@ export function PostOptionsMenu({
 	const handleTogglePinned = () => togglePinnedPost.mutate(post.id)
 
 	const handleDeleteConfirm = () => {
-		const originalPost =
-			post.is_repost && post.original_post && !isOriginalComment(post.original_post)
-				? { id: post.original_post.id, wasBareRepost: !post.content_text?.trim() }
-				: undefined
+		const originalPost = isBareRepost(post)
+			? { id: post.original.id, wasBareRepost: true }
+			: undefined
 		deletePost.mutate(
-			{ pkid: post.pkid, id: post.id, originalPost },
+			{ id: post.id, originalPost },
 			{
 				onSuccess: () => {
 					setDeleteConfirmOpen(false)
-					if (pathname.startsWith(`/posts/${post.pkid}`)) router.push("/home")
+					if (pathname.startsWith(contentHref(post))) router.push("/home")
 				},
 			},
 		)
@@ -634,7 +605,7 @@ export function PostOptionsMenu({
 			onSelect: () => setEditOpen(true),
 		},
 		{
-			label: post.is_pinned ? "Unpin from profile" : "Pin to profile",
+			label: post.flags.pinned ? "Unpin from profile" : "Pin to profile",
 			icon: <Pin />,
 			onSelect: handleTogglePinned,
 		},
@@ -668,12 +639,12 @@ export function PostOptionsMenu({
 			onSelect: () => setRequestNoteOpen(true),
 		},
 		{
-			label: post.bookmarked_by_me ? "Remove from saved" : "Add to saved",
+			label: post.viewer.bookmarked ? "Remove from saved" : "Add to saved",
 			icon: (
 				<Bookmark2
 					size={20}
-					color={post.bookmarked_by_me ? "#6A88D1" : undefined}
-					bookmarked={post.bookmarked_by_me}
+					color={post.viewer.bookmarked ? "#6A88D1" : undefined}
+					bookmarked={post.viewer.bookmarked}
 				/>
 			),
 			onSelect: () => bookmarkPost.mutate(post.id),
@@ -715,7 +686,7 @@ export function PostOptionsMenu({
 			/>
 
 			<ReadAloudModal
-				text={post.content_text ?? ""}
+				text={post.message ?? ""}
 				open={readAloudOpen}
 				onOpenChange={setReadAloudOpen}
 			/>
@@ -742,29 +713,28 @@ export function PostOptionsMenu({
 	)
 }
 
-export function PostCard({ post }: { post: Post }) {
+export function PostCard({ post }: { post: SocialContent }) {
 	const router = useRouter()
 	const user = useAuthStore((s) => s.user)
 
 	const [commentOpen, setCommentOpen] = useState(false)
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
-	const isCommentRepost = post.reposted_object_type === "Comment"
-	const unquotedRepost = post.is_repost && !post.content_text?.trim()
-	const isMyRepost = post.user.pkid === user?.pkid
+	const bareRepost = isBareRepost(post)
+	const isMyRepost = post.user.id === user?.id
+	const engagementPost = resolveEngagementContent(post)
 
-	const engagementPost = resolveEngagementPost(post)
-	const displayPost = unquotedRepost ? (post.original_post as OriginalPost)! : post
-	const normalisedComment =
-		isCommentRepost && post.original_post ? normaliseCommentOriginal(post.original_post) : null
-	const displayText =
-		unquotedRepost && isCommentRepost
-			? (normalisedComment?.message ?? null)
-			: (displayPost.content_text ?? null)
-	const mediaUrls =
-		normalisedComment && unquotedRepost
-			? normalisedComment.mediaUrls
-			: ((displayPost as Post).post_media.map((m) => m.external_url) ?? [])
+	// Only knowable case where "my repost's id" is real backend data rather than
+	// a locally-invented field.
+	const myRepostId = bareRepost && isMyRepost ? post.id : undefined
+
+	// displayPost.message/.media/.location now work uniformly regardless of
+	// kind — the old code special-cased "is the original a Comment" with a
+	// separate normaliseCommentOriginal() field-name mapper
+	// (content_text/uploaded_media vs content_text/post_media) purely
+	// because Post and Comment used different field names before this
+	// migration. That branching is gone; SocialContent doesn't need it.
+	const displayPost = bareRepost ? post.original : post
 
 	const fullname =
 		[displayPost.user.first_name, displayPost.user.last_name].filter(Boolean).join(" ") ||
@@ -772,13 +742,13 @@ export function PostCard({ post }: { post: Post }) {
 	const repostName =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
 	const timeAgo = useTimeAgo(displayPost.created_at)
-	const address = !isCommentRepost ? (displayPost.post_location?.[0]?.address ?? "") : ""
+	const address = displayPost.location?.address ?? ""
 
 	return (
 		<article className="px-5 py-5 border-b border-border last:border-b-0">
-			{unquotedRepost && (
+			{bareRepost && (
 				<div
-					onClick={() => router.push(`/posts/${displayPost.pkid}`)}
+					onClick={() => router.push(contentHref(displayPost))}
 					className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground font-medium cursor-pointer"
 				>
 					<Repost size={13} />
@@ -786,9 +756,13 @@ export function PostCard({ post }: { post: Post }) {
 				</div>
 			)}
 
-			<div onClick={() => router.push(`/posts/${displayPost.pkid}`)} className="cursor-pointer">
+			<div onClick={() => router.push(contentHref(displayPost))} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+					<AuthorHoverCard
+						id={displayPost.user.id}
+						pkid={displayPost.user.pkid}
+						fallback={displayPost.user}
+					>
 						<UserAvatar
 							src={displayPost.user.profile_photo}
 							first={displayPost.user.first_name}
@@ -796,12 +770,20 @@ export function PostCard({ post }: { post: Post }) {
 						/>
 					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>{" "}
-						<AuthorHoverCard pkid={displayPost.user.pkid} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="text-muted-foreground text-[13.5px]">
 								@{displayPost.user.username}
 							</span>
@@ -818,45 +800,34 @@ export function PostCard({ post }: { post: Post }) {
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()}>
-						<PostOptionsMenu
-							post={engagementPost}
-							currentUserId={user?.pkid}
-							feedItemId={post.id}
-						/>
+						<PostOptionsMenu post={engagementPost} currentUserId={user?.id} feedItemId={post.id} />
 					</div>
 				</div>
 
 				<div className="mt-2.5">
-					{!!displayText && (
+					{!!displayPost.message && (
 						<p className="text-[13.5px] text-foreground leading-relaxed">
-							{renderText(displayText)}
+							{renderText(displayPost.message)}
 						</p>
 					)}
-					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
-					{!unquotedRepost && post.original_post && (
-						<div onClick={(e) => e.stopPropagation()}>
-							{isOriginalComment(post.original_post) ? (
-								<QuotedCommentCard comment={post.original_post} />
-							) : (
-								<QuotedPostCard post={post.original_post} />
-							)}
-						</div>
-					)}
+					{displayPost.media.length > 0 && <MediaGrid urls={displayPost.media} />}
+					{!bareRepost && post.original && <QuotedContentCard content={post.original} />}
 				</div>
 			</div>
 
 			<div onClick={(e) => e.stopPropagation()}>
 				<ActionBar
 					post={engagementPost}
-					comments={engagementPost.post_comment_count}
-					reposts={engagementPost.repost_count}
+					comments={engagementPost.metrics.replies}
+					reposts={engagementPost.metrics.reposts}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
+					myRepostId={myRepostId}
 				/>
 			</div>
 
 			<CommentModal post={engagementPost} open={commentOpen} onOpenChange={setCommentOpen} />
-			<QuoteModal post={engagementPost} open={quoteOpen} onOpenChange={setQuoteOpen} />
+			<QuotePostModal post={engagementPost} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</article>
 	)
 }

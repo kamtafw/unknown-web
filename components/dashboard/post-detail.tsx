@@ -1,18 +1,29 @@
 "use client"
 
-import { useAddComment, usePrependComment } from "@/hooks/use-comment"
-import { useLikeComment, useRepostComment } from "@/hooks/use-comment-actions"
+import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
+import { useLikeComment, useRepostComment } from "@/hooks/socials/use-comment-actions"
+import { useBookmarkPost, useDeletePost, useLikePost } from "@/hooks/socials/use-post-actions"
+import {
+	useContentDetail,
+	useContentReplies,
+	usePostComments,
+	usePostDetail,
+} from "@/hooks/socials/use-post-detail"
+import { useRepost } from "@/hooks/socials/use-repost"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { useBookmarkPost, useDeletePost, useLikePost } from "@/hooks/use-post-actions"
-import { useCommentReplies, usePostComments, usePostDetail } from "@/hooks/use-post-detail"
-import { useRepost } from "@/hooks/use-repost"
 import { useTimeAgo } from "@/hooks/use-time-ago"
-import { socialApi } from "@/lib/api"
-import { isOriginalComment, isSettledRepostPkid, resolveEngagementPost } from "@/lib/post-helpers"
-import { canReplyToPost } from "@/lib/post-permissions"
-import { cn } from "@/lib/utils"
+import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
+import { canReplyTo } from "@/lib/socials/content-permissions"
+import { isSettledRepostId, resolveEngagementContent } from "@/lib/socials/content-resolvers"
+import { cn, formatCount } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { AddCommentPayload, Comment, MediaItem, Post } from "@/types/api"
+import {
+	CreateCommentPayload,
+	CreateReplyPayload,
+	MediaItem,
+	SocialContent,
+} from "@/types/socials/api"
 import dayjs from "dayjs"
 import {
 	ArrowLeft,
@@ -34,12 +45,10 @@ import { CommentModal } from "./comment-modal"
 import { Bookmark2, Comment as CommentIcon, Like } from "./icons"
 import { MediaLightbox } from "./media-lightbox"
 import {
-	formatCount,
 	MediaGrid,
 	mediaType,
 	PostOptionsMenu,
-	QuotedCommentCard,
-	QuotedPostCard,
+	QuotedContentCard,
 	renderText,
 	RepostButton,
 	ShareButton,
@@ -47,46 +56,21 @@ import {
 	UserAvatar,
 } from "./post-card"
 import { QuoteCommentModal } from "./quote-comment-modal"
-import { QuoteModal } from "./quote-modal"
+import { QuotePostModal } from "./quote-post-modal"
 import { ReplyModal } from "./reply-modal"
 import { ReplyRestrictedNotice } from "./reply-restricted-notice"
 
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string) {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.toLowerCase())
-}
+// This file implements the focused-thread UX (decision #3,
+// docs/social/social-content-migration-inspection.md S~10): instead of the
+// old fixed three-tier Post → Comment → flat Replies structure (where a
+// reply could never itself be replied to — ReplyRow had no reply
+// affordance at all), a comment or reply can be "opened" into a focused
+// view showing that content plus its own direct replies, at any depth.
+// `focusStack` below holds the chain of ids drilled into so far;
+// `focusStack[focusStack.length - 1]` is the currently-focused node.
+// Replying while focused sends `parent_id = focusedContent.id` — never the
+// root post's id — which is the one rule this whole rework exists to
+// protect (migration doc §10's "never blur post_id vs parent_id").
 
 function CommentMediaGrid({ urls }: { urls: string[] }) {
 	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -148,75 +132,87 @@ function CommentMediaGrid({ urls }: { urls: string[] }) {
 }
 
 function CommentLikeButton({
-	comment,
+	content,
 	size = 22,
 	alwaysShowCount = true,
 	className,
 }: {
-	comment: Comment
+	content: SocialContent
 	size?: number
 	alwaysShowCount?: boolean
 	className?: string
 }) {
 	const likeComment = useLikeComment()
-	const showCount = alwaysShowCount || comment.like_count > 0
+	const showCount = alwaysShowCount || content.metrics.likes > 0
 
 	return (
 		<button
-			onClick={() => likeComment.mutate(comment.id)}
+			onClick={() => likeComment.mutate(content.id)}
 			className={cn(
 				"flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer",
 				className,
 			)}
 		>
-			<Like size={size} color={comment.liked_by_me ? "#6A88D1" : undefined} />
+			<Like size={size} color={content.viewer.liked ? "#6A88D1" : undefined} />
 			{showCount && (
 				<span
 					className={size >= 22 ? "text-sm tabular-nums font-medium" : "text-[11px] tabular-nums"}
 				>
-					{formatCount(comment.like_count)}
+					{formatCount(content.metrics.likes)}
 				</span>
 			)}
 		</button>
 	)
 }
 
-function CommentRepostButton({ comment }: { comment: Comment }) {
+function CommentRepostButton({ content }: { content: SocialContent }) {
 	const repostComment = useRepostComment()
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const handleRepost = () => {
-		if (comment.reposted_by_me) return
-		repostComment.mutate({ is_repost: true, original_comment: comment.id })
+		if (content.viewer.reposted) return
+		repostComment.mutate({ is_repost: true, original_comment: content.id })
 	}
 
 	return (
 		<>
 			<RepostButton
-				reposted={comment.reposted_by_me}
-				reposts={comment.repost_count}
+				reposted={content.viewer.reposted}
+				reposts={content.metrics.reposts}
 				onRepost={handleRepost}
 				onQuote={() => setQuoteOpen(true)}
 				size={22}
 			/>
-			<QuoteCommentModal comment={comment} open={quoteOpen} onOpenChange={setQuoteOpen} />
+			<QuoteCommentModal comment={content} open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</>
 	)
 }
 
-const CommentRow = forwardRef<
+/**
+ * Replaces both the old CommentRow (top-level, had a reply affordance) and
+ * ReplyRow (nested, had NO reply affordance — the core of the depth-1
+ * limitation). A comment and a reply are structurally identical
+ * SocialContent now, so one component renders either, at any depth.
+ * "View N replies" opens a focused thread on this node rather than
+ * expanding inline — see the file-level note above.
+ */
+const ThreadContentRow = forwardRef<
 	HTMLDivElement,
-	{ comment: Comment; post: Post; highlighted?: boolean }
->(function CommentRow({ comment, post, highlighted }, ref) {
+	{
+		content: SocialContent
+		rootPost: SocialContent
+		highlighted?: boolean
+		onOpenThread: (content: SocialContent) => void
+	}
+>(function ThreadContentRow({ content, rootPost, highlighted, onOpenThread }, ref) {
 	const [replyOpen, setReplyOpen] = useState(false)
-	const [repliesOpen, setRepliesOpen] = useState(false)
-	const timeAgo = useTimeAgo(comment.created_at)
-	const canReply = canReplyToPost(post)
+	const timeAgo = useTimeAgo(content.created_at)
+	const canReply = canReplyTo(rootPost)
 	const fullname =
-		[comment.user.first_name, comment.user.last_name].filter(Boolean).join(" ") ||
-		comment.user.username
+		[content.user.first_name, content.user.last_name].filter(Boolean).join(" ") ||
+		content.user.username
 
-	const hasContent = !!comment.message?.trim() || comment.uploaded_media.length > 0
+	const hasContent = !!content.message?.trim() || content.media.length > 0
 
 	if (!hasContent) return null
 
@@ -226,47 +222,39 @@ const CommentRow = forwardRef<
 			className={`px-5 py-4 border-b border-border transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 ${highlighted ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
 		>
 			<div className="flex gap-3">
-				{/* Avatar + optional thread line */}
 				<div className="flex flex-col items-center shrink-0">
-					<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<UserAvatar
-							src={comment.user.profile_photo}
-							first={comment.user.first_name}
-							last={comment.user.last_name}
+							src={content.user.profile_photo}
+							first={content.user.first_name}
+							last={content.user.last_name}
 						/>
 					</AuthorHoverCard>
-					{repliesOpen && comment.replies_count > 0 && (
-						<div className="w-0.5 bg-border flex-1 mt-1.5 min-h-4" />
-					)}
 				</div>
 
 				<div className="flex-1 min-w-0">
-					{/* Header */}
 					<div className="flex items-center gap-1.5 flex-wrap">
-						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
+						<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>
-						<AuthorHoverCard pkid={comment.user.pkid} fallback={comment.user}>
-							<span className="text-muted-foreground text-[13px]">@{comment.user.username}</span>
+						<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+							<span className="text-muted-foreground text-[13px]">@{content.user.username}</span>
 						</AuthorHoverCard>
 						<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
 					</div>
 
-					{/* Message */}
-					{comment.message?.trim() && (
+					{content.message?.trim() && (
 						<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
-							{renderText(comment.message)}
+							{renderText(content.message)}
 						</p>
 					)}
 
-					{/* Media */}
-					<CommentMediaGrid urls={comment.uploaded_media} />
+					<CommentMediaGrid urls={content.media} />
 
-					{/* Actions */}
 					<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
-						<CommentLikeButton comment={comment} className="flex-1" />
+						<CommentLikeButton content={content} className="flex-1" />
 
 						<button
 							onClick={() => setReplyOpen(true)}
@@ -281,116 +269,43 @@ const CommentRow = forwardRef<
 									</span>
 								)}
 							</span>
-							<span className="text-sm tabular-nums font-medium">{comment.replies_count}</span>
+							<span className="text-sm tabular-nums font-medium">{content.metrics.replies}</span>
 						</button>
 
-						<CommentRepostButton comment={comment} />
+						<CommentRepostButton content={content} />
 
-						<ShareButton postId={comment.id} size={22} />
+						<ShareButton postId={content.id} size={22} />
 					</div>
 
-					{comment.replies_count > 0 && (
+					{content.metrics.replies > 0 && (
 						<button
 							className="mt-1 flex-row items-center gap-1.5"
-							onClick={() => setRepliesOpen(!repliesOpen)}
+							onClick={() => onOpenThread(content)}
 						>
 							<span className="text-sm text-primary font-medium">
-								{repliesOpen
-									? "Hide replies"
-									: `View ${comment.replies_count} ${comment.replies_count === 1 ? "reply" : "replies"}`}
+								View {content.metrics.replies} {content.metrics.replies === 1 ? "reply" : "replies"}
 							</span>
 						</button>
 					)}
 				</div>
 			</div>
-			{/* Replies — indented with left border */}
-			{repliesOpen && (
-				<div className="ml-13 mt-1 border-l-2 border-border pl-3">
-					<RepliesSection commentId={comment.id} />
-				</div>
-			)}
 
-			<ReplyModal comment={comment} post={post} open={replyOpen} onOpenChange={setReplyOpen} />
+			<ReplyModal parent={content} post={rootPost} open={replyOpen} onOpenChange={setReplyOpen} />
 		</div>
 	)
 })
 
-function ReplyRow({ reply }: { reply: Comment }) {
-	const timeAgo = useTimeAgo(reply.created_at)
-	const fullname =
-		[reply.user.first_name, reply.user.last_name].filter(Boolean).join(" ") || reply.user.username
-
-	if (!reply.message?.trim() && !reply.uploaded_media.length) return null
-
-	return (
-		<div className="flex gap-2.5 py-2.5">
-			<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
-				<UserAvatar
-					src={reply.user.profile_photo}
-					first={reply.user.first_name}
-					last={reply.user.last_name}
-					size="sm"
-				/>
-			</AuthorHoverCard>
-			<div className="flex-1 min-w-0">
-				<div className="flex items-center gap-1.5 flex-wrap">
-					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
-						<span className="font-semibold text-[13px] text-foreground leading-tight">
-							{fullname}
-						</span>
-					</AuthorHoverCard>
-					<AuthorHoverCard pkid={reply.user.pkid} fallback={reply.user}>
-						<span className="text-muted-foreground text-[12px]">@{reply.user.username}</span>
-					</AuthorHoverCard>
-					<span className="text-muted-foreground/70 text-[12px]">· {timeAgo}</span>
-				</div>
-				{reply.message?.trim() && (
-					<p className="text-[13px] text-foreground/90 leading-relaxed mt-0.5">
-						{renderText(reply.message)}
-					</p>
-				)}
-				<CommentMediaGrid urls={reply.uploaded_media} />
-				<div className="flex items-center gap-4 mt-1.5">
-					<CommentLikeButton comment={reply} size={14} className="flex-1" />
-				</div>
-			</div>
-		</div>
-	)
-}
-
-function RepliesSection({ commentId }: { commentId: string }) {
-	const { data, isLoading } = useCommentReplies(commentId, true)
-	const replies = data?.data.results ?? []
-
-	if (isLoading) {
-		return (
-			<div className="py-2 space-y-2">
-				{[0, 1].map((i) => (
-					<div key={i} className="flex gap-2 animate-pulse">
-						<div className="w-7 h-7 rounded-full bg-muted shrink-0" />
-						<div className="flex-1 space-y-1.5 pt-1">
-							<div className="h-2.5 bg-muted rounded-full w-1/3" />
-							<div className="h-2.5 bg-muted rounded-full w-2/3" />
-						</div>
-					</div>
-				))}
-			</div>
-		)
-	}
-
-	return (
-		<div className="divide-y divide-border/50">
-			{replies.map((reply) => (
-				<ReplyRow key={reply.pkid} reply={reply} />
-			))}
-		</div>
-	)
-}
-
-function CommentComposer({ post }: { post: Post }) {
+/**
+ * One reply composer, reused both under the root post (top-level comment,
+ * `target.kind === "post"`) and at the top of a focused thread (reply to
+ * whatever's focused, which may itself be a reply). `target` decides
+ * post_id vs parent_id — never guessed from context, always the id of the
+ * thing actually being replied to.
+ */
+function ContentComposer({ target, rootPost }: { target: SocialContent; rootPost: SocialContent }) {
 	const user = useAuthStore((s) => s.user)
 	const addComment = useAddComment()
-	const prependComment = usePrependComment()
+	const prependContent = usePrependContent()
 
 	const [text, setText] = useState("")
 	const [focused, setFocused] = useState(false)
@@ -416,7 +331,7 @@ function CommentComposer({ post }: { post: Post }) {
 	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
 	const canSubmit = hasContent && !anyUploading
 
-	const canReply = canReplyToPost(post)
+	const canReply = canReplyTo(rootPost)
 
 	const reset = () => {
 		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
@@ -432,7 +347,7 @@ function CommentComposer({ post }: { post: Post }) {
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -506,24 +421,31 @@ function CommentComposer({ post }: { post: Post }) {
 	const handleSubmit = () => {
 		if (!canSubmit) return
 		const hashtags = extractHashtags(text)
-		const payload: AddCommentPayload = {
-			post: post.pkid,
-			message: text.trim() || undefined,
-			hashtags: hashtags.length ? hashtags : undefined,
-			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
-			location: location ?? undefined,
-		}
+
+		// the one branch that matters in this whole component: post_id for a
+		// top-level comment, parent_id for a reply — decided by target.kind,
+		// never assumed
+		const payload: CreateCommentPayload | CreateReplyPayload =
+			target.kind === "post"
+				? {
+						post_id: target.id,
+						content: text.trim(),
+						hashtags: hashtags.length ? hashtags : undefined,
+						medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
+						location: location ?? undefined,
+					}
+				: {
+						parent_id: target.id,
+						content: text.trim(),
+						hashtags: hashtags.length ? hashtags : undefined,
+						medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
+						location: location ?? undefined,
+					}
+
 		addComment.mutate(payload, {
 			onSuccess: (res) => {
-				const newComment: Comment = {
-					...res.data,
-					like_count: res.data.like_count ?? 0,
-					replies_count: res.data.replies_count ?? 0,
-					repost_count: res.data.repost_count ?? 0,
-					liked_by_me: res.data.liked_by_me ?? false,
-					reposted_by_me: res.data.reposted_by_me ?? false,
-				}
-				prependComment(post.pkid, newComment)
+				if (!res.success) return
+				prependContent(target.id, res.data)
 
 				reset()
 				setFocused(false)
@@ -540,7 +462,10 @@ function CommentComposer({ post }: { post: Post }) {
 	if (!canReply) {
 		return (
 			<div className="px-5 py-4 border-b border-border">
-				<ReplyRestrictedNotice whoCanReply={post.who_can_reply} username={post.user.username} />
+				<ReplyRestrictedNotice
+					whoCanReply={rootPost.permissions.reply_policy}
+					username={rootPost.user.username}
+				/>
 			</div>
 		)
 	}
@@ -559,7 +484,7 @@ function CommentComposer({ post }: { post: Post }) {
 		>
 			{focused && (
 				<p className="text-xs text-muted-foreground mb-2">
-					Replying to <span className="text-primary">@{post.user.username}</span>
+					Replying to <span className="text-primary">@{target.user.username}</span>
 				</p>
 			)}
 
@@ -589,7 +514,6 @@ function CommentComposer({ post }: { post: Post }) {
 						<MentionAutocomplete mention={mention} />
 					</div>
 
-					{/* Media grid */}
 					{mediaItems.length > 0 && (
 						<div
 							className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${
@@ -606,14 +530,11 @@ function CommentComposer({ post }: { post: Post }) {
 									) : (
 										<Image src={item.preview} alt="" fill={true} objectFit="cover" />
 									)}
-									{/* Uploading overlay */}
 									{item.uploading && (
 										<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
 											<Loader2 size={22} className="animate-spin text-white" />
 										</div>
 									)}
-
-									{/* Error overlay with retry */}
 									{item.error && (
 										<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
 											<span className="text-white text-[11px]">Upload failed</span>
@@ -625,8 +546,6 @@ function CommentComposer({ post }: { post: Post }) {
 											</button>
 										</div>
 									)}
-
-									{/* Remove (hidden while uploading) */}
 									{!item.uploading && (
 										<button
 											onClick={() => removeMedia(item.id)}
@@ -640,7 +559,6 @@ function CommentComposer({ post }: { post: Post }) {
 						</div>
 					)}
 
-					{/* Location badge */}
 					{locationLabel && (
 						<div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
 							<MapPin size={11} />
@@ -657,7 +575,6 @@ function CommentComposer({ post }: { post: Post }) {
 						</div>
 					)}
 
-					{/* Emoji picker */}
 					{showEmoji && (
 						<div className="mt-2 p-2 border border-border rounded-xl bg-popover shadow-lg">
 							<div className="grid grid-cols-10 gap-0.5">
@@ -677,7 +594,6 @@ function CommentComposer({ post }: { post: Post }) {
 					{focused && (
 						<div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
 							<div className="flex items-center gap-3 text-primary">
-								{/* Media */}
 								<button
 									type="button"
 									title="Add image"
@@ -695,7 +611,6 @@ function CommentComposer({ post }: { post: Post }) {
 									onChange={handleMediaSelect}
 								/>
 
-								{/* Emoji */}
 								<button
 									type="button"
 									title="Add emoji"
@@ -707,7 +622,6 @@ function CommentComposer({ post }: { post: Post }) {
 									<Smile size={18} />
 								</button>
 
-								{/* Location */}
 								<button
 									type="button"
 									title={locationLabel ? "Remove location" : "Add location"}
@@ -758,34 +672,35 @@ function CommentComposer({ post }: { post: Post }) {
 	)
 }
 
-function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => void }) {
+function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClick: () => void }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
 	const bookmarkPost = useBookmarkPost()
 	const repost = useRepost()
+	// undo-repost reuses useDeletePost — see post-card.tsx's ActionBar for
+	// the same pattern and the note on why there's no separate undo hook
 	const undoRepost = useDeletePost()
 
 	const [quoteOpen, setQuoteOpen] = useState(false)
 
 	const isOwn = post.user.id === user?.id
-	const canReply = canReplyToPost(post)
-	const mediaUrls = post.post_media.map((m) => m.external_url)
+	const canReply = canReplyTo(post)
 	const fullname =
 		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
-	const address = post.post_location[0]?.address ?? ""
+	const address = post.location?.address ?? ""
 	const shortAddress = address.split(",").slice(-3, -1).join(", ")
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.my_repost_pkid == null) {
+		if (post.my_repost_id == null) {
 			repost.mutate({ is_repost: true, original_post: post.id })
+			return
 		}
-		if (isSettledRepostPkid(post.my_repost_pkid)) {
+		if (isSettledRepostId(post.my_repost_id)) {
 			undoRepost.mutate({
-				pkid: post.my_repost_pkid,
+				id: post.my_repost_id,
 				originalPost: { id: post.id, wasBareRepost: true },
 			})
-			return
 		}
 	}
 
@@ -793,7 +708,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 		<>
 			<div className="px-5 animate-in fade-in duration-300">
 				<div className="flex gap-3 pt-5 pb-2">
-					<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+					<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
 						<UserAvatar
 							src={post.user.profile_photo}
 							first={post.user.first_name}
@@ -802,80 +717,72 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						/>
 					</AuthorHoverCard>
 					<div className="flex flex-col min-w-0">
-						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
 							<p className="font-bold text-[15px] text-foreground leading-tight cursor-pointer hover:underline underline-offset-2 w-fit">
 								{fullname}
 							</p>
 						</AuthorHoverCard>
-						<AuthorHoverCard pkid={post.user.pkid} fallback={post.user}>
+						<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
 							<p className="text-muted-foreground text-sm">@{post.user.username}</p>
 						</AuthorHoverCard>
 					</div>
 
 					<div onClick={(e) => e.stopPropagation()} className="ml-auto flex">
-						<PostOptionsMenu post={post} currentUserId={user?.pkid} />
+						<PostOptionsMenu post={post} currentUserId={user?.id} />
 					</div>
 				</div>
 
 				<div>
-					{!!post.content_text && (
-						<p className="text-foreground/90 leading-relaxed">{renderText(post.content_text)}</p>
+					{!!post.message && (
+						<p className="text-foreground/90 leading-relaxed">{renderText(post.message)}</p>
 					)}
 
-					{mediaUrls.length > 0 && <MediaGrid urls={mediaUrls} />}
+					{post.media.length > 0 && <MediaGrid urls={post.media} />}
 
-					{post.original_post &&
-						(isOriginalComment(post.original_post) ? (
-							<QuotedCommentCard comment={post.original_post} />
-						) : (
-							<QuotedPostCard post={post.original_post} />
-						))}
+					{post.original && <QuotedContentCard content={post.original} />}
 				</div>
 
-				{/* Timestamp */}
 				<div className="pt-3 text-[13px] text-muted-foreground">
 					{fullDate}
 					{shortAddress && <> · {shortAddress}</>}
 				</div>
 
-				{/* Engagement stats */}
-				{(post.repost_count > 0 || post.post_like_count > 0 || post.post_comment_count > 0) && (
+				{(post.metrics.reposts > 0 || post.metrics.likes > 0 || post.metrics.replies > 0) && (
 					<div className="py-3 border-b border-border flex items-center gap-5 text-sm">
-						{post.repost_count > 0 && (
+						{post.metrics.reposts > 0 && (
 							<span>
-								<strong className="text-foreground">{formatCount(post.repost_count)}</strong>{" "}
+								<strong className="text-foreground">{formatCount(post.metrics.reposts)}</strong>{" "}
 								<span className="text-muted-foreground">
-									{post.repost_count === 1 ? "Repost" : "Reposts"}
+									{post.metrics.reposts === 1 ? "Repost" : "Reposts"}
 								</span>
 							</span>
 						)}
-						{post.post_like_count > 0 && (
+						{post.metrics.likes > 0 && (
 							<span>
-								<strong className="text-foreground">{formatCount(post.post_like_count)}</strong>{" "}
+								<strong className="text-foreground">{formatCount(post.metrics.likes)}</strong>{" "}
 								<span className="text-muted-foreground">
-									{post.post_like_count === 1 ? "Like" : "Likes"}
+									{post.metrics.likes === 1 ? "Like" : "Likes"}
 								</span>
 							</span>
 						)}
-						{post.post_comment_count > 0 && (
+						{post.metrics.replies > 0 && (
 							<span>
-								<strong className="text-foreground">{formatCount(post.post_comment_count)}</strong>{" "}
+								<strong className="text-foreground">{formatCount(post.metrics.replies)}</strong>{" "}
 								<span className="text-muted-foreground">
-									{post.post_comment_count === 1 ? "Comment" : "Comments"}
+									{post.metrics.replies === 1 ? "Comment" : "Comments"}
 								</span>
 							</span>
 						)}
 					</div>
 				)}
 
-				{/* Action bar */}
 				<div className="py-1 flex items-center">
 					<div className="flex flex-1 flex-row items-center gap-5">
 						<button
 							onClick={() => likePost.mutate(post.id)}
 							className="flex flex-1 flex-row items-center gap-1.5 p-3 rounded-full hover:bg-accent transition-colors cursor-pointer"
 						>
-							<Like color={post.liked_by_me ? "#6A88D1" : undefined} size={22} />
+							<Like color={post.viewer.liked ? "#6A88D1" : undefined} size={22} />
 						</button>
 
 						<button
@@ -894,7 +801,7 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						</button>
 
 						<RepostButton
-							reposted={post.my_repost_pkid != null}
+							reposted={post.my_repost_id != null}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}
@@ -910,8 +817,8 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 						>
 							<Bookmark2
 								size={22}
-								color={post.bookmarked_by_me ? "#6A88D1" : undefined}
-								bookmarked={post.bookmarked_by_me}
+								color={post.viewer.bookmarked ? "#6A88D1" : undefined}
+								bookmarked={post.viewer.bookmarked}
 							/>
 						</button>
 
@@ -919,13 +826,135 @@ function PostBody({ post, onCommentClick }: { post: Post; onCommentClick: () => 
 							<StatsButton
 								postId={post.id}
 								size={22}
-								hasVideo={post.post_media.some((m) => mediaType(m.external_url) === "video")}
+								hasVideo={post.media.some((url) => mediaType(url) === "video")}
 							/>
 						)}
 					</div>
 				</div>
 			</div>
-			<QuoteModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
+			<QuotePostModal post={post} open={quoteOpen} onOpenChange={setQuoteOpen} />
+		</>
+	)
+}
+
+/**
+ * The focused-thread view — shown whenever focusStack is non-empty. Fetches
+ * the focused node's own detail (closes the migration doc §8 GAP: a
+ * comment/reply previously had no way to be fetched as its own standalone
+ * object) plus its direct replies, and renders exactly the same shape
+ * whether the focused node is a top-level comment or a reply three levels
+ * deep — that uniformity is the point of the focused-thread model.
+ */
+function ThreadFocusPanel({
+	focusedId,
+	rootPost,
+	onOpenThread,
+	highlightCommentId,
+}: {
+	focusedId: string
+	rootPost: SocialContent
+	onOpenThread: (content: SocialContent) => void
+	highlightCommentId?: string
+}) {
+	const sentinel = useRef<HTMLDivElement>(null)
+	const { data: focused, isLoading: focusedLoading } = useContentDetail(focusedId)
+	const {
+		data: repliesData,
+		isLoading: repliesLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useContentReplies(focusedId)
+
+	const replies = repliesData?.pages.flatMap((p) => p.data.results) ?? []
+
+	useEffect(() => {
+		const el = sentinel.current
+		if (!el) return
+		const obs = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+			},
+			{ rootMargin: "200px" },
+		)
+		obs.observe(el)
+		return () => obs.disconnect()
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
+
+	if (focusedLoading || !focused) {
+		return (
+			<>
+				<CommentSkeleton />
+				{[0, 1].map((i) => (
+					<CommentSkeleton key={i} />
+				))}
+			</>
+		)
+	}
+
+	const fullname =
+		[focused.user.first_name, focused.user.last_name].filter(Boolean).join(" ") ||
+		focused.user.username
+
+	return (
+		<>
+			{/* the focused node's own header — same content, presented like the
+			 * root post's header rather than a list row, since it's now the
+			 * subject of this view */}
+			<div className="px-5 py-4 border-b border-border">
+				<div className="flex gap-3">
+					<AuthorHoverCard id={focused.user.id} pkid={focused.user.pkid} fallback={focused.user}>
+						<UserAvatar
+							src={focused.user.profile_photo}
+							first={focused.user.first_name}
+							last={focused.user.last_name}
+						/>
+					</AuthorHoverCard>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-1.5 flex-wrap">
+							<span className="font-semibold text-sm text-foreground">{fullname}</span>
+							<span className="text-muted-foreground text-[13px]">@{focused.user.username}</span>
+						</div>
+						{focused.message?.trim() && (
+							<p className="text-[13.5px] text-foreground/90 leading-relaxed mt-0.5">
+								{renderText(focused.message)}
+							</p>
+						)}
+						<CommentMediaGrid urls={focused.media} />
+						<div className="flex items-center text-muted-foreground mt-2.5 w-4/5">
+							<CommentLikeButton content={focused} className="flex-1" />
+							<CommentRepostButton content={focused} />
+							<ShareButton postId={focused.id} size={22} />
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<ContentComposer target={focused} rootPost={rootPost} />
+
+			{repliesLoading && !repliesData ? (
+				[0, 1].map((i) => <CommentSkeleton key={i} />)
+			) : replies.length === 0 ? (
+				<p className="px-5 py-12 text-center text-sm text-muted-foreground/70">No replies yet.</p>
+			) : (
+				<>
+					{replies.map((reply) => (
+						<ThreadContentRow
+							key={reply.id}
+							content={reply}
+							rootPost={rootPost}
+							highlighted={reply.id === highlightCommentId}
+							onOpenThread={onOpenThread}
+						/>
+					))}
+					<div ref={sentinel} className="h-1" />
+					{isFetchingNextPage && (
+						<div className="flex justify-center py-6">
+							<Loader2 size={18} className="animate-spin text-primary" />
+						</div>
+					)}
+				</>
+			)}
 		</>
 	)
 }
@@ -964,10 +993,10 @@ function PostSkeleton() {
 }
 
 export function PostDetailView({
-	pkid,
+	id,
 	highlightCommentId,
 }: {
-	pkid: number
+	id: string
 	highlightCommentId?: string
 }) {
 	const router = useRouter()
@@ -975,6 +1004,9 @@ export function PostDetailView({
 	const highlightRef = useRef<HTMLDivElement>(null)
 
 	const [commentOpen, setCommentOpen] = useState(false)
+	// chain of ids drilled into — see file-level note at the top for why
+	const [focusStack, setFocusStack] = useState<SocialContent[]>([])
+	const focused = focusStack[focusStack.length - 1]
 
 	const {
 		data: rawPost,
@@ -982,31 +1014,36 @@ export function PostDetailView({
 		isError,
 		isPlaceholderData,
 		refetch,
-	} = usePostDetail(pkid)
-	const post = rawPost ? resolveEngagementPost(rawPost) : rawPost
+	} = usePostDetail(id)
+	const post = rawPost ? resolveEngagementContent(rawPost) : rawPost
 	const {
 		data: commentsData,
 		isLoading: commentsLoading,
 		fetchNextPage,
 		hasNextPage,
 		isFetchingNextPage,
-	} = usePostComments(post?.pkid)
+	} = usePostComments(post?.id)
 
 	const comments = commentsData?.pages.flatMap((p) => p.data.results) ?? []
 
-	// scroll to highlighted comment after first land
+	// NOTE: deep-linking (?comment=) only auto-scrolls when the target is a
+	// top-level comment, matching the pre-migration behavior. A ?comment=
+	// pointing at a reply nested inside a thread isn't auto-focused — doing
+	// that correctly would mean walking the parent_id chain via
+	// useContentDetail before rendering, which is more than this rework was
+	// asked to solve. Flagging rather than silently leaving it half-working.
 	useEffect(() => {
-		if (!highlightCommentId || !highlightRef.current) return
+		if (!highlightCommentId || !highlightRef.current || focused) return
 
-		const id = setTimeout(() => {
+		const timeoutId = setTimeout(() => {
 			highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
 		}, 400)
-		return () => clearTimeout(id)
-	}, [highlightCommentId, comments.length])
+		return () => clearTimeout(timeoutId)
+	}, [highlightCommentId, comments.length, focused])
 
 	useEffect(() => {
 		const el = sentinel.current
-		if (!el) return
+		if (!el || focused) return
 		const obs = new IntersectionObserver(
 			([entry]) => {
 				if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
@@ -1015,24 +1052,28 @@ export function PostDetailView({
 		)
 		obs.observe(el)
 		return () => obs.disconnect()
-	}, [fetchNextPage, hasNextPage, isFetchingNextPage])
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage, focused])
 
 	const handleBack = () => {
+		if (focusStack.length > 0) {
+			setFocusStack((stack) => stack.slice(0, -1))
+			return
+		}
 		if (window.history.length > 1) router.back()
 		else router.push("/home")
 	}
 
+	const headerTitle = !focused ? "Post" : focused.kind === "comment" ? "Comment" : "Reply"
+
 	return (
 		<div className="flex-1 min-w-0 flex flex-col bg-card rounded-t-2xl border border-border min-h-0 overflow-hidden">
-			{/* Sticky header */}
 			<div className="flex items-center gap-4 px-4 py-3 border-b border-border shrink-0 bg-card">
 				<button onClick={handleBack} className="p-2 rounded-full hover:bg-accent transition-colors">
 					<ArrowLeft size={18} className="text-foreground" />
 				</button>
-				<span className="font-bold text-[17px] text-foreground">Post</span>
+				<span className="font-bold text-[17px] text-foreground">{headerTitle}</span>
 			</div>
 
-			{/* Scrollable body */}
 			<div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
 				{postLoading && !post ? (
 					<>
@@ -1051,6 +1092,14 @@ export function PostDetailView({
 							Try again
 						</button>
 					</div>
+				) : post && focused ? (
+					<ThreadFocusPanel
+						key={focused.id}
+						focusedId={focused.id}
+						rootPost={post}
+						highlightCommentId={highlightCommentId}
+						onOpenThread={(content) => setFocusStack((stack) => [...stack, content])}
+					/>
 				) : post ? (
 					<>
 						<PostBody post={post} onCommentClick={() => setCommentOpen(true)} />
@@ -1059,9 +1108,8 @@ export function PostDetailView({
 
 						<div className="border-b border-border" />
 
-						<CommentComposer post={post} />
+						<ContentComposer target={post} rootPost={post} />
 
-						{/* Comments */}
 						{(commentsLoading || isPlaceholderData) && !commentsData ? (
 							[0, 1, 2].map((i) => <CommentSkeleton key={i} />)
 						) : comments.length === 0 ? (
@@ -1071,12 +1119,13 @@ export function PostDetailView({
 						) : (
 							<>
 								{comments.map((comment) => (
-									<CommentRow
-										key={comment.pkid}
-										comment={comment}
-										post={post}
+									<ThreadContentRow
+										key={comment.id}
+										content={comment}
+										rootPost={post}
 										highlighted={comment.id === highlightCommentId}
 										ref={comment.id === highlightCommentId ? highlightRef : undefined}
+										onOpenThread={(content) => setFocusStack((stack) => [...stack, content])}
 									/>
 								))}
 								<div ref={sentinel} className="h-1" />

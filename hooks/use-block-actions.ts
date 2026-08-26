@@ -1,18 +1,15 @@
 import { userApi } from "@/lib/api"
 import { showMutationErrorToast } from "@/lib/api-error"
+import { FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { toast } from "@/lib/toast"
-import { BlockedUsersResponse, Post } from "@/types/api"
-import { InfiniteData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { feedKeys } from "./use-feed"
+import { BlockedUsersResponse } from "@/types/api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { patchAuthorFlagInFeeds } from "./use-follow-actions"
 
 export const blockedUsersKey = ["users", "blocked"] as const
 
-type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
-
 function removeUserPostsFromFeeds(qc: ReturnType<typeof useQueryClient>, authorPkid: number) {
-	const keys = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
-	keys.forEach((key) =>
+	feedKeys.engagement().forEach((key) =>
 		qc.setQueryData<FeedCache>(key, (old) => {
 			if (!old) return old
 			return {

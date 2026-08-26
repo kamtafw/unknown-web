@@ -1,22 +1,15 @@
 "use client"
 
+import { usePostDetail } from "@/hooks/socials/use-post-detail"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
-import { usePostDetail } from "@/hooks/use-post-detail"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
-import { resolveEngagementPost } from "@/lib/post-helpers"
-import { cn } from "@/lib/utils"
+import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
+import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { PostUser } from "@/types/api"
+import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
-import { getInitials } from "./post-card"
-
-function formatCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-	return String(n)
-}
 
 function AccountCardSkeleton() {
 	return (
@@ -45,7 +38,7 @@ function AccountCard({
 	// eager warming: fetch immediately (not gated behind hover) so clicking
 	// through to the profile is instant, and so follow/block state here stays
 	// in lockstep with the profile page via the shared ["users","profile",pkid] cache
-	const { data, isLoading } = useUserProfileHover(user.pkid, true)
+	const { data, isLoading } = useUserProfileHover(user.id, true)
 	const profile = data?.data
 
 	const followUser = useFollowUser()
@@ -129,10 +122,10 @@ function AccountCard({
 	)
 }
 
-export function PostAccountsPanel({ pkid }: { pkid: number }) {
+export function PostAccountsPanel({ id }: { id: string }) {
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
-	const { data: rawPost, isLoading } = usePostDetail(pkid)
-	const post = rawPost ? resolveEngagementPost(rawPost) : undefined
+	const { data: rawPost, isLoading } = usePostDetail(id)
+	const post = rawPost ? resolveEngagementContent(rawPost) : undefined
 
 	if (isLoading && !post) {
 		return (
@@ -149,7 +142,7 @@ export function PostAccountsPanel({ pkid }: { pkid: number }) {
 
 	if (!post) return null
 
-	const original = post.original_post
+	const original = post.original
 	const showOriginal = !!original && original.user.pkid !== post.user.pkid
 
 	return (

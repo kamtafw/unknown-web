@@ -2,36 +2,28 @@
 
 import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
+import { formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { PostUser } from "@/types/api"
+import { PostUser } from "@/types/socials/api"
 import { useRouter } from "next/navigation"
 import { Avatar, HoverCard } from "radix-ui"
 import { type ReactNode, useState } from "react"
 import { FollowButton } from "../shared/follow-button"
 
-function getInitials(first?: string | null, last?: string | null) {
-	return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?"
-}
-
-function formatCount(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-	return String(n)
-}
-
 interface AuthorHoverCardProps {
+	id: string
 	pkid: number
 	fallback: Pick<PostUser, "username" | "first_name" | "last_name" | "profile_photo">
 	children: ReactNode
 }
 
-export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardProps) {
+export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCardProps) {
 	const router = useRouter()
-	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
-	const isOwnProfile = pkid === currentUserPkid
+	const currentUser = useAuthStore((s) => s.user)
+	const isOwnProfile = id === currentUser?.id
 
 	const [open, setOpen] = useState(false)
-	const { data, isLoading } = useUserProfileHover(pkid, open)
+	const { data, isLoading } = useUserProfileHover(id, open)
 	const profile = data?.data
 
 	const followUser = useFollowUser()
@@ -60,7 +52,7 @@ export function AuthorHoverCard({ pkid, fallback, children }: AuthorHoverCardPro
 					onClick={(e) => {
 						e.stopPropagation()
 						e.preventDefault()
-						router.push(`/profile/${pkid}`)
+						router.push(`/profile/${id}`)
 					}}
 				>
 					{children}

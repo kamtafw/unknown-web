@@ -1,11 +1,13 @@
 "use client"
 
-import { useCreatePost } from "@/hooks/use-create-post"
+import { useCreatePost } from "@/hooks/socials/use-create-post"
 import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
-import { socialApi } from "@/lib/api"
 import { hasAnyMention } from "@/lib/mentions"
+import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/api"
+import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/socials/api"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Camera, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
 import Image from "next/image"
@@ -13,46 +15,8 @@ import { Avatar } from "radix-ui"
 import { useRef, useState } from "react"
 import { HighlightedTextarea } from "../shared/highlighted-textarea"
 import { MentionAutocomplete } from "../shared/mention-autocomplete"
-import { getInitials } from "./post-card"
 import { WhoCanReplyPicker } from "./who-can-reply-picker"
 import { WhoCanSeePicker } from "./who-can-see-picker"
-
-const EMOJIS = [
-	"😀",
-	"😂",
-	"😍",
-	"🥺",
-	"😊",
-	"🔥",
-	"👍",
-	"❤️",
-	"🎉",
-	"✨",
-	"😭",
-	"🤣",
-	"😎",
-	"🙏",
-	"💯",
-	"🤔",
-	"😅",
-	"😤",
-	"🥰",
-	"😢",
-	"💪",
-	"👏",
-	"🎊",
-	"🌟",
-	"😏",
-	"🤩",
-	"😳",
-	"🫶",
-	"💀",
-	"😇",
-]
-
-function extractHashtags(str: string): string[] {
-	return (str.match(/#\w+/g) ?? []).map((h) => h.replace("#", ""))
-}
 
 interface CreatePostModalProps {
 	open: boolean
@@ -105,7 +69,7 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
 		)
 		try {
-			const urls = await socialApi.uploadMedia(file)
+			const urls = await socialsApi.uploadMedia(file)
 			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
 		} catch {
 			setMediaItems((prev) =>
@@ -180,12 +144,9 @@ export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
 		if (!canSubmit) return
 		const hashtags = extractHashtags(text)
 		const payload: CreatePostPayload = {
-			content_text: text.trim(),
+			content: text.trim(),
 			who_can_see: whoCanSee,
 			who_can_reply: whoCanReply,
-			is_shared: null,
-			is_repost: false,
-			original_post: null,
 			location: location ?? undefined,
 			hashtags: hashtags.length ? hashtags : undefined,
 			media_urls: uploadedUrls.length ? uploadedUrls : undefined,

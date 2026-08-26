@@ -1,16 +1,12 @@
 import { userApi } from "@/lib/api"
 import { extractNonFieldError } from "@/lib/api-error"
+import { FeedCache, feedKeys } from "@/lib/socials/query-keys"
 import { toast } from "@/lib/toast"
-import { Post } from "@/types/api"
-import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
-import { feedKeys } from "./use-feed"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { patchAuthorFlagInFeeds } from "./use-follow-actions"
 
-type FeedCache = InfiniteData<{ posts: Post[]; nextPage: string | null }>
-
 function removeUserPostsFromFeeds(qc: ReturnType<typeof useQueryClient>, authorPkid: number) {
-	const keys = [feedKeys.forYou, feedKeys.following, feedKeys.bookmarks]
-	keys.forEach((key) =>
+	feedKeys.engagement().forEach((key) =>
 		qc.setQueryData<FeedCache>(key, (old) => {
 			if (!old) return old
 			return {
