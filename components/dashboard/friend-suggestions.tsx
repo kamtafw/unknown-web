@@ -7,6 +7,7 @@ import {
 } from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
 import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
+import { getInitials } from "@/lib/utils"
 import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
@@ -21,10 +22,6 @@ function flattenSuggestions(users: SuggestionUser[]) {
 		seen.add(u.pkid)
 		return true
 	})
-}
-
-function getInitials(first: string, last: string) {
-	return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
 
 const AVATAR_COLORS = [

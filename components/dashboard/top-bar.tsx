@@ -4,6 +4,7 @@ import { useUnreadChatCount } from "@/hooks/messenger/use-chat-list"
 import { useLinkedAccounts, useSwitchAccount } from "@/hooks/use-linked-accounts"
 import { authApi } from "@/lib/api"
 import { resolveMediaUrl } from "@/lib/server-config"
+import { getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
 import { useQueryClient } from "@tanstack/react-query"
@@ -20,10 +21,6 @@ const CATEGORY_ICONS = [
 	{ label: "Event", icon: Event },
 	{ label: "Marketplace", icon: Marketplace },
 ]
-
-function getInitials(firstName: string, lastName: string) {
-	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
-}
 
 function LogoutDialog({
 	open,
