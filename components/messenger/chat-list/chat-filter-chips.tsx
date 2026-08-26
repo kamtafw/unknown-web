@@ -1,30 +1,43 @@
 "use client"
 
+import { useCustomLists } from "@/hooks/messenger/use-custom-lists"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import type { ChatListFilter } from "@/types/messenger"
 
+/** Base filters stay string-typed (drives useChatList's querystring
+ * directly); a selected custom list is a distinct shape since it doesn't
+ * map to a `status` filter at all — it's a separate members endpoint. */
+export type ActiveChatFilter = ChatListFilter | { type: "list"; id: number; name: string }
+
 interface ChatFilterChipsProps {
-	value: ChatListFilter
-	onChange: (filter: ChatListFilter) => void
+	value: ActiveChatFilter
+	onChange: (filter: ActiveChatFilter) => void
 }
 
-const FILTERS: { value: ChatListFilter; label: string }[] = [
+const BASE_FILTERS: { value: ChatListFilter; label: string }[] = [
 	{ value: "all", label: "All" },
 	{ value: "unread", label: "Unread" },
 	{ value: "favorites", label: "Favorites" },
 ]
 
+function isActive(value: ActiveChatFilter, candidate: ChatListFilter | number): boolean {
+	if (typeof candidate === "number") return typeof value === "object" && value.id === candidate
+	return value === candidate
+}
+
 export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
+	const { data: lists } = useCustomLists()
+
 	return (
 		<div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto">
-			{FILTERS.map((filter) => (
+			{BASE_FILTERS.map((filter) => (
 				<button
 					key={filter.value}
 					onClick={() => onChange(filter.value)}
 					className={cn(
 						"px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-colors",
-						value === filter.value
+						isActive(value, filter.value)
 							? "bg-primary/10 text-primary"
 							: "bg-muted text-muted-foreground hover:bg-accent",
 					)}
@@ -33,9 +46,6 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 				</button>
 			))}
 
-			{/* Groups: real backend/mobile capability, but M1 excludes group
-			 * functionality (M3). Rendered per the approved design rather than
-			 * omitted — see MESSENGER.md open items / product decision 1. */}
 			<button
 				title="Groups — coming in a later milestone"
 				onClick={() => toast.info("Groups are coming in a later milestone")}
@@ -43,6 +53,21 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 			>
 				Groups
 			</button>
+
+			{lists?.map((list) => (
+				<button
+					key={list.id}
+					onClick={() => onChange({ type: "list", id: list.id, name: list.name })}
+					className={cn(
+						"px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-colors",
+						isActive(value, list.id)
+							? "bg-primary/10 text-primary"
+							: "bg-muted text-muted-foreground hover:bg-accent",
+					)}
+				>
+					{list.name}
+				</button>
+			))}
 		</div>
 	)
 }

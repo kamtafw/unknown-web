@@ -3,7 +3,6 @@
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types/messenger"
-import { MessageActionMenu } from "./message-action-menu"
 import {
 	AlertCircle,
 	BarChart3,
@@ -20,12 +19,15 @@ import {
 	Video,
 } from "lucide-react"
 import Image from "next/image"
+import { forwardRef } from "react"
+import { MessageActionMenu } from "./message-action-menu"
 
 interface MessageBubbleProps {
 	message: Message
 	isOwn: boolean
 	showSender: boolean
 	repliedMessage?: Message
+	isHighlighted?: boolean
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -116,31 +118,45 @@ function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label:
 	)
 }
 
-export function MessageBubble({
-	message,
-	isOwn,
-	showSender,
-	repliedMessage,
-	onRetry,
-	onReply,
-	onForward,
-	onPin,
-	onUnpin,
-	onDelete,
-}: MessageBubbleProps) {
+export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(function MessageBubble(
+	{
+		message,
+		isOwn,
+		showSender,
+		repliedMessage,
+		isHighlighted,
+		onRetry,
+		onReply,
+		onForward,
+		onPin,
+		onUnpin,
+		onDelete,
+	},
+	ref,
+) {
 	const failed = message.status === "failed"
 	const pending = isOptimisticMessage(message) && !failed
-	const showActions = !pending && !message.deleted && onReply && onForward && onPin && onUnpin && onDelete
+	const showActions =
+		!pending && !message.deleted && onReply && onForward && onPin && onUnpin && onDelete
 
 	return (
-		<div className={cn("group flex flex-col mb-1", isOwn ? "items-end" : "items-start")}>
+		<div
+			ref={ref}
+			className={cn(
+				"group flex flex-col mb-1",
+				isOwn ? "items-end" : "items-start",
+				isHighlighted && "bg-primary/10",
+			)}
+		>
 			{showSender && !isOwn && (
 				<span className="text-xs font-medium text-muted-foreground mb-0.5 px-1">
 					{message.sender.first_name ?? message.sender.username}
 				</span>
 			)}
 
-			<div className={cn("flex items-end gap-1 max-w-[85%]", isOwn ? "flex-row-reverse" : "flex-row")}>
+			<div
+				className={cn("flex items-end gap-1 max-w-[85%]", isOwn ? "flex-row-reverse" : "flex-row")}
+			>
 				{showActions && (
 					<MessageActionMenu
 						message={message}
@@ -158,7 +174,7 @@ export function MessageBubble({
 					className={cn(
 						"rounded-2xl px-3.5 py-2.5 min-w-0",
 						isOwn
-							? "bg-primary/200 text-primary-foreground rounded-br-sm"
+							? "bg-primary text-primary-foreground rounded-br-sm"
 							: "bg-card border border-border rounded-bl-sm",
 						pending && "opacity-60",
 						failed && "border border-destructive",
@@ -167,8 +183,8 @@ export function MessageBubble({
 					{repliedMessage && !message.deleted && (
 						<div
 							className={cn(
-								"mb-1.5 pl-2 border-l-2 border-primary rounded-sm text-xs opacity-80",
-								isOwn ? "bg-neutral-200" : "bg-accent",
+								"mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
+								isOwn ? "border-primary-foreground/40" : "border-primary/40",
 							)}
 						>
 							<p className="font-medium">
@@ -199,4 +215,4 @@ export function MessageBubble({
 			</div>
 		</div>
 	)
-}
+})

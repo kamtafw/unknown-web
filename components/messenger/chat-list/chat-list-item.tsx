@@ -138,6 +138,7 @@ export function ChatListItem({
 			{!bulkMode && (
 				<ChatListItemMenu
 					chat={chat}
+					isActive={isActive}
 					onMarkedRead={handleMarkedRead}
 					onAddToList={() => onAddToList?.(chat)}
 				/>

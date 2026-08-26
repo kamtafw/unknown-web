@@ -15,7 +15,7 @@ import {
 	CursorPage,
 	Message,
 	MessageStatus,
-	SendMessagePayload,
+	SendMessagePayload
 } from "@/types/messenger"
 import { apiClient } from "../axios"
 
@@ -89,7 +89,7 @@ export type MessageDeleteType = "self" | "both"
 export const chatApi = {
 	list: (filter: ChatListFilter, search: string, cursor?: string) => {
 		const params = new URLSearchParams()
-		params.set('status', filter==='unread'?'unread':'all')
+		params.set("status", filter === "unread" ? "unread" : "all")
 		if (search) params.set("search", search)
 		if (cursor) params.set("cursor", cursor)
 		const qs = params.toString()
@@ -219,6 +219,16 @@ export const chatApi = {
 			chat_type: "user",
 			target_id: targetPkid,
 		}),
+
+	listPinnedMessages: (chatType: "user" | "group", targetPkid?: number) => {
+		const params = new URLSearchParams()
+		params.set("chat_type", chatType)
+		if (targetPkid) params.set("target_id", String(targetPkid))
+		const qs = params.toString()
+		return apiClient
+			.get<ApiResponse<{ results: Message[] }>>(`/api/chats/messages/pinned${qs ? `?${qs}` : ""}`)
+			.then((r) => r.data.data.results ?? [])
+	},
 
 	deleteMessage: (messageId: number, deleteType: MessageDeleteType) =>
 		apiClient.post(`/api/chats/messages/${messageId}`, { delete_type: deleteType }),

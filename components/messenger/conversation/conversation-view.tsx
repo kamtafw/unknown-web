@@ -12,12 +12,13 @@ import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "./composer"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
-import { MessageList } from "./message-list"
+import { MessageList, MessageListHandle } from "./message-list"
+import { PinnedMessageBanner } from "./pinned-message-banner"
 
 interface ConversationViewProps {
 	uuid: Uuid
@@ -64,17 +65,16 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
 
-	// Fixes "conversations don't get marked read, badge persists after
-	// refresh": nothing was ever calling the confirmed seen endpoint when a
-	// conversation is *opened* — only for messages arriving while already
-	// open. Runs once per uuid (and again if the tab was hidden and
-	// becomes visible again while this conversation stays open).
+	const messageListRef = useRef<MessageListHandle>(null)
+
+	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
 		void chatApi.markSeen(uuid).catch(() => undefined)
 
 		// Optimistically zero this row's badge and reduce the TopBar total
-		// by whatever it was — don't wait for a refetch to reflect it.
+		// by whatever it was — don't have to wait for a refetch to reflect it.
 		let clearedAmount = 0
 		queryClient.setQueriesData<{ users: ChatListItem[]; metadata: { next: string | null } }>(
 			{ queryKey: chatKeys.lists() },
@@ -109,9 +109,9 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		void retry(message)
 	}
 
-	const handleForwardConfirm = (targets: { type: "user"; id: number }[]) => {
+	const handleForwardConfirm = (targets: { type: "user"; id: number }[], targetUuids: Uuid[]) => {
 		if (!forwardTarget) return
-		void forward(forwardTarget, targets)
+		void forward(forwardTarget, targets, targetUuids)
 	}
 
 	const handleDeleteConfirm = (deleteType: MessageDeleteType) => {
@@ -119,10 +119,23 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		void deleteMessage(deleteTarget, deleteType)
 	}
 
+	const handleJumpToMessage = (message: Message) => {
+		const jumped = messageListRef.current?.scrollToMessage(message.id)
+		if (!jumped) {
+			toast.info("That message is further back — scroll up to load more history, then try again.")
+		}
+	}
+
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<ConversationHeader peer={derivedPeer} />
+			<PinnedMessageBanner
+				pinnedMessages={pinnedMessages}
+				onJumpToMessage={handleJumpToMessage}
+				onUnpin={(m) => void unpinMessage(m)}
+			/>
 			<MessageList
+				ref={messageListRef}
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}
 				isLoading={isLoading}

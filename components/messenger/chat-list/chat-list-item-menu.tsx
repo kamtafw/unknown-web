@@ -2,10 +2,10 @@
 
 import { useChatListActions } from "@/hooks/messenger/use-chat-list-actions"
 import { useFavoriteActions } from "@/hooks/messenger/use-favorites"
+import { extractMessage } from "@/lib/api-error"
 import { chatApi } from "@/lib/messenger/api"
 import { toast } from "@/lib/toast"
 import type { ChatListItem } from "@/types/messenger"
-import { DropdownMenu } from "radix-ui"
 import {
 	Archive,
 	Ban,
@@ -20,6 +20,8 @@ import {
 	Trash2,
 	User,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 
 const itemClass =
@@ -27,20 +29,41 @@ const itemClass =
 
 interface ChatListItemMenuProps {
 	chat: ChatListItem
+	isActive: boolean
 	onAddToList: () => void
 	onMarkedRead: () => void
 }
 
-export function ChatListItemMenu({ chat, onAddToList, onMarkedRead }: ChatListItemMenuProps) {
+export function ChatListItemMenu({
+	chat,
+	isActive,
+	onAddToList,
+	onMarkedRead,
+}: ChatListItemMenuProps) {
 	const [open, setOpen] = useState(false)
+	const router = useRouter()
 	const { pin, unpin, mute, unmute, block, archive, clearChat } = useChatListActions()
 	const { addFavorite } = useFavoriteActions()
 
 	const run = async (action: () => Promise<unknown>) => {
 		try {
 			await action()
-		} catch {
-			toast.error("That didn't go through — try again")
+		} catch (err) {
+			toast.error(extractMessage(err, "That didn't go through — try again"))
+		}
+	}
+
+	/** Archiving/clearing the conversation user is currently looking
+	 * at removes the orw from list and takes out the conversation
+	 * itself since it no longer has a corresponding list entry. It
+	 * navigates back to the empty state when action targets the
+	 * currently open chat. */
+	const runAndCloseIfActive = async (action: () => Promise<unknown>) => {
+		try {
+			await action()
+			if (isActive) router.push("/messenger")
+		} catch (err) {
+			toast.error(extractMessage(err, "That didn't go through — try again"))
 		}
 	}
 
@@ -74,17 +97,26 @@ export function ChatListItemMenu({ chat, onAddToList, onMarkedRead }: ChatListIt
 							<PinOff size={16} /> Unpin
 						</DropdownMenu.Item>
 					) : (
-						<DropdownMenu.Item className={itemClass} onSelect={() => run(() => pin(chat.id, chat.pkid))}>
+						<DropdownMenu.Item
+							className={itemClass}
+							onSelect={() => run(() => pin(chat.id, chat.pkid))}
+						>
 							<Pin size={16} /> Pin
 						</DropdownMenu.Item>
 					)}
 
 					{chat.is_muted ? (
-						<DropdownMenu.Item className={itemClass} onSelect={() => run(() => unmute(chat.id, chat.pkid))}>
+						<DropdownMenu.Item
+							className={itemClass}
+							onSelect={() => run(() => unmute(chat.id, chat.pkid))}
+						>
 							<Bell size={16} /> Unmute notifications
 						</DropdownMenu.Item>
 					) : (
-						<DropdownMenu.Item className={itemClass} onSelect={() => run(() => mute(chat.id, chat.pkid))}>
+						<DropdownMenu.Item
+							className={itemClass}
+							onSelect={() => run(() => mute(chat.id, chat.pkid))}
+						>
 							<BellOff size={16} /> Mute notifications
 						</DropdownMenu.Item>
 					)}
@@ -108,14 +140,14 @@ export function ChatListItemMenu({ chat, onAddToList, onMarkedRead }: ChatListIt
 
 					<DropdownMenu.Item
 						className={itemClass}
-						onSelect={() => run(() => archive(chat.id, chat.pkid))}
+						onSelect={() => runAndCloseIfActive(() => archive(chat.id, chat.pkid))}
 					>
 						<Archive size={16} /> Archive chat
 					</DropdownMenu.Item>
 
 					<DropdownMenu.Item
 						className={itemClass}
-						onSelect={() => run(() => clearChat(chat.id, chat.pkid))}
+						onSelect={() => runAndCloseIfActive(() => clearChat(chat.id, chat.pkid))}
 					>
 						<Trash2 size={16} /> Clear chat
 					</DropdownMenu.Item>

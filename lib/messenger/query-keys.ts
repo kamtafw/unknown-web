@@ -26,6 +26,7 @@ export const chatKeys = {
 
 	histories: () => [...chatKeys.all, "history"] as const,
 	history: (userUuid: Uuid) => [...chatKeys.histories(), userUuid] as const,
+	pinnedMessages: (userUuid: Uuid) => [...chatKeys.all, "pinned-messages", userUuid] as const,
 
 	searchUsers: (search: string) => [...chatKeys.all, "search-users", search] as const,
 
@@ -50,6 +51,7 @@ export const groupKeys = {
 
 	details: () => [...groupKeys.all, "detail"] as const,
 	detail: (groupId: number) => [...groupKeys.details(), groupId] as const,
+	members: (groupId: number) => [...groupKeys.detail(groupId), "members"] as const,
 
 	histories: () => [...groupKeys.all, "history"] as const,
 	history: (groupId: number) => [...groupKeys.histories(), groupId] as const,
