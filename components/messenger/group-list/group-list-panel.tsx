@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { Plus, Users } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
-import { CreateGroupDialog } from "./create-group-list"
+import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
 interface GroupListPanelProps {

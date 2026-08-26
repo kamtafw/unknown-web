@@ -5,6 +5,15 @@ export interface GroupComposerState {
 	reason: "ok" | "paused" | "not-admin"
 }
 
+/** Shared by the composer AND the admin surface — one canonical
+ * definition of "is this person an admin of this group", not two. */
+export function isGroupAdmin(group: Group, currentUserPkid: Pkid): boolean {
+	return (
+		group.created_by.pkid === currentUserPkid ||
+		group.member_preview.some((m) => m.pkid === currentUserPkid && m.role === "admin")
+	)
+}
+
 /**
  * Derives composer send-capability from the group + current user's pkid.
  *
@@ -27,9 +36,7 @@ export interface GroupComposerState {
  * else here should need to move.
  */
 export function deriveGroupComposerState(group: Group, currentUserPkid: Pkid): GroupComposerState {
-	const isAdmin =
-		group.created_by.pkid === currentUserPkid ||
-		group.member_preview.some((m) => m.pkid === currentUserPkid && m.role === "admin")
+	const isAdmin = isGroupAdmin(group, currentUserPkid)
 
 	if (group.is_paused) {
 		return { canSend: false, reason: "paused" }
