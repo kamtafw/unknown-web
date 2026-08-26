@@ -51,6 +51,7 @@ export const groupKeys = {
 
 	details: () => [...groupKeys.all, "detail"] as const,
 	detail: (groupId: number) => [...groupKeys.details(), groupId] as const,
+	members: (groupId: number) => [...groupKeys.detail(groupId), "members"] as const,
 
 	histories: () => [...groupKeys.all, "history"] as const,
 	history: (groupId: number) => [...groupKeys.histories(), groupId] as const,
