@@ -6,9 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useGroupList } from "@/hooks/messenger/use-group-list"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { Plus, Users } from "lucide-react"
+import { Users } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { FAB } from "../icons/group-list-icons"
 import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
@@ -103,9 +104,9 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 				<DropdownMenu.Trigger asChild>
 					<button
 						title="New"
-						className="absolute bottom-5 right-5 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+						className="absolute bottom-7 right-7 h-14 w-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
 					>
-						<Plus size={22} />
+						<FAB />
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Portal>

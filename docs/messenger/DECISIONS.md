@@ -1,6 +1,6 @@
 # Messenger — Architecture Decisions
 
-*Only decisions that materially affect architecture, security, contracts, or future implementation. Compact by design — full original reasoning (options considered, trade-offs) for D-001–D-003 is archived at `docs/messenger/archive/decisions/` if you need the deeper context. New decisions get appended here, not as new files.*
+_Only decisions that materially affect architecture, security, contracts, or future implementation. Compact by design — full original reasoning (options considered, trade-offs) for D-001–D-003 is archived at `docs/messenger/archive/decisions/` if you need the deeper context. New decisions get appended here, not as new files._
 
 ---
 
@@ -34,7 +34,7 @@
 
 **Why:** Unblocks realtime development now instead of waiting on a backend answer with no ETA. Deliberately does **not** weaken the HTTP auth architecture (D-001) — the httpOnly cookie is untouched; only this one dev-only route exposes the token, and only for the socket handshake.
 
-**Status:** Temporary implementation **Implemented and confirmed working** against the real backend (2026-08-11). Production mechanism (cookie-based handshake vs. short-lived credential) **Pending** — exact question for backend: *does the socket server support authenticating via the `ac_token` httpOnly cookie during the Socket.IO handshake, or should we mint a short-lived credential server-side?*
+**Status:** Temporary implementation **Implemented and confirmed working** against the real backend (2026-08-11). Production mechanism (cookie-based handshake vs. short-lived credential) **Pending** — exact question for backend: _does the socket server support authenticating via the `ac_token` httpOnly cookie during the Socket.IO handshake, or should we mint a short-lived credential server-side?_
 
 **Consequence / migration path:** No Messenger feature knows the credential comes from a query parameter — everything goes through `socketAuthProvider`. When backend confirms the production mechanism, only `socket-auth.ts` (and possibly the credential route) changes. This ADR's Status gets updated, not deleted, once that happens.
 
@@ -58,7 +58,7 @@
 
 **Context:** Real-world testing after M1 surfaced intermittent typing indicators, inconsistent realtime message delivery, and an unreliable unread badge — all pointing at the same underlying cause rather than three separate bugs.
 
-**Root cause:** `doConnect()` awaits the credential fetch (a real HTTP round-trip, D-003) *before* `this.socket` is ever assigned. `on()` previously did `this.socket?.on(...)` directly — if a feature hook's effect (e.g. `useChatSocket`, `useTyping`) ran during that window, the call silently no-op'd and the handler was **never attached, permanently**, since nothing remembered the registration for later. Whether a given page load lost this race depended on network timing, which is exactly why the symptom was intermittent rather than a clean always-fails bug.
+**Root cause:** `doConnect()` awaits the credential fetch (a real HTTP round-trip, D-003) _before_ `this.socket` is ever assigned. `on()` previously did `this.socket?.on(...)` directly — if a feature hook's effect (e.g. `useChatSocket`, `useTyping`) ran during that window, the call silently no-op'd and the handler was **never attached, permanently**, since nothing remembered the registration for later. Whether a given page load lost this race depended on network timing, which is exactly why the symptom was intermittent rather than a clean always-fails bug.
 
 **Decision:** `MessengerSocketManager` now keeps a persistent `listeners` map. `on()` always registers there first and attaches immediately only if a socket already exists; whenever `doConnect()` creates a socket, every registered listener is replayed onto it. Call order relative to `connect()` completing no longer matters. `emit()` is deliberately left as fire-and-drop, not queued — an emit carries a point-in-time payload (e.g. typing state) where replaying a stale one later would show incorrect state, unlike a listener registration.
 
@@ -80,17 +80,32 @@
 
 **Consequence:** If a genuinely different shape of staleness problem shows up later (not "an optimistic list mutation racing a lagged read"), solve that directly rather than stretching this module to cover it — that's the deliberate boundary on what this is for.
 
+## D-007 — No frontend compensation for missing group-admin realtime events; refetch-on-mount parity with mobile
+
+**Context:** Multi-account testing showed other group members don't see admin mutations (member add/remove, role/permission changes, pause/resume) until revisiting the screen. Investigation of mobile's confirmed socket contract found no realtime event exists for any of these mutations on either client — mobile's only mitigation is `refetchOnMount: "always"`, which web lacked.
+
+**Decision:** Adopted mobile's exact mitigation on `useGroupList`/`useGroupDetail`/`useGroupMembers`. Explicitly declined any additional frontend compensation (polling, synthetic events, cross-client optimistic patching) for the confirmed absence of a push contract. Residual member-addition lag (persists past a hard reload) is logged as an external backend dependency, not engineered around.
+
+**Why:** The project's scope boundary prohibits inventing backend capability. Mobile — mature, already shipped — doesn't have this event either, so there's no evidence one exists to be "missed." A workaround would misrepresent a product-wide gap as a solved web problem, and would need undoing the moment backend ships real events.
+
+**Trade-offs:** Other members see admin/membership changes only on next visit, not live — matches mobile's actual current behavior, not a web regression, but a real UX gap versus what design/Jira likely assumes.
+
+**Consequences:** If backend adds these events later, only `use-group-socket.ts`'s listener registration changes — `groupKeys.members/detail/list` invalidation already exists and just needs to be triggered by a socket handler instead of only on mount.
+
+**Revisit conditions:** Backend ships realtime group-admin events, or confirms/resolves the member-addition propagation lag.
+
 ---
 
 ## Log
 
-| Date | Decision | Status change |
-|---|---|---|
-| 2026-08-11 | D-001, D-002, D-003 established (M0) | — |
-| 2026-08-11 | D-002 | Draft hypothesis → empirically validated for chat + group |
-| 2026-08-11 | D-003 | Draft → temporary implementation confirmed working against real backend; production still Pending |
-| 2026-08-12 | D-004 established (M1 kickoff) | — |
-| 2026-08-14 | D-004 | Planned → Implemented |
-| 2026-08-14 | D-005 established | Socket listener registration race fixed |
-| 2026-08-15 | M1 closed | 2 known issues (badge inconsistency, delayed seen-tick) documented and deferred — see MESSENGER.md |
-| 2026-08-18 | D-006, D-007 established (M2) | Overlay pattern implemented |
+| Date       | Decision                             | Status change                                                                                                           |
+| ---------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-11 | D-001, D-002, D-003 established (M0) | —                                                                                                                       |
+| 2026-08-11 | D-002                                | Draft hypothesis → empirically validated for chat + group                                                               |
+| 2026-08-11 | D-003                                | Draft → temporary implementation confirmed working against real backend; production still Pending                       |
+| 2026-08-12 | D-004 established (M1 kickoff)       | —                                                                                                                       |
+| 2026-08-14 | D-004                                | Planned → Implemented                                                                                                   |
+| 2026-08-14 | D-005 established                    | Socket listener registration race fixed                                                                                 |
+| 2026-08-15 | M1 closed                            | 2 known issues (badge inconsistency, delayed seen-tick) documented and deferred — see MESSENGER.md                      |
+| 2026-08-18 | D-006, D-007 established (M2)        | Overlay pattern Implemented                                                                                             |
+| 2026-08-27 | D-008 established                    | Refetch-on-mount parity adopted; group-admin realtime push confirmed absent from backend, logged as external dependency |
