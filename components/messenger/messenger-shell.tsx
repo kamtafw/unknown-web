@@ -1,7 +1,10 @@
 "use client"
 
 import { useChatSocket } from "@/hooks/messenger/use-chat-socket"
+import { useGroupRoomSubscription } from "@/hooks/messenger/use-group-rooms"
+import { useGroupSocket } from "@/hooks/messenger/use-group-socket"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
 import type { Uuid } from "@/types/messenger"
 import { useParams, usePathname } from "next/navigation"
 import { ReactNode } from "react"
@@ -22,7 +25,11 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	const params = useParams<{ uuid?: string; id?: string }>()
 	const activeUuid = (!isGroupsSection ? (params.uuid ?? null) : null) as Uuid | null
 	const activeGroupId = isGroupsSection && params.id ? Number(params.id) : null
+	const currentUserId = useAuthStore((s) => s.user?.id)
+
 	const { typingUuids } = useChatSocket(activeUuid)
+	useGroupRoomSubscription()
+	useGroupSocket(activeGroupId, currentUserId)
 
 	const isDetailOpen = isGroupsSection ? activeGroupId !== null : activeUuid !== null
 

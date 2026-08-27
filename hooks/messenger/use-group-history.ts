@@ -1,6 +1,7 @@
 "use client"
 
 import { groupApi } from "@/lib/messenger/group-api"
+import { compareMessageOrder } from "@/lib/messenger/optimistic"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import type { GroupMessage, Message } from "@/types/messenger"
 import { useInfiniteQuery } from "@tanstack/react-query"
@@ -37,6 +38,25 @@ export function groupMessageToMessage(gm: GroupMessage): Message {
 	}
 }
 
+/**
+ * Inverse of groupMessageToMessage — reconstructs enough of a GroupMessage
+ * for retry/delete call sites that only have the shared `Message` shape
+ * (from MessageList's callbacks) but need to call into GroupMessage-typed
+ * mutation hooks. `group.name`/`group.icon_url` are placeholders — same
+ * convention as createOptimisticGroupMessage, since nothing downstream of
+ * this reads them. `receiver` must be explicitly set to the literal `null`
+ * here, not inherited from the spread — `Message.receiver` is
+ * `MessageSender | null`, `GroupMessage.receiver` is strictly `null`, and
+ * spreading alone doesn't narrow that for the compiler.
+ */
+export function messageToGroupMessage(message: Message, groupId: number): GroupMessage {
+	return {
+		...message,
+		receiver: null,
+		group: { id: groupId, name: "", icon_url: "" },
+	}
+}
+
 function extractCursor(url: string | null | undefined): string | undefined {
 	if (!url) return undefined
 	try {
@@ -65,7 +85,7 @@ export function useGroupHistory(groupId: number | undefined) {
 		for (const page of query.data.pages) {
 			for (const raw of page.results) byId.set(raw.id, groupMessageToMessage(raw))
 		}
-		return Array.from(byId.values()).sort((a, b) => a.id - b.id)
+		return Array.from(byId.values()).sort(compareMessageOrder)
 	}, [query.data])
 
 	return { ...query, messages }

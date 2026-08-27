@@ -1,6 +1,7 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { compareMessageOrder } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import type { Message, Uuid } from "@/types/messenger"
 import { useInfiniteQuery } from "@tanstack/react-query"
@@ -66,14 +67,4 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 	}, [query.data])
 
 	return { ...query, messages }
-}
-
-function compareMessageOrder(a: Message, b: Message): number {
-	const aPending = a.id < 0
-	const bPending = b.id < 0
-	if (aPending !== bPending) return aPending ? 1 : -1
-	if (aPending && bPending) {
-		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-	}
-	return a.id - b.id
 }

@@ -9,7 +9,23 @@
  */
 
 import { ApiResponse } from "@/types/api"
-import { Group, GroupChatHistoryData, GroupListData } from "@/types/messenger"
+import {
+	CreateGroupPayload,
+	CreateGroupResponse,
+	Group,
+	GroupChatHistoryData,
+	GroupListData,
+	GroupMembersData,
+	GroupMessage,
+	GroupRole,
+	ManageGroupMemberRolePayload,
+	PauseGroupPayload,
+	Pkid,
+	RemoveGroupMemberPayload,
+	SendMessagePayload,
+	SyncGroupMembersPayload,
+	UpdateGroupPermissionsPayload,
+} from "@/types/messenger"
 import { apiClient } from "../axios"
 
 export const groupApi = {
@@ -42,4 +58,57 @@ export const groupApi = {
 	},
 
 	markSeen: (groupId: number) => apiClient.post(`/api/chats/groups/${groupId}/seen`, {}),
+
+	/**
+	 * Same endpoint as chatApi.send(`/api/chats/messages`). Typed separately
+	 * because the real response for a group send comes back GroupMessage-shaped
+	 * (`group: GroupInfo` object), not Message-shaped (`group: string | null`)
+	 * — reusing chatApi.send's return type here would silently lie about the shape.
+	 */
+	send: (payload: SendMessagePayload) =>
+		apiClient
+			.post<ApiResponse<GroupMessage>>("/api/chats/messages", payload)
+			.then((r) => r.data.data),
+
+	create: (payload: CreateGroupPayload) =>
+		apiClient
+			.post<ApiResponse<CreateGroupResponse>>("/api/chats/groups", payload)
+			.then((r) => r.data.data),
+
+	members: (groupId: number, page?: number) => {
+		const params = new URLSearchParams()
+		if (page) params.set("page", String(page))
+		const qs = params.toString()
+		return apiClient
+			.get<ApiResponse<GroupMembersData>>(
+				`/api/chats/groups/${groupId}/members${qs ? `?${qs}` : ""}`,
+			)
+			.then((r) => r.data.data)
+	},
+
+	/** See MESSENGER.md — this is a REPLACE of the full non-admin roster,
+	 * not an append. Callers must include existing non-admin members. */
+	syncMembers: (groupId: number, userIds: Pkid[]) =>
+		apiClient.post(`/api/chats/groups/${groupId}/members/sync`, {
+			user_ids: userIds,
+		} satisfies SyncGroupMembersPayload),
+
+	removeMember: (groupId: number, userPkid: Pkid) =>
+		apiClient.post(`/api/chats/groups/${groupId}/members/remove`, {
+			user_id: userPkid,
+		} satisfies RemoveGroupMemberPayload),
+
+	updateMemberRole: (groupId: number, userPkid: Pkid, role: GroupRole) =>
+		apiClient.post(`/api/chats/groups/${groupId}/members/role`, {
+			user_id: userPkid,
+			role,
+		} satisfies ManageGroupMemberRolePayload),
+
+	updatePermissions: (groupId: number, payload: UpdateGroupPermissionsPayload) =>
+		apiClient
+			.patch<ApiResponse<Group>>(`/api/chats/groups/${groupId}/permissions`, payload)
+			.then((r) => r.data.data),
+
+	pause: (groupId: number, payload: PauseGroupPayload) =>
+		apiClient.post(`/api/chats/groups/${groupId}/pause`, payload),
 }

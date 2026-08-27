@@ -43,3 +43,26 @@ export function isOptimisticMessage(message: Pick<Message, "id">): boolean {
 export function withStatus(message: Message, status: MessageStatus): Message {
 	return { ...message, status }
 }
+
+/**
+ * Orders a mixed list of real (positive-id) and optimistic (negative-id)
+ * messages: real messages sort by id ascending; optimistic ones always
+ * sort after every real message and, among themselves, by send order. A
+ * plain numeric sort puts negative ids FIRST — the exact bug where a
+ * just-sent message appears at the top instead of the bottom until the
+ * server confirms it. Shared by use-chat-history.ts and
+ * use-group-history.ts — don't reimplement this locally in a new history
+ * hook; a second copy is exactly how this regressed once already.
+ */
+export function compareMessageOrder(
+	a: Pick<Message, "id" | "created_at">,
+	b: Pick<Message, "id" | "created_at">,
+): number {
+	const aPending = a.id < 0
+	const bPending = b.id < 0
+	if (aPending !== bPending) return aPending ? 1 : -1
+	if (aPending && bPending) {
+		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+	}
+	return a.id - b.id
+}
