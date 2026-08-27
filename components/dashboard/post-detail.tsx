@@ -692,15 +692,16 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.my_repost_id == null) {
+		if (post.viewer.reposted) {
 			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		if (isSettledRepostId(post.my_repost_id)) {
+		if (post.viewer.repost_id && isSettledRepostId(post.viewer.repost_id)) {
 			undoRepost.mutate({
-				id: post.my_repost_id,
+				id: post.viewer.repost_id,
 				originalPost: { id: post.id, wasBareRepost: true },
 			})
+			return
 		}
 	}
 
@@ -801,7 +802,7 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 						</button>
 
 						<RepostButton
-							reposted={post.my_repost_id != null}
+							reposted={post.viewer.reposted}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}
