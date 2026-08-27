@@ -16,7 +16,8 @@ export function useGroupMembers(groupId: number | undefined) {
 		getNextPageParam: (lastPage) =>
 			lastPage.current < lastPage.total_pages ? lastPage.current + 1 : undefined,
 		enabled: !!groupId,
-		staleTime: 30_000,
+		refetchOnMount: "always",
+		// staleTime: 30_000,
 	})
 
 	const members = useMemo(() => query.data?.pages.flatMap((p) => p.results) ?? [], [query.data])

@@ -9,7 +9,7 @@ Status values: `Not started` · `In progress` · `Functional` · `Hardened` · `
 | Individual Chat | APPC-2/3 | 1 | M1 | Not started | Foundation (done) | — |
 | Chat-list long-press actions | APPC-6/7 | 1 | M2 | Not started | M1 | — |
 | Message long-press actions | APPC-10/11 | 1 | M2 | Not started | M1 | — |
-| Messenger Profile | APPC-14/15 | 1 | M4 | Not started | M1 | Media/docs/links tab filter param unconfirmed |
+| Messenger Profile | APPC-14/15 | 1 | M4 | In progress | M1 | Media/docs/links filter param confirmed via mobile (`type=media\|doc\|link` on `chats/users/:pkid/attachments`) — no longer unconfirmed |
 | Groups (core) | APPC-18a | 1 | M3 | Not started | M1/M2 primitives | — |
 | Pause group w/ auto-resume | APPC-26/27 | 1 | M3 | Not started | M3 | — |
 | Status/Story updates | APPC-42/43/188 | 1 | M5 | Not started | Foundation | Like/comment: **Blocked**, no backend evidence |

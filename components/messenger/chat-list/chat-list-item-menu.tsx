@@ -72,7 +72,7 @@ export function ChatListItemMenu({
 			<DropdownMenu.Trigger asChild>
 				<button
 					onClick={(e) => e.preventDefault()}
-					className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:bg-accent transition-opacity shrink-0"
+					className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 h-7 w-7 flex items-center justify-center text-muted-foreground transition-opacity shrink-0"
 				>
 					<MoreVertical size={16} />
 				</button>

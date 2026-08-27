@@ -5,19 +5,19 @@ import { useMessageActions } from "@/hooks/messenger/use-message-actions"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
-import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
+import { chatApi,MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { derivePeerFromMessages } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
+import type { ChatListItem,Message,Pkid,Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect,useMemo,useRef,useState } from "react"
 import { Composer } from "./composer"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
-import { MessageList, MessageListHandle } from "./message-list"
+import { MessageList,MessageListHandle } from "./message-list"
 import { PinnedMessageBanner } from "./pinned-message-banner"
 
 interface ConversationViewProps {
@@ -128,7 +128,11 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
-			<ConversationHeader peer={derivedPeer} />
+			<ConversationHeader
+				peer={derivedPeer}
+				peerUuid={uuid}
+				peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
+			/>
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}

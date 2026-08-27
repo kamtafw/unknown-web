@@ -15,7 +15,10 @@ import {
 	CursorPage,
 	Message,
 	MessageStatus,
-	SendMessagePayload
+	MessengerUserProfile,
+	ReportUserPayload,
+	SendMessagePayload,
+	UserAttachmentsData,
 } from "@/types/messenger"
 import { apiClient } from "../axios"
 
@@ -232,4 +235,21 @@ export const chatApi = {
 
 	deleteMessage: (messageId: number, deleteType: MessageDeleteType) =>
 		apiClient.post(`/api/chats/messages/${messageId}`, { delete_type: deleteType }),
+
+	// Profile
+	getUserProfile: (userUuid: string) =>
+		apiClient
+			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
+			.then((r) => r.data.data),
+
+	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
+		const params = new URLSearchParams({ type })
+		if (cursor) params.set("cursor", cursor)
+		const qs = params.toString()
+		return apiClient
+			.get<ApiResponse<UserAttachmentsData>>(`/api/chats/users/${userUuid}/attachments?${qs}`)
+			.then((r) => r.data.data)
+	},
+	reportUser: (userUuid: string, payload: ReportUserPayload) =>
+		apiClient.post(`/api/chats/users/${userUuid}/report`, payload),
 }

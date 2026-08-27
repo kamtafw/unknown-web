@@ -1,23 +1,22 @@
 "use client"
 
 import { ChatListEmptyState } from "@/components/messenger/chat-list/chat-list-empty-state"
+import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGroupList } from "@/hooks/messenger/use-group-list"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { Plus, Users } from "lucide-react"
+import { Search, Users } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { CreateCommunity, CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
 import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
 interface GroupListPanelProps {
 	activeGroupId: number | null
 }
-
-const menuItemClass =
-	"flex items-center px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm font-medium transition-colors hover:bg-accent data-highlighted:bg-accent"
 
 /**
  * Groups/Communities panel, reached from the rail's "Groups" item — see
@@ -30,6 +29,7 @@ const menuItemClass =
 export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 	const [tab, setTab] = useState<"groups" | "communities">("groups")
 	const [createOpen, setCreateOpen] = useState(false)
+	const [search, setSearch] = useState("")
 	const { data, isLoading } = useGroupList()
 	const groups = data?.groups ?? []
 
@@ -37,6 +37,20 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 		<div className="relative w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
 			<div className="flex items-center justify-between px-4 pt-4 pb-3">
 				<h1 className="text-xl font-bold">Groups</h1>
+			</div>
+
+			<div className="px-4 pb-3">
+				<div className="relative">
+					<Input
+						placeholder="What are you looking for"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="pr-11 rounded-full bg-muted border-transparent"
+					/>
+					<div className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-primary">
+						<Search size={14} className="text-primary-foreground" />
+					</div>
+				</div>
 			</div>
 
 			<div className="px-4 pb-3">
@@ -103,9 +117,9 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 				<DropdownMenu.Trigger asChild>
 					<button
 						title="New"
-						className="absolute bottom-5 right-5 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+						className="absolute bottom-7 right-7 h-14 w-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
 					>
-						<Plus size={22} />
+						<FAB />
 					</button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Portal>
@@ -113,26 +127,43 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 						align="end"
 						side="top"
 						sideOffset={10}
-						className="z-150 min-w-52 bg-popover border border-border rounded-2xl p-1.5 shadow-xl
+						className="z-150 bg-transparent backdrop-blur-md
+							border-0 px-2 shadow-none outline-none rounded-2xl
 							data-[state=open]:animate-in data-[state=closed]:animate-out
 							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
 							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
 					>
-						<DropdownMenu.Item className={menuItemClass} onSelect={() => setCreateOpen(true)}>
-							New Group
-						</DropdownMenu.Item>
-						<DropdownMenu.Item
-							className={menuItemClass}
-							onSelect={() => toast.info("Communities are coming in a later milestone")}
-						>
-							New Community
-						</DropdownMenu.Item>
-						<DropdownMenu.Item
-							className={menuItemClass}
-							onSelect={() => toast.info("Scheduled messages are coming in a later milestone")}
-						>
-							Schedule message
-						</DropdownMenu.Item>
+						<div className="flex flex-col items-end gap-2">
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setCreateOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Schedule</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<Schedule />
+								</div>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setCreateOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Create Community</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<CreateCommunity />
+								</div>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setCreateOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Create Group</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<CreateGroup />
+								</div>
+							</DropdownMenu.Item>
+						</div>
 					</DropdownMenu.Content>
 				</DropdownMenu.Portal>
 			</DropdownMenu.Root>
