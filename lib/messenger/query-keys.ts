@@ -41,6 +41,11 @@ export const chatKeys = {
 
 	customLists: () => [...chatKeys.all, "custom-lists"] as const,
 	customListMembers: (listId: number) => [...chatKeys.customLists(), listId, "members"] as const,
+
+	/** Dedicated profile fetch, distinct from the list/peer cache. */
+	userProfile: (userUuid: Uuid) => [...chatKeys.all, "user-profile", userUuid] as const,
+	attachments: (userUuid: Uuid, type: "media" | "doc" | "link") =>
+		[...chatKeys.all, "attachments", userUuid, type] as const,
 }
 
 export const groupKeys = {

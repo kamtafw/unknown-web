@@ -104,50 +104,64 @@ export function ChatListItem({
 				<Avatar.Fallback className="text-sm font-medium text-muted-foreground">
 					{getInitials(chat.first_name, chat.last_name)}
 				</Avatar.Fallback>
-				{/* No confirmed presence field on ChatListItem — not rendering a
-				 * dot rather than inventing online/offline state. */}
 			</Avatar.Root>
 
-			<div className="min-w-0 flex-1">
+			<div
+				className={cn(
+					"min-w-0 flex-1",
+					!bulkMode && " transition-[padding-right] group-hover:pr-9 group-focus-within:pr-9",
+				)}
+			>
 				<div className="flex items-baseline justify-between gap-2">
 					<span className="font-semibold text-sm truncate">{name}</span>
+
 					<span className="text-xs text-muted-foreground shrink-0">
 						{formatTimestamp(chat.last_message_time)}
 					</span>
 				</div>
-				<div className="flex items-center justify-between gap-2 mt-0.5">
+
+				<div className="flex items-center gap-2 mt-0.5 min-w-0">
 					{isTyping ? (
-						<span className="text-sm italic text-primary">Typing a message…</span>
+						<span className="text-sm italic text-primary truncate">Typing a message…</span>
 					) : (
 						<span className="flex items-center gap-1 min-w-0 text-sm text-muted-foreground">
 							{Icon && <Icon size={13} className="shrink-0" />}
 							<span className="truncate">{previewText}</span>
 						</span>
 					)}
+
 					{chat.unread_count > 0 && (
 						<span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold flex items-center justify-center">
 							{chat.unread_count > 99 ? "99+" : chat.unread_count}
 						</span>
 					)}
-					{/* Real is_pinned data, kept in sync by the pin/unpin action
-					 * in ChatListItemMenu — not just a passive reflection anymore. */}
+
 					{chat.is_pinned && <Pin size={12} className="shrink-0 text-muted-foreground rotate-45" />}
 				</div>
 			</div>
 
 			{!bulkMode && (
-				<ChatListItemMenu
-					chat={chat}
-					isActive={isActive}
-					onMarkedRead={handleMarkedRead}
-					onAddToList={() => onAddToList?.(chat)}
-				/>
+				<div
+					className={cn(
+						"absolute right-4 top-1/2 -translate-y-1/2",
+						"opacity-0 pointer-events-none transition-opacity",
+						"group-hover:opacity-100 group-hover:pointer-events-auto",
+						"group-focus-within:opacity-100 group-focus-within:pointer-events-auto",
+					)}
+				>
+					<ChatListItemMenu
+						chat={chat}
+						isActive={isActive}
+						onMarkedRead={handleMarkedRead}
+						onAddToList={() => onAddToList?.(chat)}
+					/>
+				</div>
 			)}
 		</>
 	)
 
 	const rowClass = cn(
-		"group flex items-center gap-3 px-4 py-3 transition-colors",
+		"group relative flex items-center gap-3 px-4 py-3 transition-colors",
 		isActive ? "bg-accent" : "hover:bg-accent/50",
 	)
 

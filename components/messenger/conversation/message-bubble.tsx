@@ -154,9 +154,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 				</span>
 			)}
 
-			<div
-				className={cn("flex items-end gap-1 max-w-[85%]", isOwn ? "flex-row-reverse" : "flex-row")}
-			>
+			<div className={cn("flex w-full items-end gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
 				{showActions && (
 					<MessageActionMenu
 						message={message}
@@ -172,6 +170,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 				<div
 					className={cn(
+						"w-fit max-w-[min(82%,520px)] sm:max-w-[min(75%,520px)]",
 						"rounded-2xl px-3.5 py-2.5 min-w-0",
 						isOwn
 							? "bg-primary text-primary-foreground rounded-br-sm"

@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
+import { EmptyFavorites } from "../icons/chat-list-icons"
 
 interface ChatListEmptyStateProps {
-	icon: LucideIcon
+	icon: LucideIcon | typeof EmptyFavorites
 	title: string
 	description: string
 	action?: { label: string; onClick: () => void }
@@ -18,9 +19,7 @@ export function ChatListEmptyState({
 }: ChatListEmptyStateProps) {
 	return (
 		<div className={cn("flex flex-col items-center text-center px-8 py-16 gap-3", className)}>
-			<div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-				<Icon size={26} />
-			</div>
+			<Icon size={32} />
 			<h3 className="font-semibold text-base">{title}</h3>
 			<p className="text-sm text-muted-foreground max-w-[26ch]">{description}</p>
 			{action && (
