@@ -275,6 +275,22 @@ export interface FollowingUser {
 
 export type FriendSuggestionsResponse = ApiResponse<PaginatedResponse<SuggestionUser>>
 
+export interface ToggleFollowData {
+	following: boolean
+	pkid: number
+	id: string
+	email: string
+	username: string
+	first_name: string
+	last_name: string
+	phone_number: string
+	otp_default: OtpDefault
+	profile_photo: string
+	cover_photo: string
+}
+
+export type ToggleFollowResponse = ApiResponse<ToggleFollowData>
+
 export type FollowersResponse = ApiResponse<PaginatedResponse<FollowerUser>>
 export type FollowingsResponse = ApiResponse<PaginatedResponse<FollowingUser>>
 export type LikeResponse = ApiResponse<{ post_is_liked?: boolean }>

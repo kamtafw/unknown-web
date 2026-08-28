@@ -8,10 +8,10 @@ import {
 	useUserPosts,
 	useUserReplies,
 } from "@/hooks/socials/use-profile-feed"
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useTimeAgo } from "@/hooks/use-time-ago"
 import { useUserProfile } from "@/hooks/use-user-profile"
+import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { ExternalLink } from "@/types/api"
@@ -493,8 +493,7 @@ export function UserProfileView({ id }: { id: string }) {
 	const { data: userProfileData, isLoading, isError } = useUserProfile(id, !isOwnProfile)
 	const profile = userProfileData?.data
 
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 	const muteUser = useMuteUser()
 	const unmuteUser = useUnmuteUser()
 
@@ -568,10 +567,7 @@ export function UserProfileView({ id }: { id: string }) {
 	const isFollowed = profile.is_user_you_follow
 	const isMuted = profile.is_muted
 
-	const handleFollowToggle = () => {
-		if (isFollowed) unfollowUser.mutate(profile.pkid)
-		else followUser.mutate(profile.pkid)
-	}
+	const handleToggleFollow = () => toggleFollow.mutate({ id: profile.id, wasFollowing: isFollowed })
 
 	const handleMuteToggle = () => {
 		if (isMuted) unmuteUser.mutate(profile.pkid)
@@ -620,8 +616,8 @@ export function UserProfileView({ id }: { id: string }) {
 							<FollowButton
 								isFollowed={isFollowed}
 								followsYou={profile.is_following_you}
-								onClick={handleFollowToggle}
-								disabled={followUser.isPending || unfollowUser.isPending}
+								onClick={handleToggleFollow}
+								disabled={toggleFollow.isPending}
 								className="h-9 px-5 text-[13.5px]"
 							/>
 

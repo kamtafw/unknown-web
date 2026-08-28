@@ -1,11 +1,7 @@
 "use client"
 
-import {
-	removeUserFromSuggestionsCache,
-	useFollowUser,
-	useUnfollowUser,
-} from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
+import { removeUserFromSuggestionsCache, useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
 import { getInitials } from "@/lib/utils"
 import { SuggestionUser } from "@/types/api"
@@ -16,10 +12,10 @@ import { useEffect, useRef, useState } from "react"
 import { FollowButton } from "../shared/follow-button"
 
 function flattenSuggestions(users: SuggestionUser[]) {
-	const seen = new Set<number>()
+	const seen = new Set<string>()
 	return users.filter((u) => {
-		if (seen.has(u.pkid)) return false
-		seen.add(u.pkid)
+		if (seen.has(u.id)) return false
+		seen.add(u.id)
 		return true
 	})
 }
@@ -38,8 +34,7 @@ const AVATAR_COLORS = [
 function Row({ user, index }: { user: SuggestionUser; index: number }) {
 	const router = useRouter()
 	const qc = useQueryClient()
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 
 	const [isFollowed, setIsFollowed] = useState(user.youFollowThisUser)
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -51,33 +46,21 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 		[],
 	)
 
-	const handleFollow = () => {
-		if (isFollowed) return
-		setIsFollowed(true)
-		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.pkid), 5_000)
-		followUser.mutate(user.pkid, {
-			onError: () => {
-				setIsFollowed(user.youFollowThisUser)
-				if (timerRef.current) {
-					clearTimeout(timerRef.current)
-					timerRef.current = null
-				}
-			},
-		})
-	}
+	const handleToggleFollow = () => {
+		const wasFollowing = isFollowed
+		setIsFollowed(!wasFollowing)
 
-	const handleUnfollow = () => {
-		if (!isFollowed) return
-		setIsFollowed(false)
-		if (timerRef.current) {
+		if (!wasFollowing) {
+			timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.id), 5_000)
+		} else if (timerRef.current) {
 			clearTimeout(timerRef.current)
 			timerRef.current = null
 		}
-		unfollowUser.mutate(user.pkid, {
-			onError: () => {
-				setIsFollowed(user.youFollowThisUser)
-			},
-		})
+
+		toggleFollow.mutate(
+			{ id: user.id, wasFollowing },
+			{ onError: () => setIsFollowed(user.youFollowThisUser) },
+		)
 	}
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -120,7 +103,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 			<FollowButton
 				isFollowed={isFollowed}
-				onClick={isFollowed ? handleUnfollow : handleFollow}
+				onClick={handleToggleFollow}
 				className="min-w-22 py-1.5"
 			/>
 		</div>

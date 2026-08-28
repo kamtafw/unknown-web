@@ -58,10 +58,10 @@ import {
 	SwitchOtpDefaultResponse,
 	TimezoneListResponse,
 	TimezonePreferenceResponse,
+	ToggleFollowResponse,
 	TogglePinnedPostResponse,
 	UnblockUsersResponse,
 	UndoNotInterestedResponse,
-	UnknownResponse,
 	UnmuteUserResponse,
 	UpdateBioResponse,
 	UpdateCoverPhotoResponse,
@@ -222,11 +222,8 @@ export const userApi = {
 	getFollowings: async (): Promise<FollowingsResponse> =>
 		await apiClient.get<FollowingsResponse>("/api/users/followings").then((r) => r.data),
 
-	followUser: (payload: { followed_user: number }) =>
-		apiClient.post<UnknownResponse>("/api/users/follow", payload).then((r) => r.data),
-
-	unfollowUser: (payload: { followed_user: number }) =>
-		apiClient.post<UnknownResponse>("/api/users/unfollow", payload).then((r) => r.data),
+	toggleFollow: (payload: { followed_user: string }) =>
+		apiClient.post<ToggleFollowResponse>("/api/users/follow", payload).then((r) => r.data),
 
 	setPin: (payload: { pin: string }) =>
 		apiClient.post<SetPinResponse>("/api/users/set-pin", payload).then((r) => r.data),

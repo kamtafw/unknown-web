@@ -1,4 +1,4 @@
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
+import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { getInitials } from "@/lib/utils"
 import { FullUser } from "@/types/api"
 import * as Avatar from "@radix-ui/react-avatar"
@@ -18,25 +18,15 @@ const AVATAR_COLORS = [
 
 function UserRow({ user, index }: { user: FullUser; index: number }) {
 	const [followed, setFollowed] = useState(false)
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 	const colorCls = AVATAR_COLORS[index % AVATAR_COLORS.length]
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
 
-	const handleFollow = () => {
-		if (followed) return
-		setFollowed(true)
-		followUser.mutate(user.pkid, {
-			onError: () => setFollowed(false),
-		})
-	}
+	const handleToggleFollow = () => {
+		const wasFollowing = followed
+		setFollowed(!wasFollowing)
 
-	const handleUnfollow = () => {
-		if (!followed) return
-		setFollowed(false)
-		unfollowUser.mutate(user.pkid, {
-			onError: () => setFollowed(true),
-		})
+		toggleFollow.mutate({ id: user.id, wasFollowing }, { onError: () => setFollowed(false) })
 	}
 
 	return (
@@ -65,7 +55,7 @@ function UserRow({ user, index }: { user: FullUser; index: number }) {
 
 			<FollowButton
 				isFollowed={followed}
-				onClick={followed ? handleUnfollow : handleFollow}
+				onClick={handleToggleFollow}
 				className="px-3 sm:px-4 py-1.5 h-auto"
 			/>
 		</div>

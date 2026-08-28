@@ -59,6 +59,7 @@ Schedule CRUD for message/reminder/call types. Explicit Safari fallback for "Cal
 
 **M8 — Calling**
 Two sub-steps, not one:
+
 - *8a:* Reverse-engineer `use-call-signaling.ts` + `call-socket.ts` into a written signaling contract (events, payloads, state transitions). This is real, scoped, deliverable work on its own — treat it as a milestone checkpoint, not a detour.
 - *8b:* Build the browser WebRTC client against that contract — 1:1 calling first, then group add/remove-participant. Peer-mesh only (no SFU found), so group-call size expectations should be set explicitly per risk #7.
 

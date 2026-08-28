@@ -1,7 +1,7 @@
 "use client"
 
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
+import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/socials/api"
@@ -12,12 +12,11 @@ import { FollowButton } from "../shared/follow-button"
 
 interface AuthorHoverCardProps {
 	id: string
-	pkid: number
 	fallback: Pick<PostUser, "username" | "first_name" | "last_name" | "profile_photo">
 	children: ReactNode
 }
 
-export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCardProps) {
+export function AuthorHoverCard({ id, fallback, children }: AuthorHoverCardProps) {
 	const router = useRouter()
 	const currentUser = useAuthStore((s) => s.user)
 	const isOwnProfile = id === currentUser?.id
@@ -26,8 +25,7 @@ export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCar
 	const { data, isLoading } = useUserProfileHover(id, open)
 	const profile = data?.data
 
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 	const isFollowed = profile?.is_user_you_follow ?? false
 
 	const displayName =
@@ -37,11 +35,10 @@ export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCar
 	const username = profile?.username ?? fallback.username
 	const photo = profile?.profile_photo ?? fallback.profile_photo
 
-	const handleFollowToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+	const handleToggleFollow = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation()
 		e.preventDefault()
-		if (isFollowed) unfollowUser.mutate(pkid)
-		else followUser.mutate(pkid)
+		toggleFollow.mutate({ id, wasFollowing: isFollowed })
 	}
 
 	return (
@@ -109,8 +106,8 @@ export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCar
 									<FollowButton
 										isFollowed={isFollowed}
 										followsYou={profile.is_following_you}
-										onClick={handleFollowToggle}
-										disabled={followUser.isPending || unfollowUser.isPending}
+										onClick={handleToggleFollow}
+										disabled={toggleFollow.isPending}
 									/>
 								)}
 							</div>
