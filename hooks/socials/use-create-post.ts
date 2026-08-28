@@ -49,7 +49,7 @@ function buildOptimisticPost(payload: CreatePostPayload, user: FullUser): Social
 			: null,
 		hashtags: payload.hashtags ?? [],
 		metrics: { likes: 0, replies: 0, reposts: 0, reactions: 0, shares: 0, bookmarks: 0, views: 0 },
-		viewer: { liked: false, reposted: false, bookmarked: false, shared: false },
+		viewer: { liked: false, reposted: false, repost_id: null, bookmarked: false, shared: false },
 		permissions: {
 			visibility: payload.who_can_see,
 			reply_policy: payload.who_can_reply,
@@ -58,7 +58,6 @@ function buildOptimisticPost(payload: CreatePostPayload, user: FullUser): Social
 		},
 		flags: { pinned: false, repost: false, shared: false },
 		original: null,
-		my_repost_id: null,
 		created_at: now,
 		updated_at: now,
 	}

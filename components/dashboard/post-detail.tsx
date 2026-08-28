@@ -223,7 +223,7 @@ const ThreadContentRow = forwardRef<
 		>
 			<div className="flex gap-3">
 				<div className="flex flex-col items-center shrink-0">
-					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} fallback={content.user}>
 						<UserAvatar
 							src={content.user.profile_photo}
 							first={content.user.first_name}
@@ -234,12 +234,12 @@ const ThreadContentRow = forwardRef<
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-1.5 flex-wrap">
-						<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+						<AuthorHoverCard id={content.user.id} fallback={content.user}>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>
-						<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+						<AuthorHoverCard id={content.user.id} fallback={content.user}>
 							<span className="text-muted-foreground text-[13px]">@{content.user.username}</span>
 						</AuthorHoverCard>
 						<span className="text-muted-foreground/70 text-xs">· {timeAgo}</span>
@@ -692,15 +692,16 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 	const fullDate = dayjs(post.created_at).format("h:mm A · MMM D, YYYY")
 
 	const handleRepost = () => {
-		if (post.my_repost_id == null) {
+		if (post.viewer.reposted) {
 			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		if (isSettledRepostId(post.my_repost_id)) {
+		if (post.viewer.repost_id && isSettledRepostId(post.viewer.repost_id)) {
 			undoRepost.mutate({
-				id: post.my_repost_id,
+				id: post.viewer.repost_id,
 				originalPost: { id: post.id, wasBareRepost: true },
 			})
+			return
 		}
 	}
 
@@ -708,7 +709,7 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 		<>
 			<div className="px-5 animate-in fade-in duration-300">
 				<div className="flex gap-3 pt-5 pb-2">
-					<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
+					<AuthorHoverCard id={post.user.id} fallback={post.user}>
 						<UserAvatar
 							src={post.user.profile_photo}
 							first={post.user.first_name}
@@ -717,12 +718,12 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 						/>
 					</AuthorHoverCard>
 					<div className="flex flex-col min-w-0">
-						<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
+						<AuthorHoverCard id={post.user.id} fallback={post.user}>
 							<p className="font-bold text-[15px] text-foreground leading-tight cursor-pointer hover:underline underline-offset-2 w-fit">
 								{fullname}
 							</p>
 						</AuthorHoverCard>
-						<AuthorHoverCard id={post.user.id} pkid={post.user.pkid} fallback={post.user}>
+						<AuthorHoverCard id={post.user.id} fallback={post.user}>
 							<p className="text-muted-foreground text-sm">@{post.user.username}</p>
 						</AuthorHoverCard>
 					</div>
@@ -801,7 +802,7 @@ function PostBody({ post, onCommentClick }: { post: SocialContent; onCommentClic
 						</button>
 
 						<RepostButton
-							reposted={post.my_repost_id != null}
+							reposted={post.viewer.reposted}
 							onRepost={handleRepost}
 							onQuote={() => setQuoteOpen(true)}
 							size={22}
@@ -903,7 +904,7 @@ function ThreadFocusPanel({
 			 * subject of this view */}
 			<div className="px-5 py-4 border-b border-border">
 				<div className="flex gap-3">
-					<AuthorHoverCard id={focused.user.id} pkid={focused.user.pkid} fallback={focused.user}>
+					<AuthorHoverCard id={focused.user.id} fallback={focused.user}>
 						<UserAvatar
 							src={focused.user.profile_photo}
 							first={focused.user.first_name}

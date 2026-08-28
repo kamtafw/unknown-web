@@ -2,8 +2,8 @@
 
 import { usePostDetail } from "@/hooks/socials/use-post-detail"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
+import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { resolveEngagementContent } from "@/lib/socials/content-resolvers"
 import { cn, formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
@@ -41,8 +41,7 @@ function AccountCard({
 	const { data, isLoading } = useUserProfileHover(user.id, true)
 	const profile = data?.data
 
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 	const unblockUsers = useUnblockUsers()
 
 	const isFollowed = profile?.is_user_you_follow ?? user.youFollowThisUser ?? false
@@ -50,13 +49,12 @@ function AccountCard({
 	const followsYou = profile?.is_following_you ?? user.thisUserFollowsYou ?? false
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
-	const busy = followUser.isPending || unfollowUser.isPending || unblockUsers.isPending
+	const busy = toggleFollow.isPending || unblockUsers.isPending
 
 	const handleAction = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		if (isBlocked) unblockUsers.mutate([user.pkid])
-		else if (isFollowed) unfollowUser.mutate(user.pkid)
-		else followUser.mutate(user.pkid)
+		else toggleFollow.mutate({ id: user.id, wasFollowing: isFollowed })
 	}
 
 	return (

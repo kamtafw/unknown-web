@@ -9,11 +9,11 @@ import {
 } from "@/hooks/socials/use-post-actions"
 import { useRepost } from "@/hooks/socials/use-repost"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
-import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useTimeAgo } from "@/hooks/use-time-ago"
+import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import {
 	isBareRepost,
 	isSettledRepostId,
@@ -218,7 +218,7 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+				<AuthorHoverCard id={content.user.id} fallback={content.user}>
 					<UserAvatar
 						src={content.user.profile_photo}
 						first={content.user.first_name}
@@ -227,12 +227,12 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 					/>
 				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} fallback={content.user}>
 						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 							{fullname}
 						</span>
 					</AuthorHoverCard>
-					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} fallback={content.user}>
 						<span>@{content.user.username}</span>
 					</AuthorHoverCard>
 					<span>•</span>
@@ -253,14 +253,12 @@ function ActionBar({
 	reposts,
 	onQuoteClick,
 	onCommentClick,
-	myRepostId,
 }: {
 	post: SocialContent
 	comments: number
 	reposts: number
 	onQuoteClick: () => void
 	onCommentClick: () => void
-	myRepostId?: string
 }) {
 	const user = useAuthStore((s) => s.user)
 	const likePost = useLikePost()
@@ -278,18 +276,16 @@ function ActionBar({
 			repost.mutate({ is_repost: true, original_post: post.id })
 			return
 		}
-		const deletableId =
-			post.my_repost_id && isSettledRepostId(post.my_repost_id) ? post.my_repost_id : myRepostId
-		if (deletableId) {
-			undoRepost.mutate({ id: deletableId, originalPost: { id: post.id, wasBareRepost: true } })
+		if (post.viewer.repost_id && isSettledRepostId(post.viewer.repost_id)) {
+			undoRepost.mutate({
+				id: post.viewer.repost_id,
+				originalPost: { id: post.id, wasBareRepost: true },
+			})
 			return
 		}
-		// viewer.reposted is true, but neither id is available: a plain (non
-		// repost-card) view of content reposted in an *earlier* session, and
-		// the backend confirmed it doesn't return a repost identifier on GET.
-		// Same class of gap as AuthorHoverCard's missing pkid — no safe id to
-		// delete by, so no-op rather than guessing. Worth raising with backend
-		// as a `viewer`-level field, alongside that one.
+		// viewer.reposted is true but repost_id is still the temp placeholder
+		// from onMutate — the create hasn't settled yet. Ignore the click
+		// rather than delete against a non-existent id.
 	}
 
 	return (
@@ -314,7 +310,7 @@ function ActionBar({
 				</button>
 
 				<RepostButton
-					reposted={post.viewer.reposted || post.my_repost_id != null}
+					reposted={post.viewer.reposted}
 					reposts={reposts}
 					onRepost={handleRepost}
 					onQuote={onQuoteClick}
@@ -553,8 +549,7 @@ export function PostOptionsMenu({
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
 	const bookmarkPost = useBookmarkPost()
-	const followUser = useFollowUser()
-	const unfollowUser = useUnfollowUser()
+	const toggleFollow = useToggleFollow()
 	const muteUser = useMuteUser()
 	const unmuteUser = useUnmuteUser()
 	const unblockUsers = useUnblockUsers()
@@ -567,9 +562,8 @@ export function PostOptionsMenu({
 	const isBlocked = post.user.youBlockedThisUser ?? false
 	const followsYou = post.user.thisUserFollowsYou ?? false
 
-	const handleFollowToggle = () => {
-		if (isFollowed) unfollowUser.mutate(pkid)
-		else followUser.mutate(pkid)
+	const handleToggleFollow = () => {
+		toggleFollow.mutate({ id: post.user.id, wasFollowing: isFollowed })
 	}
 
 	const handleMuteToggle = () => {
@@ -656,7 +650,7 @@ export function PostOptionsMenu({
 					? `Follow Back @${post.user.username}`
 					: `Follow @${post.user.username}`,
 			icon: <Connect />,
-			onSelect: handleFollowToggle,
+			onSelect: handleToggleFollow,
 		},
 		{
 			label: isMuted ? `Unmute @${post.user.username}` : `Mute @${post.user.username}`,
@@ -724,10 +718,6 @@ export function PostCard({ post }: { post: SocialContent }) {
 	const isMyRepost = post.user.id === user?.id
 	const engagementPost = resolveEngagementContent(post)
 
-	// Only knowable case where "my repost's id" is real backend data rather than
-	// a locally-invented field.
-	const myRepostId = bareRepost && isMyRepost ? post.id : undefined
-
 	// displayPost.message/.media/.location now work uniformly regardless of
 	// kind — the old code special-cased "is the original a Comment" with a
 	// separate normaliseCommentOriginal() field-name mapper
@@ -758,11 +748,7 @@ export function PostCard({ post }: { post: SocialContent }) {
 
 			<div onClick={() => router.push(contentHref(displayPost))} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<AuthorHoverCard
-						id={displayPost.user.id}
-						pkid={displayPost.user.pkid}
-						fallback={displayPost.user}
-					>
+					<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
 						<UserAvatar
 							src={displayPost.user.profile_photo}
 							first={displayPost.user.first_name}
@@ -770,20 +756,12 @@ export function PostCard({ post }: { post: SocialContent }) {
 						/>
 					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<AuthorHoverCard
-							id={displayPost.user.id}
-							pkid={displayPost.user.pkid}
-							fallback={displayPost.user}
-						>
+						<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>{" "}
-						<AuthorHoverCard
-							id={displayPost.user.id}
-							pkid={displayPost.user.pkid}
-							fallback={displayPost.user}
-						>
+						<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
 							<span className="text-muted-foreground text-[13.5px]">
 								@{displayPost.user.username}
 							</span>
@@ -822,7 +800,6 @@ export function PostCard({ post }: { post: SocialContent }) {
 					reposts={engagementPost.metrics.reposts}
 					onCommentClick={() => setCommentOpen(true)}
 					onQuoteClick={() => setQuoteOpen(true)}
-					myRepostId={myRepostId}
 				/>
 			</div>
 
