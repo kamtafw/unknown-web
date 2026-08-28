@@ -237,10 +237,14 @@ export const chatApi = {
 		apiClient.post(`/api/chats/messages/${messageId}`, { delete_type: deleteType }),
 
 	// Profile
-	getUserProfile: (userUuid: string) =>
-		apiClient
-			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
-			.then((r) => r.data.data),
+	getUserProfile: (userUuid: string) => {
+		let id = userUuid
+		id = "42"
+
+		return apiClient
+			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${id}/profile`)
+			.then((r) => r.data.data)
+	},
 
 	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
 		const params = new URLSearchParams({ type })

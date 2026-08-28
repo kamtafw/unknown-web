@@ -1,13 +1,10 @@
 "use client"
 
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
-import { toast } from "@/lib/toast"
 import { Pkid, Uuid } from "@/types/messenger"
-import { ArrowLeft, MoreVertical, Phone, Search, Video } from "lucide-react"
+import { ArrowLeft, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
-import { useState } from "react"
-import { ProfileDialog } from "./profile-dialog"
 
 /** Deliberately smaller than ChatListItem — only what the header actually
  * renders, so it can be satisfied either by list-cache data or by a
@@ -26,22 +23,10 @@ interface ConversationHeaderProps {
 	 * type's minimal-shape guarantee intact. */
 	peerUuid: Uuid
 	peerPkid: Pkid | null
+	onOpenProfile: () => void
 }
 
-function InertIconButton({ label, icon: Icon }: { label: string; icon: typeof Phone }) {
-	return (
-		<button
-			title={`${label} — coming soon`}
-			onClick={() => toast.info(`${label} is coming in a later milestone`)}
-			className="text-muted-foreground/40 hover:bg-accent/40 rounded-full p-2 transition-colors cursor-not-allowed"
-		>
-			<Icon size={18} />
-		</button>
-	)
-}
-
-export function ConversationHeader({ peer, peerUuid, peerPkid }: ConversationHeaderProps) {
-	const [profileOpen, setProfileOpen] = useState(false)
+export function ConversationHeader({ peer, peerPkid, onOpenProfile }: ConversationHeaderProps) {
 	const name = peer ? getDisplayName(peer) : "Conversation"
 	// A brand-new, message-less conversation opened from search has no
 	// recoverable pkid yet (see usePeerProfile's documented gap) — profile
@@ -55,7 +40,7 @@ export function ConversationHeader({ peer, peerUuid, peerPkid }: ConversationHea
 			</Link>
 
 			<button
-				onClick={() => canOpenProfile && setProfileOpen(true)}
+				onClick={onOpenProfile}
 				disabled={!canOpenProfile}
 				className="flex items-center gap-3 flex-1 min-w-0 disabled:cursor-default"
 			>
@@ -76,28 +61,14 @@ export function ConversationHeader({ peer, peerUuid, peerPkid }: ConversationHea
 			</button>
 
 			<div className="flex items-center gap-0.5 shrink-0">
-				<InertIconButton label="Voice call" icon={Phone} />
-				<InertIconButton label="Video call" icon={Video} />
-				<InertIconButton label="Search in chat" icon={Search} />
 				<button
-					onClick={() => canOpenProfile && setProfileOpen(true)}
-					disabled={!canOpenProfile}
+					onClick={() => {}}
 					title="More options"
 					className="text-muted-foreground hover:bg-accent rounded-full p-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
 				>
 					<MoreVertical size={18} />
 				</button>
 			</div>
-
-			{canOpenProfile && (
-				<ProfileDialog
-					peerUuid={peerUuid}
-					peerPkid={peerPkid}
-					open={profileOpen}
-					onOpenChange={setProfileOpen}
-					onMessage={() => setProfileOpen(false)}
-				/>
-			)}
 		</div>
 	)
 }
