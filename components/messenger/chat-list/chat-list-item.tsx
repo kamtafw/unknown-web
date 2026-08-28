@@ -124,7 +124,7 @@ export function ChatListItem({
 					{isTyping ? (
 						<span className="text-sm italic text-primary truncate">Typing a message…</span>
 					) : (
-						<span className="flex items-center gap-1 min-w-0 text-sm text-muted-foreground">
+						<span className="flex flex-1 items-center gap-1 min-w-0 text-sm text-muted-foreground">
 							{Icon && <Icon size={13} className="shrink-0" />}
 							<span className="truncate">{previewText}</span>
 						</span>
