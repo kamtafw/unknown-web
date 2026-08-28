@@ -51,7 +51,7 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 				patchMessageInHistory(old, message.id, { is_pinned: true }),
 			)
 			try {
-				await chatApi.pinMessage(message.id, peerPkid)
+				await chatApi.pinMessage(message.id, "user", peerPkid)
 				queryClient.invalidateQueries({ queryKey: pinnedKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -69,7 +69,7 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 				patchMessageInHistory(old, message.id, { is_pinned: false }),
 			)
 			try {
-				await chatApi.unpinMessage(message.id, peerPkid)
+				await chatApi.unpinMessage(message.id, "user", peerPkid)
 				queryClient.invalidateQueries({ queryKey: pinnedKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -103,10 +103,10 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 /**
  * Separate from useMessageActions since it's a read, not an action — kept
  * in this file rather than a new one, tightly coupled to same domain.
- * 
+ *
  * NOT wired up for direct/user chats — confirmed via mobile
  * (chat/[id].tsx: "the dedicated /chats/messages/pinned:id endpoint
- * 404s on this backend or returns empty") that chat_type=user is 
+ * 404s on this backend or returns empty") that chat_type=user is
  * unreliable here. Direct chats derive pinned messages from loaded
  * history instead (see ConversationView). Retained for chat_type=group,
  * which mobile's useGetPinnedChatMessages does call successfully.

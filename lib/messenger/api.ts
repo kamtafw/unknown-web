@@ -207,19 +207,22 @@ export const chatApi = {
 		apiClient.post(`/api/chats/custom-lists/${listId}/remove-members`, { user_ids: userPkids }),
 
 	// Message actions
-	forwardMessage: (messageId: number, targets: { type: "user"; id: number }[], comment?: string) =>
-		apiClient.post("/api/chats/messages/forward", { message_id: messageId, targets, comment }),
+	forwardMessage: (
+		messageId: number,
+		targets: { type: "user" | "group"; id: number }[],
+		comment?: string,
+	) => apiClient.post("/api/chats/messages/forward", { message_id: messageId, targets, comment }),
 
-	pinMessage: (messageId: number, targetPkid: number) =>
+	pinMessage: (messageId: number, chatType: "user" | "group", targetPkid: number) =>
 		apiClient.post("/api/chats/messages/pin", {
 			message_id: messageId,
-			chat_type: "user",
+			chat_type: chatType,
 			target_id: targetPkid,
 		}),
-	unpinMessage: (messageId: number, targetPkid: number) =>
+	unpinMessage: (messageId: number, chatType: "user" | "group", targetPkid: number) =>
 		apiClient.post("/api/chats/messages/unpin", {
 			message_id: messageId,
-			chat_type: "user",
+			chat_type: chatType,
 			target_id: targetPkid,
 		}),
 
@@ -237,14 +240,10 @@ export const chatApi = {
 		apiClient.post(`/api/chats/messages/${messageId}`, { delete_type: deleteType }),
 
 	// Profile
-	getUserProfile: (userUuid: string) => {
-		let id = userUuid
-		id = "42"
-
-		return apiClient
-			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${id}/profile`)
-			.then((r) => r.data.data)
-	},
+	getUserProfile: (userUuid: string) =>
+		apiClient
+			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
+			.then((r) => r.data.data),
 
 	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
 		const params = new URLSearchParams({ type })
