@@ -115,12 +115,6 @@ function MessageContent({
 		case "contact":
 			return <FallbackContent icon={User} label={message.content || "Contact"} />
 		case "poll":
-			return <FallbackContent icon={BarChart3} label={message.content || "Poll"} />
-		case "call":
-			return <FallbackContent icon={Phone} label={message.content || "Call"} />
-		case "share":
-			return <FallbackContent icon={Share2} label="Shared post" />
-		case "poll":
 			return resolvePoll(message) ? (
 				<PollBubble
 					message={message}
@@ -130,6 +124,10 @@ function MessageContent({
 			) : (
 				<FallbackContent icon={BarChart3} label={message.content || "Poll"} />
 			)
+		case "call":
+			return <FallbackContent icon={Phone} label={message.content || "Call"} />
+		case "share":
+			return <FallbackContent icon={Share2} label="Shared post" />
 		default:
 			return <p className="text-sm italic opacity-70">Unsupported message</p>
 	}
@@ -209,7 +207,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 						failed && "border border-destructive",
 					)}
 				>
-					{repliedMessage && !message.deleted && (
+					{message.reply_to && !message.deleted && (
 						<div
 							className={cn(
 								"mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
@@ -217,9 +215,13 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 							)}
 						>
 							<p className="font-medium">
-								{repliedMessage.sender.first_name ?? repliedMessage.sender.username}
+								{repliedMessage
+									? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+									: "Original message"}
 							</p>
-							<p className="truncate max-w-55">{repliedMessage.content || "Message"}</p>
+							<p className="truncate max-w-55">
+								{(repliedMessage ? repliedMessage.content : message.reply_to.content) || "Message"}
+							</p>
 						</div>
 					)}
 

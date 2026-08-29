@@ -103,7 +103,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 			toast.error("Can't send yet — open this conversation from the chat list or search.")
 			return
 		}
-		void send(content, replyingTo?.id)
+		void send(content, replyingTo)
 	}
 
 	const handleRetry = (message: Message) => {

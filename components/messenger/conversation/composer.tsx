@@ -100,7 +100,7 @@ export function Composer({
 						}
 					}}
 					placeholder="Type a message here"
-					className="flex-1 resize-none bg-transparent outline-none text-sm py-2 max-h-[120px] placeholder:text-muted-foreground"
+					className="flex-1 resize-none bg-transparent outline-none text-sm py-2 max-h-30 placeholder:text-muted-foreground"
 				/>
 
 				{value.trim() ? (

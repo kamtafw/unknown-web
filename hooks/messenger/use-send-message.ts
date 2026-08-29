@@ -77,26 +77,30 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 	)
 
 	const send = useCallback(
-		async (content: string, replyTo?: number) => {
+		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
 
 			const payload: SendMessagePayload = {
 				receiver_id: receiverPkid,
 				message_type: "text",
 				content,
-				...(replyTo ? { reply_to: replyTo } : {}),
+				...(replyingTo ? { reply_to: replyingTo.id } : {}),
 				nonce: NONCE,
 				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
 			}
 
-			const optimistic = createOptimisticMessage(payload, {
-				id: currentUser.id as Uuid,
-				pkid: currentUser.pkid as Pkid,
-				username: currentUser.username,
-				first_name: currentUser.first_name,
-				last_name: currentUser.last_name,
-				profile_photo: currentUser.profile_photo,
-			})
+			const optimistic = createOptimisticMessage(
+				payload,
+				{
+					id: currentUser.id as Uuid,
+					pkid: currentUser.pkid as Pkid,
+					username: currentUser.username,
+					first_name: currentUser.first_name,
+					last_name: currentUser.last_name,
+					profile_photo: currentUser.profile_photo,
+				},
+				replyingTo,
+			)
 			upsertOptimistic(optimistic)
 
 			try {
@@ -130,7 +134,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					receiver_id: receiverPkid,
 					message_type: failedMessage.message_type,
 					content: failedMessage.content,
-					reply_to: failedMessage.reply_to ?? undefined,
+					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to.id } : {}),
 				})
 				replaceOptimistic(failedMessage.id, sent)
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })

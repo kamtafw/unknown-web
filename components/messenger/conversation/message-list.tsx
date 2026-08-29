@@ -135,7 +135,9 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 					{group.items.map((message, i) => {
 						const prev = group.items[i - 1]
 						const showSender = !prev || prev.sender.id !== message.sender.id
-						const repliedMessage = message.reply_to ? messageById.get(message.reply_to) : undefined
+						const repliedMessage = message.reply_to
+							? messageById.get(message.reply_to.id)
+							: undefined
 						return (
 							<MessageBubble
 								key={message.id}

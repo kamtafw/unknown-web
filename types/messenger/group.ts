@@ -12,7 +12,13 @@
  * not modeled here yet.
  */
 
-import type { EmojiReactionCount, MediaAttachment, MessageStatus, MessageType } from "./chat"
+import type {
+	EmojiReactionCount,
+	MediaAttachment,
+	MessageReplyTo,
+	MessageStatus,
+	MessageType,
+} from "./chat"
 import type { Pkid, Uuid } from "./identity"
 
 export type GroupRole = "admin" | "moderator" | "member"
@@ -141,7 +147,7 @@ export interface GroupMessage {
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
-	reply_to: number | null
+	reply_to: MessageReplyTo | null
 	forwarded_from: unknown | null
 	excluded_users?: Pkid[]
 	views_count?: number

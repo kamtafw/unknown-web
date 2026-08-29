@@ -89,7 +89,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	}, [groupId, queryClient])
 
 	const handleSend = (content: string) => {
-		void send(content, replyingTo?.id)
+		void send(content, replyingTo)
 		setReplyingTo(null)
 	}
 
