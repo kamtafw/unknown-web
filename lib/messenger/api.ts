@@ -91,6 +91,11 @@ export interface CustomListMember {
 
 export type MessageDeleteType = "self" | "both"
 
+export interface UploadMediaResponse {
+	media_url: string
+}
+
+export type MediaUploadFolder = "chat" | "voice"
 export const chatApi = {
 	list: (filter: ChatListFilter, search: string, cursor?: string) => {
 		const params = new URLSearchParams()
@@ -278,4 +283,15 @@ export const chatApi = {
 		apiClient
 			.get<ApiResponse<PollResults>>(`/api/chats/messages/${messageId}/polls`)
 			.then((r) => r.data.data),
+
+	uploadMedia: async (file: File, folder: MediaUploadFolder = "chat") => {
+		const formData = new FormData()
+		formData.append("file", file)
+		formData.append("folder", folder)
+		const res = await apiClient.post<ApiResponse<UploadMediaResponse>>(
+			"/api/chats/upload-media",
+			formData,
+		)
+		return res.data.data.media_url
+	},
 }

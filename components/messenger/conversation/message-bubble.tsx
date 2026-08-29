@@ -87,33 +87,81 @@ function MessageContent({
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
 	}
 
-	switch (message.message_type) {
+	// Generic "media" wraps image/video/audio/document — the real type
+	// lives on the attachment, not message_type. Confirmed via mobile:
+	// message_type is always "media" for anything sent through the
+	// attachment picker, discriminated by `media[0].type`. Live voice
+	// recordings stay their own top-level "voice" type.
+	const attachment = message.media?.[0]
+	const effectiveType =
+		message.message_type === "media" && attachment ? attachment.type : message.message_type
+
+	switch (effectiveType) {
 		case "text":
 			return <p className="whitespace-pre-wrap wrap-break-word text-sm">{message.content}</p>
 
 		case "image":
-		case "media":
-			return message.media?.[0]?.url ? (
-				<Image
-					src={message.media[0].url}
-					alt={message.content || "Image"}
-					className="rounded-lg max-w-70 max-h-70 object-cover"
-				/>
+			return attachment?.url ? (
+				<figure className="flex flex-col gap-1">
+					<Image
+						src={attachment.url}
+						alt={attachment.caption || message.content || "Image"}
+						width={280}
+						height={280}
+						className="rounded-lg max-w-70 max-h-70 object-cover"
+					/>
+					{attachment.caption && <figcaption className="text-sm">{attachment.caption}</figcaption>}
+				</figure>
 			) : (
 				<FallbackContent icon={ImageIcon} label="Image" />
 			)
 
 		case "video":
-			return <FallbackContent icon={Video} label={message.content || "Video"} />
+			return attachment?.url ? (
+				<figure className="flex flex-col gap-1">
+					<video src={attachment.url} controls className="rounded-lg max-w-70 max-h-70" />
+					{attachment.caption && <figcaption className="text-sm">{attachment.caption}</figcaption>}
+				</figure>
+			) : (
+				<FallbackContent icon={Video} label={message.content || "Video"} />
+			)
+
 		case "audio":
 		case "voice":
-			return <FallbackContent icon={Mic} label="Voice message" />
+			return attachment?.url ? (
+				<div className="flex flex-col gap-1">
+					<audio src={attachment.url} controls className="max-w-70" />
+					{attachment.caption && attachment.caption !== "Voice message" && (
+						<p className="text-sm">{attachment.caption}</p>
+					)}
+				</div>
+			) : (
+				<FallbackContent icon={Mic} label="Voice message" />
+			)
+
+		case "pdf":
 		case "document":
-			return <FallbackContent icon={FileText} label={message.content || "Document"} />
+			return attachment?.url ? (
+				<a
+					href={attachment.url}
+					target="_blank"
+					rel="noreferrer"
+					className="flex items-center gap-2 text-sm underline"
+				>
+					<FileText size={16} className="shrink-0 opacity-70" />
+					<span className="truncate">
+						{attachment.caption || attachment.fileName || "Document"}
+					</span>
+				</a>
+			) : (
+				<FallbackContent icon={FileText} label={message.content || "Document"} />
+			)
+
 		case "location":
-			return <FallbackContent icon={MapPin} label="Location" />
+			return <LocationContent message={message} />
 		case "contact":
-			return <FallbackContent icon={User} label={message.content || "Contact"} />
+			return <ContactContent message={message} />
+
 		case "poll":
 			return resolvePoll(message) ? (
 				<PollBubble
@@ -124,6 +172,7 @@ function MessageContent({
 			) : (
 				<FallbackContent icon={BarChart3} label={message.content || "Poll"} />
 			)
+
 		case "call":
 			return <FallbackContent icon={Phone} label={message.content || "Call"} />
 		case "share":
@@ -131,6 +180,39 @@ function MessageContent({
 		default:
 			return <p className="text-sm italic opacity-70">Unsupported message</p>
 	}
+}
+
+function LocationContent({ message }: { message: Message }) {
+	const meta = message.metadata as { latitude?: number; longitude?: number } | null
+	if (meta?.latitude == null || meta?.longitude == null) {
+		return <FallbackContent icon={MapPin} label="Location" />
+	}
+	return (
+		<a
+			href={`https://www.google.com/maps?q=${meta.latitude},${meta.longitude}`}
+			target="_blank"
+			rel="noreferrer"
+			className="flex items-center gap-2 text-sm text-primary hover:underline"
+		>
+			<MapPin size={16} className="shrink-0" /> View location
+		</a>
+	)
+}
+
+function ContactContent({ message }: { message: Message }) {
+	const meta = message.metadata as { name?: string; phone_number?: string | null } | null
+	const name = meta?.name || message.content || "Contact"
+	return (
+		<div className="flex items-center gap-2 text-sm">
+			<User size={16} className="shrink-0 opacity-70" />
+			<div className="min-w-0">
+				<p className="font-medium truncate">{name}</p>
+				{meta?.phone_number && (
+					<p className="text-xs text-muted-foreground truncate">{meta.phone_number}</p>
+				)}
+			</div>
+		</div>
+	)
 }
 
 function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label: string }) {

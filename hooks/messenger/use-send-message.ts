@@ -4,7 +4,15 @@ import { chatApi } from "@/lib/messenger/api"
 import { createOptimisticMessage, withStatus } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type { CursorPage, Message, Pkid, SendMessagePayload, Uuid } from "@/types/messenger"
+import type {
+	CursorPage,
+	MediaAttachment,
+	Message,
+	MessageType,
+	Pkid,
+	SendMessagePayload,
+	Uuid,
+} from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -76,6 +84,92 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		[queryClient, historyKey],
 	)
 
+	/** Shared by text and every structured type (media/contact/location). */
+	const sendStructured = useCallback(
+		async (
+			messageType: MessageType,
+			options: {
+				content?: string
+				media?: MediaAttachment[]
+				metadata?: Record<string, unknown>
+				replyingTo?: Message | null
+			},
+		) => {
+			if (!currentUser) return
+
+			const payload: SendMessagePayload = {
+				receiver_id: receiverPkid,
+				message_type: messageType,
+				content: options.content,
+				media: options.media,
+				metadata: options.metadata,
+				...(options.replyingTo ? { reply_to: options.replyingTo.id } : {}),
+				nonce: NONCE,
+				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
+			}
+
+			const optimistic = createOptimisticMessage(
+				payload,
+				{
+					id: currentUser.id as Uuid,
+					pkid: currentUser.pkid as Pkid,
+					username: currentUser.username,
+					first_name: currentUser.first_name,
+					last_name: currentUser.last_name,
+					profile_photo: currentUser.profile_photo,
+				},
+				options.replyingTo,
+			)
+			upsertOptimistic(optimistic)
+
+			try {
+				const sent = await chatApi.send(payload)
+				replaceOptimistic(optimistic.id, sent)
+				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+			} catch {
+				markFailed(optimistic.id)
+			}
+		},
+		[currentUser, receiverPkid, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+	)
+
+	/** Caption lives on `media[].caption`, not `content` — confirmed via
+	 * mobile's `handleMediaSend`: `content` is never set for media sends. */
+	const sendMedia = useCallback(
+		(
+			media: MediaAttachment[],
+			options?: { replyingTo?: Message | null; metadata?: Record<string, unknown> },
+		) =>
+			sendStructured("media", {
+				media,
+				metadata: options?.metadata,
+				replyingTo: options?.replyingTo,
+			}),
+		[sendStructured],
+	)
+
+	/** Manual entry, not a native picker — no reliable cross-browser
+	 * Contacts API. Payload shape matches mobile's PickedContact metadata
+	 * exactly; `avatar_uri` omitted, no source for a photo here. */
+	const sendContact = useCallback(
+		(contact: { name: string; phoneNumber?: string; email?: string }) =>
+			sendStructured("contact", {
+				content: contact.name,
+				metadata: {
+					name: contact.name,
+					phone_number: contact.phoneNumber || null,
+					email: contact.email || null,
+				},
+			}),
+		[sendStructured],
+	)
+
+	const sendLocation = useCallback(
+		(latitude: number, longitude: number) =>
+			sendStructured("location", { content: "📍 Location", metadata: { latitude, longitude } }),
+		[sendStructured],
+	)
+
 	const send = useCallback(
 		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
@@ -145,5 +239,5 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		[queryClient, historyKey, receiverPkid, replaceOptimistic, markFailed],
 	)
 
-	return { send, retry }
+	return { send, sendMedia, sendContact, sendLocation, retry }
 }
