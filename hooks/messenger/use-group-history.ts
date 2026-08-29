@@ -33,6 +33,8 @@ export function groupMessageToMessage(gm: GroupMessage): Message {
 		forwarded_from: gm.forwarded_from,
 		views_count: gm.views_count,
 		replies_count: gm.replies_count,
+		reactions_count: gm.reactions_count,
+		emoji_reaction_counts: gm.emoji_reaction_counts,
 		created_at: gm.created_at,
 		updated_at: gm.updated_at,
 	}

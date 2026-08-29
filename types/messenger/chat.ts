@@ -89,6 +89,7 @@ export interface Message {
 	is_hidden_by_me?: boolean
 	is_deleted_for_all?: boolean
 	reactions_count?: number
+	emoji_reaction_counts?: EmojiReactionCount[]
 	views_count?: number
 	replies_count?: number
 	created_at: string
@@ -183,4 +184,23 @@ export interface ReportUserPayload {
 	reason: ReportUserReason
 	description?: string
 	block_and_delete: boolean
+}
+
+export interface EmojiReactionCount {
+	emoji: string
+	count: number
+	/** String pkids of users who reacted with this emoji — lets us tell a
+	 * new reaction apart from a switch or toggle-off so optimistic counts
+	 * stay correct. */
+	actor_ids?: string[]
+}
+
+/** `GET chats/messages/:id/reactions` response row — 1:1 only, confirmed
+ * endpoint but mobile never built UI on it; group has no equivalent, see
+ * `emoji_reaction_counts.actor_ids` instead */
+export interface MessageReaction {
+	id: number
+	user: MessageSender
+	emoji: string
+	created_at: string
 }

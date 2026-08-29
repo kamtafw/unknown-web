@@ -12,7 +12,7 @@
  * not modeled here yet.
  */
 
-import type { MediaAttachment, MessageStatus, MessageType } from "./chat"
+import type { EmojiReactionCount, MediaAttachment, MessageStatus, MessageType } from "./chat"
 import type { Pkid, Uuid } from "./identity"
 
 export type GroupRole = "admin" | "moderator" | "member"
@@ -146,6 +146,8 @@ export interface GroupMessage {
 	excluded_users?: Pkid[]
 	views_count?: number
 	replies_count?: number
+	reactions_count?: number
+	emoji_reaction_counts?: EmojiReactionCount[]
 	created_at: string
 	updated_at: string
 }

@@ -23,6 +23,7 @@ const eslintConfig = [
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
+			"components/messenger/conversation/reaction-row.tsx",
 		],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",

@@ -7,12 +7,12 @@ import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { derivePeerFromMessages } from "@/lib/messenger/user-display"
+import { derivePeerFromMessages, getDisplayName } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "./composer"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
@@ -57,7 +57,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		null
 
 	const { send, retry } = useSendMessage(uuid, (derivedPkid ?? 0) as Pkid)
-	const { forward, pinMessage, unpinMessage, deleteMessage } = useMessageActions(
+	const { forward, pinMessage, unpinMessage, deleteMessage, reactToMessage } = useMessageActions(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
@@ -127,6 +127,11 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		}
 	}
 
+	const handleViewReactors = useCallback(async (message: Message, emoji: string) => {
+		const reactions = await chatApi.listMessageReactions(message.id)
+		return reactions.filter((r) => r.emoji === emoji).map((r) => getDisplayName(r.user))
+	}, [])
+
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<ConversationHeader
@@ -155,6 +160,8 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onPin={(m) => void pinMessage(m)}
 				onUnpin={(m) => void unpinMessage(m)}
 				onDelete={setDeleteTarget}
+				onReact={(m, emoji) => void reactToMessage(m, emoji)}
+				onViewReactors={handleViewReactors}
 			/>
 			<Composer
 				onSend={handleSend}

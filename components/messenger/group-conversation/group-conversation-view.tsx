@@ -3,6 +3,7 @@
 import { MessageList, MessageListHandle } from "@/components/messenger/conversation/message-list"
 import { useGroupDetail } from "@/hooks/messenger/use-group-detail"
 import { messageToGroupMessage, useGroupHistory } from "@/hooks/messenger/use-group-history"
+import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
@@ -11,11 +12,12 @@ import { MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
 import { deriveGroupComposerState } from "@/lib/messenger/group-permissions"
 import { groupKeys } from "@/lib/messenger/query-keys"
+import { getDisplayName } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { GroupListData, Message, Pkid, Uuid } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "../conversation/composer"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
 import { ForwardDialog } from "../conversation/forward-dialog"
@@ -46,9 +48,10 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		useGroupHistory(groupId)
 	const { remoteTyping, emitTyping } = useGroupTyping(groupId)
 	const { send, retry } = useSendGroupMessage(groupId)
-	const { deleteMessage, pinMessage, unpinMessage, forwardMessage } =
+	const { deleteMessage, pinMessage, unpinMessage, forwardMessage, reactToMessage } =
 		useGroupMessageActions(groupId)
 	useActiveGroupRoom(groupId)
+	const { members } = useGroupMembers(groupId)
 
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
@@ -108,6 +111,17 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		}
 	}
 
+	const handleViewReactors = useCallback(
+		async (message: Message, emoji: string) => {
+			const entry = (message.emoji_reaction_counts ?? []).find((c) => c.emoji === emoji)
+			return (entry?.actor_ids ?? []).map((pkid) => {
+				const member = members.find((m) => String(m.pkid) === pkid)
+				return member ? getDisplayName(member) : `User #${pkid}`
+			})
+		},
+		[members],
+	)
+
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<GroupConversationHeader group={group ?? null} />
@@ -131,6 +145,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				onPin={(m) => void pinMessage(messageToGroupMessage(m, groupId))}
 				onUnpin={(m) => void unpinMessage(messageToGroupMessage(m, groupId))}
 				onDelete={setDeleteTarget}
+				onReact={(m, emoji) => void reactToMessage(messageToGroupMessage(m, groupId), emoji)}
+				onViewReactors={handleViewReactors}
 			/>
 			{composerState?.canSend === false ? (
 				<div className="flex items-center justify-center px-4 py-3 border-t border-border bg-muted/30 shrink-0 text-sm text-muted-foreground">

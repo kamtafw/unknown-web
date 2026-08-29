@@ -3,10 +3,17 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys, groupKeys } from "@/lib/messenger/query-keys"
+import { toggleActorReaction, totalReactionCount } from "@/lib/messenger/reactions"
 import { GROUP_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
 import { toast } from "@/lib/toast"
-import type { GroupChatHistoryData, GroupMessage, Uuid } from "@/types/messenger"
+import { useAuthStore } from "@/stores/auth-store"
+import type {
+	EmojiReactionCount,
+	GroupChatHistoryData,
+	GroupMessage,
+	Uuid,
+} from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -25,6 +32,7 @@ type HistoryData = InfiniteData<GroupChatHistoryData>
 export function useGroupMessageActions(groupId: number) {
 	const queryClient = useQueryClient()
 	const historyKey = groupKeys.history(groupId)
+	const currentUser = useAuthStore((s) => s.user)
 
 	const patch = useCallback(
 		(messageId: number, fields: Partial<GroupMessage>) => {
@@ -112,5 +120,59 @@ export function useGroupMessageActions(groupId: number) {
 		[queryClient],
 	)
 
-	return { deleteMessage, pinMessage, unpinMessage, forwardMessage }
+	/** No invalidate on success — deliberate, mirrors mobile's
+	 * useReactToGroupMessage: the `group:reaction` broadcast is the source
+	 * of truth for everyone else, and our own echo is skipped by pkid in
+	 * use-group-socket.ts, so the optimistic patch here is already final. */
+	const reactToMessage = useCallback(
+		async (message: GroupMessage, emoji: string) => {
+			if (!currentUser) return
+			const actorId = String(currentUser.pkid)
+			const snapshot = message.emoji_reaction_counts ?? []
+
+			queryClient.setQueryData<HistoryData>(historyKey, (old) =>
+				patchGroupMessageReaction(old, message.id, (counts) =>
+					toggleActorReaction(counts, actorId, emoji),
+				),
+			)
+
+			try {
+				await chatApi.reactToMessage(message.id, emoji)
+			} catch (err) {
+				queryClient.setQueryData<HistoryData>(historyKey, (old) =>
+					patchGroupMessageReaction(old, message.id, () => snapshot),
+				)
+				toast.error(extractMessage(err, "Couldn't react to the message — try again"))
+			}
+		},
+		[queryClient, historyKey, currentUser],
+	)
+
+	return { deleteMessage, pinMessage, unpinMessage, forwardMessage, reactToMessage }
+}
+
+/** Exported so use-group-socket.ts's `group:reaction` handler reuses the
+ * exact same patcher — mirrors mobile's patchGroupHistoryReaction. */
+export function patchGroupMessageReaction(
+	old: HistoryData | undefined,
+	messageId: number,
+	transform: (counts: EmojiReactionCount[]) => EmojiReactionCount[],
+): HistoryData | undefined {
+	if (!old) return old
+	let mutated = false
+	const pages = old.pages.map((page) => {
+		const idx = page.results.findIndex((m) => m.id === messageId)
+		if (idx === -1) return page
+		mutated = true
+		const target = page.results[idx]
+		const nextCounts = transform(target.emoji_reaction_counts ?? [])
+		const results = [...page.results]
+		results[idx] = {
+			...target,
+			emoji_reaction_counts: nextCounts,
+			reactions_count: totalReactionCount(nextCounts),
+		}
+		return { ...page, results }
+	})
+	return mutated ? { ...old, pages } : old
 }
