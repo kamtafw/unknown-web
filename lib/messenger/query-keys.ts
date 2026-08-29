@@ -46,6 +46,8 @@ export const chatKeys = {
 	userProfile: (userUuid: Uuid) => [...chatKeys.all, "user-profile", userUuid] as const,
 	attachments: (userUuid: Uuid, type: "media" | "doc" | "link") =>
 		[...chatKeys.all, "attachments", userUuid, type] as const,
+
+	reactions: (messageId: number) => [...chatKeys.all, "reactions", messageId] as const,
 }
 
 export const groupKeys = {

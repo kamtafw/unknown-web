@@ -14,6 +14,7 @@ import {
 	ChatListItem,
 	CursorPage,
 	Message,
+	MessageReaction,
 	MessageStatus,
 	MessengerUserProfile,
 	ReportUserPayload,
@@ -255,4 +256,13 @@ export const chatApi = {
 	},
 	reportUser: (userUuid: string, payload: ReportUserPayload) =>
 		apiClient.post(`/api/chats/users/${userUuid}/report`, payload),
+
+	// Reactions
+	reactToMessage: (messageId: number, emoji: string) =>
+		apiClient.post("/api/chats/messages/reactions", { message_id: messageId, emoji }),
+
+	listMessageReactions: (messageId: number) =>
+		apiClient
+			.get<ApiResponse<MessageReaction[]>>(`/api/chats/messages/${messageId}/reactions`)
+			.then((r) => r.data.data),
 }

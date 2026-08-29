@@ -21,6 +21,8 @@ import {
 import Image from "next/image"
 import { forwardRef } from "react"
 import { MessageActionMenu } from "./message-action-menu"
+import { ReactionPicker } from "./reaction-picker"
+import { ReactionsRow } from "./reaction-row"
 
 interface MessageBubbleProps {
 	message: Message
@@ -34,6 +36,8 @@ interface MessageBubbleProps {
 	onPin?: (message: Message) => void
 	onUnpin?: (message: Message) => void
 	onDelete?: (message: Message) => void
+	onReact?: (message: Message, emoji: string) => void
+	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
 }
 
 function formatTime(iso: string): string {
@@ -131,6 +135,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		onPin,
 		onUnpin,
 		onDelete,
+		onReact,
+		onViewReactors,
 	},
 	ref,
 ) {
@@ -196,6 +202,16 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					<MessageContent message={message} />
 				</div>
 			</div>
+
+			{showActions && onReact && <ReactionPicker onReact={(emoji) => onReact!(message, emoji)} />}
+
+			{onViewReactors && (
+				<ReactionsRow
+					reactions={message.emoji_reaction_counts}
+					isOwn={isOwn}
+					onFetchReactors={(emoji) => onViewReactors(message, emoji)}
+				/>
+			)}
 
 			<div className="flex items-center gap-1 mt-0.5 px-1">
 				<span className="text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>

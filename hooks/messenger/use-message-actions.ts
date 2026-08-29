@@ -3,8 +3,10 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { toggleActorReaction, totalReactionCount } from "@/lib/messenger/reactions"
 import { toast } from "@/lib/toast"
-import type { Message, Pkid, Uuid } from "@/types/messenger"
+import { useAuthStore } from "@/stores/auth-store"
+import type { EmojiReactionCount, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -39,6 +41,8 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 		},
 		[queryClient],
 	)
+
+	const reactToMessage = useReactToMessage(peerUuid)
 
 	const pinMessage = useCallback(
 		async (message: Message) => {
@@ -97,7 +101,7 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 		[queryClient, historyKey],
 	)
 
-	return { forward, pinMessage, unpinMessage, deleteMessage }
+	return { forward, reactToMessage, pinMessage, unpinMessage, deleteMessage }
 }
 
 /**
@@ -137,4 +141,67 @@ function patchMessageInHistory(old: unknown, messageId: number, patch: Partial<M
 			results: page.results.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
 		})),
 	}
+}
+
+function readMessageReactionCounts(old: unknown, messageId: number): EmojiReactionCount[] {
+	const data = old as { pages?: Array<{ results: Message[] }> } | undefined
+	if (!data?.pages) return []
+	for (const page of data.pages) {
+		const found = page.results.find((m) => m.id === messageId)
+		if (found) return found.emoji_reaction_counts ?? []
+	}
+	return []
+}
+
+/** No socket path for 1:1 (confirmed absent from mobile's chat socket) —
+ * HTTP + optimistic path + invalidate-on-success only, so a concurrent
+ * reactor's count still converges without a realtime push. */
+export function useReactToMessage(peerUuid: Uuid) {
+	const queryClient = useQueryClient()
+	const currentUser = useAuthStore((s) => s.user)
+	const historyKey = chatKeys.history(peerUuid)
+
+	return useCallback(
+		async (message: Message, emoji: string) => {
+			if (!currentUser) return
+			const actorId = String(currentUser.pkid)
+			const previousCounts = readMessageReactionCounts(
+				queryClient.getQueryData(historyKey),
+				message.id,
+			)
+			const nextCounts = toggleActorReaction(previousCounts, actorId, emoji)
+
+			queryClient.setQueryData(historyKey, (old: unknown) =>
+				patchMessageInHistory(old, message.id, {
+					emoji_reaction_counts: nextCounts,
+					reactions_count: totalReactionCount(nextCounts),
+				}),
+			)
+
+			try {
+				await chatApi.reactToMessage(message.id, emoji)
+				queryClient.invalidateQueries({ queryKey: historyKey })
+			} catch (err) {
+				queryClient.setQueryData(historyKey, (old: unknown) =>
+					patchMessageInHistory(old, message.id, {
+						emoji_reaction_counts: previousCounts,
+						reactions_count: totalReactionCount(previousCounts),
+					}),
+				)
+				toast.error(extractMessage(err, "Couldn't react to the message — try again"))
+			}
+		},
+		[queryClient, historyKey, currentUser],
+	)
+}
+
+/** Confirmed endpoint, lazy (only called when a reaction
+ * pill's popover is opened). */
+export function useMessageReactions(messageId: number | null) {
+	return useQuery({
+		queryKey: chatKeys.reactions(messageId ?? 0),
+		queryFn: () => chatApi.listMessageReactions(messageId as number),
+		enabled: !!messageId && messageId > 0,
+		staleTime: 15_000,
+	})
 }

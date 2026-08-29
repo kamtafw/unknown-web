@@ -22,6 +22,8 @@ interface MessageListProps {
 	onPin: (message: Message) => void
 	onUnpin: (message: Message) => void
 	onDelete: (message: Message) => void
+	onReact?: (message: Message, emoji: string) => void
+	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
 }
 
 export interface MessageListHandle {
@@ -45,6 +47,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onPin,
 		onUnpin,
 		onDelete,
+		onReact,
+		onViewReactors,
 	},
 	ref,
 ) {
@@ -146,6 +150,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 								onPin={onPin}
 								onUnpin={onUnpin}
 								onDelete={onDelete}
+								onReact={onReact}
+								onViewReactors={onViewReactors}
 							/>
 						)
 					})}

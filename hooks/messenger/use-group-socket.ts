@@ -2,10 +2,13 @@
 
 import { chatApi } from "@/lib/messenger/api"
 import { groupKeys } from "@/lib/messenger/query-keys"
+import { removeActorFromEmoji, setActorReaction } from "@/lib/messenger/reactions"
 import { GROUP_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
+import { useAuthStore } from "@/stores/auth-store"
 import { useMessengerConnectionStore } from "@/stores/messenger-connection.store"
 import type {
+	EmojiReactionCount,
 	GroupChatHistoryData,
 	GroupListData,
 	GroupListItem,
@@ -13,12 +16,21 @@ import type {
 } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
+import { patchGroupMessageReaction } from "./use-group-message-actions"
 
 type HistoryData = InfiniteData<GroupChatHistoryData>
 
 interface GroupDeletePayload {
 	msgId?: number
 	groupId?: number
+}
+
+interface GroupReactionPayload {
+	groupId?: number
+	msgId?: number
+	emoji?: string
+	action?: "add" | "remove" | "update"
+	userPkid?: number | string
 }
 
 /**
@@ -39,6 +51,7 @@ interface GroupDeletePayload {
  */
 export function useGroupSocket(activeGroupId: number | null, currentUserId: string | undefined) {
 	const queryClient = useQueryClient()
+	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 	const connectionStatus = useMessengerConnectionStore((s) => s.status)
 	const activeGroupIdRef = useRef(activeGroupId)
 	useEffect(() => {
@@ -174,12 +187,42 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 			},
 		)
 
+		const unsubReaction = messengerSocket.on<GroupReactionPayload>(
+			GROUP_SOCKET_EVENTS.REACTION,
+			(payload) => {
+				const groupId = Number(payload.groupId)
+				const msgId = Number(payload.msgId)
+				const emoji = payload.emoji
+				const action = payload.action
+				if (!Number.isFinite(groupId) || !Number.isFinite(msgId) || !emoji) return
+				if (action !== "add" && action !== "remove" && action !== "update") return
+
+				// Broadcast goes to every member including the actor — skip our own,
+				// already applied optimistically in reactToMessage. Confirmed via
+				// mobile: no field distinguishes "my own echo" except matching pkid.
+				if (currentUserPkid != null && String(payload.userPkid) === String(currentUserPkid)) return
+
+				const actorId = payload.userPkid != null ? String(payload.userPkid) : ""
+				if (!actorId) return
+
+				const transform =
+					action === "remove"
+						? (counts: EmojiReactionCount[]) => removeActorFromEmoji(counts, actorId, emoji)
+						: (counts: EmojiReactionCount[]) => setActorReaction(counts, actorId, emoji)
+
+				queryClient.setQueryData<HistoryData>(groupKeys.history(groupId), (old) =>
+					patchGroupMessageReaction(old, msgId, transform),
+				)
+			},
+		)
+
 		return () => {
 			unsubMessage()
 			unsubStatus()
 			unsubDeleted()
+			unsubReaction()
 		}
-	}, [queryClient, currentUserId])
+	}, [queryClient, currentUserId, currentUserPkid])
 }
 
 function dedupeAppend(existing: GroupMessage[], incoming: GroupMessage): GroupMessage[] {
