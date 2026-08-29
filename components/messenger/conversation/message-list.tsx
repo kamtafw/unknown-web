@@ -24,6 +24,8 @@ interface MessageListProps {
 	onDelete: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
 	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
+	onVote?: (message: Message, optionIds: number[]) => void
+	onViewPollResults?: (message: Message) => void
 }
 
 export interface MessageListHandle {
@@ -49,6 +51,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onDelete,
 		onReact,
 		onViewReactors,
+		onVote,
+		onViewPollResults,
 	},
 	ref,
 ) {
@@ -131,7 +135,9 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 					{group.items.map((message, i) => {
 						const prev = group.items[i - 1]
 						const showSender = !prev || prev.sender.id !== message.sender.id
-						const repliedMessage = message.reply_to ? messageById.get(message.reply_to) : undefined
+						const repliedMessage = message.reply_to
+							? messageById.get(message.reply_to.id)
+							: undefined
 						return (
 							<MessageBubble
 								key={message.id}
@@ -152,6 +158,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 								onDelete={onDelete}
 								onReact={onReact}
 								onViewReactors={onViewReactors}
+								onVote={onVote}
+								onViewPollResults={onViewPollResults}
 							/>
 						)
 					})}

@@ -17,6 +17,7 @@ import {
 	MessageReaction,
 	MessageStatus,
 	MessengerUserProfile,
+	PollResults,
 	ReportUserPayload,
 	SendMessagePayload,
 	UserAttachmentsData,
@@ -264,5 +265,17 @@ export const chatApi = {
 	listMessageReactions: (messageId: number) =>
 		apiClient
 			.get<ApiResponse<MessageReaction[]>>(`/api/chats/messages/${messageId}/reactions`)
+			.then((r) => r.data.data),
+
+	// Polls
+	votePoll: (messageId: number, optionIds: number[]) =>
+		apiClient.post("/api/chats/messages/polls/vote", {
+			message_id: messageId,
+			option_id: optionIds[0],
+		}),
+
+	getPollResults: (messageId: number) =>
+		apiClient
+			.get<ApiResponse<PollResults>>(`/api/chats/messages/${messageId}/polls`)
 			.then((r) => r.data.data),
 }

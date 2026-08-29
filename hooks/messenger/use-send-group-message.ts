@@ -3,7 +3,7 @@
 import { groupApi } from "@/lib/messenger/group-api"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type { GroupChatHistoryData, GroupMessage } from "@/types/messenger"
+import type { GroupChatHistoryData, GroupMessage, Message } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -14,7 +14,7 @@ let optimisticCounter = 0
 function createOptimisticGroupMessage(
 	groupId: number,
 	content: string,
-	replyTo: number | undefined,
+	replyingTo: Message | null | undefined,
 	sender: GroupMessage["sender"],
 ): GroupMessage {
 	optimisticCounter -= 1
@@ -30,7 +30,15 @@ function createOptimisticGroupMessage(
 		is_pinned: false,
 		collection_id: "",
 		status: "queued",
-		reply_to: replyTo ?? null,
+		reply_to: replyingTo
+			? {
+					id: replyingTo.id,
+					sender_id: replyingTo.sender.id,
+					content: replyingTo.content,
+					message_type: replyingTo.message_type,
+					created_at: replyingTo.created_at,
+				}
+			: null,
 		forwarded_from: null,
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString(),
@@ -106,7 +114,7 @@ export function useSendGroupMessage(groupId: number) {
 	)
 
 	const send = useCallback(
-		async (content: string, replyTo?: number) => {
+		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
 
 			const sender: GroupMessage["sender"] = {
@@ -117,7 +125,7 @@ export function useSendGroupMessage(groupId: number) {
 				last_name: currentUser.last_name,
 				profile_photo: currentUser.profile_photo,
 			}
-			const optimistic = createOptimisticGroupMessage(groupId, content, replyTo, sender)
+			const optimistic = createOptimisticGroupMessage(groupId, content, replyingTo, sender)
 			upsertOptimistic(optimistic)
 
 			try {
@@ -125,7 +133,7 @@ export function useSendGroupMessage(groupId: number) {
 					group_id: groupId,
 					message_type: "text",
 					content,
-					...(replyTo ? { reply_to: replyTo } : {}),
+					...(replyingTo ? { reply_to: replyingTo.id } : {}),
 				})
 				replaceOptimistic(optimistic.id, sent)
 				queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
@@ -156,7 +164,7 @@ export function useSendGroupMessage(groupId: number) {
 					group_id: groupId,
 					message_type: failedMessage.message_type,
 					content: failedMessage.content,
-					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to } : {}),
+					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to.id } : {}),
 				})
 				replaceOptimistic(failedMessage.id, sent)
 				queryClient.invalidateQueries({ queryKey: groupKeys.lists() })

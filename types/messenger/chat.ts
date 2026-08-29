@@ -70,6 +70,19 @@ export interface SendMessagePayload {
 	sender_ephemeral_key?: string
 }
 
+/** Embedded reply context — NOT a bare id. Confirmed via live payload
+ * inspection (2026-08-29): both the POST create-response and the
+ * `chat:receive` socket event return this full object. Only the CREATE
+ * payload (`SendMessagePayload.reply_to`) is a bare id — that's what's
+ * sent to create a reply; this is what comes back describing it. */
+export interface MessageReplyTo {
+	id: number
+	sender_id: Uuid
+	content: string
+	message_type: MessageType
+	created_at: string
+}
+
 /** A message is returned by the server */
 export interface Message {
 	id: number
@@ -84,7 +97,7 @@ export interface Message {
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
-	reply_to: number | null
+	reply_to: MessageReplyTo | null
 	forwarded_from: unknown | null
 	is_hidden_by_me?: boolean
 	is_deleted_for_all?: boolean

@@ -48,6 +48,8 @@ export const chatKeys = {
 		[...chatKeys.all, "attachments", userUuid, type] as const,
 
 	reactions: (messageId: number) => [...chatKeys.all, "reactions", messageId] as const,
+
+	pollResults: (messageId: number) => [...chatKeys.all, "poll-results", messageId] as const,
 }
 
 export const groupKeys = {

@@ -4,7 +4,7 @@ import { EmojiPopup } from "@/components/ui/EmojiPicker"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/lib/toast"
 import type { Message } from "@/types/messenger"
-import { Mic, Paperclip, Send, Smile } from "lucide-react"
+import { BarChart3, Mic, Paperclip, Send, Smile } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { ReplyPreviewBar } from "./reply-preview-bar"
 
@@ -13,9 +13,16 @@ interface ComposerProps {
 	onTypingChange: (isTyping: boolean) => void
 	replyingTo?: Message | null
 	onCancelReply?: () => void
+	onCreatePoll?: () => void
 }
 
-export function Composer({ onSend, onTypingChange, replyingTo, onCancelReply }: ComposerProps) {
+export function Composer({
+	onSend,
+	onTypingChange,
+	replyingTo,
+	onCancelReply,
+	onCreatePoll,
+}: ComposerProps) {
 	const [value, setValue] = useState("")
 	const [emojiOpen, setEmojiOpen] = useState(false)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -71,6 +78,16 @@ export function Composer({ onSend, onTypingChange, replyingTo, onCancelReply }: 
 					<Paperclip size={20} />
 				</button>
 
+				{onCreatePoll && (
+					<button
+						title="Create poll"
+						onClick={onCreatePoll}
+						className="text-muted-foreground hover:text-foreground p-1.5 transition-colors"
+					>
+						<BarChart3 size={20} />
+					</button>
+				)}
+
 				<textarea
 					ref={textareaRef}
 					rows={1}
@@ -83,7 +100,7 @@ export function Composer({ onSend, onTypingChange, replyingTo, onCancelReply }: 
 						}
 					}}
 					placeholder="Type a message here"
-					className="flex-1 resize-none bg-transparent outline-none text-sm py-2 max-h-[120px] placeholder:text-muted-foreground"
+					className="flex-1 resize-none bg-transparent outline-none text-sm py-2 max-h-30 placeholder:text-muted-foreground"
 				/>
 
 				{value.trim() ? (
