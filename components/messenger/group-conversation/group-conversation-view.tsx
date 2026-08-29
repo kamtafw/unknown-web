@@ -7,6 +7,7 @@ import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
+import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
@@ -22,6 +23,8 @@ import { Composer } from "../conversation/composer"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
 import { ForwardDialog } from "../conversation/forward-dialog"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
+import { PollResultsDialog } from "../conversation/poll-results-dialog"
+import { CreatePollDialog } from "./create-poll-dialog"
 import { GroupConversationHeader } from "./group-conversation-header"
 
 interface GroupConversationViewProps {
@@ -52,10 +55,13 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		useGroupMessageActions(groupId)
 	useActiveGroupRoom(groupId)
 	const { members } = useGroupMembers(groupId)
+	const vote = useVotePoll()
 
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
+	const [createPollOpen, setCreatePollOpen] = useState(false)
+	const [pollResultsMessageId, setPollResultsMessageId] = useState<number | null>(null)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
@@ -122,6 +128,12 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		[members],
 	)
 
+	const handleVote = (message: Message, optionIds: number[]) => {
+		void vote(message.id, optionIds).then((ok) => {
+			if (ok) queryClient.invalidateQueries({ queryKey: groupKeys.history(groupId) })
+		})
+	}
+
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			<GroupConversationHeader group={group ?? null} />
@@ -147,6 +159,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(messageToGroupMessage(m, groupId), emoji)}
 				onViewReactors={handleViewReactors}
+				onVote={handleVote}
+				onViewPollResults={(m) => setPollResultsMessageId(m.id)}
 			/>
 			{composerState?.canSend === false ? (
 				<div className="flex items-center justify-center px-4 py-3 border-t border-border bg-muted/30 shrink-0 text-sm text-muted-foreground">
@@ -160,6 +174,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					onTypingChange={emitTyping}
 					replyingTo={replyingTo}
 					onCancelReply={() => setReplyingTo(null)}
+					onCreatePoll={() => setCreatePollOpen(true)}
 				/>
 			)}
 
@@ -173,6 +188,11 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				open={!!deleteTarget}
 				onOpenChange={(open) => !open && setDeleteTarget(null)}
 				onConfirm={handleDeleteConfirm}
+			/>
+			<CreatePollDialog groupId={groupId} open={createPollOpen} onOpenChange={setCreatePollOpen} />
+			<PollResultsDialog
+				messageId={pollResultsMessageId}
+				onOpenChange={() => setPollResultsMessageId(null)}
 			/>
 		</div>
 	)

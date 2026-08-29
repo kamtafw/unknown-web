@@ -1,6 +1,7 @@
 "use client"
 
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
+import { resolvePoll } from "@/lib/messenger/poll"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types/messenger"
 import {
@@ -21,6 +22,7 @@ import {
 import Image from "next/image"
 import { forwardRef } from "react"
 import { MessageActionMenu } from "./message-action-menu"
+import { PollBubble } from "./poll-bubble"
 import { ReactionPicker } from "./reaction-picker"
 import { ReactionsRow } from "./reaction-row"
 
@@ -38,6 +40,8 @@ interface MessageBubbleProps {
 	onDelete?: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
 	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
+	onVote?: (message: Message, optionIds: number[]) => void
+	onViewPollResults?: (message: Message) => void
 }
 
 function formatTime(iso: string): string {
@@ -70,7 +74,15 @@ function StatusTick({ status }: { status: Message["status"] }) {
  * reimplementing mobile's full players/maps — that's a scope decision for
  * whichever milestone actually owns sending these types, not a gap here.
  */
-function MessageContent({ message }: { message: Message }) {
+function MessageContent({
+	message,
+	onVote,
+	onViewPollResults,
+}: {
+	message: Message
+	onVote?: (message: Message, optionIds: number[]) => void
+	onViewPollResults?: (message: Message) => void
+}) {
 	if (message.deleted) {
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
 	}
@@ -108,6 +120,16 @@ function MessageContent({ message }: { message: Message }) {
 			return <FallbackContent icon={Phone} label={message.content || "Call"} />
 		case "share":
 			return <FallbackContent icon={Share2} label="Shared post" />
+		case "poll":
+			return resolvePoll(message) ? (
+				<PollBubble
+					message={message}
+					onVote={onVote ? (optionIds) => onVote(message, optionIds) : undefined}
+					onViewResults={onViewPollResults ? () => onViewPollResults(message) : undefined}
+				/>
+			) : (
+				<FallbackContent icon={BarChart3} label={message.content || "Poll"} />
+			)
 		default:
 			return <p className="text-sm italic opacity-70">Unsupported message</p>
 	}
@@ -137,6 +159,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		onDelete,
 		onReact,
 		onViewReactors,
+		onVote,
+		onViewPollResults,
 	},
 	ref,
 ) {
@@ -199,7 +223,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 						</div>
 					)}
 
-					<MessageContent message={message} />
+					<MessageContent message={message} onVote={onVote} onViewPollResults={onViewPollResults} />
 				</div>
 			</div>
 

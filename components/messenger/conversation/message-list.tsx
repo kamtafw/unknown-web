@@ -24,6 +24,8 @@ interface MessageListProps {
 	onDelete: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
 	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
+	onVote?: (message: Message, optionIds: number[]) => void
+	onViewPollResults?: (message: Message) => void
 }
 
 export interface MessageListHandle {
@@ -49,6 +51,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onDelete,
 		onReact,
 		onViewReactors,
+		onVote,
+		onViewPollResults,
 	},
 	ref,
 ) {
@@ -152,6 +156,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 								onDelete={onDelete}
 								onReact={onReact}
 								onViewReactors={onViewReactors}
+								onVote={onVote}
+								onViewPollResults={onViewPollResults}
 							/>
 						)
 					})}
