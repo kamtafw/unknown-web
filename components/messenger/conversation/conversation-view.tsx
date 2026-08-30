@@ -3,6 +3,7 @@
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
 import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageActions } from "@/hooks/messenger/use-message-actions"
+import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
@@ -21,6 +22,7 @@ import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
 import { MediaComposerDialog } from "./media-composer-dialog"
 import { MessageList, MessageListHandle } from "./message-list"
+import { MessageSearchBar } from "./message-search-bar"
 import { PinnedMessageBanner } from "./pinned-message-banner"
 
 interface ConversationViewProps {
@@ -84,7 +86,12 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 
-	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+	const pinnedMessages = useMemo(
+		() => messages.filter((m) => m.is_pinned && (!m.is_deleted_for_all || !m.is_hidden_by_me)),
+		[messages],
+	)
+
+	const search = useMessageSearch(messages, messageListRef)
 
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
@@ -183,12 +190,27 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
-			<ConversationHeader
-				peer={derivedPeer}
-				peerUuid={uuid}
-				peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
-				onOpenProfile={onOpenProfile}
-			/>
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<ConversationHeader
+					peer={peer}
+					peerUuid={uuid}
+					peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
+					onOpenProfile={onOpenProfile}
+					onOpenSearch={search.open}
+				/>
+			)}
+
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}

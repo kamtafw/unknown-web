@@ -35,6 +35,8 @@ function createOptimisticGroupMessage(
 		media: overrides?.media ?? null,
 		metadata: overrides?.metadata ?? null,
 		is_pinned: false,
+		is_deleted_for_all: false,
+		is_hidden_by_me: false,
 		collection_id: "",
 		status: "queued",
 		reply_to: replyingTo

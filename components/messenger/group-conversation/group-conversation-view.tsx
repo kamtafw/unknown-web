@@ -8,6 +8,7 @@ import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-acti
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
 import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { MessageDeleteType } from "@/lib/messenger/api"
@@ -25,6 +26,7 @@ import { ContactComposerDialog } from "../conversation/contact-composer-dialog"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
 import { ForwardDialog } from "../conversation/forward-dialog"
 import { MediaComposerDialog } from "../conversation/media-composer-dialog"
+import { MessageSearchBar } from "../conversation/message-search-bar"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
 import { PollResultsDialog } from "../conversation/poll-results-dialog"
 import { CreatePollDialog } from "./create-poll-dialog"
@@ -77,6 +79,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 
 	const messageListRef = useRef<MessageListHandle>(null)
 	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+
+	const search = useMessageSearch(messages, messageListRef)
 
 	const composerState =
 		group && currentUser ? deriveGroupComposerState(group, currentUser.pkid as Pkid) : null
@@ -180,7 +184,21 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
-			<GroupConversationHeader group={group ?? null} />
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<GroupConversationHeader group={group ?? null} onOpenSearch={search.open} />
+			)}
+
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}

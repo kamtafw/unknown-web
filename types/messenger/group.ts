@@ -128,7 +128,24 @@ export interface GroupInfo {
  * parallel implementation.
  */
 export interface GroupMessage {
+	collection_id: string
+	content: string
+	created_at: string
+	emoji_reaction_counts?: EmojiReactionCount[]
+	excluded_users?: Pkid[]
+	forwarded_from: unknown | null
+	group: GroupInfo
 	id: number
+	is_deleted_for_all: boolean
+	is_hidden_by_me: boolean
+	is_pinned: boolean
+	media: MediaAttachment[] | null
+	message_type: MessageType
+	metadata: Record<string, unknown> | null
+	reactions_count?: number
+	receiver: null
+	replies_count?: number
+	reply_to: MessageReplyTo | null
 	sender: {
 		id: Uuid
 		pkid: Pkid
@@ -137,25 +154,10 @@ export interface GroupMessage {
 		last_name: string | null
 		profile_photo?: string | null
 	}
-	receiver: null
-	group: GroupInfo
-	message_type: MessageType
-	content: string
-	media: MediaAttachment[] | null
-	metadata: Record<string, unknown> | null
-	deleted?: boolean
-	is_pinned: boolean
-	collection_id: string
 	status: MessageStatus
-	reply_to: MessageReplyTo | null
-	forwarded_from: unknown | null
-	excluded_users?: Pkid[]
-	views_count?: number
-	replies_count?: number
-	reactions_count?: number
-	emoji_reaction_counts?: EmojiReactionCount[]
-	created_at: string
 	updated_at: string
+	views_count?: number
+	deleted?: boolean
 }
 
 /**

@@ -81,7 +81,7 @@ function MessageContent({
 	onVote?: (message: Message, optionIds: number[]) => void
 	onViewPollResults?: (message: Message) => void
 }) {
-	if (message.deleted) {
+	if (message.is_deleted_for_all) {
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
 	}
 
@@ -285,9 +285,9 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	ref,
 ) {
 	const failed = message.status === "failed"
+	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
 	const pending = isOptimisticMessage(message) && !failed
-	const showActions =
-		!pending && !message.deleted && onReply && onForward && onPin && onUnpin && onDelete
+	const showActions = !pending && !deleted && onReply && onForward && onPin && onUnpin && onDelete
 
 	return (
 		<div
@@ -329,7 +329,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 						failed && "border border-destructive",
 					)}
 				>
-					{message.reply_to && !message.deleted && (
+					{message.reply_to && !deleted && (
 						<div
 							className={cn(
 								"mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
@@ -363,8 +363,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 			<div className="flex items-center gap-1 mt-0.5 px-1">
 				<span className="text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
-				{isOwn && !message.deleted && <StatusTick status={message.status} />}
-				{message.is_pinned && !message.deleted && (
+				{isOwn && !deleted && <StatusTick status={message.status} />}
+				{message.is_pinned && !deleted && (
 					<span className="text-[11px] text-muted-foreground">· Pinned</span>
 				)}
 				{failed && onRetry && (

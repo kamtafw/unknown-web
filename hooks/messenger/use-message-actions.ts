@@ -91,8 +91,10 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 			// optimistic hide-then-rollback; wait for confirmation.
 			try {
 				await chatApi.deleteMessage(message.id, deleteType)
+				const patch: Partial<Message> =
+					deleteType === "both" ? { is_deleted_for_all: true } : { is_hidden_by_me: true }
 				queryClient.setQueryData(historyKey, (old: unknown) =>
-					patchMessageInHistory(old, message.id, { deleted: true, content: "" }),
+					patchMessageInHistory(old, message.id, { ...patch, content: "" }),
 				)
 			} catch (err) {
 				toast.error(extractMessage(err, "Couldn't delete the message — try again"))

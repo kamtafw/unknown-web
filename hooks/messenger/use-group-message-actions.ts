@@ -54,7 +54,7 @@ export function useGroupMessageActions(groupId: number) {
 		async (message: GroupMessage, deleteType: MessageDeleteType) => {
 			try {
 				await chatApi.deleteMessage(message.id, deleteType)
-				patch(message.id, { deleted: true, content: "" })
+				patch(message.id, { is_deleted_for_all: true, content: "" })
 				messengerSocket.emit(GROUP_SOCKET_EVENTS.DELETE, {
 					msgId: message.id,
 					groupId,
