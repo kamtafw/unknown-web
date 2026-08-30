@@ -6,6 +6,7 @@ import type { MediaAttachment } from "@/types/messenger"
 import { useState } from "react"
 
 export interface PendingAttachment {
+	id: string
 	file: File
 	preview: string
 	type: MediaAttachment["type"]
@@ -15,50 +16,75 @@ export interface PendingAttachment {
 }
 
 /**
- * Single-attachment composer state, modeled on the proven shape of
- * hooks/socials/use-media-upload.ts but adapted to messenger's confirmed
- * contract: one `media_url` per upload (not an array), a `folder`
- * discriminator ("chat" here; "voice" is reserved for the recording
- * slice), and a classified `type` for the eventual `MediaAttachment`.
- *
- * Deliberately single-file — mobile allows a multi-select batch in one
- * message, but MessageBubble only renders `media[0]`. Extending to a real
- * gallery is a rendering decision, not an upload-plumbing one; not
- * blocking this slice on it.
+ * Multi-attachment composer state — modeled on the proven per-item
+ * shape of hooks/socials/use-media-upload.ts (id-keyed, independently
+ * retryable), not a new pattern. Confirmed via mobile: a single message
+ * CAN carry a batch (`allowsMultipleSelection` on the gallery picker),
+ * with ONE caption applied uniformly to every item on send (see
+ * handleMediaSend's resolveAttachmentCaption) — so per-item state here
+ * only needs to track upload progress, never a per-item caption.
  */
-export function usePendingAttachment(folder: MediaUploadFolder = "chat") {
-	const [attachment, setAttachment] = useState<PendingAttachment | null>(null)
+export function usePendingAttachment(folder: MediaUploadFolder = "chat", maxFiles = 10) {
+	const [attachments, setAttachments] = useState<PendingAttachment[]>([])
 
-	const upload = async (file: File, type: MediaAttachment["type"]) => {
+	const uploadFile = async (id: string, file: File) => {
 		try {
 			const uploadedUrl = await chatApi.uploadMedia(file, folder)
-			setAttachment((prev) =>
-				prev && prev.file === file ? { ...prev, uploadedUrl, uploading: false } : prev,
+			setAttachments((prev) =>
+				prev.map((a) => (a.id === id ? { ...a, uploadedUrl, uploading: false } : a)),
 			)
 		} catch {
-			setAttachment((prev) =>
-				prev && prev.file === file ? { ...prev, uploading: false, error: true } : prev,
+			setAttachments((prev) =>
+				prev.map((a) => (a.id === id ? { ...a, uploading: false, error: true } : a)),
 			)
 		}
 	}
 
-	const pick = (file: File) => {
-		const preview = URL.createObjectURL(file)
-		const type = classifyMediaType(file.type)
-		setAttachment({ file, preview, type, uploadedUrl: null, uploading: true, error: false })
-		void upload(file, type)
+	const addFiles = (fileList: FileList | File[]) => {
+		setAttachments((prev) => {
+			const remaining = maxFiles - prev.length
+			const files = Array.from(fileList).slice(0, Math.max(0, remaining))
+			const next: PendingAttachment[] = files.map((file) => ({
+				id: crypto.randomUUID(),
+				file,
+				preview: URL.createObjectURL(file),
+				type: classifyMediaType(file.type),
+				uploadedUrl: null,
+				uploading: true,
+				error: false,
+			}))
+			next.forEach((item) => void uploadFile(item.id, item.file))
+			return [...prev, ...next]
+		})
 	}
 
-	const retry = () => {
-		if (!attachment) return
-		setAttachment({ ...attachment, uploading: true, error: false })
-		void upload(attachment.file, attachment.type)
+	const retryUpload = (id: string) => {
+		setAttachments((prev) =>
+			prev.map((a) => (a.id === id ? { ...a, uploading: true, error: false } : a)),
+		)
+		const attachment = attachments.find((a) => a.id === id)
+		if (attachment) void uploadFile(id, attachment.file)
 	}
 
-	const clear = () => {
-		if (attachment) URL.revokeObjectURL(attachment.preview)
-		setAttachment(null)
+	const removeAttachment = (id: string) => {
+		setAttachments((prev) => {
+			const item = prev.find((a) => a.id === id)
+			if (item) URL.revokeObjectURL(item.preview)
+			return prev.filter((a) => a.id !== id)
+		})
 	}
 
-	return { attachment, pick, retry, clear }
+	const reset = () => {
+		attachments.forEach((a) => URL.revokeObjectURL(a.preview))
+		setAttachments([])
+	}
+
+	const anyUploading = attachments.some((a) => a.uploading)
+	// At least one item made it through and nothing is still in flight —
+	// deliberately doesn't require EVERY item to succeed, so one bad file
+	// in a batch doesn't block sending the rest.
+	const readyToSend =
+		attachments.length > 0 && !anyUploading && attachments.some((a) => a.uploadedUrl)
+
+	return { attachments, addFiles, retryUpload, removeAttachment, reset, anyUploading, readyToSend }
 }

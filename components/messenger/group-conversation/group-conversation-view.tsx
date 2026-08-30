@@ -7,7 +7,7 @@ import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
-import { usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { MessageDeleteType } from "@/lib/messenger/api"
@@ -55,10 +55,12 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const { remoteTyping, emitTyping } = useGroupTyping(groupId)
 	const { send, sendMedia, sendContact, sendLocation, retry } = useSendGroupMessage(groupId)
 	const {
-		attachment,
-		pick,
-		retry: retryUpload,
-		clear: clearAttachment,
+		attachments,
+		addFiles,
+		retryUpload,
+		removeAttachment,
+		reset: resetAttachments,
+		readyToSend,
 	} = usePendingAttachment("chat")
 	const { deleteMessage, pinMessage, unpinMessage, forwardMessage, reactToMessage } =
 		useGroupMessageActions(groupId)
@@ -104,19 +106,23 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	}
 
 	const handleSendMedia = (caption: string) => {
-		if (!attachment?.uploadedUrl) return
+		const uploaded = attachments.filter((a) => a.uploadedUrl)
+		if (uploaded.length === 0) return
+
+		const resolveCaption = (a: PendingAttachment) =>
+			caption ||
+			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
+
 		void sendMedia(
-			[
-				{
-					url: attachment.uploadedUrl,
-					type: attachment.type,
-					fileName: attachment.file.name,
-					caption,
-				},
-			],
-			{ replyingTo, metadata: { media_file_names: [attachment.file.name] } },
+			uploaded.map((a) => ({
+				url: a.uploadedUrl as string,
+				type: a.type,
+				fileName: a.file.name,
+				caption: resolveCaption(a),
+			})),
+			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
 		)
-		clearAttachment()
+		resetAttachments()
 		setReplyingTo(null)
 	}
 
@@ -213,7 +219,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					replyingTo={replyingTo}
 					onCancelReply={() => setReplyingTo(null)}
 					onCreatePoll={() => setCreatePollOpen(true)}
-					onFilePicked={pick}
+					onFilesPicked={addFiles}
 					onAttachContact={() => setContactDialogOpen(true)}
 					onAttachLocation={handleAttachLocation}
 				/>
@@ -236,10 +242,12 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				onOpenChange={() => setPollResultsMessageId(null)}
 			/>
 			<MediaComposerDialog
-				attachment={attachment}
-				onCancel={clearAttachment}
+				attachments={attachments}
+				onRemove={removeAttachment}
 				onRetry={retryUpload}
+				onCancel={resetAttachments}
 				onSend={handleSendMedia}
+				canSend={readyToSend}
 			/>
 			<ContactComposerDialog
 				open={contactDialogOpen}

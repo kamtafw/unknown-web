@@ -15,7 +15,7 @@ interface ComposerProps {
 	replyingTo?: Message | null
 	onCancelReply?: () => void
 	onCreatePoll?: () => void
-	onFilePicked?: (file: File) => void
+	onFilesPicked?: (files: FileList) => void
 	onAttachContact?: () => void
 	onAttachLocation?: () => void
 }
@@ -26,7 +26,7 @@ export function Composer({
 	replyingTo,
 	onCancelReply,
 	onCreatePoll,
-	onFilePicked,
+	onFilesPicked,
 	onAttachContact,
 	onAttachLocation,
 }: ComposerProps) {
@@ -60,8 +60,7 @@ export function Composer({
 	}
 
 	const handlePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0]
-		if (file) onFilePicked?.(file)
+		if (e.target.files && e.target.files.length > 0) onFilesPicked?.(e.target.files)
 		e.target.value = ""
 	}
 
@@ -89,6 +88,7 @@ export function Composer({
 					ref={imageInputRef}
 					type="file"
 					accept="image/*,video/*"
+					multiple
 					className="hidden"
 					onChange={handlePicked}
 				/>
@@ -100,7 +100,7 @@ export function Composer({
 					onChange={handlePicked}
 				/>
 
-				{onFilePicked ? (
+				{onFilesPicked ? (
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger asChild>
 							<button className="text-muted-foreground hover:text-foreground p-1.5 transition-colors">

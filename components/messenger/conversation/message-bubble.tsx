@@ -3,7 +3,7 @@
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { resolvePoll } from "@/lib/messenger/poll"
 import { cn } from "@/lib/utils"
-import type { Message } from "@/types/messenger"
+import type { MediaAttachment, Message } from "@/types/messenger"
 import {
 	AlertCircle,
 	BarChart3,
@@ -13,11 +13,9 @@ import {
 	FileText,
 	Image as ImageIcon,
 	MapPin,
-	Mic,
 	Phone,
 	Share2,
 	User,
-	Video,
 } from "lucide-react"
 import Image from "next/image"
 import { forwardRef } from "react"
@@ -87,75 +85,17 @@ function MessageContent({
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
 	}
 
-	// Generic "media" wraps image/video/audio/document — the real type
-	// lives on the attachment, not message_type. Confirmed via mobile:
-	// message_type is always "media" for anything sent through the
-	// attachment picker, discriminated by `media[0].type`. Live voice
-	// recordings stay their own top-level "voice" type.
-	const attachment = message.media?.[0]
-	const effectiveType =
-		message.message_type === "media" && attachment ? attachment.type : message.message_type
+	if (message.message_type === "media") {
+		return message.media && message.media.length > 0 ? (
+			<MediaGallery media={message.media} />
+		) : (
+			<FallbackContent icon={ImageIcon} label={message.content || "Media"} />
+		)
+	}
 
-	switch (effectiveType) {
+	switch (message.message_type) {
 		case "text":
 			return <p className="whitespace-pre-wrap wrap-break-word text-sm">{message.content}</p>
-
-		case "image":
-			return attachment?.url ? (
-				<figure className="flex flex-col gap-1">
-					<Image
-						src={attachment.url}
-						alt={attachment.caption || message.content || "Image"}
-						width={280}
-						height={280}
-						className="rounded-lg max-w-70 max-h-70 object-cover"
-					/>
-					{attachment.caption && <figcaption className="text-sm">{attachment.caption}</figcaption>}
-				</figure>
-			) : (
-				<FallbackContent icon={ImageIcon} label="Image" />
-			)
-
-		case "video":
-			return attachment?.url ? (
-				<figure className="flex flex-col gap-1">
-					<video src={attachment.url} controls className="rounded-lg max-w-70 max-h-70" />
-					{attachment.caption && <figcaption className="text-sm">{attachment.caption}</figcaption>}
-				</figure>
-			) : (
-				<FallbackContent icon={Video} label={message.content || "Video"} />
-			)
-
-		case "audio":
-		case "voice":
-			return attachment?.url ? (
-				<div className="flex flex-col gap-1">
-					<audio src={attachment.url} controls className="max-w-70" />
-					{attachment.caption && attachment.caption !== "Voice message" && (
-						<p className="text-sm">{attachment.caption}</p>
-					)}
-				</div>
-			) : (
-				<FallbackContent icon={Mic} label="Voice message" />
-			)
-
-		case "pdf":
-		case "document":
-			return attachment?.url ? (
-				<a
-					href={attachment.url}
-					target="_blank"
-					rel="noreferrer"
-					className="flex items-center gap-2 text-sm underline"
-				>
-					<FileText size={16} className="shrink-0 opacity-70" />
-					<span className="truncate">
-						{attachment.caption || attachment.fileName || "Document"}
-					</span>
-				</a>
-			) : (
-				<FallbackContent icon={FileText} label={message.content || "Document"} />
-			)
 
 		case "location":
 			return <LocationContent message={message} />
@@ -179,6 +119,106 @@ function MessageContent({
 			return <FallbackContent icon={Share2} label="Shared post" />
 		default:
 			return <p className="text-sm italic opacity-70">Unsupported message</p>
+	}
+}
+
+/** A single item renders exactly as before; 2+ items render as a grid.
+ * Caption is shown once, not per-tile — mobile applies the same caption
+ * string to every item in a batch, so duplicating it under each tile
+ * would just repeat identical text. */
+function MediaGallery({ media }: { media: MediaAttachment[] }) {
+	if (media.length === 1) return <SingleMediaItem item={media[0]} />
+
+	const caption = media.find((m) => m.caption)?.caption
+	return (
+		<div className="flex flex-col gap-1">
+			<div
+				className={cn(
+					"grid gap-1 max-w-70",
+					media.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3",
+				)}
+			>
+				{media.map((item, i) => (
+					<GalleryTile key={i} item={item} />
+				))}
+			</div>
+			{caption && <p className="text-sm">{caption}</p>}
+		</div>
+	)
+}
+
+function GalleryTile({ item }: { item: MediaAttachment }) {
+	if (item.type === "image") {
+		return (
+			<div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+				<Image src={item.url} alt={item.caption || "Image"} fill className="object-cover" />
+			</div>
+		)
+	}
+	if (item.type === "video") {
+		return (
+			<video src={item.url} controls className="aspect-square w-full rounded-lg object-cover" />
+		)
+	}
+	if (item.type === "audio") {
+		return <audio src={item.url} controls className="col-span-full w-full" />
+	}
+	return (
+		<a
+			href={item.url}
+			target="_blank"
+			rel="noreferrer"
+			className="col-span-full flex items-center gap-2 text-sm underline"
+		>
+			<FileText size={16} className="shrink-0 opacity-70" />
+			<span className="truncate">{item.caption || item.fileName || "Document"}</span>
+		</a>
+	)
+}
+
+function SingleMediaItem({ item }: { item: MediaAttachment }) {
+	switch (item.type) {
+		case "image":
+			return (
+				<figure className="flex flex-col gap-1">
+					<Image
+						src={item.url}
+						alt={item.caption || "Image"}
+						width={280}
+						height={280}
+						className="rounded-lg max-w-70 max-h-70 object-cover"
+					/>
+					{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
+				</figure>
+			)
+		case "video":
+			return (
+				<figure className="flex flex-col gap-1">
+					<video src={item.url} controls className="rounded-lg max-w-70 max-h-70" />
+					{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
+				</figure>
+			)
+		case "audio":
+			return (
+				<div className="flex flex-col gap-1">
+					<audio src={item.url} controls className="max-w-70" />
+					{item.caption && item.caption !== "Voice message" && (
+						<p className="text-sm">{item.caption}</p>
+					)}
+				</div>
+			)
+		default:
+			return (
+				<a
+					href={item.url}
+					target="_blank"
+					rel="noreferrer"
+					className="flex items-center gap-2 text-sm underline"
+				>
+					<FileText size={16} className="shrink-0 opacity-70" />
+					<span className="truncate">{item.caption || item.fileName || "Document"}</span>
+				</a>
+			)
 	}
 }
 

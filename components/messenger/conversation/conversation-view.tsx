@@ -1,7 +1,7 @@
 "use client"
 
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
-import { usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageActions } from "@/hooks/messenger/use-message-actions"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
@@ -64,10 +64,12 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		(derivedPkid ?? 0) as Pkid,
 	)
 	const {
-		attachment,
-		pick,
-		retry: retryUpload,
-		clear: clearAttachment,
+		attachments,
+		addFiles,
+		retryUpload,
+		removeAttachment,
+		reset: resetAttachments,
+		readyToSend,
 	} = usePendingAttachment("chat")
 	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
@@ -121,19 +123,25 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	}
 
 	const handleSendMedia = (caption: string) => {
-		if (!attachment?.uploadedUrl) return
+		const uploaded = attachments.filter((a) => a.uploadedUrl)
+		if (uploaded.length === 0) return
+		// Same fallback rule as mobile's resolveAttachmentCaption: a shared
+		// caption applies to every item; non-media types default to their own
+		// filename when no caption was typed.
+		const resolveCaption = (a: PendingAttachment) =>
+			caption ||
+			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
+
 		void sendMedia(
-			[
-				{
-					url: attachment.uploadedUrl,
-					type: attachment.type,
-					fileName: attachment.file.name,
-					caption,
-				},
-			],
-			{ replyingTo, metadata: { media_file_names: [attachment.file.name] } },
+			uploaded.map((a) => ({
+				url: a.uploadedUrl as string,
+				type: a.type,
+				fileName: a.file.name,
+				caption: resolveCaption(a),
+			})),
+			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
 		)
-		clearAttachment()
+		resetAttachments()
 	}
 
 	const handleAttachLocation = () => {
@@ -209,7 +217,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onTypingChange={emitTyping}
 				replyingTo={replyingTo}
 				onCancelReply={() => setReplyingTo(null)}
-				onFilePicked={pick}
+				onFilesPicked={addFiles}
 				onAttachContact={() => setContactDialogOpen(true)}
 				onAttachLocation={handleAttachLocation}
 			/>
@@ -226,10 +234,12 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onConfirm={handleDeleteConfirm}
 			/>
 			<MediaComposerDialog
-				attachment={attachment}
-				onCancel={clearAttachment}
+				attachments={attachments}
+				onRemove={removeAttachment}
 				onRetry={retryUpload}
+				onCancel={resetAttachments}
 				onSend={handleSendMedia}
+				canSend={readyToSend}
 			/>
 			<ContactComposerDialog
 				open={contactDialogOpen}

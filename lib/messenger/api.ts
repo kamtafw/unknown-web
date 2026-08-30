@@ -276,7 +276,7 @@ export const chatApi = {
 	votePoll: (messageId: number, optionIds: number[]) =>
 		apiClient.post("/api/chats/messages/polls/vote", {
 			message_id: messageId,
-			option_id: optionIds[0],
+			option_ids: optionIds,
 		}),
 
 	getPollResults: (messageId: number) =>

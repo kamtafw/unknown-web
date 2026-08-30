@@ -2,27 +2,32 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { PendingAttachment } from "@/hooks/messenger/use-media-attachment"
-import { AlertCircle, Loader2, RotateCcw } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { AlertCircle, Loader2, RotateCcw, X } from "lucide-react"
 import { useState } from "react"
 
 interface MediaComposerDialogProps {
-	attachment: PendingAttachment | null
+	attachments: PendingAttachment[]
+	onRemove: (id: string) => void
+	onRetry: (id: string) => void
 	onCancel: () => void
-	onRetry: () => void
 	onSend: (caption: string) => void
+	canSend: boolean
 }
 
-/** One shared dialog for image/video/audio-file attachments — mirrors
- * mobile's single media-caption composer (one caption box applied to the
- * whole send), confirmed via handleMediaSend. */
+/** One caption box for the whole batch — mirrors mobile's
+ * handleMediaSend, which applies a single caption uniformly to every
+ * item in the batch, not per-item captions. */
 export function MediaComposerDialog({
-	attachment,
-	onCancel,
+	attachments,
+	onRemove,
 	onRetry,
+	onCancel,
 	onSend,
+	canSend,
 }: MediaComposerDialogProps) {
 	const [caption, setCaption] = useState("")
-	if (!attachment) return null
+	if (attachments.length === 0) return null
 
 	const handleSend = () => {
 		onSend(caption.trim())
@@ -30,51 +35,60 @@ export function MediaComposerDialog({
 	}
 
 	return (
-		<Dialog open={!!attachment} onOpenChange={(open) => !open && onCancel()}>
+		<Dialog open={attachments.length > 0} onOpenChange={(open) => !open && onCancel()}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
-						{attachment.type === "image"
-							? "Send image"
-							: attachment.type === "video"
-								? "Send video"
-								: "Send audio"}
+						{attachments.length === 1 ? "Send attachment" : `Send ${attachments.length} items`}
 					</DialogTitle>
 				</DialogHeader>
 
-				<div className="relative flex items-center justify-center rounded-lg bg-muted overflow-hidden max-h-80">
-					{attachment.type === "image" && (
-						// local blob preview — next/image doesn't handle blob: URLs
-						// eslint-disable-next-line @next/next/no-img-element
-						<img
-							src={attachment.preview}
-							alt="Preview"
-							className="max-h-80 w-auto object-contain"
-						/>
+				<div
+					className={cn(
+						"grid gap-2 max-h-80 overflow-y-auto",
+						attachments.length === 1 ? "grid-cols-1" : "grid-cols-3",
 					)}
-					{attachment.type === "video" && (
-						<video src={attachment.preview} controls className="max-h-80 w-full" />
-					)}
-					{attachment.type === "audio" && (
-						<audio src={attachment.preview} controls className="w-full m-4" />
-					)}
+				>
+					{attachments.map((a) => (
+						<div key={a.id} className="relative aspect-square rounded-lg bg-muted overflow-hidden">
+							{a.type === "image" && (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img src={a.preview} alt="Preview" className="h-full w-full object-cover" />
+							)}
+							{a.type === "video" && (
+								<video src={a.preview} className="h-full w-full object-cover" />
+							)}
+							{(a.type === "audio" || a.type === "document" || a.type === "pdf") && (
+								<div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+									{a.file.name}
+								</div>
+							)}
 
-					{attachment.uploading && (
-						<div className="absolute inset-0 flex items-center justify-center bg-background/60">
-							<Loader2 size={24} className="animate-spin text-muted-foreground" />
-						</div>
-					)}
-					{attachment.error && (
-						<div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80">
-							<AlertCircle size={22} className="text-destructive" />
+							{a.uploading && (
+								<div className="absolute inset-0 flex items-center justify-center bg-background/60">
+									<Loader2 size={18} className="animate-spin text-muted-foreground" />
+								</div>
+							)}
+							{a.error && (
+								<button
+									onClick={() => onRetry(a.id)}
+									className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/80"
+								>
+									<AlertCircle size={18} className="text-destructive" />
+									<span className="flex items-center gap-1 text-[11px] font-medium text-primary">
+										<RotateCcw size={11} /> Retry
+									</span>
+								</button>
+							)}
+
 							<button
-								onClick={onRetry}
-								className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+								onClick={() => onRemove(a.id)}
+								className="absolute top-1 right-1 h-5 w-5 rounded-full bg-background/80 flex items-center justify-center hover:bg-background transition-colors"
 							>
-								<RotateCcw size={14} /> Retry upload
+								<X size={12} />
 							</button>
 						</div>
-					)}
+					))}
 				</div>
 
 				<input
@@ -93,10 +107,10 @@ export function MediaComposerDialog({
 					</button>
 					<button
 						onClick={handleSend}
-						disabled={attachment.uploading || attachment.error || !attachment.uploadedUrl}
+						disabled={!canSend}
 						className="flex-1 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
 					>
-						Send
+						Send{attachments.length > 1 ? ` (${attachments.length})` : ""}
 					</button>
 				</div>
 			</DialogContent>
