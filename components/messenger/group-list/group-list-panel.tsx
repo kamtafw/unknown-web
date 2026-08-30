@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
 import { Search, Users } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
-import { CreateCommunity, CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
+import { CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
+import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
@@ -33,6 +34,7 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 	const [search, setSearch] = useState("")
 	const { data, isLoading } = useGroupList()
 	const groups = data?.groups ?? []
+	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
 	const trimmedSearch = search.trim().toLowerCase()
 	const filteredGroups = trimmedSearch
@@ -146,21 +148,11 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 						<div className="flex flex-col items-end gap-2">
 							<DropdownMenu.Item
 								className="flex items-center gap-2 outline-none"
-								onSelect={() => setCreateOpen(true)}
+								onSelect={() => setScheduleDialogOpen(true)}
 							>
 								<span className="text-[13px] text-foreground">Schedule</span>
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
 									<Schedule />
-								</div>
-							</DropdownMenu.Item>
-
-							<DropdownMenu.Item
-								className="flex items-center gap-2 outline-none"
-								onSelect={() => setCreateOpen(true)}
-							>
-								<span className="text-[13px] text-foreground">Create Community</span>
-								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
-									<CreateCommunity />
 								</div>
 							</DropdownMenu.Item>
 
@@ -179,6 +171,8 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 			</DropdownMenu.Root>
 
 			<CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

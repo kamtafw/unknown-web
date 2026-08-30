@@ -24,6 +24,7 @@ const eslintConfig = [
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
 			"components/messenger/conversation/reaction-row.tsx",
+			"components/messenger/schedule/schedule-compose-dialog.tsx",
 		],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",

@@ -12,6 +12,7 @@ import { ApiResponse } from "@/types/api"
 import {
 	ChatListFilter,
 	ChatListItem,
+	CreateMessageSchedulePayload,
 	CursorPage,
 	Message,
 	MessageReaction,
@@ -19,6 +20,8 @@ import {
 	MessengerUserProfile,
 	PollResults,
 	ReportUserPayload,
+	Schedule,
+	ScheduleListData,
 	SendMessagePayload,
 	UserAttachmentsData,
 } from "@/types/messenger"
@@ -96,6 +99,7 @@ export interface UploadMediaResponse {
 }
 
 export type MediaUploadFolder = "chat" | "voice"
+
 export const chatApi = {
 	list: (filter: ChatListFilter, search: string, cursor?: string) => {
 		const params = new URLSearchParams()
@@ -294,4 +298,24 @@ export const chatApi = {
 		)
 		return res.data.data.media_url
 	},
+}
+
+export const scheduleApi = {
+	list: () =>
+		apiClient
+			.get<ApiResponse<ScheduleListData>>("/api/chats/schedules", {
+				params: { type: "message" },
+			})
+			.then((r) => r.data.data.results),
+	get: (scheduleId: number) =>
+		apiClient
+			.get<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`)
+			.then((r) => r.data.data),
+	create: (payload: CreateMessageSchedulePayload) =>
+		apiClient.post<ApiResponse<Schedule>>("/api/chats/schedules", payload).then((r) => r.data.data),
+	update: (scheduleId: number, payload: Partial<CreateMessageSchedulePayload>) =>
+		apiClient
+			.patch<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`, payload)
+			.then((r) => r.data.data),
+	delete: (scheduleId: number) => apiClient.delete(`/api/chats/schedules/${scheduleId}`),
 }

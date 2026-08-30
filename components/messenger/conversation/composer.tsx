@@ -5,7 +5,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { VoiceRecorderPhase } from "@/hooks/messenger/use-voice-recorder"
 import { toast } from "@/lib/toast"
 import type { Message } from "@/types/messenger"
-import { BarChart3, ImageIcon, MapPin, Mic, Paperclip, Send, Smile, User } from "lucide-react"
+import {
+	BarChart3,
+	Clock,
+	ImageIcon,
+	MapPin,
+	Mic,
+	Paperclip,
+	Send,
+	Smile,
+	User,
+} from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useEffect, useRef, useState } from "react"
 import { ReplyPreviewBar } from "./reply-preview-bar"
@@ -33,6 +43,7 @@ interface ComposerProps {
 	onFilesPicked?: (files: FileList) => void
 	onAttachContact?: () => void
 	onAttachLocation?: () => void
+	onSchedule?: () => void
 }
 
 export function Composer({
@@ -45,6 +56,7 @@ export function Composer({
 	onFilesPicked,
 	onAttachContact,
 	onAttachLocation,
+	onSchedule,
 }: ComposerProps) {
 	const [value, setValue] = useState("")
 	const [emojiOpen, setEmojiOpen] = useState(false)
@@ -231,6 +243,16 @@ export function Composer({
 						</button>
 					)}
 				</div>
+			)}
+
+			{onSchedule && (
+				<button
+					title="Schedule message"
+					onClick={onSchedule}
+					className="text-muted-foreground hover:text-foreground p-1.5 transition-colors"
+				>
+					<Clock size={20} />
+				</button>
 			)}
 		</div>
 	)
