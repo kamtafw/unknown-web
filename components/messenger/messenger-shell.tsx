@@ -21,6 +21,7 @@ import { GroupListPanel } from "./group-list/group-list-panel"
 export function MessengerShell({ children }: { children: ReactNode }) {
 	const pathname = usePathname()
 	const isGroupsSection = pathname.startsWith("/messenger/groups")
+	const isStatusSection = pathname.startsWith("/messenger/status")
 
 	const params = useParams<{ uuid?: string; id?: string }>()
 	const activeUuid = (!isGroupsSection ? (params.uuid ?? null) : null) as Uuid | null
@@ -35,13 +36,15 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 
 	return (
 		<div className="flex flex-1 min-h-0 overflow-hidden">
-			<div className={cn(isDetailOpen ? "hidden sm:flex" : "flex", "min-h-0 shrink-0")}>
-				{isGroupsSection ? (
-					<GroupListPanel activeGroupId={activeGroupId} />
-				) : (
-					<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
-				)}
-			</div>
+			{!isStatusSection && (
+				<div className={cn(isDetailOpen ? "hidden sm:flex" : "flex", "min-h-0 shrink-0")}>
+					{isGroupsSection ? (
+						<GroupListPanel activeGroupId={activeGroupId} />
+					) : (
+						<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
+					)}
+				</div>
+			)}
 			<div className="flex flex-1 min-h-0 min-w-0">{children}</div>
 		</div>
 	)

@@ -74,6 +74,7 @@ export const statusKeys = {
 
 	feed: () => [...statusKeys.all, "feed"] as const,
 	mine: () => [...statusKeys.all, "mine"] as const,
+	byUser: (userPkid: number) => [...statusKeys.all, "user", userPkid] as const,
 	viewers: (statusId: number) => [...statusKeys.all, "viewers", statusId] as const,
 }
 
