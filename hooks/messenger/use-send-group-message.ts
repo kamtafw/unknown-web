@@ -210,6 +210,16 @@ export function useSendGroupMessage(groupId: number) {
 		[sendStructured],
 	)
 
+	const sendVoice = useCallback(
+		(mediaUrl: string, fileName: string, duration: string) =>
+			sendStructured("media", {
+				content: "Voice message",
+				media: [{ url: mediaUrl, type: "audio", fileName, caption: "Voice message" }],
+				metadata: { duration },
+			}),
+		[sendStructured],
+	)
+
 	const send = useCallback(
 		async (content: string, replyingTo?: Message | null) => {
 			const sender = buildSender()
@@ -265,5 +275,5 @@ export function useSendGroupMessage(groupId: number) {
 		[queryClient, historyKey, groupId, replaceOptimistic, markFailed],
 	)
 
-	return { send, sendMedia, sendContact, sendLocation, retry }
+	return { send, sendMedia, sendContact, sendLocation, sendVoice, retry }
 }

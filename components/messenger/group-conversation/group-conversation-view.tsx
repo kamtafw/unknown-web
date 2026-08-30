@@ -11,7 +11,8 @@ import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-m
 import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
-import { MessageDeleteType } from "@/lib/messenger/api"
+import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
+import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
 import { deriveGroupComposerState } from "@/lib/messenger/group-permissions"
 import { groupKeys } from "@/lib/messenger/query-keys"
@@ -55,7 +56,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const { messages, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useGroupHistory(groupId)
 	const { remoteTyping, emitTyping } = useGroupTyping(groupId)
-	const { send, sendMedia, sendContact, sendLocation, retry } = useSendGroupMessage(groupId)
+	const { send, sendMedia, sendContact, sendLocation, sendVoice, retry } =
+		useSendGroupMessage(groupId)
 	const {
 		attachments,
 		addFiles,
@@ -69,6 +71,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	useActiveGroupRoom(groupId)
 	const { members } = useGroupMembers(groupId)
 	const vote = useVotePoll()
+	const voiceRecorder = useVoiceRecorder()
 
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
@@ -139,6 +142,17 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 			(pos) => void sendLocation(pos.coords.latitude, pos.coords.longitude),
 			() => toast.error("Couldn't get your location — check browser permissions"),
 		)
+	}
+
+	const handleVoiceSend = async () => {
+		const result = await voiceRecorder.send()
+		if (!result) return
+		try {
+			const uploadedUrl = await chatApi.uploadMedia(result.file, "voice")
+			void sendVoice(uploadedUrl, result.file.name, result.duration)
+		} catch {
+			toast.error("Couldn't send the voice message — try again")
+		}
 	}
 
 	const handleRetry = (message: Message) => {
@@ -235,6 +249,19 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					onSend={handleSend}
 					onTypingChange={emitTyping}
 					replyingTo={replyingTo}
+					voice={{
+						phase: voiceRecorder.phase,
+						durationSecs: voiceRecorder.durationSecs,
+						metering: voiceRecorder.metering,
+						isPlaying: voiceRecorder.isPlaying,
+						onStart: voiceRecorder.start,
+						onPause: voiceRecorder.pause,
+						onResume: voiceRecorder.resume,
+						onDiscard: voiceRecorder.discard,
+						onSend: () => void handleVoiceSend(),
+						onPlayPreview: voiceRecorder.playPreview,
+						onStopPreview: voiceRecorder.stopPreview,
+					}}
 					onCancelReply={() => setReplyingTo(null)}
 					onCreatePoll={() => setCreatePollOpen(true)}
 					onFilesPicked={addFiles}

@@ -170,6 +170,16 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		[sendStructured],
 	)
 
+	const sendVoice = useCallback(
+		(mediaUrl: string, fileName: string, duration: string) =>
+			sendStructured("media", {
+				content: "Voice message",
+				media: [{ url: mediaUrl, type: "audio", fileName, caption: "Voice message" }],
+				metadata: { duration },
+			}),
+		[sendStructured],
+	)
+
 	const send = useCallback(
 		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
@@ -239,5 +249,5 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		[queryClient, historyKey, receiverPkid, replaceOptimistic, markFailed],
 	)
 
-	return { send, sendMedia, sendContact, sendLocation, retry }
+	return { send, sendMedia, sendContact, sendLocation, sendVoice, retry }
 }

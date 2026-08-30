@@ -7,6 +7,7 @@ import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
+import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { derivePeerFromMessages, getDisplayName } from "@/lib/messenger/user-display"
@@ -61,7 +62,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		messages.find((m) => m.receiver?.id === uuid)?.receiver?.pkid ??
 		null
 
-	const { send, sendMedia, sendContact, sendLocation, retry } = useSendMessage(
+	const { send, sendMedia, sendContact, sendLocation, sendVoice, retry } = useSendMessage(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
@@ -73,13 +74,15 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		reset: resetAttachments,
 		readyToSend,
 	} = usePendingAttachment("chat")
-	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
 	const { forward, pinMessage, unpinMessage, deleteMessage, reactToMessage } = useMessageActions(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
 
+	const voiceRecorder = useVoiceRecorder()
+
+	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
@@ -162,6 +165,17 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		)
 	}
 
+	const handleVoiceSend = async () => {
+		const result = await voiceRecorder.send()
+		if (!result) return
+		try {
+			const uploadedUrl = await chatApi.uploadMedia(result.file, "voice")
+			void sendVoice(uploadedUrl, result.file.name, result.duration)
+		} catch {
+			toast.error("Couldn't send the voice message — try again")
+		}
+	}
+
 	const handleRetry = (message: Message) => {
 		void retry(message)
 	}
@@ -238,6 +252,19 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onSend={handleSend}
 				onTypingChange={emitTyping}
 				replyingTo={replyingTo}
+				voice={{
+					phase: voiceRecorder.phase,
+					durationSecs: voiceRecorder.durationSecs,
+					metering: voiceRecorder.metering,
+					isPlaying: voiceRecorder.isPlaying,
+					onStart: voiceRecorder.start,
+					onPause: voiceRecorder.pause,
+					onResume: voiceRecorder.resume,
+					onDiscard: voiceRecorder.discard,
+					onSend: () => void handleVoiceSend(),
+					onPlayPreview: voiceRecorder.playPreview,
+					onStopPreview: voiceRecorder.stopPreview,
+				}}
 				onCancelReply={() => setReplyingTo(null)}
 				onFilesPicked={addFiles}
 				onAttachContact={() => setContactDialogOpen(true)}
