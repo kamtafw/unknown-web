@@ -4,7 +4,8 @@ import { EmojiPopup } from "@/components/ui/EmojiPicker"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/lib/toast"
 import type { Message } from "@/types/messenger"
-import { BarChart3, Mic, Paperclip, Send, Smile } from "lucide-react"
+import { BarChart3, ImageIcon, MapPin, Mic, Paperclip, Send, Smile, User } from "lucide-react"
+import { DropdownMenu } from "radix-ui"
 import { useEffect, useRef, useState } from "react"
 import { ReplyPreviewBar } from "./reply-preview-bar"
 
@@ -14,6 +15,9 @@ interface ComposerProps {
 	replyingTo?: Message | null
 	onCancelReply?: () => void
 	onCreatePoll?: () => void
+	onFilesPicked?: (files: FileList) => void
+	onAttachContact?: () => void
+	onAttachLocation?: () => void
 }
 
 export function Composer({
@@ -22,10 +26,15 @@ export function Composer({
 	replyingTo,
 	onCancelReply,
 	onCreatePoll,
+	onFilesPicked,
+	onAttachContact,
+	onAttachLocation,
 }: ComposerProps) {
 	const [value, setValue] = useState("")
 	const [emojiOpen, setEmojiOpen] = useState(false)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const imageInputRef = useRef<HTMLInputElement>(null)
+	const audioInputRef = useRef<HTMLInputElement>(null)
 
 	useEffect(() => {
 		if (replyingTo) textareaRef.current?.focus()
@@ -50,6 +59,11 @@ export function Composer({
 		if (textareaRef.current) textareaRef.current.style.height = "auto"
 	}
 
+	const handlePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files.length > 0) onFilesPicked?.(e.target.files)
+		e.target.value = ""
+	}
+
 	return (
 		<div className="flex flex-col shrink-0 border-t border-border bg-background">
 			{replyingTo && onCancelReply && (
@@ -70,13 +84,72 @@ export function Composer({
 					</PopoverContent>
 				</Popover>
 
-				<button
-					title="Attach — coming soon"
-					onClick={() => toast.info("Attachments are coming in a later milestone")}
-					className="text-muted-foreground/40 p-1.5 cursor-not-allowed"
-				>
-					<Paperclip size={20} />
-				</button>
+				<input
+					ref={imageInputRef}
+					type="file"
+					accept="image/*,video/*"
+					multiple
+					className="hidden"
+					onChange={handlePicked}
+				/>
+				<input
+					ref={audioInputRef}
+					type="file"
+					accept="audio/*"
+					className="hidden"
+					onChange={handlePicked}
+				/>
+
+				{onFilesPicked ? (
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger asChild>
+							<button className="text-muted-foreground hover:text-foreground p-1.5 transition-colors">
+								<Paperclip size={20} />
+							</button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Portal>
+							<DropdownMenu.Content
+								align="start"
+								side="top"
+								sideOffset={8}
+								className="z-150 min-w-44 bg-popover border border-border rounded-2xl p-1.5 shadow-xl"
+							>
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent"
+									onSelect={() => imageInputRef.current?.click()}
+								>
+									<ImageIcon size={16} /> Photo or video
+								</DropdownMenu.Item>
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent"
+									onSelect={() => audioInputRef.current?.click()}
+								>
+									<Mic size={16} /> Audio file
+								</DropdownMenu.Item>
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent"
+									onSelect={() => onAttachContact?.()}
+								>
+									<User size={16} /> Contact
+								</DropdownMenu.Item>
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent"
+									onSelect={() => onAttachLocation?.()}
+								>
+									<MapPin size={16} /> Location
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Portal>
+					</DropdownMenu.Root>
+				) : (
+					<button
+						title="Attach — coming soon"
+						onClick={() => toast.info("Attachments are coming in a later milestone")}
+						className="text-muted-foreground/40 p-1.5 cursor-not-allowed"
+					>
+						<Paperclip size={20} />
+					</button>
+				)}
 
 				{onCreatePoll && (
 					<button

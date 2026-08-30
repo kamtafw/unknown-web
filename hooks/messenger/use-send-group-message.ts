@@ -3,7 +3,13 @@
 import { groupApi } from "@/lib/messenger/group-api"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type { GroupChatHistoryData, GroupMessage, Message } from "@/types/messenger"
+import type {
+	GroupChatHistoryData,
+	GroupMessage,
+	MediaAttachment,
+	Message,
+	MessageType,
+} from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -16,6 +22,7 @@ function createOptimisticGroupMessage(
 	content: string,
 	replyingTo: Message | null | undefined,
 	sender: GroupMessage["sender"],
+	overrides?: Partial<Pick<GroupMessage, "message_type" | "media" | "metadata">>,
 ): GroupMessage {
 	optimisticCounter -= 1
 	return {
@@ -23,10 +30,10 @@ function createOptimisticGroupMessage(
 		sender,
 		receiver: null,
 		group: { id: groupId, name: "", icon_url: "" },
-		message_type: "text",
+		message_type: overrides?.message_type ?? "text",
 		content,
-		media: null,
-		metadata: null,
+		media: overrides?.media ?? null,
+		metadata: overrides?.metadata ?? null,
 		is_pinned: false,
 		collection_id: "",
 		status: "queued",
@@ -62,6 +69,18 @@ export function useSendGroupMessage(groupId: number) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
 	const historyKey = groupKeys.history(groupId)
+
+	const buildSender = useCallback((): GroupMessage["sender"] | null => {
+		if (!currentUser) return null
+		return {
+			id: currentUser.id as GroupMessage["sender"]["id"],
+			pkid: currentUser.pkid as GroupMessage["sender"]["pkid"],
+			username: currentUser.username,
+			first_name: currentUser.first_name,
+			last_name: currentUser.last_name,
+			profile_photo: currentUser.profile_photo,
+		}
+	}, [currentUser])
 
 	const upsertOptimistic = useCallback(
 		(message: GroupMessage) => {
@@ -113,18 +132,87 @@ export function useSendGroupMessage(groupId: number) {
 		[queryClient, historyKey],
 	)
 
+	const sendStructured = useCallback(
+		async (
+			messageType: MessageType,
+			options: {
+				content?: string
+				media?: MediaAttachment[]
+				metadata?: Record<string, unknown>
+				replyingTo?: Message | null
+			},
+		) => {
+			const sender = buildSender()
+			if (!sender) return
+
+			const optimistic = createOptimisticGroupMessage(
+				groupId,
+				options.content ?? "",
+				options.replyingTo,
+				sender,
+				{
+					message_type: messageType,
+					media: options.media,
+					metadata: options.metadata,
+				},
+			)
+			upsertOptimistic(optimistic)
+
+			try {
+				const sent = await groupApi.send({
+					group_id: groupId,
+					message_type: messageType,
+					content: options.content,
+					media: options.media,
+					metadata: options.metadata,
+					...(options.replyingTo ? { reply_to: options.replyingTo.id } : {}),
+				})
+				replaceOptimistic(optimistic.id, sent)
+				queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
+			} catch {
+				markFailed(optimistic.id)
+			}
+		},
+		[buildSender, groupId, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+	)
+
+	const sendMedia = useCallback(
+		(
+			media: MediaAttachment[],
+			options?: { replyingTo?: Message | null; metadata?: Record<string, unknown> },
+		) =>
+			sendStructured("media", {
+				media,
+				metadata: options?.metadata,
+				replyingTo: options?.replyingTo,
+			}),
+		[sendStructured],
+	)
+
+	const sendContact = useCallback(
+		(contact: { name: string; phoneNumber?: string; email?: string }) =>
+			sendStructured("contact", {
+				content: contact.name,
+				metadata: {
+					name: contact.name,
+					phone_number: contact.phoneNumber || null,
+					email: contact.email || null,
+				},
+			}),
+		[sendStructured],
+	)
+
+	const sendLocation = useCallback(
+		(latitude: number, longitude: number) =>
+			sendStructured("location", { content: "📍 Location", metadata: { latitude, longitude } }),
+		[sendStructured],
+	)
+
 	const send = useCallback(
 		async (content: string, replyingTo?: Message | null) => {
-			if (!currentUser) return
+			const sender = buildSender()
+			if (!sender) return
 
-			const sender: GroupMessage["sender"] = {
-				id: currentUser.id as GroupMessage["sender"]["id"],
-				pkid: currentUser.pkid as GroupMessage["sender"]["pkid"],
-				username: currentUser.username,
-				first_name: currentUser.first_name,
-				last_name: currentUser.last_name,
-				profile_photo: currentUser.profile_photo,
-			}
 			const optimistic = createOptimisticGroupMessage(groupId, content, replyingTo, sender)
 			upsertOptimistic(optimistic)
 
@@ -141,7 +229,7 @@ export function useSendGroupMessage(groupId: number) {
 				markFailed(optimistic.id)
 			}
 		},
-		[currentUser, groupId, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+		[buildSender, groupId, upsertOptimistic, replaceOptimistic, queryClient, markFailed],
 	)
 
 	const retry = useCallback(
@@ -175,5 +263,5 @@ export function useSendGroupMessage(groupId: number) {
 		[queryClient, historyKey, groupId, replaceOptimistic, markFailed],
 	)
 
-	return { send, retry }
+	return { send, sendMedia, sendContact, sendLocation, retry }
 }

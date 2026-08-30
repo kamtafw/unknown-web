@@ -1,6 +1,7 @@
 "use client"
 
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageActions } from "@/hooks/messenger/use-message-actions"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
@@ -14,9 +15,11 @@ import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "./composer"
+import { ContactComposerDialog } from "./contact-composer-dialog"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
+import { MediaComposerDialog } from "./media-composer-dialog"
 import { MessageList, MessageListHandle } from "./message-list"
 import { PinnedMessageBanner } from "./pinned-message-banner"
 
@@ -56,7 +59,20 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		messages.find((m) => m.receiver?.id === uuid)?.receiver?.pkid ??
 		null
 
-	const { send, retry } = useSendMessage(uuid, (derivedPkid ?? 0) as Pkid)
+	const { send, sendMedia, sendContact, sendLocation, retry } = useSendMessage(
+		uuid,
+		(derivedPkid ?? 0) as Pkid,
+	)
+	const {
+		attachments,
+		addFiles,
+		retryUpload,
+		removeAttachment,
+		reset: resetAttachments,
+		readyToSend,
+	} = usePendingAttachment("chat")
+	const [contactDialogOpen, setContactDialogOpen] = useState(false)
+
 	const { forward, pinMessage, unpinMessage, deleteMessage, reactToMessage } = useMessageActions(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
@@ -104,6 +120,39 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 			return
 		}
 		void send(content, replyingTo)
+	}
+
+	const handleSendMedia = (caption: string) => {
+		const uploaded = attachments.filter((a) => a.uploadedUrl)
+		if (uploaded.length === 0) return
+		// Same fallback rule as mobile's resolveAttachmentCaption: a shared
+		// caption applies to every item; non-media types default to their own
+		// filename when no caption was typed.
+		const resolveCaption = (a: PendingAttachment) =>
+			caption ||
+			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
+
+		void sendMedia(
+			uploaded.map((a) => ({
+				url: a.uploadedUrl as string,
+				type: a.type,
+				fileName: a.file.name,
+				caption: resolveCaption(a),
+			})),
+			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
+		)
+		resetAttachments()
+	}
+
+	const handleAttachLocation = () => {
+		if (!navigator.geolocation) {
+			toast.error("Location isn't available in this browser")
+			return
+		}
+		navigator.geolocation.getCurrentPosition(
+			(pos) => void sendLocation(pos.coords.latitude, pos.coords.longitude),
+			() => toast.error("Couldn't get your location — check browser permissions"),
+		)
 	}
 
 	const handleRetry = (message: Message) => {
@@ -168,6 +217,9 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onTypingChange={emitTyping}
 				replyingTo={replyingTo}
 				onCancelReply={() => setReplyingTo(null)}
+				onFilesPicked={addFiles}
+				onAttachContact={() => setContactDialogOpen(true)}
+				onAttachLocation={handleAttachLocation}
 			/>
 
 			<ForwardDialog
@@ -180,6 +232,19 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				open={!!deleteTarget}
 				onOpenChange={(open) => !open && setDeleteTarget(null)}
 				onConfirm={handleDeleteConfirm}
+			/>
+			<MediaComposerDialog
+				attachments={attachments}
+				onRemove={removeAttachment}
+				onRetry={retryUpload}
+				onCancel={resetAttachments}
+				onSend={handleSendMedia}
+				canSend={readyToSend}
+			/>
+			<ContactComposerDialog
+				open={contactDialogOpen}
+				onOpenChange={setContactDialogOpen}
+				onSend={(contact) => void sendContact(contact)}
 			/>
 		</div>
 	)

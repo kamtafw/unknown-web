@@ -7,6 +7,7 @@ import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { MessageDeleteType } from "@/lib/messenger/api"
@@ -20,8 +21,10 @@ import type { GroupListData, Message, Pkid, Uuid } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "../conversation/composer"
+import { ContactComposerDialog } from "../conversation/contact-composer-dialog"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
 import { ForwardDialog } from "../conversation/forward-dialog"
+import { MediaComposerDialog } from "../conversation/media-composer-dialog"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
 import { PollResultsDialog } from "../conversation/poll-results-dialog"
 import { CreatePollDialog } from "./create-poll-dialog"
@@ -50,7 +53,15 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const { messages, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useGroupHistory(groupId)
 	const { remoteTyping, emitTyping } = useGroupTyping(groupId)
-	const { send, retry } = useSendGroupMessage(groupId)
+	const { send, sendMedia, sendContact, sendLocation, retry } = useSendGroupMessage(groupId)
+	const {
+		attachments,
+		addFiles,
+		retryUpload,
+		removeAttachment,
+		reset: resetAttachments,
+		readyToSend,
+	} = usePendingAttachment("chat")
 	const { deleteMessage, pinMessage, unpinMessage, forwardMessage, reactToMessage } =
 		useGroupMessageActions(groupId)
 	useActiveGroupRoom(groupId)
@@ -62,6 +73,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
 	const [createPollOpen, setCreatePollOpen] = useState(false)
 	const [pollResultsMessageId, setPollResultsMessageId] = useState<number | null>(null)
+	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
@@ -91,6 +103,38 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const handleSend = (content: string) => {
 		void send(content, replyingTo)
 		setReplyingTo(null)
+	}
+
+	const handleSendMedia = (caption: string) => {
+		const uploaded = attachments.filter((a) => a.uploadedUrl)
+		if (uploaded.length === 0) return
+
+		const resolveCaption = (a: PendingAttachment) =>
+			caption ||
+			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
+
+		void sendMedia(
+			uploaded.map((a) => ({
+				url: a.uploadedUrl as string,
+				type: a.type,
+				fileName: a.file.name,
+				caption: resolveCaption(a),
+			})),
+			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
+		)
+		resetAttachments()
+		setReplyingTo(null)
+	}
+
+	const handleAttachLocation = () => {
+		if (!navigator.geolocation) {
+			toast.error("Location isn't available in this browser")
+			return
+		}
+		navigator.geolocation.getCurrentPosition(
+			(pos) => void sendLocation(pos.coords.latitude, pos.coords.longitude),
+			() => toast.error("Couldn't get your location — check browser permissions"),
+		)
 	}
 
 	const handleRetry = (message: Message) => {
@@ -175,6 +219,9 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					replyingTo={replyingTo}
 					onCancelReply={() => setReplyingTo(null)}
 					onCreatePoll={() => setCreatePollOpen(true)}
+					onFilesPicked={addFiles}
+					onAttachContact={() => setContactDialogOpen(true)}
+					onAttachLocation={handleAttachLocation}
 				/>
 			)}
 
@@ -193,6 +240,19 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 			<PollResultsDialog
 				messageId={pollResultsMessageId}
 				onOpenChange={() => setPollResultsMessageId(null)}
+			/>
+			<MediaComposerDialog
+				attachments={attachments}
+				onRemove={removeAttachment}
+				onRetry={retryUpload}
+				onCancel={resetAttachments}
+				onSend={handleSendMedia}
+				canSend={readyToSend}
+			/>
+			<ContactComposerDialog
+				open={contactDialogOpen}
+				onOpenChange={setContactDialogOpen}
+				onSend={(contact) => void sendContact(contact)}
 			/>
 		</div>
 	)
