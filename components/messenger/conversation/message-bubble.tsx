@@ -3,14 +3,13 @@
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { resolvePoll } from "@/lib/messenger/poll"
 import { cn } from "@/lib/utils"
-import type { MediaAttachment, Message } from "@/types/messenger"
+import type { Message } from "@/types/messenger"
 import {
 	AlertCircle,
 	BarChart3,
 	Check,
 	CheckCheck,
 	Clock,
-	FileText,
 	Forward,
 	Image as ImageIcon,
 	MapPin,
@@ -18,7 +17,6 @@ import {
 	Share2,
 	User,
 } from "lucide-react"
-import Image from "next/image"
 import { forwardRef } from "react"
 import { MediaGallery } from "../media/media-gallery"
 import { MessageActionMenu } from "./message-action-menu"
@@ -32,6 +30,7 @@ interface MessageBubbleProps {
 	showSender: boolean
 	repliedMessage?: Message
 	isHighlighted?: boolean
+	sameSenderAsPrevious?: boolean
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -127,106 +126,6 @@ function MessageContent({
 	}
 }
 
-/** A single item renders exactly as before; 2+ items render as a grid.
- * Caption is shown once, not per-tile — mobile applies the same caption
- * string to every item in a batch, so duplicating it under each tile
- * would just repeat identical text. */
-export function MediaGallery2({ media }: { media: MediaAttachment[] }) {
-	if (media.length === 1) return <SingleMediaItem item={media[0]} />
-
-	const caption = media.find((m) => m.caption)?.caption
-	return (
-		<div className="flex flex-col gap-1">
-			<div
-				className={cn(
-					"grid gap-1 max-w-70",
-					media.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3",
-				)}
-			>
-				{media.map((item, i) => (
-					<GalleryTile key={i} item={item} />
-				))}
-			</div>
-			{caption && <p className="text-sm">{caption}</p>}
-		</div>
-	)
-}
-
-function GalleryTile({ item }: { item: MediaAttachment }) {
-	if (item.type === "image") {
-		return (
-			<div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-				<Image src={item.url} alt={item.caption || "Image"} fill className="object-cover" />
-			</div>
-		)
-	}
-	if (item.type === "video") {
-		return (
-			<video src={item.url} controls className="aspect-square w-full rounded-lg object-cover" />
-		)
-	}
-	if (item.type === "audio") {
-		return <audio src={item.url} controls className="col-span-full w-full" />
-	}
-	return (
-		<a
-			href={item.url}
-			target="_blank"
-			rel="noreferrer"
-			className="col-span-full flex items-center gap-2 text-sm underline"
-		>
-			<FileText size={16} className="shrink-0 opacity-70" />
-			<span className="truncate">{item.caption || item.fileName || "Document"}</span>
-		</a>
-	)
-}
-
-function SingleMediaItem({ item }: { item: MediaAttachment }) {
-	switch (item.type) {
-		case "image":
-			return (
-				<figure className="flex flex-col gap-1">
-					<Image
-						src={item.url}
-						alt={item.caption || "Image"}
-						width={280}
-						height={280}
-						className="rounded-lg max-w-70 max-h-70 object-cover"
-					/>
-					{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
-				</figure>
-			)
-		case "video":
-			return (
-				<figure className="flex flex-col gap-1">
-					<video src={item.url} controls className="rounded-lg max-w-70 max-h-70" />
-					{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
-				</figure>
-			)
-		case "audio":
-			return (
-				<div className="flex flex-col gap-1">
-					<audio src={item.url} controls className="max-w-70" />
-					{item.caption && item.caption !== "Voice message" && (
-						<p className="text-sm">{item.caption}</p>
-					)}
-				</div>
-			)
-		default:
-			return (
-				<a
-					href={item.url}
-					target="_blank"
-					rel="noreferrer"
-					className="flex items-center gap-2 text-sm underline"
-				>
-					<FileText size={16} className="shrink-0 opacity-70" />
-					<span className="truncate">{item.caption || item.fileName || "Document"}</span>
-				</a>
-			)
-	}
-}
-
 function LocationContent({ message }: { message: Message }) {
 	const meta = message.metadata as { latitude?: number; longitude?: number } | null
 	if (meta?.latitude == null || meta?.longitude == null) {
@@ -276,6 +175,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		showSender,
 		repliedMessage,
 		isHighlighted,
+		sameSenderAsPrevious,
 		onRetry,
 		onReply,
 		onForward,
@@ -301,68 +201,99 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		<div
 			ref={ref}
 			className={cn(
-				"group flex flex-col mb-1",
-				isOwn ? "items-end" : "items-start",
-				isHighlighted && "bg-primary/10",
+				"group relative flex w-full",
+				isOwn ? "justify-end" : "justify-start",
+				isHighlighted && "rounded-xl bg-primary/10",
+				sameSenderAsPrevious ? "mb-1" : "mb-3",
 			)}
 		>
-			{showSender && !isOwn && (
-				<span className="text-xs font-medium text-muted-foreground mb-0.5 px-1">
-					{message.sender.first_name ?? message.sender.username}
-				</span>
-			)}
-
-			<div className={cn("flex w-full items-end gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
+			<div
+				className={cn(
+					"relative flex max-w-[88%] items-end gap-1",
+					"sm:max-w-[78%] lg:max-w-[68%]",
+					isOwn ? "flex-row-reverse" : "flex-row",
+				)}
+			>
 				{showActions && (
-					<MessageActionMenu
-						message={message}
-						isOwn={isOwn}
-						align={isOwn ? "end" : "start"}
-						onReply={() => onReply!(message)}
-						onForward={() => onForward!(message)}
-						onPin={() => onPin!(message)}
-						onUnpin={() => onUnpin!(message)}
-						onDelete={() => onDelete!(message)}
-					/>
+					<div
+						className={cn(
+							"absolute top-1/2 z-10 -translate-y-1/2",
+							"opacity-0 transition-opacity group-hover:opacity-100",
+							isOwn ? "-left-10" : "-right-10",
+						)}
+					>
+						<MessageActionMenu
+							message={message}
+							isOwn={isOwn}
+							align={isOwn ? "end" : "start"}
+							onReply={() => onReply!(message)}
+							onForward={() => onForward!(message)}
+							onPin={() => onPin!(message)}
+							onUnpin={() => onUnpin!(message)}
+							onDelete={() => onDelete!(message)}
+						/>
+					</div>
 				)}
 
 				<div
 					className={cn(
-						"w-fit max-w-[min(82%,520px)] sm:max-w-[min(75%,520px)]",
-						"rounded-2xl py-2.5 min-w-0 overflow-hidden",
+						"relative min-w-0 overflow-hidden",
+						"rounded-[12px] px-3 py-2",
 						isOwn
-							? "bg-primary text-primary-foreground rounded-br-sm"
-							: "bg-card border border-border rounded-bl-sm",
+							? ["bg-[#dfe8fa]", "text-foreground", "rounded-tr-lg"]
+							: [
+									"bg-white",
+									"text-foreground",
+									"rounded-tl-lg",
+									"shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
+								],
 						pending && "opacity-60",
 						failed && "border border-destructive",
 					)}
 				>
 					{forwarded && !deleted && (
-						<div className="flex align-top px-3.5 pb-1 gap-0.5 text-xs text-zinc-500 italic">
-							<Forward size={16} />
-							<p className="">Forwarded</p>
+						<div
+							className={cn(
+								"mb-1 flex items-center gap-1 text-[11px] italic",
+								isOwn ? "text-primary/70" : "text-muted-foreground",
+							)}
+						>
+							<Forward size={13} />
+							<span>Forwarded</span>
 						</div>
 					)}
 
 					{message.reply_to && !deleted && (
 						<div
 							className={cn(
-								"mx-3.5 mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
-								isOwn ? "border-primary-foreground/40" : "border-primary/40",
+								"mb-1.5 overflow-hidden rounded-md border-l-[3px] px-2.5 py-1.5",
+								isOwn ? "border-primary bg-white/35" : "border-primary/70 bg-muted/70",
 							)}
 						>
-							<p className="font-medium">
+							<p
+								className={cn(
+									"mb-0.5 text-[11px] font-semibold",
+									isOwn ? "text-primary" : "text-primary",
+								)}
+							>
 								{repliedMessage
 									? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
 									: "Original message"}
 							</p>
-							<p className="truncate max-w-55">
+
+							<p className="truncate text-xs text-foreground/75">
 								{(repliedMessage ? repliedMessage.content : message.reply_to.content) || "Message"}
 							</p>
 						</div>
 					)}
 
-					<div className={cn(message.message_type === "media" ? "px-1" : "px-3.5")}>
+					{showSender && !isOwn && (
+						<p className="mb-0.5 text-xs font-semibold text-primary">
+							{message.sender.first_name ?? message.sender.username}
+						</p>
+					)}
+
+					<div className={cn(message.message_type === "media" && "-mx-2 -my-1")}>
 						<MessageContent
 							message={message}
 							onVote={onVote}
@@ -372,31 +303,46 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 				</div>
 			</div>
 
-			{showActions && onReact && <ReactionPicker onReact={(emoji) => onReact!(message, emoji)} />}
-
-			{onOpenReactionsDialog && (
-				<ReactionsRow
-					reactions={message.emoji_reaction_counts}
-					isOwn={isOwn}
-					onOpenDialog={() => onOpenReactionsDialog(message)}
-				/>
-			)}
-
-			<div className="flex items-center gap-1 mt-0.5 px-1">
-				<span className="text-[11px] text-muted-foreground">{formatTime(message.created_at)}</span>
-				{isOwn && !deleted && <StatusTick status={message.status} />}
-				{message.is_pinned && !deleted && (
-					<span className="text-[11px] text-muted-foreground">· Pinned</span>
+			<div
+				className={cn(
+					"absolute -bottom-4 flex items-center gap-1 px-1",
+					isOwn ? "right-0" : "left-0",
 				)}
+			>
+				<span className="text-[10px] text-muted-foreground">{formatTime(message.created_at)}</span>
+
+				{isOwn && !deleted && <StatusTick status={message.status} />}
+
+				{message.is_pinned && !deleted && (
+					<span className="text-[10px] text-muted-foreground">· Pinned</span>
+				)}
+
 				{failed && onRetry && (
 					<button
+						type="button"
 						onClick={() => onRetry(message)}
-						className="text-[11px] text-destructive font-medium hover:underline"
+						className="text-[10px] font-medium text-destructive hover:underline"
 					>
 						Retry
 					</button>
 				)}
 			</div>
+
+			{onOpenReactionsDialog && (
+				<div className={cn("absolute -bottom-5", isOwn ? "right-2" : "left-2")}>
+					<ReactionsRow
+						reactions={message.emoji_reaction_counts}
+						isOwn={isOwn}
+						onOpenDialog={() => onOpenReactionsDialog(message)}
+					/>
+				</div>
+			)}
+
+			{showActions && onReact && (
+				<div className={cn("absolute top-full z-20 pt-1", isOwn ? "right-0" : "left-0")}>
+					<ReactionPicker onReact={(emoji) => onReact!(message, emoji)} />
+				</div>
+			)}
 		</div>
 	)
 })

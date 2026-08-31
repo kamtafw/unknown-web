@@ -121,7 +121,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 	}
 
 	return (
-		<div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
+		<div
+			ref={scrollRef}
+			className="messenger-wallpaper flex-1 overflow-y-auto px-4 py-4 sm:px-8 sm:py-5"
+		>
 			<div ref={topSentinelRef} className="h-1" />
 			{isFetchingOlder && (
 				<div className="flex justify-center py-2">
@@ -134,21 +137,30 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 					<DateSeparator label={group.label} />
 					{group.items.map((message, i) => {
 						const prev = group.items[i - 1]
-						const showSender = !prev || prev.sender.id !== message.sender.id
+
+						const sameSender = Boolean(prev && prev.sender.id === message.sender.id)
+
+						const showSender = !sameSender
+
 						const repliedMessage = message.reply_to
 							? messageById.get(message.reply_to.id)
 							: undefined
+
 						return (
 							<MessageBubble
 								key={message.id}
 								message={message}
 								isOwn={message.sender.id === currentUserUuid}
 								showSender={showSender}
+								sameSenderAsPrevious={sameSender}
 								repliedMessage={repliedMessage}
 								isHighlighted={highlightedId === message.id}
 								ref={(node: HTMLDivElement | null) => {
-									if (node) messageNodeRefs.current.set(message.id, node)
-									else messageNodeRefs.current.delete(message.id)
+									if (node) {
+										messageNodeRefs.current.set(message.id, node)
+									} else {
+										messageNodeRefs.current.delete(message.id)
+									}
 								}}
 								onRetry={onRetry}
 								onReply={onReply}

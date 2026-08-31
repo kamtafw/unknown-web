@@ -36,8 +36,10 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	const currentUser = useAuthStore((s) => s.user)
 	const queryClient = useQueryClient()
 	const peer = usePeerProfile(uuid)
+
 	const { messages, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useChatHistory(uuid)
+
 	const { remoteTyping, emitTyping } = useTyping(uuid)
 
 	// Fixes "peer data disappears on refresh": if the list/primed cache
@@ -46,6 +48,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	// prime the peer cache so it's there instantly on the next visit this
 	// session too — not just a one-off recovery.
 	const derivedPeer = peer ?? derivePeerFromMessages(messages, uuid)
+
 	useEffect(() => {
 		if (!peer && derivedPeer) {
 			queryClient.setQueryData(chatKeys.peer(uuid), derivedPeer)
@@ -137,9 +140,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	const handleSendMedia = (caption: string) => {
 		const uploaded = attachments.filter((a) => a.uploadedUrl)
 		if (uploaded.length === 0) return
-		// Same fallback rule as mobile's resolveAttachmentCaption: a shared
-		// caption applies to every item; non-media types default to their own
-		// filename when no caption was typed.
+
 		const resolveCaption = (a: PendingAttachment) =>
 			caption ||
 			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
@@ -217,7 +218,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	}
 
 	return (
-		<div className="flex-1 flex flex-col h-full min-w-0">
+		<div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
 			{search.isOpen ? (
 				<MessageSearchBar
 					value={search.query}
@@ -244,6 +245,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onJumpToMessage={handleJumpToMessage}
 				onUnpin={(m) => void unpinMessage(m)}
 			/>
+
 			<MessageList
 				ref={messageListRef}
 				messages={messages}
@@ -262,28 +264,31 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onReact={(m, emoji) => void reactToMessage(m, emoji)}
 				onOpenReactionsDialog={setReactionsDialogMessage}
 			/>
-			<Composer
-				onSend={handleSend}
-				onTypingChange={emitTyping}
-				replyingTo={replyingTo}
-				voice={{
-					phase: voiceRecorder.phase,
-					durationSecs: voiceRecorder.durationSecs,
-					metering: voiceRecorder.metering,
-					isPlaying: voiceRecorder.isPlaying,
-					onStart: voiceRecorder.start,
-					onPause: voiceRecorder.pause,
-					onResume: voiceRecorder.resume,
-					onDiscard: voiceRecorder.discard,
-					onSend: () => void handleVoiceSend(),
-					onPlayPreview: voiceRecorder.playPreview,
-					onStopPreview: voiceRecorder.stopPreview,
-				}}
-				onCancelReply={() => setReplyingTo(null)}
-				onFilesPicked={addFiles}
-				onAttachContact={() => setContactDialogOpen(true)}
-				onAttachLocation={handleAttachLocation}
-			/>
+
+			<div className="shrink-0">
+				<Composer
+					onSend={handleSend}
+					onTypingChange={emitTyping}
+					replyingTo={replyingTo}
+					voice={{
+						phase: voiceRecorder.phase,
+						durationSecs: voiceRecorder.durationSecs,
+						metering: voiceRecorder.metering,
+						isPlaying: voiceRecorder.isPlaying,
+						onStart: voiceRecorder.start,
+						onPause: voiceRecorder.pause,
+						onResume: voiceRecorder.resume,
+						onDiscard: voiceRecorder.discard,
+						onSend: () => void handleVoiceSend(),
+						onPlayPreview: voiceRecorder.playPreview,
+						onStopPreview: voiceRecorder.stopPreview,
+					}}
+					onCancelReply={() => setReplyingTo(null)}
+					onFilesPicked={addFiles}
+					onAttachContact={() => setContactDialogOpen(true)}
+					onAttachLocation={handleAttachLocation}
+				/>
+			</div>
 
 			<ForwardDialog
 				open={!!forwardTarget}

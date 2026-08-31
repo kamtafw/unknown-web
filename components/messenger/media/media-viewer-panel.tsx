@@ -1,7 +1,7 @@
 "use client"
 
 import type { MediaAttachment } from "@/types/messenger"
-import { ArrowLeft, ArrowRight, Download, FileText, Play, X } from "lucide-react"
+import { ArrowLeft, ArrowRight, FileText, Play, X } from "lucide-react"
 import Image from "next/image"
 import { useEffect } from "react"
 import { useMediaViewer } from "./media-viewer-context"
@@ -184,7 +184,7 @@ export function MediaViewerPanel() {
 				</div>
 			)}
 
-			{item.type !== "audio" && (
+			{/* {item.type !== "audio" && (
 				<div className="flex shrink-0 justify-end border-t border-border px-4 py-2">
 					<a
 						href={item.url}
@@ -196,7 +196,7 @@ export function MediaViewerPanel() {
 						Open original
 					</a>
 				</div>
-			)}
+			)} */}
 
 			{viewer.media.length > 1 && (
 				<div className="flex shrink-0 gap-1 overflow-x-auto border-t border-border p-2">
