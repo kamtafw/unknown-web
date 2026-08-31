@@ -7,7 +7,7 @@ import { Avatar } from "radix-ui"
 import { useEffect, useMemo, useState } from "react"
 
 export interface ReactorEntry {
-	pkid: string
+	pkid: number
 	name: string
 	avatarUrl?: string | null
 	emoji: string
@@ -16,7 +16,7 @@ export interface ReactorEntry {
 interface ReactionSummaryProps {
 	reactions: EmojiReactionCount[] | undefined | null
 	isOwn: boolean
-	currentUserPkid: string
+	currentUserPkid: number
 	fetchReactors: () => Promise<ReactorEntry[]>
 	onRemoveOwnReaction: (emoji: string) => void
 }
