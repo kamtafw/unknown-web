@@ -19,6 +19,15 @@ interface MediaViewerContextValue {
 
 const MediaViewerContext = createContext<MediaViewerContextValue | null>(null)
 
+const fallbackContext: MediaViewerContextValue = {
+	viewer: null,
+	openMedia: () => undefined,
+	closeMedia: () => undefined,
+	setIndex: () => undefined,
+	next: () => undefined,
+	previous: () => undefined,
+}
+
 export function MediaViewerProvider({ children }: { children: ReactNode }) {
 	const [viewer, setViewer] = useState<MediaViewerState | null>(null)
 
@@ -94,9 +103,5 @@ export function MediaViewerProvider({ children }: { children: ReactNode }) {
 export function useMediaViewer() {
 	const context = useContext(MediaViewerContext)
 
-	if (!context) {
-		throw new Error("useMediaViewer must be used within a MediaViewerProvider")
-	}
-
-	return context
+	return context ?? fallbackContext
 }

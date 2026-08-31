@@ -20,24 +20,19 @@ const RAIL_ITEMS: RailItem[] = [
 	{ label: "Status", icon: Status, href: "/messenger/status" },
 ]
 
-/**
- * Only "Chat" and "Groups" are wired — every other destination belongs to
- * a later milestone (Status — M5; Calls — M8). "Groups" (Users icon)
- * resolves the earlier open question from M1 ("Contacts/Lists —
- * unconfirmed which mobile capability they map to") — Figma confirms this
- * rail slot is the Groups/Communities entry point, not a contacts/address
- * book screen. See DECISIONS.md.
- */
+const RESERVED_SECTIONS = ["groups", "status"]
+
 export function MessengerRail() {
 	const pathname = usePathname()
+	const topSection = pathname.split("/").filter(Boolean)[1] // e.g. "groups", "status", a uuid, or undefined
 
 	return (
 		<nav className="w-14 sm:w-16 shrink-0 border-r border-border bg-background flex flex-col items-center px-2 py-3 gap-2">
 			{RAIL_ITEMS.map((item) => {
 				const isActive = item.href
-					? item.href === "/messenger"
-						? pathname === item.href
-						: pathname.startsWith(item.href)
+					? item.label === "Chat"
+						? !topSection || !RESERVED_SECTIONS.includes(topSection)
+						: pathname === item.href || pathname.startsWith(`${item.href}/`)
 					: false
 				const Icon = item.icon
 

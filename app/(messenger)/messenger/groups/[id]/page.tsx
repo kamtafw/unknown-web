@@ -1,4 +1,5 @@
-import { GroupConversationView } from "@/components/messenger/group-conversation/group-conversation-view"
+import { GroupConversationWorkspace } from "@/components/messenger/group-conversation/group-conversation-workspace"
+import { Pkid } from "@/types/messenger"
 
 export default async function GroupConversationPage({
 	params,
@@ -6,5 +7,5 @@ export default async function GroupConversationPage({
 	params: Promise<{ id: string }>
 }) {
 	const { id } = await params
-	return <GroupConversationView groupId={Number(id)} />
+	return <GroupConversationWorkspace groupId={Number(id) as Pkid} />
 }

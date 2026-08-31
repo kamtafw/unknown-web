@@ -2,7 +2,7 @@
 
 import type { Uuid } from "@/types/messenger"
 import { useEffect, useState } from "react"
-import { MediaViewerProvider, useMediaViewer } from "../media/media-viewer-context"
+import { useMediaViewer } from "../media/media-viewer-context"
 import { MediaViewerPanel } from "../media/media-viewer-panel"
 import { ConversationView } from "./conversation-view"
 import { ProfilePanel } from "./profile-panel"
@@ -45,9 +45,5 @@ function ConversationWorkspaceInner({ uuid }: ConversationWorkspaceProps) {
 }
 
 export function ConversationWorkspace({ uuid }: ConversationWorkspaceProps) {
-	return (
-		<MediaViewerProvider>
-			<ConversationWorkspaceInner uuid={uuid} />
-		</MediaViewerProvider>
-	)
+	return <ConversationWorkspaceInner uuid={uuid} />
 }

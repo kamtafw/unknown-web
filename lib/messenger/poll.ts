@@ -4,6 +4,10 @@ export interface ResolvedPollOption {
 	id: number
 	text: string
 	voteCount: number
+	/** Small avatar preview of who voted — only present if the backend
+	 * enriches inline message metadata with it (unconfirmed, see
+	 * poll-bubble.tsx doc comment). Absent by default. */
+	voterPreview?: { photo: string | null; name: string }[]
 }
 
 export interface ResolvedPoll {
@@ -32,6 +36,12 @@ export function resolvePoll(message: Message): ResolvedPoll | null {
 		id: Number(o.id),
 		text: String(o.text ?? ""),
 		voteCount: Number(o.vote_count ?? o.votes ?? 0),
+		voterPreview: Array.isArray(o.voters)
+			? (o.voters as Record<string, unknown>[]).slice(0, 2).map((v) => ({
+					photo: typeof v.profile_photo === "string" ? v.profile_photo : null,
+					name: String(v.first_name ?? v.username ?? "?"),
+				}))
+			: undefined,
 	}))
 
 	const isMultiple = Boolean(meta.allow_multiple_answers ?? meta.allow_multiple ?? false)
