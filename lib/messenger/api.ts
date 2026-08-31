@@ -149,7 +149,7 @@ export const chatApi = {
 
 	// Chat-list actions
 	pin: (userPkid: number) => apiClient.post("/api/chats/users/pin", { user_id: userPkid }),
-	unpin: (userUuid: string) => apiClient.delete(`/api/chats/users/${userUuid}/unpin`),
+	unpin: (userPkid: number) => apiClient.delete(`/api/chats/users/${userPkid}/unpin`),
 
 	mute: (userPkid: number, muteUntil?: string) =>
 		apiClient.post("/api/chats/mute", {

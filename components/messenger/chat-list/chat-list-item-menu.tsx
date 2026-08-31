@@ -93,7 +93,10 @@ export function ChatListItemMenu({
 					</DropdownMenu.Item>
 
 					{chat.is_pinned ? (
-						<DropdownMenu.Item className={itemClass} onSelect={() => run(() => unpin(chat.id))}>
+						<DropdownMenu.Item
+							className={itemClass}
+							onSelect={() => run(() => unpin(chat.id, chat.pkid))}
+						>
 							<PinOff size={16} /> Unpin
 						</DropdownMenu.Item>
 					) : (

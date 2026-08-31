@@ -64,7 +64,7 @@ export function useChatListActions() {
 	)
 
 	const unpin = useCallback(
-		(userUuid: Uuid) => togglePinned(userUuid, false, () => chatApi.unpin(userUuid)),
+		(userUuid: Uuid, userPkid:Pkid) => togglePinned(userUuid, false, () => chatApi.unpin(userPkid)),
 		[togglePinned],
 	)
 
