@@ -8,9 +8,10 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { Uuid } from "@/types/messenger"
 import { useParams, usePathname } from "next/navigation"
 import { ReactNode } from "react"
+import { ArchiveListPanel } from "./chat-list/archive-list-panel"
 import { ChatListPanel } from "./chat-list/chat-list-panel"
 import { GroupListPanel } from "./group-list/group-list-panel"
-import { ArchiveListPanel } from "./chat-list/archive-list-panel"
+import { StatusListPanel } from "./status/status-list-panel"
 
 /**
  * Two-pane on desktop, single-pane on mobile — same shape for both the
@@ -25,11 +26,12 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	const isStatusSection = pathname.startsWith("/messenger/status")
 	const isArchiveSection = pathname.startsWith("/messenger/archive")
 
-	const params = useParams<{ uuid?: string; id?: string }>()
+	const params = useParams<{ uuid?: string; id?: string; userId?: string }>()
 	const activeUuid = (
-		!isGroupsSection && !isArchiveSection ? (params.uuid ?? null) : null
+		!isGroupsSection && !isStatusSection && !isArchiveSection ? (params.uuid ?? null) : null
 	) as Uuid | null
 	const activeGroupId = isGroupsSection && params.id ? Number(params.id) : null
+	const activeStatusEntryId = isStatusSection ? (params.userId ?? null) : null
 	const currentUserId = useAuthStore((s) => s.user?.id)
 
 	const { typingUuids } = useChatSocket(activeUuid)
@@ -44,17 +46,17 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 
 	return (
 		<div className="flex flex-1 min-h-0 overflow-hidden">
-			{!isStatusSection && (
-				<div className={cn(isDetailOpen ? "hidden sm:flex" : "flex", "min-h-0 shrink-0")}>
-					{isGroupsSection ? (
-						<GroupListPanel activeGroupId={activeGroupId} />
-					) : isArchiveSection ? (
-						<ArchiveListPanel />
-					) : (
-						<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
-					)}
-				</div>
-			)}
+			<div className={cn(isDetailOpen ? "hidden sm:flex" : "flex", "min-h-0 shrink-0")}>
+				{isGroupsSection ? (
+					<GroupListPanel activeGroupId={activeGroupId} />
+				) : isStatusSection ? (
+					<StatusListPanel activeEntryId={activeStatusEntryId} />
+				) : isArchiveSection ? (
+					<ArchiveListPanel />
+				) : (
+					<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
+				)}
+			</div>
 			<div className="flex flex-1 min-h-0 min-w-0">{children}</div>
 		</div>
 	)

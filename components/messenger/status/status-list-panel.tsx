@@ -12,19 +12,25 @@ import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { useStatusMuteStore } from "@/stores/status-mute.store"
 import type { Pkid, StatusUser, Uuid } from "@/types/messenger"
-import { Plus } from "lucide-react"
+import { ChevronDown, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Avatar } from "radix-ui"
 import { useMemo, useState } from "react"
 import { StatusCreateDialog } from "./status-create-dialog"
-import { StatusViewerDialog } from "./status-viewer-dialog"
+
+interface StatusListPanelProps {
+	activeEntryId: string | null
+}
 
 function StatusRow({
 	entry,
 	isMe,
+	isActive,
 	onClick,
 }: {
 	entry: StatusListEntry
 	isMe: boolean
+	isActive: boolean
 	onClick: () => void
 }) {
 	const hasStories = entry.totalSegments > 0
@@ -32,11 +38,14 @@ function StatusRow({
 	return (
 		<button
 			onClick={onClick}
-			className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+			className={cn(
+				"w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+				isActive ? "bg-accent" : "hover:bg-accent/50",
+			)}
 		>
 			<div
 				className={cn(
-					"h-14 w-14 shrink-0 rounded-full p-[2px]",
+					"h-14 w-14 shrink-0 rounded-full p-0.5",
 					!hasStories ? "bg-transparent" : unseen ? "bg-primary" : "bg-muted-foreground/30",
 				)}
 			>
@@ -64,23 +73,51 @@ function StatusRow({
 	)
 }
 
-function SectionHeader({ label, count }: { label: string; count: number }) {
+function SectionHeader({ label }: { label: string }) {
 	return (
 		<div className="px-4 py-2 bg-muted/50">
-			<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-				{label} · {count}
-			</p>
+			<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
 		</div>
 	)
 }
 
-export function StatusListPanel() {
+/** Viewed/Muted only — Recent stays always-open by design. */
+function CollapsibleSectionHeader({
+	label,
+	count,
+	expanded,
+	onToggle,
+}: {
+	label: string
+	count: number
+	expanded: boolean
+	onToggle: () => void
+}) {
+	return (
+		<button
+			onClick={onToggle}
+			className="w-full flex items-center justify-between px-4 py-2 bg-muted/50 hover:bg-muted transition-colors"
+		>
+			<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+				{label} · {count}
+			</p>
+			<ChevronDown
+				size={14}
+				className={cn("text-muted-foreground transition-transform", expanded ? "rotate-180" : "")}
+			/>
+		</button>
+	)
+}
+
+export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
+	const router = useRouter()
 	const currentUser = useAuthStore((s) => s.user)
 	const { data: myData, isLoading: myLoading } = useMyStatuses()
 	const { data: feedData, isLoading: feedLoading } = useStatusFeed()
 	const mutedPkids = useStatusMuteStore((s) => s.mutedPkids)
 	const [createOpen, setCreateOpen] = useState(false)
-	const [viewerEntry, setViewerEntry] = useState<StatusListEntry | null>(null)
+	const [viewedExpanded, setViewedExpanded] = useState(true)
+	const [mutedExpanded, setMutedExpanded] = useState(true)
 
 	const grouped = useMemo(
 		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids)),
@@ -105,9 +142,10 @@ export function StatusListPanel() {
 
 	const isLoading = myLoading || feedLoading
 	const totalOthers = grouped.recent.length + grouped.viewed.length + grouped.muted.length
+	const openEntry = (entry: StatusListEntry) => router.push(`/messenger/status/${entry.id}`)
 
 	return (
-		<div className="w-full flex flex-col h-full bg-background">
+		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
 			<div className="flex items-center justify-between px-4 pt-4 pb-3">
 				<h1 className="text-xl font-bold">Status</h1>
 				<button
@@ -137,49 +175,67 @@ export function StatusListPanel() {
 							<StatusRow
 								entry={myEntry}
 								isMe
+								isActive={activeEntryId === "my"}
 								onClick={() =>
-									myEntry.stories.length > 0 ? setViewerEntry(myEntry) : setCreateOpen(true)
+									myEntry.stories.length > 0 ? openEntry(myEntry) : setCreateOpen(true)
 								}
 							/>
 						)}
 
 						{grouped.recent.length > 0 && (
 							<>
-								<SectionHeader label="Recent updates" count={grouped.recent.length} />
+								<SectionHeader label="Recent updates" />
 								{grouped.recent.map((entry) => (
 									<StatusRow
 										key={entry.id}
 										entry={entry}
 										isMe={false}
-										onClick={() => setViewerEntry(entry)}
+										isActive={activeEntryId === entry.id}
+										onClick={() => openEntry(entry)}
 									/>
 								))}
 							</>
 						)}
+
 						{grouped.viewed.length > 0 && (
 							<>
-								<SectionHeader label="Viewed updates" count={grouped.viewed.length} />
-								{grouped.viewed.map((entry) => (
-									<StatusRow
-										key={entry.id}
-										entry={entry}
-										isMe={false}
-										onClick={() => setViewerEntry(entry)}
-									/>
-								))}
+								<CollapsibleSectionHeader
+									label="Viewed updates"
+									count={grouped.viewed.length}
+									expanded={viewedExpanded}
+									onToggle={() => setViewedExpanded((v) => !v)}
+								/>
+								{viewedExpanded &&
+									grouped.viewed.map((entry) => (
+										<StatusRow
+											key={entry.id}
+											entry={entry}
+											isMe={false}
+											isActive={activeEntryId === entry.id}
+											onClick={() => openEntry(entry)}
+										/>
+									))}
 							</>
 						)}
+
 						{grouped.muted.length > 0 && (
 							<>
-								<SectionHeader label="Muted updates" count={grouped.muted.length} />
-								{grouped.muted.map((entry) => (
-									<StatusRow
-										key={entry.id}
-										entry={entry}
-										isMe={false}
-										onClick={() => setViewerEntry(entry)}
-									/>
-								))}
+								<CollapsibleSectionHeader
+									label="Muted updates"
+									count={grouped.muted.length}
+									expanded={mutedExpanded}
+									onToggle={() => setMutedExpanded((v) => !v)}
+								/>
+								{mutedExpanded &&
+									grouped.muted.map((entry) => (
+										<StatusRow
+											key={entry.id}
+											entry={entry}
+											isMe={false}
+											isActive={activeEntryId === entry.id}
+											onClick={() => openEntry(entry)}
+										/>
+									))}
 							</>
 						)}
 
@@ -193,13 +249,6 @@ export function StatusListPanel() {
 			</div>
 
 			<StatusCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
-			{viewerEntry && (
-				<StatusViewerDialog
-					entry={viewerEntry}
-					isOwn={viewerEntry.id === "my"}
-					onClose={() => setViewerEntry(null)}
-				/>
-			)}
 		</div>
 	)
 }

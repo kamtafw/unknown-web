@@ -1,5 +1,5 @@
-import { StatusListPanel } from "@/components/messenger/status/status-list-panel"
+import { MessengerEmptyState } from "@/components/messenger/empty-state"
 
 export default function MessengerStatusPage() {
-	return <StatusListPanel />
+	return <MessengerEmptyState />
 }
