@@ -37,7 +37,11 @@ function formatRelativeTime(iso: string): string {
 /** Groups statuses by author, sorted newest-first within each group, then
  * buckets authors into recent/viewed/muted — ported verbatim from
  * mobile's bucket rules. */
-export function groupStatusesByUser(statuses: Status[], mutedPkids: Set<number>): GroupedStatuses {
+export function groupStatusesByUser(
+	statuses: Status[],
+	mutedPkids: Set<number>,
+	viewedIds: Set<number> = new Set(),
+): GroupedStatuses {
 	const buckets = new Map<number, Status[]>()
 	for (const status of statuses) {
 		const pkid = status.user.pkid
@@ -52,7 +56,7 @@ export function groupStatusesByUser(statuses: Status[], mutedPkids: Set<number>)
 			(a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
 		)
 		const latest = sorted[sorted.length - 1]
-		const viewed = sorted.filter((s) => s.is_viewed).length
+		const viewed = sorted.filter((s) => s.is_viewed || viewedIds.has(s.id)).length
 		entries.push({
 			id: String(pkid),
 			user: latest.user,

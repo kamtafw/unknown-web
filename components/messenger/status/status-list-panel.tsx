@@ -14,9 +14,10 @@ import { useStatusMuteStore } from "@/stores/status-mute.store"
 import type { Pkid, StatusUser, Uuid } from "@/types/messenger"
 import { ChevronDown, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { Avatar } from "radix-ui"
 import { useMemo, useState } from "react"
 import { StatusCreateDialog } from "./status-create-dialog"
+import { StatusRingAvatar } from "./status-ring-avatar"
+import { useStatusViewedStore } from "@/stores/status-viewed-store"
 
 interface StatusListPanelProps {
 	activeEntryId: string | null
@@ -33,8 +34,6 @@ function StatusRow({
 	isActive: boolean
 	onClick: () => void
 }) {
-	const hasStories = entry.totalSegments > 0
-	const unseen = entry.viewedSegments < entry.totalSegments
 	return (
 		<button
 			onClick={onClick}
@@ -43,28 +42,19 @@ function StatusRow({
 				isActive ? "bg-accent" : "hover:bg-accent/50",
 			)}
 		>
-			<div
-				className={cn(
-					"h-14 w-14 shrink-0 rounded-full p-0.5",
-					!hasStories ? "bg-transparent" : unseen ? "bg-primary" : "bg-muted-foreground/30",
-				)}
-			>
-				<Avatar.Root className="h-full w-full rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-background">
-					<Avatar.Image
-						src={entry.avatarUrl ?? undefined}
-						alt={entry.name}
-						className="h-full w-full object-cover"
-					/>
-					<Avatar.Fallback className="text-sm font-medium text-muted-foreground">
-						{getInitials(entry.user.first_name, entry.user.last_name)}
-					</Avatar.Fallback>
-				</Avatar.Root>
-			</div>
+			<StatusRingAvatar
+				total={entry.totalSegments}
+				viewed={entry.viewedSegments}
+				avatarUrl={entry.avatarUrl}
+				name={entry.name}
+				initials={getInitials(entry.user.first_name, entry.user.last_name)}
+				isMuted={entry.isMuted}
+			/>
 			<div className="min-w-0 flex-1">
 				<p className="text-sm font-semibold truncate">{isMe ? "My Status" : entry.name}</p>
 				<p className="text-xs text-muted-foreground truncate">{entry.timestamp}</p>
 			</div>
-			{isMe && !hasStories && (
+			{isMe && entry.totalSegments === 0 && (
 				<span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
 					<Plus size={16} />
 				</span>
@@ -118,10 +108,11 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 	const [createOpen, setCreateOpen] = useState(false)
 	const [viewedExpanded, setViewedExpanded] = useState(true)
 	const [mutedExpanded, setMutedExpanded] = useState(true)
-
+	
+	const viewedIds = useStatusViewedStore((s) => s.viewedIds)
 	const grouped = useMemo(
-		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids)),
-		[feedData, mutedPkids],
+		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids), new Set(viewedIds)),
+		[feedData, mutedPkids, viewedIds],
 	)
 
 	const myEntry = useMemo(() => {

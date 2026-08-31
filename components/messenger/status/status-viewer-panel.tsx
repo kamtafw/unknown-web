@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { StatusViewersSheet } from "./status-viewers-sheet"
+import { useStatusViewedStore } from "@/stores/status-viewed-store"
 
 const IMAGE_STORY_DURATION_MS = 5000
 
@@ -53,9 +54,10 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	const { data: feedData } = useStatusFeed()
 	const mutedPkids = useStatusMuteStore((s) => s.mutedPkids)
 
+	const viewedIds = useStatusViewedStore((s) => s.viewedIds)
 	const grouped = useMemo(
-		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids)),
-		[feedData, mutedPkids],
+		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids), new Set(viewedIds)),
+		[feedData, mutedPkids, viewedIds],
 	)
 	const myEntry = useMemo(() => {
 		const fallbackUser: StatusUser | undefined = currentUser
@@ -114,10 +116,12 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	const mediaUrl = story?.media?.[0]?.url
 
 	useEffect(() => {
-		if (!story || isOwn || story.is_viewed || seenIdsRef.current.has(story.id)) return
+		if (!story || isOwn) return
+		const alreadyViewed = story.is_viewed || useStatusViewedStore.getState().isViewed(story.id)
+		if (alreadyViewed || seenIdsRef.current.has(story.id)) return
 		seenIdsRef.current.add(story.id)
+		useStatusViewedStore.getState().markViewed(story.id)
 		markViewed.mutate(story.id)
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [story?.id, isOwn])
 
 	const advanceToNextEntry = () => {
@@ -164,7 +168,6 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 		return () => {
 			if (rafRef.current) cancelAnimationFrame(rafRef.current)
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [story?.id, isVideo, paused])
 
 	useEffect(() => {
