@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { forwardRef } from "react"
+import { MediaGallery } from "../media/media-gallery"
 import { MessageActionMenu } from "./message-action-menu"
 import { PollBubble } from "./poll-bubble"
 import { ReactionPicker } from "./reaction-picker"
@@ -82,6 +83,7 @@ function MessageContent({
 	onVote?: (message: Message, optionIds: number[]) => void
 	onViewPollResults?: (message: Message) => void
 }) {
+	console.log("message_type:", message.message_type)
 	if (message.is_hidden_by_me) return null
 
 	if (message.is_deleted_for_all) {
@@ -129,7 +131,7 @@ function MessageContent({
  * Caption is shown once, not per-tile — mobile applies the same caption
  * string to every item in a batch, so duplicating it under each tile
  * would just repeat identical text. */
-function MediaGallery({ media }: { media: MediaAttachment[] }) {
+export function MediaGallery2({ media }: { media: MediaAttachment[] }) {
 	if (media.length === 1) return <SingleMediaItem item={media[0]} />
 
 	const caption = media.find((m) => m.caption)?.caption
@@ -327,7 +329,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 				<div
 					className={cn(
 						"w-fit max-w-[min(82%,520px)] sm:max-w-[min(75%,520px)]",
-						"rounded-2xl px-3.5 py-2.5 min-w-0",
+						"rounded-2xl py-2.5 min-w-0 overflow-hidden",
 						isOwn
 							? "bg-primary text-primary-foreground rounded-br-sm"
 							: "bg-card border border-border rounded-bl-sm",
@@ -336,7 +338,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					)}
 				>
 					{forwarded && !deleted && (
-						<div className="flex align-top p-0.5 gap-0.5 text-xs text-zinc-500 italic">
+						<div className="flex align-top px-3.5 pb-1 gap-0.5 text-xs text-zinc-500 italic">
 							<Forward size={16} />
 							<p className="">Forwarded</p>
 						</div>
@@ -345,7 +347,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					{message.reply_to && !deleted && (
 						<div
 							className={cn(
-								"mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
+								"mx-3.5 mb-1.5 pl-2 border-l-2 rounded-sm text-xs opacity-80",
 								isOwn ? "border-primary-foreground/40" : "border-primary/40",
 							)}
 						>
@@ -360,7 +362,13 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 						</div>
 					)}
 
-					<MessageContent message={message} onVote={onVote} onViewPollResults={onViewPollResults} />
+					<div className={cn(message.message_type === "media" ? "px-1" : "px-3.5")}>
+						<MessageContent
+							message={message}
+							onVote={onVote}
+							onViewPollResults={onViewPollResults}
+						/>
+					</div>
 				</div>
 			</div>
 
