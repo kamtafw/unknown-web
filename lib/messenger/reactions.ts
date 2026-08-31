@@ -70,4 +70,19 @@ export function toggleActorReaction(
 	return setActorReaction(counts, actorId, emoji)
 }
 
+/** Whether toggling `emoji` for `actorId` given current `counts` is a
+ * removal (tapping the same emoji already reacted with) vs. an add/switch.
+ * Needed because DELETE and POST are NOT interchangeable here — DELETE
+ * takes no params and resolves the caller's own reaction server-side;
+ * POST always sets/switches to the given emoji. Picking the wrong one is
+ * exactly the bug this fixes. */
+export function isReactionRemoval(
+	counts: EmojiReactionCount[],
+	actorId: string,
+	emoji: string,
+): boolean {
+	const current = counts.find((c) => (c.actor_ids ?? []).includes(actorId))
+	return current?.emoji === emoji
+}
+
 export { removeActorFromEmoji, setActorReaction }

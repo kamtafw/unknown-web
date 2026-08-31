@@ -3,9 +3,11 @@
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
 import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageActions } from "@/hooks/messenger/use-message-actions"
+import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
+import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { derivePeerFromMessages, getDisplayName } from "@/lib/messenger/user-display"
@@ -21,7 +23,9 @@ import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
 import { MediaComposerDialog } from "./media-composer-dialog"
 import { MessageList, MessageListHandle } from "./message-list"
+import { MessageSearchBar } from "./message-search-bar"
 import { PinnedMessageBanner } from "./pinned-message-banner"
+import { ReactionsDialog } from "./reactions-dialog"
 
 interface ConversationViewProps {
 	uuid: Uuid
@@ -59,7 +63,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		messages.find((m) => m.receiver?.id === uuid)?.receiver?.pkid ??
 		null
 
-	const { send, sendMedia, sendContact, sendLocation, retry } = useSendMessage(
+	const { send, sendMedia, sendContact, sendLocation, sendVoice, retry } = useSendMessage(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
@@ -71,20 +75,28 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		reset: resetAttachments,
 		readyToSend,
 	} = usePendingAttachment("chat")
-	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
 	const { forward, pinMessage, unpinMessage, deleteMessage, reactToMessage } = useMessageActions(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
 
+	const voiceRecorder = useVoiceRecorder()
+
+	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
+	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 
-	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+	const pinnedMessages = useMemo(
+		() => messages.filter((m) => m.is_pinned && !m.is_deleted_for_all && !m.is_hidden_by_me),
+		[messages],
+	)
+
+	const search = useMessageSearch(messages, messageListRef)
 
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
@@ -155,6 +167,17 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		)
 	}
 
+	const handleVoiceSend = async () => {
+		const result = await voiceRecorder.send()
+		if (!result) return
+		try {
+			const uploadedUrl = await chatApi.uploadMedia(result.file, "voice")
+			void sendVoice(uploadedUrl, result.file.name, result.duration)
+		} catch {
+			toast.error("Couldn't send the voice message — try again")
+		}
+	}
+
 	const handleRetry = (message: Message) => {
 		void retry(message)
 	}
@@ -176,19 +199,46 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		}
 	}
 
-	const handleViewReactors = useCallback(async (message: Message, emoji: string) => {
-		const reactions = await chatApi.listMessageReactions(message.id)
-		return reactions.filter((r) => r.emoji === emoji).map((r) => getDisplayName(r.user))
-	}, [])
+	const handleFetchAllReactors = useCallback(async () => {
+		if (!reactionsDialogMessage) return []
+		const reactions = await chatApi.listMessageReactions(reactionsDialogMessage.id)
+		return reactions.map((r) => ({
+			pkid: String(r.user.pkid),
+			name: getDisplayName(r.user),
+			avatarUrl: r.user.profile_photo,
+			emoji: r.emoji,
+		}))
+	}, [reactionsDialogMessage])
+
+	const handleRemoveOwnReaction = (emoji: string) => {
+		const msg = reactionsDialogMessage
+		setReactionsDialogMessage(null)
+		if (msg) void reactToMessage(msg, emoji)
+	}
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
-			<ConversationHeader
-				peer={derivedPeer}
-				peerUuid={uuid}
-				peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
-				onOpenProfile={onOpenProfile}
-			/>
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<ConversationHeader
+					peer={peer}
+					peerUuid={uuid}
+					peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
+					onOpenProfile={onOpenProfile}
+					onOpenSearch={search.open}
+				/>
+			)}
+
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}
@@ -210,12 +260,25 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onUnpin={(m) => void unpinMessage(m)}
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(m, emoji)}
-				onViewReactors={handleViewReactors}
+				onOpenReactionsDialog={setReactionsDialogMessage}
 			/>
 			<Composer
 				onSend={handleSend}
 				onTypingChange={emitTyping}
 				replyingTo={replyingTo}
+				voice={{
+					phase: voiceRecorder.phase,
+					durationSecs: voiceRecorder.durationSecs,
+					metering: voiceRecorder.metering,
+					isPlaying: voiceRecorder.isPlaying,
+					onStart: voiceRecorder.start,
+					onPause: voiceRecorder.pause,
+					onResume: voiceRecorder.resume,
+					onDiscard: voiceRecorder.discard,
+					onSend: () => void handleVoiceSend(),
+					onPlayPreview: voiceRecorder.playPreview,
+					onStopPreview: voiceRecorder.stopPreview,
+				}}
 				onCancelReply={() => setReplyingTo(null)}
 				onFilesPicked={addFiles}
 				onAttachContact={() => setContactDialogOpen(true)}
@@ -245,6 +308,14 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				open={contactDialogOpen}
 				onOpenChange={setContactDialogOpen}
 				onSend={(contact) => void sendContact(contact)}
+			/>
+
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
 			/>
 		</div>
 	)

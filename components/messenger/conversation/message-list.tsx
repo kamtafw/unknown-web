@@ -23,7 +23,7 @@ interface MessageListProps {
 	onUnpin: (message: Message) => void
 	onDelete: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
-	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
+	onOpenReactionsDialog?: (message: Message) => void
 	onVote?: (message: Message, optionIds: number[]) => void
 	onViewPollResults?: (message: Message) => void
 }
@@ -50,7 +50,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onUnpin,
 		onDelete,
 		onReact,
-		onViewReactors,
+		onOpenReactionsDialog,
 		onVote,
 		onViewPollResults,
 	},
@@ -157,7 +157,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 								onUnpin={onUnpin}
 								onDelete={onDelete}
 								onReact={onReact}
-								onViewReactors={onViewReactors}
+								onOpenReactionsDialog={onOpenReactionsDialog}
 								onVote={onVote}
 								onViewPollResults={onViewPollResults}
 							/>

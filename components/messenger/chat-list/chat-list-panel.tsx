@@ -14,7 +14,9 @@ import { CheckSquare, List, MessageSquarePlus, Search } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { EmptyFavorites } from "../icons/chat-list-icons"
+import { FAB, Schedule as ScheduleIcon } from "../icons/group-list-icons"
 import { Archive } from "../icons/shared"
+import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { AddToListDialog } from "./add-to-list-dialog"
 import { BulkSelectionBar } from "./bulk-selection-bar"
 import { ActiveChatFilter, ChatFilterChips } from "./chat-filter-chips"
@@ -54,6 +56,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [listDialogChat, setListDialogChat] = useState<ChatListItemType | null>(null)
 	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 	const [listsDialogOpen, setListsDialogOpen] = useState(false)
+	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
 	const mainList = useChatList(
 		isCustomListTab ? "all" : filter === "favorites" ? "all" : filter,
@@ -73,7 +76,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const bulk = useBulkSelection(isCustomListTab ? [] : chats)
 
 	return (
-		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
+		<div className="relative w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
 			{bulk.active ? (
 				<BulkSelectionBar
 					selectedCount={bulk.selectedCount}
@@ -153,10 +156,6 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 			<ScrollArea className="flex-1">
 				<div className="w-0 min-w-full">
 					{!isFavoritesTab && (
-						// Archive: real, confirmed capability, but *viewing* the
-						// archived list is deferred past M2 (M2 only covers
-						// archiving *from* the main list) — inert per the same
-						// reasoning as M1 product decision 4.
 						<button
 							onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
 							className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
@@ -229,6 +228,49 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				</div>
 			</ScrollArea>
 
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					<button
+						title="New"
+						className="absolute bottom-7 right-7 h-14 w-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
+					>
+						<FAB />
+					</button>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Portal>
+					<DropdownMenu.Content
+						align="end"
+						side="top"
+						sideOffset={10}
+						className="z-150 bg-transparent backdrop-blur-md border-0 px-2 shadow-none outline-none rounded-2xl
+							data-[state=open]:animate-in data-[state=closed]:animate-out
+							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+					>
+						<div className="flex flex-col items-end gap-2">
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setScheduleDialogOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Schedule</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<ScheduleIcon />
+								</div>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setNewChatOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Start conversation</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary shadow-lg">
+									<MessageSquarePlus size={18} className="text-primary-foreground" />
+								</div>
+							</DropdownMenu.Item>
+						</div>
+					</DropdownMenu.Content>
+				</DropdownMenu.Portal>
+			</DropdownMenu.Root>
+
 			<NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />
 			<AddToListDialog
 				open={!!listDialogChat}
@@ -236,6 +278,8 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				chat={listDialogChat}
 			/>
 			<CustomListsDialog open={listsDialogOpen} onOpenChange={setListsDialogOpen} />
+
+			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
 import { Search, Users } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
-import { CreateCommunity, CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
+import { CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
+import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
@@ -23,8 +24,9 @@ interface GroupListPanelProps {
  * DECISIONS.md. Communities and "Schedule message" on the FAB are inert
  * (Tier 3 / Tier 2 respectively, not M3) — only "New Group" is wired.
  *
- * No search input on the list itself: mobile's `useGetGroups` only
- * accepts a cursor param, no `search`.
+ * Search is client-side over the already-fetched list — confirmed via
+ * mobile's chat-search-overlay.tsx: useGetGroups() has no `search` param
+ * there either, it filters the fetched groups by name in JS. Same here.
  */
 export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 	const [tab, setTab] = useState<"groups" | "communities">("groups")
@@ -32,6 +34,12 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 	const [search, setSearch] = useState("")
 	const { data, isLoading } = useGroupList()
 	const groups = data?.groups ?? []
+	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
+
+	const trimmedSearch = search.trim().toLowerCase()
+	const filteredGroups = trimmedSearch
+		? groups.filter((g) => g.name?.toLowerCase().includes(trimmedSearch))
+		: groups
 
 	return (
 		<div className="relative w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
@@ -99,14 +107,18 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 								</div>
 							))}
 						</div>
-					) : groups.length === 0 ? (
+					) : filteredGroups.length === 0 ? (
 						<ChatListEmptyState
 							icon={Users}
-							title="No groups yet"
-							description="Groups you're added to will show up here."
+							title={trimmedSearch ? "No groups found" : "No groups yet"}
+							description={
+								trimmedSearch
+									? "Try a different search."
+									: "Groups you're added to will show up here."
+							}
 						/>
 					) : (
-						groups.map((group) => (
+						filteredGroups.map((group) => (
 							<GroupListItem key={group.id} group={group} isActive={group.id === activeGroupId} />
 						))
 					)}
@@ -136,21 +148,11 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 						<div className="flex flex-col items-end gap-2">
 							<DropdownMenu.Item
 								className="flex items-center gap-2 outline-none"
-								onSelect={() => setCreateOpen(true)}
+								onSelect={() => setScheduleDialogOpen(true)}
 							>
 								<span className="text-[13px] text-foreground">Schedule</span>
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
 									<Schedule />
-								</div>
-							</DropdownMenu.Item>
-
-							<DropdownMenu.Item
-								className="flex items-center gap-2 outline-none"
-								onSelect={() => setCreateOpen(true)}
-							>
-								<span className="text-[13px] text-foreground">Create Community</span>
-								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
-									<CreateCommunity />
 								</div>
 							</DropdownMenu.Item>
 
@@ -169,6 +171,8 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 			</DropdownMenu.Root>
 
 			<CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

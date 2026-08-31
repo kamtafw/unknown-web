@@ -93,14 +93,13 @@ export interface Message {
 	content: string
 	media: MediaAttachment[] | null
 	metadata: Record<string, unknown> | null
-	deleted?: boolean
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
 	reply_to: MessageReplyTo | null
 	forwarded_from: unknown | null
-	is_hidden_by_me?: boolean
-	is_deleted_for_all?: boolean
+	is_hidden_by_me: boolean
+	is_deleted_for_all: boolean
 	reactions_count?: number
 	emoji_reaction_counts?: EmojiReactionCount[]
 	views_count?: number

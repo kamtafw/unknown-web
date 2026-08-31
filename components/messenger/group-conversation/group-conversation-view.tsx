@@ -8,9 +8,11 @@ import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-acti
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
 import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
-import { MessageDeleteType } from "@/lib/messenger/api"
+import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
+import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
 import { deriveGroupComposerState } from "@/lib/messenger/group-permissions"
 import { groupKeys } from "@/lib/messenger/query-keys"
@@ -25,8 +27,11 @@ import { ContactComposerDialog } from "../conversation/contact-composer-dialog"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
 import { ForwardDialog } from "../conversation/forward-dialog"
 import { MediaComposerDialog } from "../conversation/media-composer-dialog"
+import { MessageSearchBar } from "../conversation/message-search-bar"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
 import { PollResultsDialog } from "../conversation/poll-results-dialog"
+import { ReactionsDialog } from "../conversation/reactions-dialog"
+import { ScheduleComposeDialog } from "../schedule/schedule-compose-dialog"
 import { CreatePollDialog } from "./create-poll-dialog"
 import { GroupConversationHeader } from "./group-conversation-header"
 
@@ -53,7 +58,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const { messages, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useGroupHistory(groupId)
 	const { remoteTyping, emitTyping } = useGroupTyping(groupId)
-	const { send, sendMedia, sendContact, sendLocation, retry } = useSendGroupMessage(groupId)
+	const { send, sendMedia, sendContact, sendLocation, sendVoice, retry } =
+		useSendGroupMessage(groupId)
 	const {
 		attachments,
 		addFiles,
@@ -67,6 +73,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	useActiveGroupRoom(groupId)
 	const { members } = useGroupMembers(groupId)
 	const vote = useVotePoll()
+	const voiceRecorder = useVoiceRecorder()
 
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
@@ -74,9 +81,17 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const [createPollOpen, setCreatePollOpen] = useState(false)
 	const [pollResultsMessageId, setPollResultsMessageId] = useState<number | null>(null)
 	const [contactDialogOpen, setContactDialogOpen] = useState(false)
+	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
+
+	const [scheduleOpen, setScheduleOpen] = useState(false)
+	const scheduleRecipients = group
+		? [{ type: "group" as const, id: groupId, name: group.name, photo: group.icon_url || null }]
+		: []
 
 	const messageListRef = useRef<MessageListHandle>(null)
 	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+
+	const search = useMessageSearch(messages, messageListRef)
 
 	const composerState =
 		group && currentUser ? deriveGroupComposerState(group, currentUser.pkid as Pkid) : null
@@ -137,6 +152,17 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		)
 	}
 
+	const handleVoiceSend = async () => {
+		const result = await voiceRecorder.send()
+		if (!result) return
+		try {
+			const uploadedUrl = await chatApi.uploadMedia(result.file, "voice")
+			void sendVoice(uploadedUrl, result.file.name, result.duration)
+		} catch {
+			toast.error("Couldn't send the voice message — try again")
+		}
+	}
+
 	const handleRetry = (message: Message) => {
 		void retry(messageToGroupMessage(message, groupId))
 	}
@@ -161,16 +187,29 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		}
 	}
 
-	const handleViewReactors = useCallback(
-		async (message: Message, emoji: string) => {
-			const entry = (message.emoji_reaction_counts ?? []).find((c) => c.emoji === emoji)
-			return (entry?.actor_ids ?? []).map((pkid) => {
+	const handleFetchAllReactors = useCallback(async () => {
+		if (!reactionsDialogMessage) return []
+		const counts = reactionsDialogMessage.emoji_reaction_counts ?? []
+		const entries: { pkid: string; name: string; avatarUrl?: string | null; emoji: string }[] = []
+		for (const c of counts) {
+			for (const pkid of c.actor_ids ?? []) {
 				const member = members.find((m) => String(m.pkid) === pkid)
-				return member ? getDisplayName(member) : `User #${pkid}`
-			})
-		},
-		[members],
-	)
+				entries.push({
+					pkid,
+					name: member ? getDisplayName(member) : `User #${pkid}`,
+					avatarUrl: member?.profile_photo ?? null,
+					emoji: c.emoji,
+				})
+			}
+		}
+		return entries
+	}, [reactionsDialogMessage, members])
+
+	const handleRemoveOwnReaction = (emoji: string) => {
+		const msg = reactionsDialogMessage
+		setReactionsDialogMessage(null)
+		if (msg) void reactToMessage(messageToGroupMessage(msg, groupId), emoji)
+	}
 
 	const handleVote = (message: Message, optionIds: number[]) => {
 		void vote(message.id, optionIds).then((ok) => {
@@ -180,7 +219,21 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
-			<GroupConversationHeader group={group ?? null} />
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<GroupConversationHeader group={group ?? null} onOpenSearch={search.open} />
+			)}
+
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}
@@ -202,7 +255,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				onUnpin={(m) => void unpinMessage(messageToGroupMessage(m, groupId))}
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(messageToGroupMessage(m, groupId), emoji)}
-				onViewReactors={handleViewReactors}
+				onOpenReactionsDialog={setReactionsDialogMessage}
 				onVote={handleVote}
 				onViewPollResults={(m) => setPollResultsMessageId(m.id)}
 			/>
@@ -217,11 +270,25 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					onSend={handleSend}
 					onTypingChange={emitTyping}
 					replyingTo={replyingTo}
+					voice={{
+						phase: voiceRecorder.phase,
+						durationSecs: voiceRecorder.durationSecs,
+						metering: voiceRecorder.metering,
+						isPlaying: voiceRecorder.isPlaying,
+						onStart: voiceRecorder.start,
+						onPause: voiceRecorder.pause,
+						onResume: voiceRecorder.resume,
+						onDiscard: voiceRecorder.discard,
+						onSend: () => void handleVoiceSend(),
+						onPlayPreview: voiceRecorder.playPreview,
+						onStopPreview: voiceRecorder.stopPreview,
+					}}
 					onCancelReply={() => setReplyingTo(null)}
 					onCreatePoll={() => setCreatePollOpen(true)}
 					onFilesPicked={addFiles}
 					onAttachContact={() => setContactDialogOpen(true)}
 					onAttachLocation={handleAttachLocation}
+					onSchedule={() => setScheduleOpen(true)}
 				/>
 			)}
 
@@ -253,6 +320,18 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				open={contactDialogOpen}
 				onOpenChange={setContactDialogOpen}
 				onSend={(contact) => void sendContact(contact)}
+			/>
+			<ScheduleComposeDialog
+				open={scheduleOpen}
+				onOpenChange={setScheduleOpen}
+				recipients={scheduleRecipients}
+			/>
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
 			/>
 		</div>
 	)

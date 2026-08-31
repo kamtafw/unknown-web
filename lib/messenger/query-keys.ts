@@ -74,6 +74,7 @@ export const statusKeys = {
 
 	feed: () => [...statusKeys.all, "feed"] as const,
 	mine: () => [...statusKeys.all, "mine"] as const,
+	byUser: (userPkid: number) => [...statusKeys.all, "user", userPkid] as const,
 	viewers: (statusId: number) => [...statusKeys.all, "viewers", statusId] as const,
 }
 
@@ -81,3 +82,9 @@ export const statusKeys = {
  * sparingly (e.g. on reconnect reconciliation), not as a routine
  * invalidation target. */
 export const messengerRootKey = ["messenger"] as const
+
+export const scheduleKeys = {
+	all: ["schedules"] as const,
+	list: () => [...scheduleKeys.all, "list"] as const,
+	detail: (id: number) => [...scheduleKeys.all, "detail", id] as const,
+}

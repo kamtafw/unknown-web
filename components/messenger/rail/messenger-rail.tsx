@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Calls, Chats, Groups, Live, Status } from "../icons/messenger-rail-icons"
+import { Chats, Groups, Status } from "../icons/messenger-rail-icons"
 
 interface RailItem {
 	label: string
@@ -17,9 +17,7 @@ interface RailItem {
 const RAIL_ITEMS: RailItem[] = [
 	{ label: "Chat", icon: Chats, href: "/messenger" },
 	{ label: "Groups", icon: Groups, href: "/messenger/groups" },
-	{ label: "Live", icon: Live },
-	{ label: "Status", icon: Status },
-	{ label: "Calls", icon: Calls },
+	{ label: "Status", icon: Status, href: "/messenger/status" },
 ]
 
 /**

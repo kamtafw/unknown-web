@@ -3,7 +3,11 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { toggleActorReaction, totalReactionCount } from "@/lib/messenger/reactions"
+import {
+	isReactionRemoval,
+	toggleActorReaction,
+	totalReactionCount,
+} from "@/lib/messenger/reactions"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { EmojiReactionCount, Message, Pkid, Uuid } from "@/types/messenger"
@@ -91,8 +95,10 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 			// optimistic hide-then-rollback; wait for confirmation.
 			try {
 				await chatApi.deleteMessage(message.id, deleteType)
+				const patch: Partial<Message> =
+					deleteType === "both" ? { is_deleted_for_all: true } : { is_hidden_by_me: true }
 				queryClient.setQueryData(historyKey, (old: unknown) =>
-					patchMessageInHistory(old, message.id, { deleted: true, content: "" }),
+					patchMessageInHistory(old, message.id, { ...patch, content: "" }),
 				)
 			} catch (err) {
 				toast.error(extractMessage(err, "Couldn't delete the message — try again"))
@@ -169,6 +175,7 @@ export function useReactToMessage(peerUuid: Uuid) {
 				queryClient.getQueryData(historyKey),
 				message.id,
 			)
+			const isRemoval = isReactionRemoval(previousCounts, actorId, emoji)
 			const nextCounts = toggleActorReaction(previousCounts, actorId, emoji)
 
 			queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -179,7 +186,11 @@ export function useReactToMessage(peerUuid: Uuid) {
 			)
 
 			try {
-				await chatApi.reactToMessage(message.id, emoji)
+				if (isRemoval) {
+					await chatApi.removeReaction(message.id)
+				} else {
+					await chatApi.reactToMessage(message.id, emoji)
+				}
 				queryClient.invalidateQueries({ queryKey: historyKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>

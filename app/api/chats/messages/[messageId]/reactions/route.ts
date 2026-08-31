@@ -7,12 +7,11 @@ export async function GET(
 	req: NextRequest,
 	{ params }: { params: Promise<{ messageId: string }> },
 ) {
+	const { messageId } = await params
 	const accessToken = await getAccessToken()
 	if (!accessToken) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
-
-	const { messageId } = await params
 
 	return proxyJson(`${DJANGO_API_URL}/chats/messages/${messageId}/reactions`, {
 		headers: {
@@ -20,5 +19,20 @@ export async function GET(
 			"Content-Type": "application/json",
 		},
 		cache: "no-store",
+	})
+}
+
+export async function DELETE(
+	req: NextRequest,
+	{ params }: { params: Promise<{ messageId: string }> },
+) {
+	const { messageId } = await params
+	const accessToken = await getAccessToken()
+	if (!accessToken)
+		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
+
+	return proxyJson(`${DJANGO_API_URL}/chats/messages/${messageId}/reactions`, {
+		method: "DELETE",
+		headers: { Authorization: `Bearer ${accessToken}` },
 	})
 }

@@ -2,7 +2,7 @@
 
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { Pkid, Uuid } from "@/types/messenger"
-import { ArrowLeft, MoreVertical } from "lucide-react"
+import { ArrowLeft, MoreVertical, Search } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
 
@@ -24,9 +24,15 @@ interface ConversationHeaderProps {
 	peerUuid: Uuid
 	peerPkid: Pkid | null
 	onOpenProfile: () => void
+	onOpenSearch: () => void
 }
 
-export function ConversationHeader({ peer, peerPkid, onOpenProfile }: ConversationHeaderProps) {
+export function ConversationHeader({
+	peer,
+	peerPkid,
+	onOpenProfile,
+	onOpenSearch,
+}: ConversationHeaderProps) {
 	const name = peer ? getDisplayName(peer) : "Conversation"
 	// A brand-new, message-less conversation opened from search has no
 	// recoverable pkid yet (see usePeerProfile's documented gap) — profile
@@ -61,6 +67,14 @@ export function ConversationHeader({ peer, peerPkid, onOpenProfile }: Conversati
 			</button>
 
 			<div className="flex items-center gap-0.5 shrink-0">
+				<button
+					onClick={onOpenSearch}
+					title="Search in chat"
+					className="text-muted-foreground hover:bg-accent rounded-full p-2 transition-colors"
+				>
+					<Search size={18} />
+				</button>
+
 				<button
 					onClick={() => {}}
 					title="More options"
