@@ -30,6 +30,7 @@ import { MediaComposerDialog } from "../conversation/media-composer-dialog"
 import { MessageSearchBar } from "../conversation/message-search-bar"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
 import { PollResultsDialog } from "../conversation/poll-results-dialog"
+import { ReactionsDialog } from "../conversation/reactions-dialog"
 import { ScheduleComposeDialog } from "../schedule/schedule-compose-dialog"
 import { CreatePollDialog } from "./create-poll-dialog"
 import { GroupConversationHeader } from "./group-conversation-header"
@@ -80,6 +81,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const [createPollOpen, setCreatePollOpen] = useState(false)
 	const [pollResultsMessageId, setPollResultsMessageId] = useState<number | null>(null)
 	const [contactDialogOpen, setContactDialogOpen] = useState(false)
+	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
 
 	const [scheduleOpen, setScheduleOpen] = useState(false)
 	const scheduleRecipients = group
@@ -185,16 +187,29 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		}
 	}
 
-	const handleViewReactors = useCallback(
-		async (message: Message, emoji: string) => {
-			const entry = (message.emoji_reaction_counts ?? []).find((c) => c.emoji === emoji)
-			return (entry?.actor_ids ?? []).map((pkid) => {
+	const handleFetchAllReactors = useCallback(async () => {
+		if (!reactionsDialogMessage) return []
+		const counts = reactionsDialogMessage.emoji_reaction_counts ?? []
+		const entries: { pkid: string; name: string; avatarUrl?: string | null; emoji: string }[] = []
+		for (const c of counts) {
+			for (const pkid of c.actor_ids ?? []) {
 				const member = members.find((m) => String(m.pkid) === pkid)
-				return member ? getDisplayName(member) : `User #${pkid}`
-			})
-		},
-		[members],
-	)
+				entries.push({
+					pkid,
+					name: member ? getDisplayName(member) : `User #${pkid}`,
+					avatarUrl: member?.profile_photo ?? null,
+					emoji: c.emoji,
+				})
+			}
+		}
+		return entries
+	}, [reactionsDialogMessage, members])
+
+	const handleRemoveOwnReaction = (emoji: string) => {
+		const msg = reactionsDialogMessage
+		setReactionsDialogMessage(null)
+		if (msg) void reactToMessage(messageToGroupMessage(msg, groupId), emoji)
+	}
 
 	const handleVote = (message: Message, optionIds: number[]) => {
 		void vote(message.id, optionIds).then((ok) => {
@@ -240,7 +255,7 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				onUnpin={(m) => void unpinMessage(messageToGroupMessage(m, groupId))}
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(messageToGroupMessage(m, groupId), emoji)}
-				onViewReactors={handleViewReactors}
+				onOpenReactionsDialog={setReactionsDialogMessage}
 				onVote={handleVote}
 				onViewPollResults={(m) => setPollResultsMessageId(m.id)}
 			/>
@@ -310,6 +325,13 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				open={scheduleOpen}
 				onOpenChange={setScheduleOpen}
 				recipients={scheduleRecipients}
+			/>
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
 			/>
 		</div>
 	)

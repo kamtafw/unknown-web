@@ -3,7 +3,11 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { toggleActorReaction, totalReactionCount } from "@/lib/messenger/reactions"
+import {
+	isReactionRemoval,
+	toggleActorReaction,
+	totalReactionCount,
+} from "@/lib/messenger/reactions"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { EmojiReactionCount, Message, Pkid, Uuid } from "@/types/messenger"
@@ -171,6 +175,7 @@ export function useReactToMessage(peerUuid: Uuid) {
 				queryClient.getQueryData(historyKey),
 				message.id,
 			)
+			const isRemoval = isReactionRemoval(previousCounts, actorId, emoji)
 			const nextCounts = toggleActorReaction(previousCounts, actorId, emoji)
 
 			queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -181,7 +186,11 @@ export function useReactToMessage(peerUuid: Uuid) {
 			)
 
 			try {
-				await chatApi.reactToMessage(message.id, emoji)
+				if (isRemoval) {
+					await chatApi.removeReaction(message.id)
+				} else {
+					await chatApi.reactToMessage(message.id, emoji)
+				}
 				queryClient.invalidateQueries({ queryKey: historyKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>

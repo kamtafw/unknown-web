@@ -25,6 +25,7 @@ import { MediaComposerDialog } from "./media-composer-dialog"
 import { MessageList, MessageListHandle } from "./message-list"
 import { MessageSearchBar } from "./message-search-bar"
 import { PinnedMessageBanner } from "./pinned-message-banner"
+import { ReactionsDialog } from "./reactions-dialog"
 
 interface ConversationViewProps {
 	uuid: Uuid
@@ -86,11 +87,12 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
+	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 
 	const pinnedMessages = useMemo(
-		() => messages.filter((m) => m.is_pinned && (!m.is_deleted_for_all || !m.is_hidden_by_me)),
+		() => messages.filter((m) => m.is_pinned && !m.is_deleted_for_all && !m.is_hidden_by_me),
 		[messages],
 	)
 
@@ -197,10 +199,22 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		}
 	}
 
-	const handleViewReactors = useCallback(async (message: Message, emoji: string) => {
-		const reactions = await chatApi.listMessageReactions(message.id)
-		return reactions.filter((r) => r.emoji === emoji).map((r) => getDisplayName(r.user))
-	}, [])
+	const handleFetchAllReactors = useCallback(async () => {
+		if (!reactionsDialogMessage) return []
+		const reactions = await chatApi.listMessageReactions(reactionsDialogMessage.id)
+		return reactions.map((r) => ({
+			pkid: String(r.user.pkid),
+			name: getDisplayName(r.user),
+			avatarUrl: r.user.profile_photo,
+			emoji: r.emoji,
+		}))
+	}, [reactionsDialogMessage])
+
+	const handleRemoveOwnReaction = (emoji: string) => {
+		const msg = reactionsDialogMessage
+		setReactionsDialogMessage(null)
+		if (msg) void reactToMessage(msg, emoji)
+	}
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
@@ -246,7 +260,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onUnpin={(m) => void unpinMessage(m)}
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(m, emoji)}
-				onViewReactors={handleViewReactors}
+				onOpenReactionsDialog={setReactionsDialogMessage}
 			/>
 			<Composer
 				onSend={handleSend}
@@ -294,6 +308,14 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				open={contactDialogOpen}
 				onOpenChange={setContactDialogOpen}
 				onSend={(contact) => void sendContact(contact)}
+			/>
+
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
 			/>
 		</div>
 	)

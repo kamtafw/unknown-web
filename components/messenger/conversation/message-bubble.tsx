@@ -11,6 +11,7 @@ import {
 	CheckCheck,
 	Clock,
 	FileText,
+	Forward,
 	Image as ImageIcon,
 	MapPin,
 	Phone,
@@ -37,7 +38,7 @@ interface MessageBubbleProps {
 	onUnpin?: (message: Message) => void
 	onDelete?: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
-	onViewReactors?: (message: Message, emoji: string) => Promise<string[]>
+	onOpenReactionsDialog?: (message: Message) => void
 	onVote?: (message: Message, optionIds: number[]) => void
 	onViewPollResults?: (message: Message) => void
 }
@@ -81,6 +82,8 @@ function MessageContent({
 	onVote?: (message: Message, optionIds: number[]) => void
 	onViewPollResults?: (message: Message) => void
 }) {
+	if (message.is_hidden_by_me) return null
+
 	if (message.is_deleted_for_all) {
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
 	}
@@ -278,16 +281,19 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		onUnpin,
 		onDelete,
 		onReact,
-		onViewReactors,
+		onOpenReactionsDialog,
 		onVote,
 		onViewPollResults,
 	},
 	ref,
 ) {
+	const forwarded = Boolean(message.forwarded_from)
 	const failed = message.status === "failed"
 	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
 	const pending = isOptimisticMessage(message) && !failed
 	const showActions = !pending && !deleted && onReply && onForward && onPin && onUnpin && onDelete
+
+	if (message.is_hidden_by_me) return null
 
 	return (
 		<div
@@ -329,6 +335,13 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 						failed && "border border-destructive",
 					)}
 				>
+					{forwarded && !deleted && (
+						<div className="flex align-top p-0.5 gap-0.5 text-xs text-zinc-500 italic">
+							<Forward size={16} />
+							<p className="">Forwarded</p>
+						</div>
+					)}
+
 					{message.reply_to && !deleted && (
 						<div
 							className={cn(
@@ -353,11 +366,11 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 			{showActions && onReact && <ReactionPicker onReact={(emoji) => onReact!(message, emoji)} />}
 
-			{onViewReactors && (
+			{onOpenReactionsDialog && (
 				<ReactionsRow
 					reactions={message.emoji_reaction_counts}
 					isOwn={isOwn}
-					onFetchReactors={(emoji) => onViewReactors(message, emoji)}
+					onOpenDialog={() => onOpenReactionsDialog(message)}
 				/>
 			)}
 

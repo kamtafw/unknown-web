@@ -276,6 +276,9 @@ export const chatApi = {
 			.get<ApiResponse<MessageReaction[]>>(`/api/chats/messages/${messageId}/reactions`)
 			.then((r) => r.data.data),
 
+	removeReaction: (messageId: number) =>
+		apiClient.delete(`/api/chats/messages/${messageId}/reactions`),
+
 	// Polls
 	votePoll: (messageId: number, optionIds: number[]) =>
 		apiClient.post("/api/chats/messages/polls/vote", {

@@ -3,7 +3,11 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys, groupKeys } from "@/lib/messenger/query-keys"
-import { toggleActorReaction, totalReactionCount } from "@/lib/messenger/reactions"
+import {
+	isReactionRemoval,
+	toggleActorReaction,
+	totalReactionCount,
+} from "@/lib/messenger/reactions"
 import { GROUP_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
 import { toast } from "@/lib/toast"
@@ -120,15 +124,12 @@ export function useGroupMessageActions(groupId: number) {
 		[queryClient],
 	)
 
-	/** No invalidate on success — deliberate, mirrors mobile's
-	 * useReactToGroupMessage: the `group:reaction` broadcast is the source
-	 * of truth for everyone else, and our own echo is skipped by pkid in
-	 * use-group-socket.ts, so the optimistic patch here is already final. */
 	const reactToMessage = useCallback(
 		async (message: GroupMessage, emoji: string) => {
 			if (!currentUser) return
 			const actorId = String(currentUser.pkid)
 			const snapshot = message.emoji_reaction_counts ?? []
+			const isRemoval = isReactionRemoval(snapshot, actorId, emoji)
 
 			queryClient.setQueryData<HistoryData>(historyKey, (old) =>
 				patchGroupMessageReaction(old, message.id, (counts) =>
@@ -137,7 +138,11 @@ export function useGroupMessageActions(groupId: number) {
 			)
 
 			try {
-				await chatApi.reactToMessage(message.id, emoji)
+				if (isRemoval) {
+					await chatApi.removeReaction(message.id)
+				} else {
+					await chatApi.reactToMessage(message.id, emoji)
+				}
 			} catch (err) {
 				queryClient.setQueryData<HistoryData>(historyKey, (old) =>
 					patchGroupMessageReaction(old, message.id, () => snapshot),
