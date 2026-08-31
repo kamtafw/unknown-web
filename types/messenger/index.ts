@@ -1,3 +1,4 @@
+export * from "./archive"
 export * from "./chat"
 export * from "./group"
 export * from "./identity"

@@ -16,7 +16,6 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { MediaViewerProvider } from "../media/media-viewer-context"
 import { Composer } from "./composer"
 import { ContactComposerDialog } from "./contact-composer-dialog"
 import { ConversationHeader } from "./conversation-header"
@@ -218,108 +217,106 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 	}
 
 	return (
-		<MediaViewerProvider>
-			<div className="flex-1 flex flex-col h-full min-w-0">
-				{search.isOpen ? (
-					<MessageSearchBar
-						value={search.query}
-						onChangeText={search.onQueryChange}
-						onSubmit={search.onSubmit}
-						onClose={search.close}
-						onPrev={search.onPrev}
-						onNext={search.onNext}
-						resultCount={search.resultCount}
-						activeIndex={search.activeIndex}
-					/>
-				) : (
-					<ConversationHeader
-						peer={peer}
-						peerUuid={uuid}
-						peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
-						onOpenProfile={onOpenProfile}
-						onOpenSearch={search.open}
-					/>
-				)}
+		<div className="flex-1 flex flex-col h-full min-w-0">
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<ConversationHeader
+					peer={peer}
+					peerUuid={uuid}
+					peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
+					onOpenProfile={onOpenProfile}
+					onOpenSearch={search.open}
+				/>
+			)}
 
-				<PinnedMessageBanner
-					pinnedMessages={pinnedMessages}
-					onJumpToMessage={handleJumpToMessage}
-					onUnpin={(m) => void unpinMessage(m)}
-				/>
-				<MessageList
-					ref={messageListRef}
-					messages={messages}
-					currentUserUuid={currentUser?.id ?? ""}
-					isLoading={isLoading}
-					hasOlder={!!hasNextPage}
-					isFetchingOlder={isFetchingNextPage}
-					onLoadOlder={() => fetchNextPage()}
-					remoteTyping={remoteTyping}
-					onRetry={handleRetry}
-					onReply={setReplyingTo}
-					onForward={setForwardTarget}
-					onPin={(m) => void pinMessage(m)}
-					onUnpin={(m) => void unpinMessage(m)}
-					onDelete={setDeleteTarget}
-					onReact={(m, emoji) => void reactToMessage(m, emoji)}
-					onOpenReactionsDialog={setReactionsDialogMessage}
-				/>
-				<Composer
-					onSend={handleSend}
-					onTypingChange={emitTyping}
-					replyingTo={replyingTo}
-					voice={{
-						phase: voiceRecorder.phase,
-						durationSecs: voiceRecorder.durationSecs,
-						metering: voiceRecorder.metering,
-						isPlaying: voiceRecorder.isPlaying,
-						onStart: voiceRecorder.start,
-						onPause: voiceRecorder.pause,
-						onResume: voiceRecorder.resume,
-						onDiscard: voiceRecorder.discard,
-						onSend: () => void handleVoiceSend(),
-						onPlayPreview: voiceRecorder.playPreview,
-						onStopPreview: voiceRecorder.stopPreview,
-					}}
-					onCancelReply={() => setReplyingTo(null)}
-					onFilesPicked={addFiles}
-					onAttachContact={() => setContactDialogOpen(true)}
-					onAttachLocation={handleAttachLocation}
-				/>
+			<PinnedMessageBanner
+				pinnedMessages={pinnedMessages}
+				onJumpToMessage={handleJumpToMessage}
+				onUnpin={(m) => void unpinMessage(m)}
+			/>
+			<MessageList
+				ref={messageListRef}
+				messages={messages}
+				currentUserUuid={currentUser?.id ?? ""}
+				isLoading={isLoading}
+				hasOlder={!!hasNextPage}
+				isFetchingOlder={isFetchingNextPage}
+				onLoadOlder={() => fetchNextPage()}
+				remoteTyping={remoteTyping}
+				onRetry={handleRetry}
+				onReply={setReplyingTo}
+				onForward={setForwardTarget}
+				onPin={(m) => void pinMessage(m)}
+				onUnpin={(m) => void unpinMessage(m)}
+				onDelete={setDeleteTarget}
+				onReact={(m, emoji) => void reactToMessage(m, emoji)}
+				onOpenReactionsDialog={setReactionsDialogMessage}
+			/>
+			<Composer
+				onSend={handleSend}
+				onTypingChange={emitTyping}
+				replyingTo={replyingTo}
+				voice={{
+					phase: voiceRecorder.phase,
+					durationSecs: voiceRecorder.durationSecs,
+					metering: voiceRecorder.metering,
+					isPlaying: voiceRecorder.isPlaying,
+					onStart: voiceRecorder.start,
+					onPause: voiceRecorder.pause,
+					onResume: voiceRecorder.resume,
+					onDiscard: voiceRecorder.discard,
+					onSend: () => void handleVoiceSend(),
+					onPlayPreview: voiceRecorder.playPreview,
+					onStopPreview: voiceRecorder.stopPreview,
+				}}
+				onCancelReply={() => setReplyingTo(null)}
+				onFilesPicked={addFiles}
+				onAttachContact={() => setContactDialogOpen(true)}
+				onAttachLocation={handleAttachLocation}
+			/>
 
-				<ForwardDialog
-					open={!!forwardTarget}
-					onOpenChange={(open) => !open && setForwardTarget(null)}
-					message={forwardTarget}
-					onForward={handleForwardConfirm}
-				/>
-				<DeleteMessageDialog
-					open={!!deleteTarget}
-					onOpenChange={(open) => !open && setDeleteTarget(null)}
-					onConfirm={handleDeleteConfirm}
-				/>
-				<MediaComposerDialog
-					attachments={attachments}
-					onRemove={removeAttachment}
-					onRetry={retryUpload}
-					onCancel={resetAttachments}
-					onSend={handleSendMedia}
-					canSend={readyToSend}
-				/>
-				<ContactComposerDialog
-					open={contactDialogOpen}
-					onOpenChange={setContactDialogOpen}
-					onSend={(contact) => void sendContact(contact)}
-				/>
+			<ForwardDialog
+				open={!!forwardTarget}
+				onOpenChange={(open) => !open && setForwardTarget(null)}
+				message={forwardTarget}
+				onForward={handleForwardConfirm}
+			/>
+			<DeleteMessageDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				onConfirm={handleDeleteConfirm}
+			/>
+			<MediaComposerDialog
+				attachments={attachments}
+				onRemove={removeAttachment}
+				onRetry={retryUpload}
+				onCancel={resetAttachments}
+				onSend={handleSendMedia}
+				canSend={readyToSend}
+			/>
+			<ContactComposerDialog
+				open={contactDialogOpen}
+				onOpenChange={setContactDialogOpen}
+				onSend={(contact) => void sendContact(contact)}
+			/>
 
-				<ReactionsDialog
-					open={!!reactionsDialogMessage}
-					onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
-					currentUserPkid={String(currentUser?.pkid ?? "")}
-					fetchReactors={handleFetchAllReactors}
-					onRemoveOwnReaction={handleRemoveOwnReaction}
-				/>
-			</div>
-		</MediaViewerProvider>
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
+			/>
+		</div>
 	)
 }

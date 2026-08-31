@@ -10,6 +10,7 @@
 
 import { ApiResponse } from "@/types/api"
 import {
+	ArchiveListData,
 	ChatListFilter,
 	ChatListItem,
 	CreateMessageSchedulePayload,
@@ -131,6 +132,11 @@ export const chatApi = {
 			.get<ApiResponse<ChatHistoryData>>(`/api/chats/history/${userUuid}${qs ? `?${qs}` : ""}`)
 			.then((r) => r.data.data)
 	},
+
+	listArchived: (page = 1, limit = 20) =>
+		apiClient
+			.get<ApiResponse<ArchiveListData>>(`/api/chats/archive?page=${page}&limit=${limit}`)
+			.then((r) => r.data.data),
 
 	send: (payload: SendMessagePayload) =>
 		apiClient.post<ApiResponse<Message>>("/api/chats/messages", payload).then((r) => r.data.data),

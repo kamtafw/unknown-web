@@ -8,9 +8,9 @@ import { useChatList } from "@/hooks/messenger/use-chat-list"
 import { useCustomListMembers } from "@/hooks/messenger/use-custom-lists"
 import { useFavorites } from "@/hooks/messenger/use-favorites"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { toast } from "@/lib/toast"
 import type { ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
 import { CheckSquare, List, MessageSquarePlus, Search } from "lucide-react"
+import Link from "next/link"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { EmptyFavorites } from "../icons/chat-list-icons"
@@ -156,15 +156,15 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 			<ScrollArea className="flex-1">
 				<div className="w-0 min-w-full">
 					{!isFavoritesTab && (
-						<button
-							onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
+						<Link
+							href="/messenger/archive"
 							className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
 						>
 							<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
 								<Archive />
 							</span>
 							<span className="text-sm font-medium text-muted-foreground">Archive</span>
-						</button>
+						</Link>
 					)}
 
 					{isLoading ? (
