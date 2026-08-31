@@ -24,7 +24,7 @@ interface MessageListProps {
 	onDelete: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
 	onOpenReactionsDialog?: (message: Message) => void
-	onVote?: (message: Message, optionIds: number[]) => void
+	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
 }
 

@@ -7,7 +7,7 @@ import { useState } from "react"
 
 interface PollBubbleProps {
 	message: Message
-	onVote?: (optionIds: number[]) => void
+	onVote?: (optionId: number) => void
 	onViewResults?: () => void
 }
 
@@ -35,7 +35,7 @@ export function PollBubble({ message, onVote, onViewResults }: PollBubbleProps) 
 				if (!poll.isMultiple) next.clear()
 				next.add(optionId)
 			}
-			onVote?.(Array.from(next))
+			onVote?.(optionId)
 			return next
 		})
 	}

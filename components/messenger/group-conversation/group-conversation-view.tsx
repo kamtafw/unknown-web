@@ -31,7 +31,6 @@ import { MessageSearchBar } from "../conversation/message-search-bar"
 import { PinnedMessageBanner } from "../conversation/pinned-message-banner"
 import { PollResultsDialog } from "../conversation/poll-results-dialog"
 import { ReactionsDialog } from "../conversation/reactions-dialog"
-import { ScheduleComposeDialog } from "../schedule/schedule-compose-dialog"
 import { CreatePollDialog } from "./create-poll-dialog"
 import { GroupConversationHeader } from "./group-conversation-header"
 
@@ -82,11 +81,6 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 	const [pollResultsMessageId, setPollResultsMessageId] = useState<number | null>(null)
 	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
-
-	const [scheduleOpen, setScheduleOpen] = useState(false)
-	const scheduleRecipients = group
-		? [{ type: "group" as const, id: groupId, name: group.name, photo: group.icon_url || null }]
-		: []
 
 	const messageListRef = useRef<MessageListHandle>(null)
 	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
@@ -211,8 +205,8 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 		if (msg) void reactToMessage(messageToGroupMessage(msg, groupId), emoji)
 	}
 
-	const handleVote = (message: Message, optionIds: number[]) => {
-		void vote(message.id, optionIds).then((ok) => {
+	const handleVote = (message: Message, optionId: number) => {
+		void vote(message.id, optionId).then((ok) => {
 			if (ok) queryClient.invalidateQueries({ queryKey: groupKeys.history(groupId) })
 		})
 	}
@@ -288,7 +282,6 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					onFilesPicked={addFiles}
 					onAttachContact={() => setContactDialogOpen(true)}
 					onAttachLocation={handleAttachLocation}
-					onSchedule={() => setScheduleOpen(true)}
 				/>
 			)}
 
@@ -320,11 +313,6 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 				open={contactDialogOpen}
 				onOpenChange={setContactDialogOpen}
 				onSend={(contact) => void sendContact(contact)}
-			/>
-			<ScheduleComposeDialog
-				open={scheduleOpen}
-				onOpenChange={setScheduleOpen}
-				recipients={scheduleRecipients}
 			/>
 			<ReactionsDialog
 				open={!!reactionsDialogMessage}

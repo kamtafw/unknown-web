@@ -280,10 +280,10 @@ export const chatApi = {
 		apiClient.delete(`/api/chats/messages/${messageId}/reactions`),
 
 	// Polls
-	votePoll: (messageId: number, optionIds: number[]) =>
+	votePoll: (messageId: number, optionId: number) =>
 		apiClient.post("/api/chats/messages/polls/vote", {
 			message_id: messageId,
-			option_ids: optionIds,
+			option_id: optionId,
 		}),
 
 	getPollResults: (messageId: number) =>

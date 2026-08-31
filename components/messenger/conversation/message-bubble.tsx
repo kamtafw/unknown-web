@@ -40,7 +40,7 @@ interface MessageBubbleProps {
 	onDelete?: (message: Message) => void
 	onReact?: (message: Message, emoji: string) => void
 	onOpenReactionsDialog?: (message: Message) => void
-	onVote?: (message: Message, optionIds: number[]) => void
+	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
 }
 
@@ -80,7 +80,7 @@ function MessageContent({
 	onViewPollResults,
 }: {
 	message: Message
-	onVote?: (message: Message, optionIds: number[]) => void
+	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
 }) {
 	console.log("message_type:", message.message_type)
@@ -111,7 +111,7 @@ function MessageContent({
 			return resolvePoll(message) ? (
 				<PollBubble
 					message={message}
-					onVote={onVote ? (optionIds) => onVote(message, optionIds) : undefined}
+					onVote={onVote ? (optionId) => onVote(message, optionId) : undefined}
 					onViewResults={onViewPollResults ? () => onViewPollResults(message) : undefined}
 				/>
 			) : (

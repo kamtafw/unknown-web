@@ -17,9 +17,9 @@ import { useCallback } from "react"
  * update on the next full fetch) — see "no realtime results" note.
  */
 export function useVotePoll() {
-	return useCallback(async (messageId: number, optionIds: number[]) => {
+	return useCallback(async (messageId: number, optionId: number) => {
 		try {
-			await chatApi.votePoll(messageId, optionIds)
+			await chatApi.votePoll(messageId, optionId)
 			return true
 		} catch (err) {
 			toast.error(extractMessage(err, "Couldn't submit your vote — try again"))
