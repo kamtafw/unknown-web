@@ -29,8 +29,6 @@ interface MessageListProps {
 }
 
 export interface MessageListHandle {
-	/** Returns false and no-ops if the message isn't in the currently loaded
-	 * window — see MESSENGER.md known limitations; no auto-pagination in M2. */
 	scrollToMessage: (messageId: number) => boolean
 }
 
@@ -58,61 +56,80 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 ) {
 	const messageNodeRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 	const [highlightedId, setHighlightedId] = useState<number | null>(null)
+
 	const scrollRef = useRef<HTMLDivElement>(null)
 	const topSentinelRef = useRef<HTMLDivElement>(null)
-	const messageById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
+
+	const messageById = useMemo(
+		() => new Map(messages.map((message) => [message.id, message])),
+		[messages],
+	)
+
 	const dayGroups = useMemo(() => groupMessagesByDay(messages), [messages])
 
 	useImperativeHandle(ref, () => ({
 		scrollToMessage: (messageId) => {
 			const node = messageNodeRefs.current.get(messageId)
+
 			if (!node) return false
-			node.scrollIntoView({ behavior: "smooth", block: "center" })
+
+			node.scrollIntoView({
+				behavior: "smooth",
+				block: "center",
+			})
+
 			setHighlightedId(messageId)
-			setTimeout(
-				() => setHighlightedId((current) => (current === messageId ? null : current)),
-				1500,
-			)
+
+			setTimeout(() => {
+				setHighlightedId((current) => (current === messageId ? null : current))
+			}, 1500)
+
 			return true
 		},
 	}))
 
-	// Load older messages when the top sentinel scrolls into view.
 	useEffect(() => {
 		const sentinel = topSentinelRef.current
+
 		if (!sentinel || !hasOlder) return
 
 		const observer = new IntersectionObserver(
 			(entries) => {
-				if (entries[0]?.isIntersecting) onLoadOlder()
+				if (entries[0]?.isIntersecting) {
+					onLoadOlder()
+				}
 			},
-			{ root: scrollRef.current, threshold: 0.1 },
+			{
+				root: scrollRef.current,
+				threshold: 0.1,
+			},
 		)
+
 		observer.observe(sentinel)
+
 		return () => observer.disconnect()
 	}, [hasOlder, onLoadOlder])
 
-	// Simplified for M1: always follow the bottom on new messages. A user
-	// scrolled up reading older history getting pulled back down on a new
-	// incoming message is a known trade-off, not an oversight — proper
-	// "stay put unless already near bottom" scroll anchoring is a
-	// reasonable hardening item, not core M1 scope.
 	const lastMessageId = messages[messages.length - 1]?.id
+
 	useEffect(() => {
-		scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+		scrollRef.current?.scrollTo({
+			top: scrollRef.current.scrollHeight,
+			behavior: "smooth",
+		})
 	}, [lastMessageId])
 
 	if (isLoading) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
-				<Loader2 size={22} className="animate-spin text-muted-foreground" />
+			<div className="flex flex-1 items-center justify-center">
+				<Loader2 className="size-5.5 animate-spin text-muted-foreground" />
 			</div>
 		)
 	}
 
 	if (messages.length === 0) {
 		return (
-			<div className="flex-1 flex items-center justify-center px-8 text-center">
+			<div className="flex flex-1 items-center justify-center px-8 text-center">
 				<p className="text-sm text-muted-foreground">
 					No messages yet. Say hello to start the conversation.
 				</p>
@@ -123,62 +140,68 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 	return (
 		<div
 			ref={scrollRef}
-			className="messenger-wallpaper flex-1 overflow-y-auto px-4 py-4 sm:px-8 sm:py-5"
+			className="messenger-wallpaper flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5 lg:px-8"
 		>
-			<div ref={topSentinelRef} className="h-1" />
+			<div ref={topSentinelRef} className="h-1" aria-hidden="true" />
+
 			{isFetchingOlder && (
 				<div className="flex justify-center py-2">
-					<Loader2 size={16} className="animate-spin text-muted-foreground" />
+					<Loader2 className="size-4 animate-spin text-muted-foreground" />
 				</div>
 			)}
 
-			{dayGroups.map((group) => (
-				<div key={group.label}>
-					<DateSeparator label={group.label} />
-					{group.items.map((message, i) => {
-						const prev = group.items[i - 1]
+			<div className="mx-auto w-full max-w-5xl">
+				{dayGroups.map((group) => (
+					<div key={group.label}>
+						<DateSeparator label={group.label} />
 
-						const sameSender = Boolean(prev && prev.sender.id === message.sender.id)
+						<div className="space-y-0">
+							{group.items.map((message, index) => {
+								const previousMessage = group.items[index - 1]
 
-						const showSender = !sameSender
+								const sameSender = Boolean(
+									previousMessage && previousMessage.sender.id === message.sender.id,
+								)
 
-						const repliedMessage = message.reply_to
-							? messageById.get(message.reply_to.id)
-							: undefined
+								const repliedMessage = message.reply_to
+									? messageById.get(message.reply_to.id)
+									: undefined
 
-						return (
-							<MessageBubble
-								key={message.id}
-								message={message}
-								isOwn={message.sender.id === currentUserUuid}
-								showSender={showSender}
-								sameSenderAsPrevious={sameSender}
-								repliedMessage={repliedMessage}
-								isHighlighted={highlightedId === message.id}
-								ref={(node: HTMLDivElement | null) => {
-									if (node) {
-										messageNodeRefs.current.set(message.id, node)
-									} else {
-										messageNodeRefs.current.delete(message.id)
-									}
-								}}
-								onRetry={onRetry}
-								onReply={onReply}
-								onForward={onForward}
-								onPin={onPin}
-								onUnpin={onUnpin}
-								onDelete={onDelete}
-								onReact={onReact}
-								onOpenReactionsDialog={onOpenReactionsDialog}
-								onVote={onVote}
-								onViewPollResults={onViewPollResults}
-							/>
-						)
-					})}
-				</div>
-			))}
+								return (
+									<MessageBubble
+										key={message.id}
+										message={message}
+										isOwn={message.sender.id === currentUserUuid}
+										showSender={!sameSender}
+										sameSenderAsPrevious={sameSender}
+										repliedMessage={repliedMessage}
+										isHighlighted={highlightedId === message.id}
+										ref={(node) => {
+											if (node) {
+												messageNodeRefs.current.set(message.id, node)
+											} else {
+												messageNodeRefs.current.delete(message.id)
+											}
+										}}
+										onRetry={onRetry}
+										onReply={onReply}
+										onForward={onForward}
+										onPin={onPin}
+										onUnpin={onUnpin}
+										onDelete={onDelete}
+										onReact={onReact}
+										onOpenReactionsDialog={onOpenReactionsDialog}
+										onVote={onVote}
+										onViewPollResults={onViewPollResults}
+									/>
+								)
+							})}
+						</div>
+					</div>
+				))}
 
-			{remoteTyping && <TypingIndicator />}
+				{remoteTyping && <TypingIndicator />}
+			</div>
 		</div>
 	)
 })

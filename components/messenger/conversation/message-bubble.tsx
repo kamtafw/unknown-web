@@ -193,6 +193,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	const failed = message.status === "failed"
 	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
 	const pending = isOptimisticMessage(message) && !failed
+
 	const showActions = !pending && !deleted && onReply && onForward && onPin && onUnpin && onDelete
 
 	if (message.is_hidden_by_me) return null
@@ -203,146 +204,177 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 			className={cn(
 				"group relative flex w-full",
 				isOwn ? "justify-end" : "justify-start",
-				isHighlighted && "rounded-xl bg-primary/10",
+				isHighlighted && "rounded-xl bg-primary/5 px-1 py-1 -mx-1",
 				sameSenderAsPrevious ? "mb-1" : "mb-3",
 			)}
 		>
 			<div
 				className={cn(
-					"relative flex max-w-[88%] items-end gap-1",
-					"sm:max-w-[78%] lg:max-w-[68%]",
+					"relative flex min-w-0 max-w-[92%] items-end",
+					"sm:max-w-[82%] lg:max-w-[72%]",
 					isOwn ? "flex-row-reverse" : "flex-row",
+					!isOwn && "gap-2",
 				)}
 			>
-				{showActions && (
+				<div className="relative min-w-0">
+					{showActions && (
+						<div
+							className={cn(
+								"absolute top-1/2 z-20 -translate-y-1/2",
+								"opacity-0 transition-opacity group-hover:opacity-100",
+								isOwn ? "-left-10" : "-right-10",
+							)}
+						>
+							<MessageActionMenu
+								message={message}
+								isOwn={isOwn}
+								align={isOwn ? "end" : "start"}
+								onReply={() => onReply?.(message)}
+								onForward={() => onForward?.(message)}
+								onPin={() => onPin?.(message)}
+								onUnpin={() => onUnpin?.(message)}
+								onDelete={() => onDelete?.(message)}
+							/>
+						</div>
+					)}
+
+					{/* Bubble Container */}
 					<div
 						className={cn(
-							"absolute top-1/2 z-10 -translate-y-1/2",
-							"opacity-0 transition-opacity group-hover:opacity-100",
-							isOwn ? "-left-10" : "-right-10",
+							"relative min-w-0 overflow-visible",
+							"px-3.5 py-2.5",
+							"shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+
+							isOwn
+								? [
+										"bg-primary/30 text-foreground",
+										sameSenderAsPrevious ? "rounded-[14px]" : "rounded-[14px] rounded-tr-lg",
+									]
+								: [
+										"bg-accent/30 text-foreground",
+										sameSenderAsPrevious ? "rounded-[14px]" : "rounded-[14px] rounded-tl-lg",
+									],
+
+							pending && "opacity-60",
+							failed && "border border-destructive",
 						)}
 					>
-						<MessageActionMenu
-							message={message}
-							isOwn={isOwn}
-							align={isOwn ? "end" : "start"}
-							onReply={() => onReply!(message)}
-							onForward={() => onForward!(message)}
-							onPin={() => onPin!(message)}
-							onUnpin={() => onUnpin!(message)}
-							onDelete={() => onDelete!(message)}
-						/>
-					</div>
-				)}
-
-				<div
-					className={cn(
-						"relative min-w-0 overflow-hidden",
-						"rounded-[12px] px-3 py-2",
-						isOwn
-							? ["bg-[#dfe8fa]", "text-foreground", "rounded-tr-lg"]
-							: [
-									"bg-white",
-									"text-foreground",
-									"rounded-tl-lg",
-									"shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
-								],
-						pending && "opacity-60",
-						failed && "border border-destructive",
-					)}
-				>
-					{forwarded && !deleted && (
-						<div
-							className={cn(
-								"mb-1 flex items-center gap-1 text-[11px] italic",
-								isOwn ? "text-primary/70" : "text-muted-foreground",
-							)}
-						>
-							<Forward size={13} />
-							<span>Forwarded</span>
-						</div>
-					)}
-
-					{message.reply_to && !deleted && (
-						<div
-							className={cn(
-								"mb-1.5 overflow-hidden rounded-md border-l-[3px] px-2.5 py-1.5",
-								isOwn ? "border-primary bg-white/35" : "border-primary/70 bg-muted/70",
-							)}
-						>
-							<p
+						{/* Pure Geometric Tail (Using absolute element matching background colors) */}
+						{!sameSenderAsPrevious && (
+							<div
+								aria-hidden="true"
+								style={{
+									clipPath: isOwn
+										? "polygon(0 0, 0 100%, 100% 0)"
+										: "polygon(0 0, 100% 100%, 100% 0)",
+								}}
 								className={cn(
-									"mb-0.5 text-[11px] font-semibold",
-									isOwn ? "text-primary" : "text-primary",
+									"absolute top-0 w-2 h-2.5",
+									isOwn
+										? "left-full bg-primary/30"
+										: "right-full bg-accent/30 drop-shadow-[0_1px_1px_rgba(0,0,0,0.03)]",
+								)}
+							/>
+						)}
+
+						{/* Sender name */}
+						{showSender && !isOwn && (
+							<p className="mb-1 text-[12px] font-semibold leading-4 text-primary">
+								{message.sender.first_name ?? message.sender.username}
+							</p>
+						)}
+
+						{/* Forwarded */}
+						{forwarded && !deleted && (
+							<div
+								className={cn(
+									"mb-1 flex items-center gap-1 text-[11px] italic",
+									isOwn ? "text-primary/70" : "text-muted-foreground",
 								)}
 							>
-								{repliedMessage
-									? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
-									: "Original message"}
-							</p>
+								<Forward className="size-3" />
+								<span>Forwarded</span>
+							</div>
+						)}
 
-							<p className="truncate text-xs text-foreground/75">
-								{(repliedMessage ? repliedMessage.content : message.reply_to.content) || "Message"}
-							</p>
+						{/* Reply preview */}
+						{message.reply_to && !deleted && (
+							<div
+								className={cn(
+									"mb-2 overflow-hidden rounded-md border-l-[3px] px-2.5 py-1.5",
+									isOwn ? "border-primary bg-white/40" : "border-primary/70 bg-muted/70",
+								)}
+							>
+								<p className="mb-0.5 text-[11px] font-semibold text-primary">
+									{repliedMessage
+										? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+										: "Original message"}
+								</p>
+
+								<p className="truncate text-xs text-foreground/70">
+									{(repliedMessage ? repliedMessage.content : message.reply_to.content) ||
+										"Message"}
+								</p>
+							</div>
+						)}
+
+						{/* Content */}
+						<div className={cn(message.message_type === "media" && "-mx-3.5 -my-2.5")}>
+							<MessageContent
+								message={message}
+								onVote={onVote}
+								onViewPollResults={onViewPollResults}
+							/>
+						</div>
+
+						{/* Timestamp / status */}
+						{!deleted && (
+							<div className={cn("mt-1 flex items-center justify-end gap-1 select-none")}>
+								<span className="text-[10px] leading-3 text-muted-foreground">
+									{formatTime(message.created_at)}
+								</span>
+
+								{isOwn && <StatusTick status={message.status} />}
+
+								{message.is_pinned && (
+									<>
+										<span className="text-[10px] text-muted-foreground">·</span>
+										<span className="text-[10px] text-muted-foreground">Pinned</span>
+									</>
+								)}
+
+								{failed && onRetry && (
+									<button
+										type="button"
+										onClick={() => onRetry(message)}
+										className="ml-1 text-[10px] font-medium text-destructive hover:underline"
+									>
+										Retry
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+
+					{/* Reactions */}
+					{onOpenReactionsDialog && (
+						<div className={cn("absolute z-10 -bottom-4", isOwn ? "right-2" : "left-2")}>
+							<ReactionsRow
+								reactions={message.emoji_reaction_counts}
+								isOwn={isOwn}
+								onOpenDialog={() => onOpenReactionsDialog(message)}
+							/>
 						</div>
 					)}
 
-					{showSender && !isOwn && (
-						<p className="mb-0.5 text-xs font-semibold text-primary">
-							{message.sender.first_name ?? message.sender.username}
-						</p>
+					{/* Reaction picker */}
+					{showActions && onReact && (
+						<div className={cn("absolute top-full z-20 pt-1", isOwn ? "right-0" : "left-0")}>
+							<ReactionPicker onReact={(emoji: string) => onReact!(message, emoji)} />
+						</div>
 					)}
-
-					<div className={cn(message.message_type === "media" && "-mx-2 -my-1")}>
-						<MessageContent
-							message={message}
-							onVote={onVote}
-							onViewPollResults={onViewPollResults}
-						/>
-					</div>
 				</div>
 			</div>
-
-			<div
-				className={cn(
-					"absolute -bottom-4 flex items-center gap-1 px-1",
-					isOwn ? "right-0" : "left-0",
-				)}
-			>
-				<span className="text-[10px] text-muted-foreground">{formatTime(message.created_at)}</span>
-
-				{isOwn && !deleted && <StatusTick status={message.status} />}
-
-				{message.is_pinned && !deleted && (
-					<span className="text-[10px] text-muted-foreground">· Pinned</span>
-				)}
-
-				{failed && onRetry && (
-					<button
-						type="button"
-						onClick={() => onRetry(message)}
-						className="text-[10px] font-medium text-destructive hover:underline"
-					>
-						Retry
-					</button>
-				)}
-			</div>
-
-			{onOpenReactionsDialog && (
-				<div className={cn("absolute -bottom-5", isOwn ? "right-2" : "left-2")}>
-					<ReactionsRow
-						reactions={message.emoji_reaction_counts}
-						isOwn={isOwn}
-						onOpenDialog={() => onOpenReactionsDialog(message)}
-					/>
-				</div>
-			)}
-
-			{showActions && onReact && (
-				<div className={cn("absolute top-full z-20 pt-1", isOwn ? "right-0" : "left-0")}>
-					<ReactionPicker onReact={(emoji) => onReact!(message, emoji)} />
-				</div>
-			)}
 		</div>
 	)
 })
