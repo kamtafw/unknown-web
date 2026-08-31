@@ -10,6 +10,7 @@
 
 import { ApiResponse } from "@/types/api"
 import {
+	ArchiveListData,
 	ChatListFilter,
 	ChatListItem,
 	CreateMessageSchedulePayload,
@@ -132,6 +133,11 @@ export const chatApi = {
 			.then((r) => r.data.data)
 	},
 
+	listArchived: (page = 1, limit = 20) =>
+		apiClient
+			.get<ApiResponse<ArchiveListData>>(`/api/chats/archive?page=${page}&limit=${limit}`)
+			.then((r) => r.data.data),
+
 	send: (payload: SendMessagePayload) =>
 		apiClient.post<ApiResponse<Message>>("/api/chats/messages", payload).then((r) => r.data.data),
 
@@ -149,7 +155,7 @@ export const chatApi = {
 
 	// Chat-list actions
 	pin: (userPkid: number) => apiClient.post("/api/chats/users/pin", { user_id: userPkid }),
-	unpin: (userUuid: string) => apiClient.delete(`/api/chats/users/${userUuid}/unpin`),
+	unpin: (userPkid: number) => apiClient.delete(`/api/chats/users/${userPkid}/unpin`),
 
 	mute: (userPkid: number, muteUntil?: string) =>
 		apiClient.post("/api/chats/mute", {
@@ -280,10 +286,10 @@ export const chatApi = {
 		apiClient.delete(`/api/chats/messages/${messageId}/reactions`),
 
 	// Polls
-	votePoll: (messageId: number, optionIds: number[]) =>
+	votePoll: (messageId: number, optionId: number) =>
 		apiClient.post("/api/chats/messages/polls/vote", {
 			message_id: messageId,
-			option_ids: optionIds,
+			option_id: optionId,
 		}),
 
 	getPollResults: (messageId: number) =>
