@@ -1,25 +1,22 @@
 "use client"
 
+import { VoiceMessagePlayer } from "@/components/messenger/conversation/voice-message-player"
+import { cn } from "@/lib/utils"
 import type { MediaAttachment } from "@/types/messenger"
 import { FileText, Play } from "lucide-react"
 import Image from "next/image"
-import { useMediaViewer } from "./media-viewer-context"
 
-type GalleryLayout = "two-stacked" | "two-side-by-side" | "three" | "four"
+interface SenderContext {
+	isOwn: boolean
+	senderName: string
+	senderInitials: string
+	senderAvatarUrl?: string | null
+}
 
 function MediaThumbnail({ item }: { item: MediaAttachment }) {
 	if (item.type === "image") {
-		return (
-			<Image
-				src={item.url}
-				alt={item.caption || "Image"}
-				width={280}
-				height={280}
-				className="block h-full w-full object-cover"
-			/>
-		)
+		return <Image src={item.url} alt={item.caption || "Image"} fill className="object-cover" />
 	}
-
 	if (item.type === "video") {
 		return (
 			<div className="relative h-full w-full">
@@ -30,87 +27,55 @@ function MediaThumbnail({ item }: { item: MediaAttachment }) {
 					playsInline
 					className="h-full w-full object-cover"
 				/>
-
 				<div className="absolute inset-0 flex items-center justify-center">
 					<div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
-						<Play size={18} fill="currentColor" className="ml-0.5" />
+						<Play size={17} fill="currentColor" className="ml-0.5" />
 					</div>
 				</div>
 			</div>
 		)
 	}
-
 	return (
 		<div className="flex h-full w-full items-center gap-2 bg-muted p-3">
-			<FileText size={20} className="shrink-0 opacity-70" />
-
-			<span className="truncate text-sm">{item.fileName || item.caption || "Document"}</span>
+			<FileText size={18} className="shrink-0 opacity-70" />
+			<span className="truncate text-xs">{item.fileName || item.caption || "Document"}</span>
 		</div>
 	)
 }
 
 function GalleryTile({
 	item,
-	index,
-	remainingCount,
+	overlayCount,
 	onClick,
+	className,
 }: {
 	item: MediaAttachment
-	index: number
-	remainingCount: number
+	overlayCount?: number
 	onClick: () => void
+	className?: string
 }) {
-	const hasOverflow = index === 3 && remainingCount > 0
-
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className="
-				group relative block min-h-0 min-w-0
-				overflow-hidden rounded-lg
-				bg-muted text-left
-				focus-visible:outline-none
-				focus-visible:ring-2
-				focus-visible:ring-primary
-			"
+			className={cn(
+				"group relative block min-h-0 min-w-0 overflow-hidden rounded-xl bg-muted text-left focus-visible:outline-none",
+				className,
+			)}
 			aria-label={
-				hasOverflow ? `Open media gallery, ${remainingCount} more items` : `Open ${item.type}`
+				overlayCount ? `Open media gallery, ${overlayCount} more items` : `Open ${item.type}`
 			}
 		>
 			<MediaThumbnail item={item} />
-
-			{hasOverflow && (
+			{overlayCount ? (
 				<div className="absolute inset-0 flex items-center justify-center bg-black/45 transition-colors group-hover:bg-black/55">
-					<span className="text-2xl font-semibold text-white">+{remainingCount}</span>
+					<span className="text-xl font-semibold text-white">+{overlayCount}</span>
 				</div>
-			)}
-
-			{!hasOverflow && (
+			) : (
 				<div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
 			)}
 		</button>
 	)
-}
-
-/**
- * There are currently no width/height values in MediaAttachment,
- * so layout selection cannot reliably distinguish landscape from
- * portrait media before rendering.
- *
- * Keep this deterministic for now. We can add aspect-ratio-aware
- * behavior later without changing the gallery API.
- */
-function getGalleryLayout(media: MediaAttachment[]): GalleryLayout {
-	if (media.length === 2) {
-		return "two-side-by-side"
-	}
-
-	if (media.length === 3) {
-		return "three"
-	}
-
-	return "four"
 }
 
 function TwoMediaGallery({
@@ -118,82 +83,69 @@ function TwoMediaGallery({
 	onOpen,
 }: {
 	media: MediaAttachment[]
-	onOpen: (index: number) => void
+	onOpen: (i: number) => void
 }) {
 	return (
-		<div className="grid w-full max-w-70 grid-cols-2 gap-1">
-			{media.map((item, index) => (
-				<div key={index} className="relative aspect-square min-w-0">
-					<GalleryTile item={item} index={index} remainingCount={0} onClick={() => onOpen(index)} />
+		<div className="grid grid-cols-2 gap-1 w-64">
+			{media.map((item, i) => (
+				<div key={i} className="relative aspect-square">
+					<GalleryTile item={item} onClick={() => onOpen(i)} />
 				</div>
 			))}
 		</div>
 	)
 }
 
-function ThreeMediaGallery({
+/** 3+ images: one large tile left, up to 2 small tiles stacked right.
+ * Overlay lands on the LAST visible tile — matching real WhatsApp
+ * behavior rather than the reference mockup's literal badge placement,
+ * which looks like placeholder content, not an intentional layout rule. */
+function StackedMediaGallery({
 	media,
 	onOpen,
 }: {
 	media: MediaAttachment[]
-	onOpen: (index: number) => void
+	onOpen: (i: number) => void
 }) {
+	const visible = media.slice(0, 3)
+	const remaining = media.length - 3
 	return (
-		<div className="grid w-full max-w-70 grid-cols-2 gap-1">
-			<div className="relative row-span-2 aspect-[0.72] min-w-0">
-				<GalleryTile item={media[0]} index={0} remainingCount={0} onClick={() => onOpen(0)} />
+		<div className="grid grid-cols-2 grid-rows-2 gap-1 w-72 h-56">
+			<div className="row-span-2">
+				<GalleryTile item={visible[0]} onClick={() => onOpen(0)} className="h-full" />
 			</div>
-
-			<div className="relative aspect-square min-w-0">
-				<GalleryTile item={media[1]} index={1} remainingCount={0} onClick={() => onOpen(1)} />
-			</div>
-
-			<div className="relative aspect-square min-w-0">
-				<GalleryTile item={media[2]} index={2} remainingCount={0} onClick={() => onOpen(2)} />
-			</div>
+			{visible[1] && <GalleryTile item={visible[1]} onClick={() => onOpen(1)} />}
+			{visible[2] && (
+				<GalleryTile
+					item={visible[2]}
+					overlayCount={remaining > 0 ? remaining : undefined}
+					onClick={() => onOpen(2)}
+				/>
+			)}
 		</div>
 	)
 }
 
-function FourMediaGallery({
-	media,
+function SingleMediaItem({
+	item,
+	ctx,
 	onOpen,
 }: {
-	media: MediaAttachment[]
-	onOpen: (index: number) => void
+	item: MediaAttachment
+	ctx: SenderContext
+	onOpen: () => void
 }) {
-	const visibleMedia = media.slice(0, 4)
-	const remainingCount = Math.max(0, media.length - 4)
-
-	return (
-		<div className="grid w-full max-w-70 grid-cols-2 gap-1">
-			{visibleMedia.map((item, index) => (
-				<div key={index} className="relative aspect-square min-w-0">
-					<GalleryTile
-						item={item}
-						index={index}
-						remainingCount={remainingCount}
-						onClick={() => onOpen(index)}
-					/>
-				</div>
-			))}
-		</div>
-	)
-}
-
-function SingleMedia({ item, onOpen }: { item: MediaAttachment; onOpen: () => void }) {
 	if (item.type === "audio") {
 		return (
-			<div className="flex flex-col gap-1">
-				<audio src={item.url} controls className="max-w-70" />
-
-				{item.caption && item.caption !== "Voice message" && (
-					<p className="text-sm">{item.caption}</p>
-				)}
-			</div>
+			<VoiceMessagePlayer
+				url={item.url}
+				isOwn={ctx.isOwn}
+				senderName={ctx.senderName}
+				senderInitials={ctx.senderInitials}
+				senderAvatarUrl={ctx.senderAvatarUrl}
+			/>
 		)
 	}
-
 	if (item.type === "pdf" || item.type === "document") {
 		return (
 			<a
@@ -203,139 +155,96 @@ function SingleMedia({ item, onOpen }: { item: MediaAttachment; onOpen: () => vo
 				className="flex max-w-70 items-center gap-2 text-sm underline"
 			>
 				<FileText size={16} className="shrink-0 opacity-70" />
-
 				<span className="truncate">{item.caption || item.fileName || "Document"}</span>
 			</a>
 		)
 	}
-
 	if (item.type === "image") {
 		return (
-			<figure className="flex max-w-70 flex-col gap-1">
-				<button
-					type="button"
-					onClick={onOpen}
-					className="
-						overflow-hidden rounded-lg
-						focus-visible:outline-none
-						focus-visible:ring-2
-						focus-visible:ring-primary
-					"
-					aria-label="Open image"
-				>
-					<Image
-						src={item.url}
-						alt={item.caption || "Image"}
-						width={280}
-						height={280}
-						className="block max-h-70 max-w-70 object-contain"
-					/>
-				</button>
-
-				{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
-			</figure>
-		)
-	}
-
-	return (
-		<figure className="flex max-w-70 flex-col gap-1">
 			<button
 				type="button"
 				onClick={onOpen}
-				className="
-					relative aspect-video w-70
-					overflow-hidden rounded-lg
-					focus-visible:outline-none
-					focus-visible:ring-2
-					focus-visible:ring-primary
-				"
-				aria-label="Open video"
+				className="block overflow-hidden rounded-xl focus-visible:outline-none"
+				aria-label="Open image"
 			>
-				<MediaThumbnail item={item} />
+				<Image
+					src={item.url}
+					alt={item.caption || "Image"}
+					width={280}
+					height={280}
+					className="max-h-70 max-w-70 object-contain"
+				/>
 			</button>
-
-			{item.caption && <figcaption className="text-sm">{item.caption}</figcaption>}
-		</figure>
+		)
+	}
+	return (
+		<button
+			type="button"
+			onClick={onOpen}
+			className="relative aspect-video w-70 overflow-hidden rounded-xl focus-visible:outline-none"
+			aria-label="Open video"
+		>
+			<MediaThumbnail item={item} />
+		</button>
 	)
 }
 
-export function MediaGallery({ media }: { media: MediaAttachment[] }) {
-	const { openMedia } = useMediaViewer()
+interface MediaGalleryProps {
+	media: MediaAttachment[]
+	isOwn: boolean
+	senderName: string
+	senderInitials: string
+	senderAvatarUrl?: string | null
+	onOpenViewer?: (media: MediaAttachment[], index: number) => void
+}
 
+export function MediaGallery({
+	media,
+	isOwn,
+	senderName,
+	senderInitials,
+	senderAvatarUrl,
+	onOpenViewer,
+}: MediaGalleryProps) {
 	if (!media.length) return null
+	const ctx: SenderContext = { isOwn, senderName, senderInitials, senderAvatarUrl }
+	const open = (index: number) => onOpenViewer?.(media, index)
 
 	if (media.length === 1) {
-		return <SingleMedia item={media[0]} onOpen={() => openMedia(media, 0)} />
+		const caption =
+			media[0].caption && media[0].caption !== "Voice message" ? media[0].caption : null
+		return (
+			<div className="flex flex-col gap-1">
+				<SingleMediaItem item={media[0]} ctx={ctx} onOpen={() => open(0)} />
+				{caption && <p className="text-sm">{caption}</p>}
+			</div>
+		)
 	}
 
-	/*
-	 * For batches, only image/video items participate in the
-	 * visual gallery. Audio/documents are not suitable gallery
-	 * tiles.
-	 */
-	const visualMedia = media.filter((item) => item.type === "image" || item.type === "video")
-
+	const visualMedia = media.filter((m) => m.type === "image" || m.type === "video")
 	if (!visualMedia.length) {
 		return (
 			<div className="flex flex-col gap-2">
-				{media.map((item, index) => (
-					<SingleMedia key={index} item={item} onOpen={() => openMedia(media, index)} />
+				{media.map((item, i) => (
+					<SingleMediaItem key={i} item={item} ctx={ctx} onOpen={() => open(i)} />
 				))}
 			</div>
 		)
 	}
 
-	const layout = getGalleryLayout(visualMedia)
-
-	const gallery = (() => {
-		switch (layout) {
-			case "two-side-by-side":
-				return (
-					<TwoMediaGallery
-						media={visualMedia}
-						onOpen={(index) => {
-							const originalIndex = media.indexOf(visualMedia[index])
-
-							openMedia(media, originalIndex >= 0 ? originalIndex : index)
-						}}
-					/>
-				)
-
-			case "three":
-				return (
-					<ThreeMediaGallery
-						media={visualMedia}
-						onOpen={(index) => {
-							const originalIndex = media.indexOf(visualMedia[index])
-
-							openMedia(media, originalIndex >= 0 ? originalIndex : index)
-						}}
-					/>
-				)
-
-			case "four":
-				return (
-					<FourMediaGallery
-						media={visualMedia}
-						onOpen={(index) => {
-							const originalIndex = media.indexOf(visualMedia[index])
-
-							openMedia(media, originalIndex >= 0 ? originalIndex : index)
-						}}
-					/>
-				)
-
-			default:
-				return null
-		}
-	})()
-
-	const caption = media.find((item) => item.caption)?.caption
+	const caption = media.find((m) => m.caption)?.caption
+	const openVisual = (visualIndex: number) => {
+		const original = media.indexOf(visualMedia[visualIndex])
+		open(original >= 0 ? original : visualIndex)
+	}
 
 	return (
-		<div className="flex flex-col gap-1">
-			{gallery}
-
+		<div className="flex flex-col gap-1.5">
+			{visualMedia.length === 2 ? (
+				<TwoMediaGallery media={visualMedia} onOpen={openVisual} />
+			) : (
+				<StackedMediaGallery media={visualMedia} onOpen={openVisual} />
+			)}
 			{caption && <p className="whitespace-pre-wrap wrap-break-word text-sm">{caption}</p>}
 		</div>
 	)

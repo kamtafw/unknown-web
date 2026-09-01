@@ -27,17 +27,6 @@ function initialsFromName(name: string): string {
 	return (a + b || "?").toUpperCase()
 }
 
-/**
- * Full "who reacted" dialog — replaces the old per-pill text popover.
- * Every reaction pill opens this same dialog showing everyone, grouped
- * by emoji, rather than filtering to just the clicked emoji.
- *
- * Removal reuses the existing reactToMessage toggle logic as-is: calling
- * it again with the emoji the user already reacted with is already
- * detected as a removal (isReactionRemoval) and routes to the confirmed
- * DELETE endpoint — no new mutation path needed here, just a new
- * entrypoint into the existing one.
- */
 export function ReactionsDialog({
 	open,
 	onOpenChange,
@@ -76,7 +65,6 @@ export function ReactionsDialog({
 		}
 		return Array.from(byEmoji.entries()).map(([emoji, entries]) => ({
 			emoji,
-			// Current user's own row sorts first within its own emoji group.
 			entries: [...entries].sort((a, b) =>
 				a.pkid === currentUserPkid ? -1 : b.pkid === currentUserPkid ? 1 : 0,
 			),
@@ -114,14 +102,22 @@ export function ReactionsDialog({
 												className="flex items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors enabled:hover:bg-accent disabled:cursor-default"
 											>
 												<Avatar.Root className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-													<Avatar.Image src={entry.avatarUrl ?? undefined} alt={entry.name} className="h-full w-full object-cover" />
+													<Avatar.Image
+														src={entry.avatarUrl ?? undefined}
+														alt={entry.name}
+														className="h-full w-full object-cover"
+													/>
 													<Avatar.Fallback className="text-xs font-medium text-muted-foreground">
 														{initialsFromName(entry.name)}
 													</Avatar.Fallback>
 												</Avatar.Root>
 												<div className="min-w-0 flex-1">
-													<p className="text-sm font-medium truncate">{isMe ? "You" : entry.name}</p>
-													{isMe && <p className="text-xs text-destructive">Click to remove reaction</p>}
+													<p className="text-sm font-medium truncate">
+														{isMe ? "You" : entry.name}
+													</p>
+													{isMe && (
+														<p className="text-xs text-destructive">Click to remove reaction</p>
+													)}
 												</div>
 											</button>
 										)
