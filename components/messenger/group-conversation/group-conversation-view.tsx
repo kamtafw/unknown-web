@@ -36,6 +36,7 @@ import { GroupConversationHeader } from "./group-conversation-header"
 
 interface GroupConversationViewProps {
 	groupId: number
+	onOpenProfile: () => void
 }
 
 /**
@@ -50,7 +51,7 @@ interface GroupConversationViewProps {
  * Replies-as-threads (separate screen) and reactions (no confirmed HTTP
  * contract yet) remain out of scope.
  */
-export function GroupConversationView({ groupId }: GroupConversationViewProps) {
+export function GroupConversationView({ groupId, onOpenProfile }: GroupConversationViewProps) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
 	const { data: group } = useGroupDetail(groupId)
@@ -225,7 +226,11 @@ export function GroupConversationView({ groupId }: GroupConversationViewProps) {
 					activeIndex={search.activeIndex}
 				/>
 			) : (
-				<GroupConversationHeader group={group ?? null} onOpenSearch={search.open} />
+				<GroupConversationHeader
+					group={group ?? null}
+					onOpenSearch={search.open}
+					onOpenProfile={onOpenProfile}
+				/>
 			)}
 
 			<PinnedMessageBanner
