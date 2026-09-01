@@ -10,36 +10,91 @@ interface DeleteMessageDialogProps {
 }
 
 export function DeleteMessageDialog({ open, onOpenChange, onConfirm }: DeleteMessageDialogProps) {
-	const confirm = (type: MessageDeleteType) => {
-		onConfirm(type)
+	const confirm = (deleteType: MessageDeleteType) => {
+		onConfirm(deleteType)
 		onOpenChange(false)
 	}
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Delete message?</DialogTitle>
+			<DialogContent
+				className="
+					top-[15%]
+					translate-y-0
+					w-[calc(100%-2rem)]
+					max-w-sm
+					rounded-[1.05rem]
+					border-0
+					p-0
+					shadow-lg
+					[&>button]:hidden
+				"
+			>
+				<DialogHeader className="px-[1.15rem] pt-[1.9rem]">
+					<DialogTitle className="text-[1rem] font-semibold leading-6 text-foreground">
+						Delete message?
+					</DialogTitle>
 				</DialogHeader>
 
-				<div className="flex flex-col gap-2">
+				<div className="flex flex-col items-end gap-1 px-[1.15rem] pb-5">
 					<button
-						onClick={() => confirm("self")}
-						className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-left hover:bg-accent transition-colors"
-					>
-						Delete for me
-					</button>
-					<button
+						type="button"
 						onClick={() => confirm("both")}
-						className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-left text-destructive hover:bg-destructive/10 transition-colors"
+						className="
+							rounded-md
+							px-3
+							py-1.5
+							text-[0.9375rem]
+							font-semibold
+							text-primary
+							transition-colors
+							hover:bg-primary/10
+							focus-visible:outline-none
+							focus-visible:ring-2
+							focus-visible:ring-primary/40
+						"
 					>
 						Delete for everyone
 					</button>
+
 					<button
-						onClick={() => onOpenChange(false)}
-						className="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-left text-muted-foreground hover:bg-accent transition-colors"
+						type="button"
+						onClick={() => confirm("self")}
+						className="
+							rounded-md
+							px-3
+							py-1.5
+							text-[0.9375rem]
+							font-semibold
+							text-primary
+							transition-colors
+							hover:bg-primary/10
+							focus-visible:outline-none
+							focus-visible:ring-2
+							focus-visible:ring-primary/40
+						"
 					>
-						Cancel
+						Delete for me
+					</button>
+
+					<button
+						type="button"
+						onClick={() => onOpenChange(false)}
+						className="
+							rounded-md
+							px-3
+							py-1.5
+							text-[0.9375rem]
+							font-medium
+							text-destructive
+							transition-colors
+							hover:bg-destructive/10
+							focus-visible:outline-none
+							focus-visible:ring-2
+							focus-visible:ring-destructive/30
+						"
+					>
+						Close
 					</button>
 				</div>
 			</DialogContent>

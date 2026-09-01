@@ -25,7 +25,8 @@ export function groupMessageToMessage(gm: GroupMessage): Message {
 		content: gm.content,
 		media: gm.media,
 		metadata: gm.metadata,
-		deleted: gm.deleted,
+		is_deleted_for_all: gm.is_deleted_for_all,
+		is_hidden_by_me: gm.is_hidden_by_me,
 		is_pinned: gm.is_pinned,
 		collection_id: gm.collection_id,
 		status: gm.status,
@@ -33,6 +34,8 @@ export function groupMessageToMessage(gm: GroupMessage): Message {
 		forwarded_from: gm.forwarded_from,
 		views_count: gm.views_count,
 		replies_count: gm.replies_count,
+		reactions_count: gm.reactions_count,
+		emoji_reaction_counts: gm.emoji_reaction_counts,
 		created_at: gm.created_at,
 		updated_at: gm.updated_at,
 	}

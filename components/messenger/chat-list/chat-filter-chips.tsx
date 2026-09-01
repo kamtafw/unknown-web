@@ -1,9 +1,9 @@
 "use client"
 
 import { useCustomLists } from "@/hooks/messenger/use-custom-lists"
-import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import type { ChatListFilter } from "@/types/messenger"
+import { Plus } from "lucide-react"
 
 /** Base filters stay string-typed (drives useChatList's querystring
  * directly); a selected custom list is a distinct shape since it doesn't
@@ -36,7 +36,7 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 					key={filter.value}
 					onClick={() => onChange(filter.value)}
 					className={cn(
-						"px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-colors",
+						"px-3 py-0.5 rounded-full text-sm font-regular shrink-0 transition-colors",
 						isActive(value, filter.value)
 							? "bg-primary/10 text-primary"
 							: "bg-muted text-muted-foreground hover:bg-accent",
@@ -46,20 +46,12 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 				</button>
 			))}
 
-			<button
-				title="Groups — coming in a later milestone"
-				onClick={() => toast.info("Groups are coming in a later milestone")}
-				className="px-3 py-1.5 rounded-full text-sm font-medium shrink-0 bg-muted text-muted-foreground/40 cursor-not-allowed"
-			>
-				Groups
-			</button>
-
 			{lists?.map((list) => (
 				<button
 					key={list.id}
 					onClick={() => onChange({ type: "list", id: list.id, name: list.name })}
 					className={cn(
-						"px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-colors",
+						"px-3 py-0.5 rounded-full text-sm font-regular shrink-0 transition-colors",
 						isActive(value, list.id)
 							? "bg-primary/10 text-primary"
 							: "bg-muted text-muted-foreground hover:bg-accent",
@@ -68,6 +60,18 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 					{list.name}
 				</button>
 			))}
+
+			<button
+				title="Groups — coming in a later milestone"
+				onClick={() => {}}
+				className="
+				flex items-center gap-0.5 bg-muted text-accent-foreground hover-bg-accent
+				px-3 py-0.5 rounded-full text-sm font-regular shrink-0 transition-colors
+				"
+			>
+				<Plus size={14} className="text-primary font-semibold" />
+				Create
+			</button>
 		</div>
 	)
 }

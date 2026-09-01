@@ -8,11 +8,15 @@ import { useChatList } from "@/hooks/messenger/use-chat-list"
 import { useCustomListMembers } from "@/hooks/messenger/use-custom-lists"
 import { useFavorites } from "@/hooks/messenger/use-favorites"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { toast } from "@/lib/toast"
 import type { ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
-import { Archive, CheckSquare, Heart, List, MessageSquarePlus, Search } from "lucide-react"
+import { CheckSquare, List, MessageSquarePlus, Search } from "lucide-react"
+import Link from "next/link"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { EmptyFavorites } from "../icons/chat-list-icons"
+import { FAB, Schedule as ScheduleIcon } from "../icons/group-list-icons"
+import { Archive } from "../icons/shared"
+import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { AddToListDialog } from "./add-to-list-dialog"
 import { BulkSelectionBar } from "./bulk-selection-bar"
 import { ActiveChatFilter, ChatFilterChips } from "./chat-filter-chips"
@@ -27,6 +31,22 @@ interface ChatListPanelProps {
 	typingUuids: Set<Uuid>
 }
 
+function ChatListSkeleton() {
+	return (
+		<div className="px-4 py-2 space-y-4">
+			{[...Array(6)].map((_, i) => (
+				<div key={i} className="flex items-center gap-3">
+					<Skeleton className="h-11 w-11 rounded-full" />
+					<div className="flex-1 space-y-2">
+						<Skeleton className="h-3.5 w-2/3" />
+						<Skeleton className="h-3 w-1/2" />
+					</div>
+				</div>
+			))}
+		</div>
+	)
+}
+
 export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [filter, setFilter] = useState<ActiveChatFilter>("all")
 	const isCustomListTab = typeof filter === "object"
@@ -36,6 +56,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [listDialogChat, setListDialogChat] = useState<ChatListItemType | null>(null)
 	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 	const [listsDialogOpen, setListsDialogOpen] = useState(false)
+	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
 	const mainList = useChatList(
 		isCustomListTab ? "all" : filter === "favorites" ? "all" : filter,
@@ -55,7 +76,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const bulk = useBulkSelection(isCustomListTab ? [] : chats)
 
 	return (
-		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
+		<div className="relative w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
 			{bulk.active ? (
 				<BulkSelectionBar
 					selectedCount={bulk.selectedCount}
@@ -76,53 +97,53 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 							<MessageSquarePlus size={20} />
 						</button>
 
-						<DropdownMenu.Root open={headerMenuOpen} onOpenChange={setHeaderMenuOpen}>
-							<DropdownMenu.Trigger asChild>
-								<button className="text-muted-foreground hover:text-foreground transition-colors">
-									<span className="sr-only">More options</span>⋮
-								</button>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Portal>
-								<DropdownMenu.Content
-									align="end"
-									sideOffset={4}
-									className="z-150 min-w-48 bg-popover border border-border rounded-2xl p-1.5 shadow-xl
+						{!isCustomListTab && (
+							<DropdownMenu.Root open={headerMenuOpen} onOpenChange={setHeaderMenuOpen}>
+								<DropdownMenu.Trigger asChild>
+									<button className="text-muted-foreground hover:text-foreground transition-colors">
+										<span className="sr-only">More options</span>⋮
+									</button>
+								</DropdownMenu.Trigger>
+								<DropdownMenu.Portal>
+									<DropdownMenu.Content
+										align="end"
+										sideOffset={4}
+										className="z-150 min-w-48 bg-popover border border-border rounded-2xl p-1.5 shadow-xl
 										data-[state=open]:animate-in data-[state=closed]:animate-out
 										data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-								>
-									{!isCustomListTab && (
+									>
 										<DropdownMenu.Item
 											className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
 											onSelect={() => bulk.start()}
 										>
 											<CheckSquare size={16} /> Select chats
 										</DropdownMenu.Item>
-									)}
-									<DropdownMenu.Item
-										className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
-										onSelect={() => setListsDialogOpen(true)}
-									>
-										<List size={16} /> View lists
-									</DropdownMenu.Item>
-								</DropdownMenu.Content>
-							</DropdownMenu.Portal>
-						</DropdownMenu.Root>
+
+										{/* <DropdownMenu.Item
+											className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm transition-colors hover:bg-accent data-highlighted:bg-accent"
+											onSelect={() => setListsDialogOpen(true)}
+										>
+											<List size={16} /> View lists
+										</DropdownMenu.Item> */}
+									</DropdownMenu.Content>
+								</DropdownMenu.Portal>
+							</DropdownMenu.Root>
+						)}
 					</div>
 				</div>
 			)}
 
 			<div className="px-4 pb-3">
 				<div className="relative">
-					<Search
-						size={16}
-						className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-					/>
 					<Input
 						placeholder="What are you looking for"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="pl-9 rounded-full bg-muted border-transparent"
+						className="pr-11 rounded-full bg-muted border-transparent"
 					/>
+					<div className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-primary">
+						<Search size={14} className="text-primary-foreground" />
+					</div>
 				</div>
 			</div>
 
@@ -135,69 +156,43 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 			<ScrollArea className="flex-1">
 				<div className="w-0 min-w-full">
 					{!isFavoritesTab && (
-						// Archive: real, confirmed capability, but *viewing* the
-						// archived list is deferred past M2 (M2 only covers
-						// archiving *from* the main list) — inert per the same
-						// reasoning as M1 product decision 4.
-						<button
-							onClick={() => toast.info("Viewing archived chats is coming in a later milestone")}
+						<Link
+							href="/messenger/archive"
 							className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/60"
 						>
-							<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-								<Archive size={18} />
+							<span className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
+								<Archive />
 							</span>
 							<span className="text-sm font-medium text-muted-foreground">Archive</span>
-						</button>
+						</Link>
 					)}
 
-					{isLoading && (
-						<div className="px-4 py-2 space-y-4">
-							{[...Array(6)].map((_, i) => (
-								<div key={i} className="flex items-center gap-3">
-									<Skeleton className="h-11 w-11 rounded-full" />
-									<div className="flex-1 space-y-2">
-										<Skeleton className="h-3.5 w-2/3" />
-										<Skeleton className="h-3 w-1/2" />
-									</div>
-								</div>
-							))}
-						</div>
-					)}
+					{isLoading ? (
+						<ChatListSkeleton />
+					) : isCustomListTab ? (
+						(() => {
+							const members = (customListMembers.data?.results ?? []).filter(
+								(
+									m,
+								): m is typeof m & {
+									target_user: NonNullable<typeof m.target_user>
+								} => m.type === "user" && !!m.target_user,
+							)
 
-					{isCustomListTab ? (
-						customListMembers.isLoading ? (
-							<div className="px-4 py-2 space-y-4">
-								{[...Array(6)].map((_, i) => (
-									<div key={i} className="flex items-center gap-3">
-										<Skeleton className="h-11 w-11 rounded-full" />
-										<div className="flex-1 space-y-2">
-											<Skeleton className="h-3.5 w-2/3" />
-											<Skeleton className="h-3 w-1/2" />
-										</div>
-									</div>
-								))}
-							</div>
-						) : (customListMembers.data?.results ?? []).filter(
-								(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
-									m.type === "user" && !!m.target_user,
-						  ).length === 0 ? (
-							<ChatListEmptyState
-								icon={List}
-								title="No members yet"
-								description="Add chats to this list from a chat's “Add to list” action."
-							/>
-						) : (
-							customListMembers
-								.data!.results.filter(
-									(m): m is typeof m & { target_user: NonNullable<typeof m.target_user> } =>
-										m.type === "user" && !!m.target_user,
-								)
-								.map((member) => <CustomListMemberRow key={member.id} member={member} />)
-						)
+							return members.length === 0 ? (
+								<ChatListEmptyState
+									icon={List}
+									title="No members yet"
+									description="Add chats to this list from a chat's “Add to list” action."
+								/>
+							) : (
+								members.map((member) => <CustomListMemberRow key={member.id} member={member} />)
+							)
+						})()
 					) : isFavoritesTab && chats.length === 0 ? (
 						<ChatListEmptyState
-							icon={Heart}
-							title="Add to favourites"
+							icon={EmptyFavorites}
+							title="Add to favorites"
 							description="Make it easy to find the people and groups that matter most across AppsCombo"
 							action={{ label: "Browse chats", onClick: () => setFilter("all") }}
 						/>
@@ -233,6 +228,49 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				</div>
 			</ScrollArea>
 
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					<button
+						title="New"
+						className="absolute bottom-7 right-7 h-14 w-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
+					>
+						<FAB />
+					</button>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Portal>
+					<DropdownMenu.Content
+						align="end"
+						side="top"
+						sideOffset={10}
+						className="z-150 bg-transparent backdrop-blur-md border-0 px-2 shadow-none outline-none rounded-2xl
+							data-[state=open]:animate-in data-[state=closed]:animate-out
+							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+					>
+						<div className="flex flex-col items-end gap-2">
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setScheduleDialogOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Schedule</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<ScheduleIcon />
+								</div>
+							</DropdownMenu.Item>
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => setNewChatOpen(true)}
+							>
+								<span className="text-[13px] text-foreground">Start conversation</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary shadow-lg">
+									<MessageSquarePlus size={18} className="text-primary-foreground" />
+								</div>
+							</DropdownMenu.Item>
+						</div>
+					</DropdownMenu.Content>
+				</DropdownMenu.Portal>
+			</DropdownMenu.Root>
+
 			<NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />
 			<AddToListDialog
 				open={!!listDialogChat}
@@ -240,6 +278,8 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				chat={listDialogChat}
 			/>
 			<CustomListsDialog open={listsDialogOpen} onOpenChange={setListsDialogOpen} />
+
+			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

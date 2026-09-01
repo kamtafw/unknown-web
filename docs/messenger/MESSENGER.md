@@ -16,7 +16,7 @@ A web Messenger client (`unknown-web`, Next.js 15) porting the existing React Na
 
 ## Current milestone
 
-**M2 — Chat-list & message interactions: built, verified, ready for real-world testing (2026-08-18).** All confirmed Jira/mobile-scoped actions implemented: pin/unpin, mute/unmute, archive/unarchive, favorite/unfavorite, block/unblock, clear chat, custom lists, explicit mark-as-read, bulk select/archive/clear (chat-list side); reply, forward, pin/unpin, delete self/both (message side). Reactions deliberately left as stretch/not started — core came first per the agreed boundary. M1's two deferred issues (badge inconsistency, delayed seen-tick) remain open and untouched by this milestone.
+**M4 — Messenger profile: kickoff.** M3 is functionally complete from the web side (realtime propagation of group-admin mutations to other members remains a backend dependency — see M3 known issues). M4 scope: profile info (name/phone/username), actions (message/call/share/mute/block/report), content (media/docs/links). Investigation below confirms most of the surface can be assembled from reused primitives plus three new, mobile-confirmed endpoints — not a from-scratch build.
 
 ## Milestone roadmap
 
@@ -104,3 +104,24 @@ Full reasoning for all decisions: `DECISIONS.md`.
 - **Known gaps, deliberately deferred to the next slice:** sending, permission-aware composer (pause vs. `can_members_send_messages` vs. admin override — still needs the verification you flagged: does pause override admin?), socket (`GROUP_SOCKET_EVENTS`, room join/rejoin, `group:delete` after HTTP delete), admin surfaces (members list/add/remove/role, permissions, pause toggle), threaded replies UI, no search on the Groups list (no confirmed backend param for it).
 - **Confirmed risk carried forward:** `GroupChatHistoryData.next` = older messages (opposite naming from 1:1's `previous`) — documented in code, don't "fix" it to match.
 - **GroupListItem has no created_at.** Genuine backend-contract limitation, not fixable client-side without an N+1 detail fetch per row. Current mitigation: no-message groups sort to the top instead of the bottom. If a real created-then-last-message ordering matters later, that's a backend request (created_at added to the list payload), not a client workaround.
+- **"Leave group" (member self-exit) was omitted from the original M3 scope definition** and is intentionally deferred to M12 (cross-cutting hardening/product-completeness), not reopened into M3. This is a scope-sequencing decision, not an architectural one — no ADR. Mobile's `useLeaveGroup` (`chats/groups/:id/members/leave`) is confirmed and ready to port when M12 picks it up; nothing about M3's implementation blocks it.
+
+## M3 known issues (backend dependency)
+
+Confirmed via direct inspection of mobile's group socket contract (`hooks/messenger/use-group-socket.ts`) and admin mutation hooks (`hooks/messenger/use-groups.ts`): there is no `group:member:added`, `group:member:removed`, `group:role:changed`, `group:permissions:updated`, or `group:paused`/`resumed` event anywhere in the confirmed contract, on either client. Mobile's only mitigation is `refetchOnMount: "always"` on `useGetGroups` / `useGetGroup` / `useGetGroupMembers` — mobile doesn't push these to other members either, it just refetches aggressively on screen mount.
+
+**Fixed on web (2026-08-27):** aligned `useGroupList`, `useGroupDetail`, `useGroupMembers` with mobile's `refetchOnMount: "always"` (web previously had only `staleTime: 30_000`, silently serving stale cache on remount — a strictly weaker mitigation for the same confirmed backend limitation). This resolved:
+
+- Member removal — now reflects on revisit.
+- Role/permission/pause changes — now reflect on revisit.
+
+**Remaining, not client-fixable:** member _addition_ still shows real backend propagation delay — the added member doesn't see the group even after a hard reload + revisit, observed potentially exceeding a minute. A hard reload gets a fresh `QueryClient` and refetches unconditionally, so the client cannot be the cause. Same category as the confirmed favorites read-after-write lag (D-006), asymmetric with removal in a way worth flagging directly to backend rather than guessing at.
+
+**Decision:** no frontend workaround (polling, timers, synthetic socket events) will be built for this — see D-008. Treated as an external backend dependency.
+
+**Backend questions:**
+
+- Is a realtime broadcast planned for group membership/admin-state changes over the existing Socket.IO connection (same transport as `group:message`/`group:status`)?
+- If so, what event names/payloads are intended for: member added, member removed, role changed, permissions updated, group paused/resumed?
+- Is `chats/groups/:id/members/sync`'s write followed by sync or async propagation to the list/detail/members read paths? Member addition specifically shows lag well past a hard reload.
+- Removal propagates faster/more reliably than addition on the read side — expected (different invalidation paths for add vs. remove), or itself informative?

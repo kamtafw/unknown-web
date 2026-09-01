@@ -61,6 +61,7 @@ export interface SocialContentMetrics {
 export interface SocialContentViewerState {
 	liked: boolean
 	reposted: boolean
+	repost_id: string | null
 	bookmarked: boolean
 	shared: boolean
 }
@@ -108,16 +109,7 @@ export interface SocialContent {
 	 * repost — `original.original` must always be null. `original.kind` can
 	 * be `post`, `comment`, or `reply`; never assume it's always `post`. */
 	original: SocialContent | null
-
-	/**
-	 * Points at *my own* repost of this content, if any — powers "Undo
-	 * repost" (delete that repost by id). Not part of the supplied
-	 * contract's `viewer` object; this is a frontend-observed need carried
-	 * forward from the old `my_repost_pkid` field, UNVERIFIED against the
-	 * new backend response, See migration doc S~4 and S~17.
-	 */
-	my_repost_id: string | null
-
+	
 	created_at: string
 	updated_at: string
 }

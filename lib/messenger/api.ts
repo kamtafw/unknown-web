@@ -10,12 +10,21 @@
 
 import { ApiResponse } from "@/types/api"
 import {
+	ArchiveListData,
 	ChatListFilter,
 	ChatListItem,
+	CreateMessageSchedulePayload,
 	CursorPage,
 	Message,
+	MessageReaction,
 	MessageStatus,
-	SendMessagePayload
+	MessengerUserProfile,
+	PollResults,
+	ReportUserPayload,
+	Schedule,
+	ScheduleListData,
+	SendMessagePayload,
+	UserAttachmentsData,
 } from "@/types/messenger"
 import { apiClient } from "../axios"
 
@@ -86,6 +95,12 @@ export interface CustomListMember {
 
 export type MessageDeleteType = "self" | "both"
 
+export interface UploadMediaResponse {
+	media_url: string
+}
+
+export type MediaUploadFolder = "chat" | "voice"
+
 export const chatApi = {
 	list: (filter: ChatListFilter, search: string, cursor?: string) => {
 		const params = new URLSearchParams()
@@ -118,6 +133,11 @@ export const chatApi = {
 			.then((r) => r.data.data)
 	},
 
+	listArchived: (page = 1, limit = 20) =>
+		apiClient
+			.get<ApiResponse<ArchiveListData>>(`/api/chats/archive?page=${page}&limit=${limit}`)
+			.then((r) => r.data.data),
+
 	send: (payload: SendMessagePayload) =>
 		apiClient.post<ApiResponse<Message>>("/api/chats/messages", payload).then((r) => r.data.data),
 
@@ -135,7 +155,7 @@ export const chatApi = {
 
 	// Chat-list actions
 	pin: (userPkid: number) => apiClient.post("/api/chats/users/pin", { user_id: userPkid }),
-	unpin: (userUuid: string) => apiClient.delete(`/api/chats/users/${userUuid}/unpin`),
+	unpin: (userPkid: number) => apiClient.delete(`/api/chats/users/${userPkid}/unpin`),
 
 	mute: (userPkid: number, muteUntil?: string) =>
 		apiClient.post("/api/chats/mute", {
@@ -204,19 +224,22 @@ export const chatApi = {
 		apiClient.post(`/api/chats/custom-lists/${listId}/remove-members`, { user_ids: userPkids }),
 
 	// Message actions
-	forwardMessage: (messageId: number, targets: { type: "user"; id: number }[], comment?: string) =>
-		apiClient.post("/api/chats/messages/forward", { message_id: messageId, targets, comment }),
+	forwardMessage: (
+		messageId: number,
+		targets: { type: "user" | "group"; id: number }[],
+		comment?: string,
+	) => apiClient.post("/api/chats/messages/forward", { message_id: messageId, targets, comment }),
 
-	pinMessage: (messageId: number, targetPkid: number) =>
+	pinMessage: (messageId: number, chatType: "user" | "group", targetPkid: number) =>
 		apiClient.post("/api/chats/messages/pin", {
 			message_id: messageId,
-			chat_type: "user",
+			chat_type: chatType,
 			target_id: targetPkid,
 		}),
-	unpinMessage: (messageId: number, targetPkid: number) =>
+	unpinMessage: (messageId: number, chatType: "user" | "group", targetPkid: number) =>
 		apiClient.post("/api/chats/messages/unpin", {
 			message_id: messageId,
-			chat_type: "user",
+			chat_type: chatType,
 			target_id: targetPkid,
 		}),
 
@@ -232,4 +255,76 @@ export const chatApi = {
 
 	deleteMessage: (messageId: number, deleteType: MessageDeleteType) =>
 		apiClient.post(`/api/chats/messages/${messageId}`, { delete_type: deleteType }),
+
+	// Profile
+	getUserProfile: (userUuid: string) =>
+		apiClient
+			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
+			.then((r) => r.data.data),
+
+	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
+		const params = new URLSearchParams({ type })
+		if (cursor) params.set("cursor", cursor)
+		const qs = params.toString()
+		return apiClient
+			.get<ApiResponse<UserAttachmentsData>>(`/api/chats/users/${userUuid}/attachments?${qs}`)
+			.then((r) => r.data.data)
+	},
+	reportUser: (userUuid: string, payload: ReportUserPayload) =>
+		apiClient.post(`/api/chats/users/${userUuid}/report`, payload),
+
+	// Reactions
+	reactToMessage: (messageId: number, emoji: string) =>
+		apiClient.post("/api/chats/messages/reactions", { message_id: messageId, emoji }),
+
+	listMessageReactions: (messageId: number) =>
+		apiClient
+			.get<ApiResponse<MessageReaction[]>>(`/api/chats/messages/${messageId}/reactions`)
+			.then((r) => r.data.data),
+
+	removeReaction: (messageId: number) =>
+		apiClient.delete(`/api/chats/messages/${messageId}/reactions`),
+
+	// Polls
+	votePoll: (messageId: number, optionId: number) =>
+		apiClient.post("/api/chats/messages/polls/vote", {
+			message_id: messageId,
+			option_id: optionId,
+		}),
+
+	getPollResults: (messageId: number) =>
+		apiClient
+			.get<ApiResponse<PollResults>>(`/api/chats/messages/${messageId}/polls`)
+			.then((r) => r.data.data),
+
+	uploadMedia: async (file: File, folder: MediaUploadFolder = "chat") => {
+		const formData = new FormData()
+		formData.append("file", file)
+		formData.append("folder", folder)
+		const res = await apiClient.post<ApiResponse<UploadMediaResponse>>(
+			"/api/chats/upload-media",
+			formData,
+		)
+		return res.data.data.media_url
+	},
+}
+
+export const scheduleApi = {
+	list: () =>
+		apiClient
+			.get<ApiResponse<ScheduleListData>>("/api/chats/schedules", {
+				params: { type: "message" },
+			})
+			.then((r) => r.data.data.results),
+	get: (scheduleId: number) =>
+		apiClient
+			.get<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`)
+			.then((r) => r.data.data),
+	create: (payload: CreateMessageSchedulePayload) =>
+		apiClient.post<ApiResponse<Schedule>>("/api/chats/schedules", payload).then((r) => r.data.data),
+	update: (scheduleId: number, payload: Partial<CreateMessageSchedulePayload>) =>
+		apiClient
+			.patch<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`, payload)
+			.then((r) => r.data.data),
+	delete: (scheduleId: number) => apiClient.delete(`/api/chats/schedules/${scheduleId}`),
 }

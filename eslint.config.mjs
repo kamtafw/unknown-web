@@ -23,6 +23,12 @@ const eslintConfig = [
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
+			"components/messenger/conversation/reaction-row.tsx",
+			"components/messenger/conversation/poll-bubble.tsx",
+			"components/messenger/conversation/conversation-workspace.tsx",
+			"components/messenger/conversation/reaction-summary.tsx",
+			"components/messenger/status/status-viewer-panel.tsx",
+			"components/messenger/schedule/schedule-compose-dialog.tsx",
 		],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",

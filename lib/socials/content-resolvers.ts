@@ -6,7 +6,7 @@ import { SocialContent } from "@/types/socials/api"
  * UUID-only. See hooks/socials/use-repost.ts. */
 export const PENDING_REPOST_ID_PREFIX = "pending-repost-"
 
-/** True once `my_repost_id` holds a real server-assigned id rather than the
+/** True once `viewer.repost_id` holds a real server-assigned id rather than the
  * temporary sentinel used while a bare-repost mutation is in flight —
  * guards "Undo repost" from firing on an id that doesn't exist on the
  * server yet. */
@@ -60,7 +60,6 @@ export function resolveEngagementContent(content: SocialContent): SocialContent 
 		updated_at: original.updated_at,
 		flags: { ...content.flags, repost: false },
 		original: null,
-		my_repost_id: original.my_repost_id,
 	}
 }
 

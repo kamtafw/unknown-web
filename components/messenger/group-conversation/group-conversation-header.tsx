@@ -1,8 +1,7 @@
 "use client"
 
-import { toast } from "@/lib/toast"
 import type { Group } from "@/types/messenger"
-import { ArrowLeft, MoreVertical, Pause, Phone, Search, Video } from "lucide-react"
+import { ArrowLeft, MoreVertical, Pause, Search } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
 import { useState } from "react"
@@ -10,25 +9,14 @@ import { GroupInfoDialog } from "./group-info-dialog"
 
 interface GroupConversationHeaderProps {
 	group: Group | null
-}
-
-function InertIconButton({ label, icon: Icon }: { label: string; icon: typeof Phone }) {
-	return (
-		<button
-			title={`${label} — coming soon`}
-			onClick={() => toast.info(`${label} is coming in a later milestone`)}
-			className="text-muted-foreground/40 hover:bg-accent/40 rounded-full p-2 transition-colors cursor-not-allowed"
-		>
-			<Icon size={18} />
-		</button>
-	)
+	onOpenSearch: () => void
 }
 
 /** Deliberately its own component rather than reusing 1:1's
  * ConversationHeader — a group has no first_name/last_name/username to
  * satisfy PeerDisplay, and PeerDisplay's own doc comment is explicit
  * about not inventing fields it doesn't have. */
-export function GroupConversationHeader({ group }: GroupConversationHeaderProps) {
+export function GroupConversationHeader({ group, onOpenSearch }: GroupConversationHeaderProps) {
 	const [infoOpen, setInfoOpen] = useState(false)
 	const name = group?.name ?? "Group"
 
@@ -63,9 +51,13 @@ export function GroupConversationHeader({ group }: GroupConversationHeaderProps)
 				</div>
 
 				<div className="flex items-center gap-0.5 shrink-0">
-					<InertIconButton label="Voice call" icon={Phone} />
-					<InertIconButton label="Video call" icon={Video} />
-					<InertIconButton label="Search in chat" icon={Search} />
+					<button
+						onClick={onOpenSearch}
+						title="Search in chat"
+						className="text-muted-foreground hover:bg-accent rounded-full p-2 transition-colors"
+					>
+						<Search size={18} />
+					</button>
 					<button
 						onClick={() => setInfoOpen(true)}
 						disabled={!group}

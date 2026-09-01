@@ -28,6 +28,8 @@ export const chatKeys = {
 	history: (userUuid: Uuid) => [...chatKeys.histories(), userUuid] as const,
 	pinnedMessages: (userUuid: Uuid) => [...chatKeys.all, "pinned-messages", userUuid] as const,
 
+	archiveList: () => [...chatKeys.all, "archive-list"] as const,
+
 	searchUsers: (search: string) => [...chatKeys.all, "search-users", search] as const,
 
 	/** Primed client-side when a conversation is opened from search (no
@@ -41,6 +43,15 @@ export const chatKeys = {
 
 	customLists: () => [...chatKeys.all, "custom-lists"] as const,
 	customListMembers: (listId: number) => [...chatKeys.customLists(), listId, "members"] as const,
+
+	/** Dedicated profile fetch, distinct from the list/peer cache. */
+	userProfile: (userUuid: Uuid) => [...chatKeys.all, "user-profile", userUuid] as const,
+	attachments: (userUuid: Uuid, type: "media" | "doc" | "link") =>
+		[...chatKeys.all, "attachments", userUuid, type] as const,
+
+	reactions: (messageId: number) => [...chatKeys.all, "reactions", messageId] as const,
+
+	pollResults: (messageId: number) => [...chatKeys.all, "poll-results", messageId] as const,
 }
 
 export const groupKeys = {
@@ -65,6 +76,7 @@ export const statusKeys = {
 
 	feed: () => [...statusKeys.all, "feed"] as const,
 	mine: () => [...statusKeys.all, "mine"] as const,
+	byUser: (userPkid: number) => [...statusKeys.all, "user", userPkid] as const,
 	viewers: (statusId: number) => [...statusKeys.all, "viewers", statusId] as const,
 }
 
@@ -72,3 +84,9 @@ export const statusKeys = {
  * sparingly (e.g. on reconnect reconciliation), not as a routine
  * invalidation target. */
 export const messengerRootKey = ["messenger"] as const
+
+export const scheduleKeys = {
+	all: ["schedules"] as const,
+	list: () => [...scheduleKeys.all, "list"] as const,
+	detail: (id: number) => [...scheduleKeys.all, "detail", id] as const,
+}

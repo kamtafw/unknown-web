@@ -25,16 +25,6 @@ function resolvePreviewText(message: Message): string {
 	return message.content || message.message_type
 }
 
-/**
- * BUG FIX (M2 retest): previously fetched via usePinnedMessages (GET
- * chats/messages/pinned?chat_type=user&...). Confirmed via mobile
- * (chat/[id].tsx) that this endpoint 404s or returns empty on this
- * backend for direct/user chats — mobile derives pinned state from
- * the loaded history's `is_pinned` flag instead of fetching it.
- * `pinnedMessages` is now that same derived list, passed down from
- * ConversationView, so `current.id` is always a real id already
- * present in `messageNodeRefs`.
- */
 export function PinnedMessageBanner({
 	pinnedMessages,
 	onJumpToMessage,

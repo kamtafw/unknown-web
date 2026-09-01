@@ -1,4 +1,5 @@
 import { TopBar } from "@/components/dashboard/top-bar"
+import { MediaViewerProvider } from "@/components/messenger/media/media-viewer-context"
 import { MessengerShell } from "@/components/messenger/messenger-shell"
 import { MessengerSocketBootstrap } from "@/components/messenger/messenger-socket-bootstrap"
 import { MessengerRail } from "@/components/messenger/rail/messenger-rail"
@@ -14,15 +15,17 @@ import { ReactNode } from "react"
  */
 export default function MessengerLayout({ children }: { children: ReactNode }) {
 	return (
-		<div className="h-screen flex flex-col overflow-hidden bg-background">
-			<DashboardAuthBootstrap />
-			<MessengerSocketBootstrap />
-			<TopBar />
+		<MediaViewerProvider>
+			<div className="h-screen flex flex-col overflow-hidden bg-background">
+				<DashboardAuthBootstrap />
+				<MessengerSocketBootstrap />
+				<TopBar />
 
-			<div className="flex flex-1 min-h-0 overflow-hidden">
-				<MessengerRail />
-				<MessengerShell>{children}</MessengerShell>
+				<div className="flex flex-1 min-h-0 overflow-hidden">
+					<MessengerRail />
+					<MessengerShell>{children}</MessengerShell>
+				</div>
 			</div>
-		</div>
+		</MediaViewerProvider>
 	)
 }

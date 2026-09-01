@@ -3,8 +3,14 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import {
+	isReactionRemoval,
+	toggleActorReaction,
+	totalReactionCount,
+} from "@/lib/messenger/reactions"
 import { toast } from "@/lib/toast"
-import type { Message, Pkid, Uuid } from "@/types/messenger"
+import { useAuthStore } from "@/stores/auth-store"
+import type { EmojiReactionCount, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback } from "react"
 
@@ -40,6 +46,8 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 		[queryClient],
 	)
 
+	const reactToMessage = useReactToMessage(peerUuid)
+
 	const pinMessage = useCallback(
 		async (message: Message) => {
 			// Optimistic — this is a single message's boolean field within an
@@ -51,7 +59,7 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 				patchMessageInHistory(old, message.id, { is_pinned: true }),
 			)
 			try {
-				await chatApi.pinMessage(message.id, peerPkid)
+				await chatApi.pinMessage(message.id, "user", peerPkid)
 				queryClient.invalidateQueries({ queryKey: pinnedKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -69,7 +77,7 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 				patchMessageInHistory(old, message.id, { is_pinned: false }),
 			)
 			try {
-				await chatApi.unpinMessage(message.id, peerPkid)
+				await chatApi.unpinMessage(message.id, "user", peerPkid)
 				queryClient.invalidateQueries({ queryKey: pinnedKey })
 			} catch (err) {
 				queryClient.setQueryData(historyKey, (old: unknown) =>
@@ -87,8 +95,10 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 			// optimistic hide-then-rollback; wait for confirmation.
 			try {
 				await chatApi.deleteMessage(message.id, deleteType)
+				const patch: Partial<Message> =
+					deleteType === "both" ? { is_deleted_for_all: true } : { is_hidden_by_me: true }
 				queryClient.setQueryData(historyKey, (old: unknown) =>
-					patchMessageInHistory(old, message.id, { deleted: true, content: "" }),
+					patchMessageInHistory(old, message.id, { ...patch, content: "" }),
 				)
 			} catch (err) {
 				toast.error(extractMessage(err, "Couldn't delete the message — try again"))
@@ -97,16 +107,16 @@ export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 		[queryClient, historyKey],
 	)
 
-	return { forward, pinMessage, unpinMessage, deleteMessage }
+	return { forward, reactToMessage, pinMessage, unpinMessage, deleteMessage }
 }
 
 /**
  * Separate from useMessageActions since it's a read, not an action — kept
  * in this file rather than a new one, tightly coupled to same domain.
- * 
+ *
  * NOT wired up for direct/user chats — confirmed via mobile
  * (chat/[id].tsx: "the dedicated /chats/messages/pinned:id endpoint
- * 404s on this backend or returns empty") that chat_type=user is 
+ * 404s on this backend or returns empty") that chat_type=user is
  * unreliable here. Direct chats derive pinned messages from loaded
  * history instead (see ConversationView). Retained for chat_type=group,
  * which mobile's useGetPinnedChatMessages does call successfully.
@@ -137,4 +147,72 @@ function patchMessageInHistory(old: unknown, messageId: number, patch: Partial<M
 			results: page.results.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
 		})),
 	}
+}
+
+function readMessageReactionCounts(old: unknown, messageId: number): EmojiReactionCount[] {
+	const data = old as { pages?: Array<{ results: Message[] }> } | undefined
+	if (!data?.pages) return []
+	for (const page of data.pages) {
+		const found = page.results.find((m) => m.id === messageId)
+		if (found) return found.emoji_reaction_counts ?? []
+	}
+	return []
+}
+
+/** No socket path for 1:1 (confirmed absent from mobile's chat socket) —
+ * HTTP + optimistic path + invalidate-on-success only, so a concurrent
+ * reactor's count still converges without a realtime push. */
+export function useReactToMessage(peerUuid: Uuid) {
+	const queryClient = useQueryClient()
+	const currentUser = useAuthStore((s) => s.user)
+	const historyKey = chatKeys.history(peerUuid)
+
+	return useCallback(
+		async (message: Message, emoji: string) => {
+			if (!currentUser) return
+			const actorId = String(currentUser.pkid)
+			const previousCounts = readMessageReactionCounts(
+				queryClient.getQueryData(historyKey),
+				message.id,
+			)
+			const isRemoval = isReactionRemoval(previousCounts, actorId, emoji)
+			const nextCounts = toggleActorReaction(previousCounts, actorId, emoji)
+
+			queryClient.setQueryData(historyKey, (old: unknown) =>
+				patchMessageInHistory(old, message.id, {
+					emoji_reaction_counts: nextCounts,
+					reactions_count: totalReactionCount(nextCounts),
+				}),
+			)
+
+			try {
+				if (isRemoval) {
+					await chatApi.removeReaction(message.id)
+				} else {
+					await chatApi.reactToMessage(message.id, emoji)
+				}
+				queryClient.invalidateQueries({ queryKey: historyKey })
+			} catch (err) {
+				queryClient.setQueryData(historyKey, (old: unknown) =>
+					patchMessageInHistory(old, message.id, {
+						emoji_reaction_counts: previousCounts,
+						reactions_count: totalReactionCount(previousCounts),
+					}),
+				)
+				toast.error(extractMessage(err, "Couldn't react to the message — try again"))
+			}
+		},
+		[queryClient, historyKey, currentUser],
+	)
+}
+
+/** Confirmed endpoint, lazy (only called when a reaction
+ * pill's popover is opened). */
+export function useMessageReactions(messageId: number | null) {
+	return useQuery({
+		queryKey: chatKeys.reactions(messageId ?? 0),
+		queryFn: () => chatApi.listMessageReactions(messageId as number),
+		enabled: !!messageId && messageId > 0,
+		staleTime: 15_000,
+	})
 }

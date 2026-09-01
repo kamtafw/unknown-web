@@ -10,7 +10,7 @@
  * schedule types, community types — those belong to their own milestones.
  * E2EE fields (`nonce`, `sender_ephemeral_key`) have been added: the
  * backend has set these fields as required when making an API call;
- * these fields currently accept random values as encryption is 
+ * these fields currently accept random values as encryption is
  * non-functional today.
  */
 
@@ -70,6 +70,19 @@ export interface SendMessagePayload {
 	sender_ephemeral_key?: string
 }
 
+/** Embedded reply context — NOT a bare id. Confirmed via live payload
+ * inspection (2026-08-29): both the POST create-response and the
+ * `chat:receive` socket event return this full object. Only the CREATE
+ * payload (`SendMessagePayload.reply_to`) is a bare id — that's what's
+ * sent to create a reply; this is what comes back describing it. */
+export interface MessageReplyTo {
+	id: number
+	sender_id: Uuid
+	content: string
+	message_type: MessageType
+	created_at: string
+}
+
 /** A message is returned by the server */
 export interface Message {
 	id: number
@@ -80,15 +93,15 @@ export interface Message {
 	content: string
 	media: MediaAttachment[] | null
 	metadata: Record<string, unknown> | null
-	deleted?: boolean
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
-	reply_to: number | null
+	reply_to: MessageReplyTo | null
 	forwarded_from: unknown | null
-	is_hidden_by_me?: boolean
-	is_deleted_for_all?: boolean
+	is_hidden_by_me: boolean
+	is_deleted_for_all: boolean
 	reactions_count?: number
+	emoji_reaction_counts?: EmojiReactionCount[]
 	views_count?: number
 	replies_count?: number
 	created_at: string
@@ -127,4 +140,79 @@ export type ChatListFilter = "all" | "unread" | "favorites"
 export interface CursorPage<T> {
 	results: T[]
 	next: string | null
+}
+
+/**
+ * Confirmed via mobile's `useGetUserProfile` (`chats/users/:pkid/profile`).
+ * Deliberately not merged into ChatListItem — this is a dedicated fetch,
+ * not derivable from list/peer cache (see usePeerProfile's own doc comment
+ * on why the list shape stays thin).
+ */
+export interface MessengerAttachmentMedia {
+	url: string
+	type: "image" | "video" | "audio" | "document" | string
+	caption?: string
+}
+
+export interface MessengerAttachment {
+	id: number
+	message_type: string
+	attachment_type: "media" | "doc" | "link" | string
+	media: MessengerAttachmentMedia[] | null
+	content: string
+	created_at: string
+}
+
+export interface MessengerUserProfile {
+	user: {
+		id: Uuid
+		pkid: Pkid
+		username: string
+		first_name: string
+		last_name: string
+		email: string
+		phone_number: string
+		profile_photo: string
+		is_blocked?: boolean
+		has_blocked_me?: boolean
+	}
+	attachments: MessengerAttachment[]
+	attachments_count: number
+	size?: string | null
+	total_size?: number | null
+}
+
+export interface UserAttachmentsData {
+	total_size?: number | null
+	metadata: { next: string | null; previous: string | null }
+	results: MessengerAttachment[]
+}
+
+export type ReportUserReason =
+	"misuse_of_the_platform" | "bullying_or_harassment" | "violation_of_community_rules" | "other"
+
+/** Confirmed via mobile's `useReportUser` (`chats/users/:pkid/report`). */
+export interface ReportUserPayload {
+	reason: ReportUserReason
+	description?: string
+	block_and_delete: boolean
+}
+
+export interface EmojiReactionCount {
+	emoji: string
+	count: number
+	/** String pkids of users who reacted with this emoji — lets us tell a
+	 * new reaction apart from a switch or toggle-off so optimistic counts
+	 * stay correct. */
+	actor_ids?: string[]
+}
+
+/** `GET chats/messages/:id/reactions` response row — 1:1 only, confirmed
+ * endpoint but mobile never built UI on it; group has no equivalent, see
+ * `emoji_reaction_counts.actor_ids` instead */
+export interface MessageReaction {
+	id: number
+	user: MessageSender
+	emoji: string
+	created_at: string
 }

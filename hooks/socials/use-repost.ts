@@ -70,7 +70,7 @@ function buildOptimisticPost(
 			: null,
 		hashtags: payload.hashtags ?? [],
 		metrics: { likes: 0, replies: 0, reposts: 0, reactions: 0, shares: 0, bookmarks: 0, views: 0 },
-		viewer: { liked: false, reposted: false, bookmarked: false, shared: false },
+		viewer: { liked: false, reposted: false, repost_id: null, bookmarked: false, shared: false },
 		permissions: {
 			visibility: payload.who_can_see ?? "EVERYONE",
 			reply_policy: payload.who_can_reply ?? "EVERYONE",
@@ -79,7 +79,6 @@ function buildOptimisticPost(
 		},
 		flags: { pinned: false, repost: true, shared: false },
 		original: originalPost,
-		my_repost_id: null,
 		created_at: now,
 		updated_at: now,
 	}
@@ -107,14 +106,15 @@ export function useRepost() {
 			const current = findEngagementEntityAnywhere(qc, payload.original_post)
 			const prevRepostCount = current?.metrics.reposts ?? 0
 			const prevReposted = current?.viewer.reposted ?? false
-			const prevMyRepostId = current?.my_repost_id ?? null
+			const prevRepostId = current?.viewer.repost_id ?? null
 			const isUnquoted = !payload.content?.trim()
 
 			const patch: SocialContentPatch = {
 				metrics: { reposts: prevRepostCount + 1 },
 				viewer: { reposted: true },
 			}
-			if (isUnquoted) patch.my_repost_id = `${PENDING_REPOST_ID_PREFIX}${Date.now()}`
+			if (isUnquoted)
+				patch.viewer = { ...patch.viewer, repost_id: `${PENDING_REPOST_ID_PREFIX}${Date.now()}` }
 			patchEngagementEverywhere(qc, payload.original_post, patch)
 
 			// 2. prepend a fake repost card to the For You feed
@@ -133,7 +133,7 @@ export function useRepost() {
 					id: payload.original_post,
 					repostCount: prevRepostCount,
 					reposted: prevReposted,
-					myRepostId: prevMyRepostId,
+					repostId: prevRepostId,
 				},
 			}
 		},
@@ -145,8 +145,7 @@ export function useRepost() {
 			if (ctx?.revert) {
 				patchEngagementEverywhere(qc, ctx.revert.id, {
 					metrics: { reposts: ctx.revert.repostCount },
-					viewer: { reposted: ctx.revert.reposted },
-					my_repost_id: ctx.revert.myRepostId,
+					viewer: { reposted: ctx.revert.reposted, repost_id: ctx.revert.repostId },
 				})
 			}
 			showMutationErrorToast(error, "Failed to repost. Please try again.")
@@ -160,15 +159,10 @@ export function useRepost() {
 			}
 
 			if (!vars.content?.trim()) {
-				// `repost_id` is the flat, contract-documented field — the previous
-				// `original_post.reposts?.[0]?.id` path assumed an unverified nested
-				// shape and threw when `original_post` wasn't present, silently
-				// aborting this handler before invalidateQueries below ever ran.
 				const realId = data.data.repost_id
 				if (realId != null) {
 					patchEngagementEverywhere(qc, vars.original_post, {
-						my_repost_id: realId,
-						viewer: { reposted: true },
+						viewer: { reposted: true, repost_id: realId },
 					})
 				}
 			}

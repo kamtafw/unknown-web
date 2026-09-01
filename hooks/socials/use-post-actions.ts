@@ -106,29 +106,30 @@ export function useDeletePost() {
 				bookmarks: qc.getQueryData<FeedCache>(feedKeys.bookmarks()),
 			}
 
-			let originalRevert: {
+			let revert: {
 				id: string
 				repostCount: number
-				myRepostId: string | null
+				repostId: string | null
 			} | null = null
 
 			if (originalPost) {
 				const current = findEngagementEntityAnywhere(qc, originalPost.id)
 				const prevCount = current?.metrics.reposts ?? 0
-				originalRevert = {
+				const prevRepostId = current?.viewer.repost_id ?? null
+				revert = {
 					id: originalPost.id,
 					repostCount: prevCount,
-					myRepostId: current?.my_repost_id ?? null,
+					repostId: prevRepostId,
 				}
 
 				const patch: SocialContentPatch = { metrics: { reposts: Math.max(0, prevCount - 1) } }
-				if (originalPost.wasBareRepost) patch.my_repost_id = null
+				if (originalPost.wasBareRepost) patch.viewer = { ...patch.viewer, repost_id: null }
 				patchEngagementEverywhere(qc, originalPost.id, patch)
 			}
 
 			removePostFromAllFeeds(qc, id)
 
-			return { snapshot, originalRevert }
+			return { snapshot, revert }
 		},
 
 		onSuccess: (_data, { id, originalPost }) => {
@@ -138,10 +139,10 @@ export function useDeletePost() {
 
 		onError: (error, _vars, ctx) => {
 			restoreSnapshot(qc, ctx?.snapshot)
-			if (ctx?.originalRevert) {
-				patchEngagementEverywhere(qc, ctx.originalRevert.id, {
-					metrics: { reposts: ctx.originalRevert.repostCount },
-					my_repost_id: ctx.originalRevert.myRepostId,
+			if (ctx?.revert) {
+				patchEngagementEverywhere(qc, ctx.revert.id, {
+					metrics: { reposts: ctx.revert.repostCount },
+					viewer: { repost_id: ctx.revert.repostId },
 				})
 			}
 			showMutationErrorToast(error, "Failed to delete post. Please try again.")

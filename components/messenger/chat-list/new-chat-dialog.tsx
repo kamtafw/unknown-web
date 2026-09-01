@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useChatList } from "@/hooks/messenger/use-chat-list"
 import { useSearchUsers } from "@/hooks/messenger/use-search-users"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { chatKeys } from "@/lib/messenger/query-keys"
@@ -21,21 +22,29 @@ interface NewChatDialogProps {
 
 /**
  * Scope per the M1 product decision: search/select a user, open a direct
- * conversation. Deliberately does NOT branch into contacts management or
- * custom-list creation — those stay out of M1 even though "+Create" could
- * plausibly have meant either.
+ * conversation. Doesn't branch into contacts management or custom-list
+ * creation.
+ *
+ * Default (empty-search) view shows existing conversations instead of a
+ * blank prompt — reuses useChatList (same hook/query as the chat-list
+ * panel and the schedule recipient picker). Typing switches to
+ * useSearchUsers (global search) for people not in your chat list yet.
  */
 export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
 	const [search, setSearch] = useState("")
 	const debouncedSearch = useDebouncedValue(search, 300)
-	const { data: results, isLoading } = useSearchUsers(debouncedSearch)
+	const isSearching = debouncedSearch.trim().length > 0
+
+	const { data: searchResults, isLoading: searchLoading } = useSearchUsers(debouncedSearch)
+	const { data: chatList, isLoading: chatListLoading } = useChatList("all", "")
+
 	const router = useRouter()
 	const queryClient = useQueryClient()
 
+	const results = isSearching ? searchResults : chatList?.users
+	const isLoading = isSearching ? searchLoading : chatListLoading
+
 	const handleSelect = (user: ChatListItem) => {
-		// Prime the peer-profile cache so ConversationHeader has something to
-		// render immediately — see hooks/messenger/use-peer-profile.ts for why
-		// there's no direct fetch-by-uuid fallback.
 		queryClient.setQueryData(chatKeys.peer(user.id as Uuid), user)
 		onOpenChange(false)
 		setSearch("")
@@ -64,9 +73,9 @@ export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
 				</div>
 
 				<div className="max-h-80 overflow-y-auto -mx-2">
-					{debouncedSearch.trim().length === 0 && (
-						<p className="text-sm text-muted-foreground text-center py-8">
-							Search for someone to start a conversation.
+					{!isSearching && !chatListLoading && (chatList?.users.length ?? 0) > 0 && (
+						<p className="px-4 pb-1 text-xs font-medium text-muted-foreground">
+							Recent conversations
 						</p>
 					)}
 
@@ -81,32 +90,39 @@ export function NewChatDialog({ open, onOpenChange }: NewChatDialogProps) {
 						</div>
 					)}
 
-					{!isLoading && debouncedSearch.trim().length > 0 && results?.length === 0 && (
+					{!isLoading && isSearching && results?.length === 0 && (
 						<p className="text-sm text-muted-foreground text-center py-8">No users found.</p>
 					)}
 
-					{results?.map((user) => (
-						<button
-							key={user.id}
-							onClick={() => handleSelect(user)}
-							className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors text-left"
-						>
-							<Avatar.Root className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-								<Avatar.Image
-									src={user.profile_photo}
-									alt={getDisplayName(user)}
-									className="h-full w-full object-cover"
-								/>
-								<Avatar.Fallback className="text-xs font-medium text-muted-foreground">
-									{getInitials(user.first_name, user.last_name)}
-								</Avatar.Fallback>
-							</Avatar.Root>
-							<div className="min-w-0">
-								<p className="text-sm font-medium truncate">{getDisplayName(user)}</p>
-								<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
-							</div>
-						</button>
-					))}
+					{!isLoading && !isSearching && (chatList?.users.length ?? 0) === 0 && (
+						<p className="text-sm text-muted-foreground text-center py-8">
+							Search for someone to start a conversation.
+						</p>
+					)}
+
+					{!isLoading &&
+						results?.map((user) => (
+							<button
+								key={user.id}
+								onClick={() => handleSelect(user)}
+								className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+							>
+								<Avatar.Root className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+									<Avatar.Image
+										src={user.profile_photo}
+										alt={getDisplayName(user)}
+										className="h-full w-full object-cover"
+									/>
+									<Avatar.Fallback className="text-xs font-medium text-muted-foreground">
+										{getInitials(user.first_name, user.last_name)}
+									</Avatar.Fallback>
+								</Avatar.Root>
+								<div className="min-w-0">
+									<p className="text-sm font-medium truncate">{getDisplayName(user)}</p>
+									<p className="text-xs text-muted-foreground truncate">@{user.username}</p>
+								</div>
+							</button>
+						))}
 				</div>
 			</DialogContent>
 		</Dialog>

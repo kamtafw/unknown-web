@@ -15,6 +15,7 @@ let counter = 0
 export function createOptimisticMessage(
 	payload: SendMessagePayload,
 	sender: MessageSender,
+	replyingTo?: Message | null,
 ): Message {
 	counter -= 1
 	return {
@@ -27,9 +28,19 @@ export function createOptimisticMessage(
 		media: payload.media ?? null,
 		metadata: payload.metadata ?? null,
 		is_pinned: false,
+		is_deleted_for_all: false,
+		is_hidden_by_me: false,
 		collection_id: "",
 		status: "queued",
-		reply_to: payload.reply_to ?? null,
+		reply_to: replyingTo
+			? {
+					id: replyingTo.id,
+					sender_id: replyingTo.sender.id,
+					content: replyingTo.content,
+					message_type: replyingTo.message_type,
+					created_at: replyingTo.created_at,
+				}
+			: null,
 		forwarded_from: null,
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString(),

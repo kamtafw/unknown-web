@@ -1,35 +1,45 @@
 "use client"
 
 import { useChatHistory } from "@/hooks/messenger/use-chat-history"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageActions } from "@/hooks/messenger/use-message-actions"
+import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { usePeerProfile } from "@/hooks/messenger/use-peer-profile"
 import { useSendMessage } from "@/hooks/messenger/use-send-message"
 import { useTyping } from "@/hooks/messenger/use-typing"
+import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
 import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { derivePeerFromMessages } from "@/lib/messenger/user-display"
+import { derivePeerFromMessages, getDisplayName } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Message, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "./composer"
+import { ContactComposerDialog } from "./contact-composer-dialog"
 import { ConversationHeader } from "./conversation-header"
 import { DeleteMessageDialog } from "./delete-message-dialog"
 import { ForwardDialog } from "./forward-dialog"
+import { MediaComposerDialog } from "./media-composer-dialog"
 import { MessageList, MessageListHandle } from "./message-list"
+import { MessageSearchBar } from "./message-search-bar"
 import { PinnedMessageBanner } from "./pinned-message-banner"
+import { ReactionsDialog } from "./reactions-dialog"
 
 interface ConversationViewProps {
 	uuid: Uuid
+	onOpenProfile: () => void
 }
 
-export function ConversationView({ uuid }: ConversationViewProps) {
+export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps) {
 	const currentUser = useAuthStore((s) => s.user)
 	const queryClient = useQueryClient()
 	const peer = usePeerProfile(uuid)
+
 	const { messages, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
 		useChatHistory(uuid)
+
 	const { remoteTyping, emitTyping } = useTyping(uuid)
 
 	// Fixes "peer data disappears on refresh": if the list/primed cache
@@ -38,6 +48,7 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 	// prime the peer cache so it's there instantly on the next visit this
 	// session too — not just a one-off recovery.
 	const derivedPeer = peer ?? derivePeerFromMessages(messages, uuid)
+
 	useEffect(() => {
 		if (!peer && derivedPeer) {
 			queryClient.setQueryData(chatKeys.peer(uuid), derivedPeer)
@@ -55,19 +66,40 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		messages.find((m) => m.receiver?.id === uuid)?.receiver?.pkid ??
 		null
 
-	const { send, retry } = useSendMessage(uuid, (derivedPkid ?? 0) as Pkid)
-	const { forward, pinMessage, unpinMessage, deleteMessage } = useMessageActions(
+	const { send, sendMedia, sendContact, sendLocation, sendVoice, retry } = useSendMessage(
+		uuid,
+		(derivedPkid ?? 0) as Pkid,
+	)
+	const {
+		attachments,
+		addFiles,
+		retryUpload,
+		removeAttachment,
+		reset: resetAttachments,
+		readyToSend,
+	} = usePendingAttachment("chat")
+
+	const { forward, pinMessage, unpinMessage, deleteMessage, reactToMessage } = useMessageActions(
 		uuid,
 		(derivedPkid ?? 0) as Pkid,
 	)
 
+	const voiceRecorder = useVoiceRecorder()
+
+	const [contactDialogOpen, setContactDialogOpen] = useState(false)
 	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
+	const [reactionsDialogMessage, setReactionsDialogMessage] = useState<Message | null>(null)
 
 	const messageListRef = useRef<MessageListHandle>(null)
 
-	const pinnedMessages = useMemo(() => messages.filter((m) => m.is_pinned), [messages])
+	const pinnedMessages = useMemo(
+		() => messages.filter((m) => m.is_pinned && !m.is_deleted_for_all && !m.is_hidden_by_me),
+		[messages],
+	)
+
+	const search = useMessageSearch(messages, messageListRef)
 
 	useEffect(() => {
 		if (document.visibilityState !== "visible") return
@@ -102,7 +134,49 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 			toast.error("Can't send yet — open this conversation from the chat list or search.")
 			return
 		}
-		void send(content, replyingTo?.id)
+		void send(content, replyingTo)
+	}
+
+	const handleSendMedia = (caption: string) => {
+		const uploaded = attachments.filter((a) => a.uploadedUrl)
+		if (uploaded.length === 0) return
+
+		const resolveCaption = (a: PendingAttachment) =>
+			caption ||
+			(a.type === "document" || a.type === "pdf" || a.type === "audio" ? a.file.name : "")
+
+		void sendMedia(
+			uploaded.map((a) => ({
+				url: a.uploadedUrl as string,
+				type: a.type,
+				fileName: a.file.name,
+				caption: resolveCaption(a),
+			})),
+			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
+		)
+		resetAttachments()
+	}
+
+	const handleAttachLocation = () => {
+		if (!navigator.geolocation) {
+			toast.error("Location isn't available in this browser")
+			return
+		}
+		navigator.geolocation.getCurrentPosition(
+			(pos) => void sendLocation(pos.coords.latitude, pos.coords.longitude),
+			() => toast.error("Couldn't get your location — check browser permissions"),
+		)
+	}
+
+	const handleVoiceSend = async () => {
+		const result = await voiceRecorder.send()
+		if (!result) return
+		try {
+			const uploadedUrl = await chatApi.uploadMedia(result.file, "voice")
+			void sendVoice(uploadedUrl, result.file.name, result.duration)
+		} catch {
+			toast.error("Couldn't send the voice message — try again")
+		}
 	}
 
 	const handleRetry = (message: Message) => {
@@ -126,14 +200,52 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 		}
 	}
 
+	const handleFetchAllReactors = useCallback(async () => {
+		if (!reactionsDialogMessage) return []
+		const reactions = await chatApi.listMessageReactions(reactionsDialogMessage.id)
+		return reactions.map((r) => ({
+			pkid: String(r.user.pkid),
+			name: getDisplayName(r.user),
+			avatarUrl: r.user.profile_photo,
+			emoji: r.emoji,
+		}))
+	}, [reactionsDialogMessage])
+
+	const handleRemoveOwnReaction = (emoji: string) => {
+		const msg = reactionsDialogMessage
+		setReactionsDialogMessage(null)
+		if (msg) void reactToMessage(msg, emoji)
+	}
+
 	return (
-		<div className="flex-1 flex flex-col h-full min-w-0">
-			<ConversationHeader peer={derivedPeer} />
+		<div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+			{search.isOpen ? (
+				<MessageSearchBar
+					value={search.query}
+					onChangeText={search.onQueryChange}
+					onSubmit={search.onSubmit}
+					onClose={search.close}
+					onPrev={search.onPrev}
+					onNext={search.onNext}
+					resultCount={search.resultCount}
+					activeIndex={search.activeIndex}
+				/>
+			) : (
+				<ConversationHeader
+					peer={peer}
+					peerUuid={uuid}
+					peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
+					onOpenProfile={onOpenProfile}
+					onOpenSearch={search.open}
+				/>
+			)}
+
 			<PinnedMessageBanner
 				pinnedMessages={pinnedMessages}
 				onJumpToMessage={handleJumpToMessage}
 				onUnpin={(m) => void unpinMessage(m)}
 			/>
+
 			<MessageList
 				ref={messageListRef}
 				messages={messages}
@@ -149,13 +261,34 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 				onPin={(m) => void pinMessage(m)}
 				onUnpin={(m) => void unpinMessage(m)}
 				onDelete={setDeleteTarget}
+				onReact={(m, emoji) => void reactToMessage(m, emoji)}
+				onOpenReactionsDialog={setReactionsDialogMessage}
 			/>
-			<Composer
-				onSend={handleSend}
-				onTypingChange={emitTyping}
-				replyingTo={replyingTo}
-				onCancelReply={() => setReplyingTo(null)}
-			/>
+
+			<div className="shrink-0">
+				<Composer
+					onSend={handleSend}
+					onTypingChange={emitTyping}
+					replyingTo={replyingTo}
+					voice={{
+						phase: voiceRecorder.phase,
+						durationSecs: voiceRecorder.durationSecs,
+						metering: voiceRecorder.metering,
+						isPlaying: voiceRecorder.isPlaying,
+						onStart: voiceRecorder.start,
+						onPause: voiceRecorder.pause,
+						onResume: voiceRecorder.resume,
+						onDiscard: voiceRecorder.discard,
+						onSend: () => void handleVoiceSend(),
+						onPlayPreview: voiceRecorder.playPreview,
+						onStopPreview: voiceRecorder.stopPreview,
+					}}
+					onCancelReply={() => setReplyingTo(null)}
+					onFilesPicked={addFiles}
+					onAttachContact={() => setContactDialogOpen(true)}
+					onAttachLocation={handleAttachLocation}
+				/>
+			</div>
 
 			<ForwardDialog
 				open={!!forwardTarget}
@@ -167,6 +300,27 @@ export function ConversationView({ uuid }: ConversationViewProps) {
 				open={!!deleteTarget}
 				onOpenChange={(open) => !open && setDeleteTarget(null)}
 				onConfirm={handleDeleteConfirm}
+			/>
+			<MediaComposerDialog
+				attachments={attachments}
+				onRemove={removeAttachment}
+				onRetry={retryUpload}
+				onCancel={resetAttachments}
+				onSend={handleSendMedia}
+				canSend={readyToSend}
+			/>
+			<ContactComposerDialog
+				open={contactDialogOpen}
+				onOpenChange={setContactDialogOpen}
+				onSend={(contact) => void sendContact(contact)}
+			/>
+
+			<ReactionsDialog
+				open={!!reactionsDialogMessage}
+				onOpenChange={(open) => !open && setReactionsDialogMessage(null)}
+				currentUserPkid={String(currentUser?.pkid ?? "")}
+				fetchReactors={handleFetchAllReactors}
+				onRemoveOwnReaction={handleRemoveOwnReaction}
 			/>
 		</div>
 	)
