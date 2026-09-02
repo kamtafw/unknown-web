@@ -1,7 +1,10 @@
 "use client"
 
+import { MediaGallery } from "@/components/messenger/media/media-gallery"
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { resolvePoll } from "@/lib/messenger/poll"
+import { resolveMessagePreviewText } from "@/lib/messenger/preview"
+import { getInitials } from "@/lib/messenger/user-display"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types/messenger"
 import {
@@ -13,16 +16,18 @@ import {
 	Forward,
 	Image as ImageIcon,
 	MapPin,
+	Mic,
 	Phone,
 	Share2,
 	User,
 } from "lucide-react"
 import { forwardRef } from "react"
-import { MediaGallery } from "../media/media-gallery"
+import { useMediaViewer } from "../media/media-viewer-context"
 import { MessageActionMenu } from "./message-action-menu"
 import { PollBubble } from "./poll-bubble"
 import { ReactionPicker } from "./reaction-picker"
 import { ReactionsRow } from "./reaction-row"
+import { VoiceMessagePlayer } from "./voice-message-player"
 
 interface MessageBubbleProps {
 	message: Message
@@ -31,6 +36,7 @@ interface MessageBubbleProps {
 	repliedMessage?: Message
 	isHighlighted?: boolean
 	sameSenderAsPrevious?: boolean
+	resolveReplySenderName?: (senderId: string) => string
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -51,86 +57,34 @@ function StatusTick({ status }: { status: Message["status"] }) {
 	switch (status) {
 		case "queued":
 		case "sending":
-			return <Clock size={13} className="text-primary-foreground/70" />
+			return <Clock size={12} className="text-muted-foreground" />
 		case "failed":
-			return <AlertCircle size={13} className="text-destructive" />
+			return <AlertCircle size={12} className="text-destructive" />
 		case "sent":
-			return <Check size={13} className="text-primary-foreground/70" />
+			return <Check size={12} className="text-muted-foreground" />
 		case "delivered":
-			return <CheckCheck size={13} className="text-primary-foreground/70" />
+			return <CheckCheck size={12} className="text-muted-foreground" />
 		case "read":
 		case "seen":
-			return <CheckCheck size={13} className="text-sky-300" />
+			return <CheckCheck size={12} className="text-primary" />
 		default:
 			return null
 	}
 }
 
-/**
- * Non-text types are rendered read-only — real history will contain them
- * regardless of whether M1 supports *sending* them (product decision 3).
- * Deliberately minimal (icon + label, or the real image) rather than
- * reimplementing mobile's full players/maps — that's a scope decision for
- * whichever milestone actually owns sending these types, not a gap here.
- */
-function MessageContent({
-	message,
-	onVote,
-	onViewPollResults,
-}: {
-	message: Message
-	onVote?: (message: Message, optionId: number) => void
-	onViewPollResults?: (message: Message) => void
-}) {
-	console.log("message_type:", message.message_type)
-	if (message.is_hidden_by_me) return null
-
-	if (message.is_deleted_for_all) {
-		return <p className="text-sm italic opacity-60">This message was deleted</p>
-	}
-
-	if (message.message_type === "media") {
-		return message.media && message.media.length > 0 ? (
-			<MediaGallery media={message.media} />
-		) : (
-			<FallbackContent icon={ImageIcon} label={message.content || "Media"} />
-		)
-	}
-
-	switch (message.message_type) {
-		case "text":
-			return <p className="whitespace-pre-wrap wrap-break-word text-sm">{message.content}</p>
-
-		case "location":
-			return <LocationContent message={message} />
-		case "contact":
-			return <ContactContent message={message} />
-
-		case "poll":
-			return resolvePoll(message) ? (
-				<PollBubble
-					message={message}
-					onVote={onVote ? (optionId) => onVote(message, optionId) : undefined}
-					onViewResults={onViewPollResults ? () => onViewPollResults(message) : undefined}
-				/>
-			) : (
-				<FallbackContent icon={BarChart3} label={message.content || "Poll"} />
-			)
-
-		case "call":
-			return <FallbackContent icon={Phone} label={message.content || "Call"} />
-		case "share":
-			return <FallbackContent icon={Share2} label="Shared post" />
-		default:
-			return <p className="text-sm italic opacity-70">Unsupported message</p>
-	}
+function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label: string }) {
+	return (
+		<div className="flex items-center gap-2 text-sm">
+			<Icon size={16} className="shrink-0 opacity-70" />
+			<span className="truncate">{label}</span>
+		</div>
+	)
 }
 
 function LocationContent({ message }: { message: Message }) {
 	const meta = message.metadata as { latitude?: number; longitude?: number } | null
-	if (meta?.latitude == null || meta?.longitude == null) {
+	if (meta?.latitude == null || meta?.longitude == null)
 		return <FallbackContent icon={MapPin} label="Location" />
-	}
 	return (
 		<a
 			href={`https://www.google.com/maps?q=${meta.latitude},${meta.longitude}`}
@@ -159,13 +113,85 @@ function ContactContent({ message }: { message: Message }) {
 	)
 }
 
-function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label: string }) {
-	return (
-		<div className="flex items-center gap-2 text-sm">
-			<Icon size={16} className="shrink-0 opacity-70" />
-			<span className="truncate">{label}</span>
-		</div>
-	)
+function MessageContent({
+	message,
+	isOwn,
+	onVote,
+	onViewPollResults,
+}: {
+	message: Message
+	isOwn: boolean
+	onVote?: (message: Message, optionId: number) => void
+	onViewPollResults?: (message: Message) => void
+}) {
+	const { openMedia } = useMediaViewer()
+
+	if (message.is_hidden_by_me) return null
+	if (message.is_deleted_for_all)
+		return <p className="text-sm italic opacity-60">This message was deleted</p>
+
+	const senderName = message.sender.first_name ?? message.sender.username
+	const senderInitials = getInitials(message.sender.first_name, message.sender.last_name)
+	const senderAvatarUrl = message.sender.profile_photo
+
+	if (message.message_type === "media") {
+		return message.media && message.media.length > 0 ? (
+			<MediaGallery
+				media={message.media}
+				isOwn={isOwn}
+				senderName={senderName}
+				senderInitials={senderInitials}
+				senderAvatarUrl={senderAvatarUrl}
+				onOpenViewer={openMedia}
+			/>
+		) : (
+			<FallbackContent icon={ImageIcon} label={message.content || "Media"} />
+		)
+	}
+
+	switch (message.message_type) {
+		case "text":
+			return <p className="whitespace-pre-wrap wrap-break-word text-sm">{message.content}</p>
+
+		case "voice": {
+			const attachment = message.media?.[0]
+			return attachment?.url ? (
+				<VoiceMessagePlayer
+					url={attachment.url}
+					title="Voice message"
+					isOwn={isOwn}
+					senderName={senderName}
+					senderInitials={senderInitials}
+					senderAvatarUrl={senderAvatarUrl}
+				/>
+			) : (
+				<FallbackContent icon={Mic} label="Voice message" />
+			)
+		}
+
+		case "location":
+			return <LocationContent message={message} />
+		case "contact":
+			return <ContactContent message={message} />
+
+		case "poll":
+			return resolvePoll(message) ? (
+				<PollBubble
+					message={message}
+					onVote={onVote ? (optionId) => onVote(message, optionId) : undefined}
+					onViewResults={onViewPollResults ? () => onViewPollResults(message) : undefined}
+				/>
+			) : (
+				<FallbackContent icon={BarChart3} label={message.content || "Poll"} />
+			)
+
+		case "call":
+			return <FallbackContent icon={Phone} label={message.content || "Call"} />
+		case "share":
+			return <FallbackContent icon={Share2} label="Shared post" />
+		default:
+			return <p className="text-sm italic opacity-70">Unsupported message</p>
+	}
 }
 
 export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(function MessageBubble(
@@ -176,6 +202,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		repliedMessage,
 		isHighlighted,
 		sameSenderAsPrevious,
+		resolveReplySenderName,
 		onRetry,
 		onReply,
 		onForward,
@@ -193,36 +220,42 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	const failed = message.status === "failed"
 	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
 	const pending = isOptimisticMessage(message) && !failed
-
 	const showActions = !pending && !deleted && onReply && onForward && onPin && onUnpin && onDelete
+	const isFirstInGroup = !sameSenderAsPrevious
 
 	if (message.is_hidden_by_me) return null
+
+	console.log("REPLY::", JSON.stringify(message))
+
+	const replySenderLabel = message.reply_to
+		? repliedMessage
+			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+			: (resolveReplySenderName?.(message.reply_to.sender_id) ?? "Unknown")
+		: null
+	const replyContentLabel = message.reply_to
+		? resolveMessagePreviewText(repliedMessage ?? message.reply_to)
+		: null
 
 	return (
 		<div
 			ref={ref}
 			className={cn(
-				"group relative flex w-full",
+				"group flex w-full",
 				isOwn ? "justify-end" : "justify-start",
-				isHighlighted && "rounded-xl bg-primary/5 px-1 py-1 -mx-1",
+				isHighlighted && "rounded-xl bg-primary/5 -mx-1 px-1 py-1",
 				sameSenderAsPrevious ? "mb-1" : "mb-3",
 			)}
 		>
 			<div
-				className={cn(
-					"relative flex min-w-0 max-w-[92%] items-end",
-					"sm:max-w-[82%] lg:max-w-[72%]",
-					isOwn ? "flex-row-reverse" : "flex-row",
-					!isOwn && "gap-2",
-				)}
+				className="min-w-0 flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]"
+				style={{ alignItems: isOwn ? "flex-end" : "flex-start" }}
 			>
 				<div className="relative min-w-0">
 					{showActions && (
 						<div
 							className={cn(
-								"absolute top-1/2 z-20 -translate-y-1/2",
-								"opacity-0 transition-opacity group-hover:opacity-100",
-								isOwn ? "-left-10" : "-right-10",
+								"absolute -top-3 z-0 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								isOwn ? "right-2" : "left-2",
 							)}
 						>
 							<MessageActionMenu
@@ -235,143 +268,91 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 								onUnpin={() => onUnpin?.(message)}
 								onDelete={() => onDelete?.(message)}
 							/>
+							{onReact && <ReactionPicker onReact={(emoji) => onReact(message, emoji)} />}
 						</div>
 					)}
 
-					{/* Bubble Container */}
 					<div
 						className={cn(
-							"relative min-w-0 overflow-visible",
-							"px-3.5 py-2.5",
-							"shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
-
-							isOwn
-								? [
-										"bg-primary/30 text-foreground",
-										sameSenderAsPrevious ? "rounded-[14px]" : "rounded-[14px] rounded-tr-lg",
-									]
-								: [
-										"bg-accent/30 text-foreground",
-										sameSenderAsPrevious ? "rounded-[14px]" : "rounded-[14px] rounded-tl-lg",
-									],
-
+							"relative z-10 rounded-2xl px-3.5 py-2.5 shadow-sm min-w-0",
+							isOwn ? "bg-primary/12" : "bg-card border border-border/60",
+							isFirstInGroup && (isOwn ? "rounded-tr-md" : "rounded-tl-md"),
 							pending && "opacity-60",
 							failed && "border border-destructive",
 						)}
 					>
-						{/* Pure Geometric Tail (Using absolute element matching background colors) */}
-						{!sameSenderAsPrevious && (
-							<div
-								aria-hidden="true"
-								style={{
-									clipPath: isOwn
-										? "polygon(0 0, 0 100%, 100% 0)"
-										: "polygon(0 0, 100% 100%, 100% 0)",
-								}}
-								className={cn(
-									"absolute top-0 w-2 h-2.5",
-									isOwn
-										? "left-full bg-primary/30"
-										: "right-full bg-accent/30 drop-shadow-[0_1px_1px_rgba(0,0,0,0.03)]",
-								)}
-							/>
-						)}
-
-						{/* Sender name */}
 						{showSender && !isOwn && (
 							<p className="mb-1 text-[12px] font-semibold leading-4 text-primary">
 								{message.sender.first_name ?? message.sender.username}
 							</p>
 						)}
 
-						{/* Forwarded */}
 						{forwarded && !deleted && (
-							<div
-								className={cn(
-									"mb-1 flex items-center gap-1 text-[11px] italic",
-									isOwn ? "text-primary/70" : "text-muted-foreground",
-								)}
-							>
+							<div className="mb-1.5 flex items-center gap-1 text-[11px] italic text-muted-foreground">
 								<Forward className="size-3" />
 								<span>Forwarded</span>
 							</div>
 						)}
 
-						{/* Reply preview */}
 						{message.reply_to && !deleted && (
 							<div
 								className={cn(
-									"mb-2 overflow-hidden rounded-md border-l-[3px] px-2.5 py-1.5",
-									isOwn ? "border-primary bg-white/40" : "border-primary/70 bg-muted/70",
+									"mb-2 rounded-lg border-l-4 px-2.5 py-1.5 shadow-sm",
+									isOwn ? "bg-background/50 border-primary" : "bg-muted border-primary/70",
 								)}
 							>
-								<p className="mb-0.5 text-[11px] font-semibold text-primary">
-									{repliedMessage
-										? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
-										: "Original message"}
-								</p>
-
-								<p className="truncate text-xs text-foreground/70">
-									{(repliedMessage ? repliedMessage.content : message.reply_to.content) ||
-										"Message"}
-								</p>
+								<p className="mb-0.5 text-[11px] font-semibold text-primary">{replySenderLabel}</p>
+								<p className="truncate text-xs text-foreground/70">{replyContentLabel}</p>
 							</div>
 						)}
 
-						{/* Content */}
-						<div className={cn(message.message_type === "media" && "-mx-3.5 -my-2.5")}>
-							<MessageContent
-								message={message}
-								onVote={onVote}
-								onViewPollResults={onViewPollResults}
-							/>
-						</div>
+						<MessageContent
+							message={message}
+							isOwn={isOwn}
+							onVote={onVote}
+							onViewPollResults={onViewPollResults}
+						/>
 
-						{/* Timestamp / status */}
-						{!deleted && (
-							<div className={cn("mt-1 flex items-center justify-end gap-1 select-none")}>
-								<span className="text-[10px] leading-3 text-muted-foreground">
-									{formatTime(message.created_at)}
-								</span>
-
-								{isOwn && <StatusTick status={message.status} />}
-
-								{message.is_pinned && (
-									<>
-										<span className="text-[10px] text-muted-foreground">·</span>
-										<span className="text-[10px] text-muted-foreground">Pinned</span>
-									</>
-								)}
-
-								{failed && onRetry && (
-									<button
-										type="button"
-										onClick={() => onRetry(message)}
-										className="ml-1 text-[10px] font-medium text-destructive hover:underline"
-									>
-										Retry
-									</button>
-								)}
-							</div>
-						)}
-					</div>
-
-					{/* Reactions */}
-					{onOpenReactionsDialog && (
-						<div className={cn("absolute z-10 -bottom-4", isOwn ? "right-2" : "left-2")}>
+						{onOpenReactionsDialog && (
 							<ReactionsRow
 								reactions={message.emoji_reaction_counts}
 								isOwn={isOwn}
 								onOpenDialog={() => onOpenReactionsDialog(message)}
 							/>
+						)}
+					</div>
+
+					{showActions && onReact && (
+						<div
+							className={cn(
+								"absolute -top-3 z-20 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								isOwn ? "-right-3" : "-left-3",
+							)}
+						>
+							<ReactionPicker onReact={(emoji) => onReact(message, emoji)} />
 						</div>
 					)}
+				</div>
 
-					{/* Reaction picker */}
-					{showActions && onReact && (
-						<div className={cn("absolute top-full z-20 pt-1", isOwn ? "right-0" : "left-0")}>
-							<ReactionPicker onReact={(emoji: string) => onReact!(message, emoji)} />
-						</div>
+				<div className="mt-1 flex items-center gap-1 px-1 select-none">
+					<span className="text-[10px] leading-3 text-muted-foreground">
+						{formatTime(message.created_at)}
+					</span>
+					{isOwn && <StatusTick status={message.status} />}
+					{message.is_pinned && (
+						<>
+							<span className="text-[10px] text-muted-foreground">·</span>
+							<span className="text-[10px] text-muted-foreground">Pinned</span>
+						</>
+					)}
+					{failed && onRetry && (
+						<button
+							type="button"
+							onClick={() => onRetry(message)}
+							className="ml-1 text-[10px] font-medium text-destructive hover:underline"
+						>
+							Retry
+						</button>
 					)}
 				</div>
 			</div>

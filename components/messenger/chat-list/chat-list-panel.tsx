@@ -90,13 +90,6 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 					<h1 className="text-xl font-bold">Chats</h1>
 
 					<div className="flex items-center gap-4 shrink-0">
-						<button
-							onClick={() => setNewChatOpen(true)}
-							className="shrink-0 px-2 py-1.5 rounded-full font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-						>
-							<MessageSquarePlus size={20} />
-						</button>
-
 						{!isCustomListTab && (
 							<DropdownMenu.Root open={headerMenuOpen} onOpenChange={setHeaderMenuOpen}>
 								<DropdownMenu.Trigger asChild>

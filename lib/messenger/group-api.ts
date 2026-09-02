@@ -98,6 +98,8 @@ export const groupApi = {
 			user_id: userPkid,
 		} satisfies RemoveGroupMemberPayload),
 
+	leave: (groupId: number) => apiClient.post(`/api/chats/groups/${groupId}/members/leave`),
+
 	updateMemberRole: (groupId: number, userPkid: Pkid, role: GroupRole) =>
 		apiClient.post(`/api/chats/groups/${groupId}/members/role`, {
 			user_id: userPkid,

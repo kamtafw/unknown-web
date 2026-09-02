@@ -26,6 +26,7 @@ interface MessageListProps {
 	onOpenReactionsDialog?: (message: Message) => void
 	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
+	resolveReplySenderName?: (senderId: string) => string
 }
 
 export interface MessageListHandle {
@@ -51,6 +52,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onOpenReactionsDialog,
 		onVote,
 		onViewPollResults,
+		resolveReplySenderName,
 	},
 	ref,
 ) {
@@ -193,6 +195,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 										onOpenReactionsDialog={onOpenReactionsDialog}
 										onVote={onVote}
 										onViewPollResults={onViewPollResults}
+										resolveReplySenderName={resolveReplySenderName}
 									/>
 								)
 							})}
