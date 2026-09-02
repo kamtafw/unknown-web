@@ -22,6 +22,7 @@ import {
 	User,
 } from "lucide-react"
 import { forwardRef } from "react"
+import { useMediaViewer } from "../media/media-viewer-context"
 import { MessageActionMenu } from "./message-action-menu"
 import { PollBubble } from "./poll-bubble"
 import { ReactionPicker } from "./reaction-picker"
@@ -123,6 +124,8 @@ function MessageContent({
 	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
 }) {
+	const { openMedia } = useMediaViewer()
+
 	if (message.is_hidden_by_me) return null
 	if (message.is_deleted_for_all)
 		return <p className="text-sm italic opacity-60">This message was deleted</p>
@@ -139,6 +142,7 @@ function MessageContent({
 				senderName={senderName}
 				senderInitials={senderInitials}
 				senderAvatarUrl={senderAvatarUrl}
+				onOpenViewer={openMedia}
 			/>
 		) : (
 			<FallbackContent icon={ImageIcon} label={message.content || "Media"} />
@@ -221,6 +225,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 	if (message.is_hidden_by_me) return null
 
+	console.log("REPLY::", JSON.stringify(message))
+
 	const replySenderLabel = message.reply_to
 		? repliedMessage
 			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
@@ -248,9 +254,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					{showActions && (
 						<div
 							className={cn(
-								"absolute top-1/2 z-20 -translate-y-1/2 flex items-center gap-0.5",
-								"opacity-0 transition-opacity group-hover:opacity-100",
-								isOwn ? "-left-16" : "-right-16",
+								"absolute -top-3 z-0 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								isOwn ? "right-2" : "left-2",
 							)}
 						>
 							<MessageActionMenu
@@ -269,11 +274,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 					<div
 						className={cn(
-							"rounded-2xl px-3.5 py-2.5 shadow-sm min-w-0",
+							"relative z-10 rounded-2xl px-3.5 py-2.5 shadow-sm min-w-0",
 							isOwn ? "bg-primary/12" : "bg-card border border-border/60",
-							// Subtle tipped corner on the outer edge — only the first
-							// bubble in a consecutive run from the same sender, matching
-							// WhatsApp/Messenger convention. Not applied to every bubble.
 							isFirstInGroup && (isOwn ? "rounded-tr-md" : "rounded-tl-md"),
 							pending && "opacity-60",
 							failed && "border border-destructive",
@@ -319,6 +321,17 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 							/>
 						)}
 					</div>
+
+					{showActions && onReact && (
+						<div
+							className={cn(
+								"absolute -top-3 z-20 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								isOwn ? "-right-3" : "-left-3",
+							)}
+						>
+							<ReactionPicker onReact={(emoji) => onReact(message, emoji)} />
+						</div>
+					)}
 				</div>
 
 				<div className="mt-1 flex items-center gap-1 px-1 select-none">
