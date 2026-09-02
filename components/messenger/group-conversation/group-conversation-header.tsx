@@ -10,13 +10,18 @@ import { GroupInfoDialog } from "./group-info-dialog"
 interface GroupConversationHeaderProps {
 	group: Group | null
 	onOpenSearch: () => void
+	onOpenProfile: () => void
 }
 
 /** Deliberately its own component rather than reusing 1:1's
  * ConversationHeader — a group has no first_name/last_name/username to
  * satisfy PeerDisplay, and PeerDisplay's own doc comment is explicit
  * about not inventing fields it doesn't have. */
-export function GroupConversationHeader({ group, onOpenSearch }: GroupConversationHeaderProps) {
+export function GroupConversationHeader({
+	group,
+	onOpenSearch,
+	onOpenProfile,
+}: GroupConversationHeaderProps) {
 	const [infoOpen, setInfoOpen] = useState(false)
 	const name = group?.name ?? "Group"
 
@@ -27,16 +32,22 @@ export function GroupConversationHeader({ group, onOpenSearch }: GroupConversati
 					<ArrowLeft size={20} />
 				</Link>
 
-				<Avatar.Root className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-					<Avatar.Image
-						src={group?.icon_url ?? undefined}
-						alt={name}
-						className="h-full w-full object-cover"
-					/>
-					<Avatar.Fallback className="text-xs font-medium text-muted-foreground">
-						{name.charAt(0).toUpperCase()}
-					</Avatar.Fallback>
-				</Avatar.Root>
+				<button
+					onClick={onOpenProfile}
+					disabled={!group}
+					className="flex items-center gap-3 flex-1 min-w-0 disabled:cursor-default"
+				>
+					<Avatar.Root className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+						<Avatar.Image
+							src={group?.icon_url ?? undefined}
+							alt={name}
+							className="h-full w-full object-cover"
+						/>
+						<Avatar.Fallback className="text-xs font-medium text-muted-foreground">
+							{name.charAt(0).toUpperCase()}
+						</Avatar.Fallback>
+					</Avatar.Root>
+				</button>
 
 				<div className="min-w-0 flex-1">
 					<p className="text-sm font-semibold truncate">{name}</p>

@@ -61,6 +61,18 @@ export function useRemoveGroupMember(groupId: number) {
 	})
 }
 
+export function useLeaveGroup(groupId: number) {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: () => groupApi.leave(groupId),
+		onSuccess: () => {
+			toast.success("Left group")
+			queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
+		},
+		onError: (err) => toast.error(extractMessage(err, "Failed to leave group")),
+	})
+}
+
 export function useManageGroupMemberRole(groupId: number) {
 	const queryClient = useQueryClient()
 	return useMutation({

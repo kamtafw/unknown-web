@@ -81,3 +81,38 @@ export function resolvePreviewFallbackLabel(type: MessageType | string | null | 
 			return "Message"
 	}
 }
+
+/** Shared by PinnedMessageBanner, the reply-quote inside MessageBubble,
+ * and ReplyPreviewBar — one place for "what should this message look like
+ * when quoted/previewed", instead of three divergent copies. Works on
+ * both a full Message and the slimmer embedded MessageReplyTo shape,
+ * since both carry message_type + content. */
+export function resolveMessagePreviewText(message: {
+	message_type: string
+	content: string | null | undefined
+}): string {
+	const trimmed = message.content?.replace(/\s+/g, " ").trim()
+	switch (message.message_type) {
+		case "text":
+			return trimmed || "Message"
+		case "location":
+			return "📍 Location"
+		case "voice":
+		case "audio":
+			return "🎙️ Voice message"
+		case "contact":
+			return trimmed || "👤 Contact"
+		case "media":
+		case "image":
+			return "📷 Photo"
+		case "video":
+			return "🎥 Video"
+		case "document":
+		case "pdf":
+			return "📄 Document"
+		case "poll":
+			return "📊 Poll"
+		default:
+			return trimmed || "Message"
+	}
+}
