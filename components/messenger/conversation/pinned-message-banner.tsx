@@ -1,5 +1,6 @@
 "use client"
 
+import { resolveMessagePreviewText } from "@/lib/messenger/preview"
 import type { Message } from "@/types/messenger"
 import { ChevronRight, Pin, X } from "lucide-react"
 import { useState } from "react"
@@ -8,21 +9,6 @@ interface PinnedMessageBannerProps {
 	pinnedMessages: Message[]
 	onJumpToMessage: (message: Message) => void
 	onUnpin: (message: Message) => void
-}
-
-/** Ported from mobile's PinnedMessageBanner fallback logic — `content` is
- * empty for most non-text types, so `content || "Message"` (old web
- * behavior) always showed the generic label. */
-function resolvePreviewText(message: Message): string {
-	if (message.message_type === "text") {
-		return message.content.replace(/\s+/g, " ").trim() || "Message"
-	}
-	if (message.message_type === "location") return "Location"
-	if (message.message_type === "voice" || message.message_type === "audio") return "Voice message"
-	if (message.media?.length) {
-		return message.message_type.charAt(0).toUpperCase() + message.message_type.slice(1)
-	}
-	return message.content || message.message_type
 }
 
 export function PinnedMessageBanner({
@@ -45,7 +31,7 @@ export function PinnedMessageBanner({
 				<p className="text-xs font-medium text-primary">
 					Pinned message{hasMultiple ? ` (${currentIndex + 1} of ${pinnedMessages.length})` : ""}
 				</p>
-				<p className="text-xs text-muted-foreground truncate">{resolvePreviewText(current)}</p>
+				<p className="text-xs text-muted-foreground truncate">{resolveMessagePreviewText(current)}</p>
 			</button>
 
 			{hasMultiple && (

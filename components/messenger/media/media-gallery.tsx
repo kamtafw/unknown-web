@@ -59,7 +59,7 @@ function GalleryTile({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"group relative block min-h-0 min-w-0 overflow-hidden rounded-xl bg-muted text-left focus-visible:outline-none",
+				"group relative block min-h-0 min-w-0 h-full w-full overflow-hidden rounded-xl bg-muted text-left focus-visible:outline-none",
 				className,
 			)}
 			aria-label={
@@ -136,9 +136,12 @@ function SingleMediaItem({
 	onOpen: () => void
 }) {
 	if (item.type === "audio") {
+		const title =
+			item.caption && item.caption !== "Voice message" ? item.caption : item.fileName || "Audio"
 		return (
 			<VoiceMessagePlayer
 				url={item.url}
+				title={title}
 				isOwn={ctx.isOwn}
 				senderName={ctx.senderName}
 				senderInitials={ctx.senderInitials}
@@ -212,7 +215,9 @@ export function MediaGallery({
 
 	if (media.length === 1) {
 		const caption =
-			media[0].caption && media[0].caption !== "Voice message" ? media[0].caption : null
+			media[0].type !== "audio" && media[0].caption && media[0].caption !== "Voice message"
+				? media[0].caption
+				: null
 		return (
 			<div className="flex flex-col gap-1">
 				<SingleMediaItem item={media[0]} ctx={ctx} onOpen={() => open(0)} />

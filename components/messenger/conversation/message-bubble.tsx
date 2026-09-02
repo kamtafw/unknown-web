@@ -3,6 +3,7 @@
 import { MediaGallery } from "@/components/messenger/media/media-gallery"
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
 import { resolvePoll } from "@/lib/messenger/poll"
+import { resolveMessagePreviewText } from "@/lib/messenger/preview"
 import { getInitials } from "@/lib/messenger/user-display"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types/messenger"
@@ -34,6 +35,7 @@ interface MessageBubbleProps {
 	repliedMessage?: Message
 	isHighlighted?: boolean
 	sameSenderAsPrevious?: boolean
+	resolveReplySenderName?: (senderId: string) => string
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -80,7 +82,8 @@ function FallbackContent({ icon: Icon, label }: { icon: typeof ImageIcon; label:
 
 function LocationContent({ message }: { message: Message }) {
 	const meta = message.metadata as { latitude?: number; longitude?: number } | null
-	if (meta?.latitude == null || meta?.longitude == null) return <FallbackContent icon={MapPin} label="Location" />
+	if (meta?.latitude == null || meta?.longitude == null)
+		return <FallbackContent icon={MapPin} label="Location" />
 	return (
 		<a
 			href={`https://www.google.com/maps?q=${meta.latitude},${meta.longitude}`}
@@ -101,7 +104,9 @@ function ContactContent({ message }: { message: Message }) {
 			<User size={16} className="shrink-0 opacity-70" />
 			<div className="min-w-0">
 				<p className="font-medium truncate">{name}</p>
-				{meta?.phone_number && <p className="text-xs text-muted-foreground truncate">{meta.phone_number}</p>}
+				{meta?.phone_number && (
+					<p className="text-xs text-muted-foreground truncate">{meta.phone_number}</p>
+				)}
 			</div>
 		</div>
 	)
@@ -119,7 +124,8 @@ function MessageContent({
 	onViewPollResults?: (message: Message) => void
 }) {
 	if (message.is_hidden_by_me) return null
-	if (message.is_deleted_for_all) return <p className="text-sm italic opacity-60">This message was deleted</p>
+	if (message.is_deleted_for_all)
+		return <p className="text-sm italic opacity-60">This message was deleted</p>
 
 	const senderName = message.sender.first_name ?? message.sender.username
 	const senderInitials = getInitials(message.sender.first_name, message.sender.last_name)
@@ -146,7 +152,14 @@ function MessageContent({
 		case "voice": {
 			const attachment = message.media?.[0]
 			return attachment?.url ? (
-				<VoiceMessagePlayer url={attachment.url} isOwn={isOwn} senderName={senderName} senderInitials={senderInitials} senderAvatarUrl={senderAvatarUrl} />
+				<VoiceMessagePlayer
+					url={attachment.url}
+					title="Voice message"
+					isOwn={isOwn}
+					senderName={senderName}
+					senderInitials={senderInitials}
+					senderAvatarUrl={senderAvatarUrl}
+				/>
 			) : (
 				<FallbackContent icon={Mic} label="Voice message" />
 			)
@@ -185,6 +198,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		repliedMessage,
 		isHighlighted,
 		sameSenderAsPrevious,
+		resolveReplySenderName,
 		onRetry,
 		onReply,
 		onForward,
@@ -203,8 +217,18 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
 	const pending = isOptimisticMessage(message) && !failed
 	const showActions = !pending && !deleted && onReply && onForward && onPin && onUnpin && onDelete
+	const isFirstInGroup = !sameSenderAsPrevious
 
 	if (message.is_hidden_by_me) return null
+
+	const replySenderLabel = message.reply_to
+		? repliedMessage
+			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+			: (resolveReplySenderName?.(message.reply_to.sender_id) ?? "Unknown")
+		: null
+	const replyContentLabel = message.reply_to
+		? resolveMessagePreviewText(repliedMessage ?? message.reply_to)
+		: null
 
 	return (
 		<div
@@ -216,34 +240,49 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 				sameSenderAsPrevious ? "mb-1" : "mb-3",
 			)}
 		>
-			<div className={cn("flex max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] items-center gap-1", isOwn ? "flex-row-reverse" : "flex-row")}>
-				{showActions && (
-					<div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-						<MessageActionMenu
-							message={message}
-							isOwn={isOwn}
-							align={isOwn ? "end" : "start"}
-							onReply={() => onReply?.(message)}
-							onForward={() => onForward?.(message)}
-							onPin={() => onPin?.(message)}
-							onUnpin={() => onUnpin?.(message)}
-							onDelete={() => onDelete?.(message)}
-						/>
-						{onReact && <ReactionPicker onReact={(emoji) => onReact(message, emoji)} />}
-					</div>
-				)}
+			<div
+				className="min-w-0 flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]"
+				style={{ alignItems: isOwn ? "flex-end" : "flex-start" }}
+			>
+				<div className="relative min-w-0">
+					{showActions && (
+						<div
+							className={cn(
+								"absolute top-1/2 z-20 -translate-y-1/2 flex items-center gap-0.5",
+								"opacity-0 transition-opacity group-hover:opacity-100",
+								isOwn ? "-left-16" : "-right-16",
+							)}
+						>
+							<MessageActionMenu
+								message={message}
+								isOwn={isOwn}
+								align={isOwn ? "end" : "start"}
+								onReply={() => onReply?.(message)}
+								onForward={() => onForward?.(message)}
+								onPin={() => onPin?.(message)}
+								onUnpin={() => onUnpin?.(message)}
+								onDelete={() => onDelete?.(message)}
+							/>
+							{onReact && <ReactionPicker onReact={(emoji) => onReact(message, emoji)} />}
+						</div>
+					)}
 
-				<div className="min-w-0 flex flex-col" style={{ alignItems: isOwn ? "flex-end" : "flex-start" }}>
 					<div
 						className={cn(
 							"rounded-2xl px-3.5 py-2.5 shadow-sm min-w-0",
 							isOwn ? "bg-primary/12" : "bg-card border border-border/60",
+							// Subtle tipped corner on the outer edge — only the first
+							// bubble in a consecutive run from the same sender, matching
+							// WhatsApp/Messenger convention. Not applied to every bubble.
+							isFirstInGroup && (isOwn ? "rounded-tr-md" : "rounded-tl-md"),
 							pending && "opacity-60",
 							failed && "border border-destructive",
 						)}
 					>
 						{showSender && !isOwn && (
-							<p className="mb-1 text-[12px] font-semibold leading-4 text-primary">{message.sender.first_name ?? message.sender.username}</p>
+							<p className="mb-1 text-[12px] font-semibold leading-4 text-primary">
+								{message.sender.first_name ?? message.sender.username}
+							</p>
 						)}
 
 						{forwarded && !deleted && (
@@ -260,37 +299,48 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 									isOwn ? "bg-background/50 border-primary" : "bg-muted border-primary/70",
 								)}
 							>
-								<p className="mb-0.5 text-[11px] font-semibold text-primary">
-									{repliedMessage ? (repliedMessage.sender.first_name ?? repliedMessage.sender.username) : "Original message"}
-								</p>
-								<p className="truncate text-xs text-foreground/70">
-									{(repliedMessage ? repliedMessage.content : message.reply_to.content) || "Message"}
-								</p>
+								<p className="mb-0.5 text-[11px] font-semibold text-primary">{replySenderLabel}</p>
+								<p className="truncate text-xs text-foreground/70">{replyContentLabel}</p>
 							</div>
 						)}
 
-						<MessageContent message={message} isOwn={isOwn} onVote={onVote} onViewPollResults={onViewPollResults} />
+						<MessageContent
+							message={message}
+							isOwn={isOwn}
+							onVote={onVote}
+							onViewPollResults={onViewPollResults}
+						/>
 
 						{onOpenReactionsDialog && (
-							<ReactionsRow reactions={message.emoji_reaction_counts} isOwn={isOwn} onOpenDialog={() => onOpenReactionsDialog(message)} />
+							<ReactionsRow
+								reactions={message.emoji_reaction_counts}
+								isOwn={isOwn}
+								onOpenDialog={() => onOpenReactionsDialog(message)}
+							/>
 						)}
 					</div>
+				</div>
 
-					<div className="mt-1 flex items-center gap-1 px-1 select-none">
-						<span className="text-[10px] leading-3 text-muted-foreground">{formatTime(message.created_at)}</span>
-						{isOwn && <StatusTick status={message.status} />}
-						{message.is_pinned && (
-							<>
-								<span className="text-[10px] text-muted-foreground">·</span>
-								<span className="text-[10px] text-muted-foreground">Pinned</span>
-							</>
-						)}
-						{failed && onRetry && (
-							<button type="button" onClick={() => onRetry(message)} className="ml-1 text-[10px] font-medium text-destructive hover:underline">
-								Retry
-							</button>
-						)}
-					</div>
+				<div className="mt-1 flex items-center gap-1 px-1 select-none">
+					<span className="text-[10px] leading-3 text-muted-foreground">
+						{formatTime(message.created_at)}
+					</span>
+					{isOwn && <StatusTick status={message.status} />}
+					{message.is_pinned && (
+						<>
+							<span className="text-[10px] text-muted-foreground">·</span>
+							<span className="text-[10px] text-muted-foreground">Pinned</span>
+						</>
+					)}
+					{failed && onRetry && (
+						<button
+							type="button"
+							onClick={() => onRetry(message)}
+							className="ml-1 text-[10px] font-medium text-destructive hover:underline"
+						>
+							Retry
+						</button>
+					)}
 				</div>
 			</div>
 		</div>
