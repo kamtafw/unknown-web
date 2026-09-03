@@ -132,7 +132,12 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 						placeholder="What are you looking for"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="pr-11 rounded-full bg-muted border-transparent"
+						className="
+								pr-11 bg-muted text-foreground rounded-full
+								border-2 border-primary transition-all duration-150
+								outline-none caret-primary
+								focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-card
+							"
 					/>
 					<div className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-primary">
 						<Search size={14} className="text-primary-foreground" />

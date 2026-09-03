@@ -2,10 +2,10 @@
 
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { LogOut, Settings } from "lucide-react"
+import { LogOut,Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Chats, Groups, Status } from "../icons/messenger-rail-icons"
+import { Burger,Chats,Groups,Status } from "../icons/messenger-rail-icons"
 
 interface RailItem {
 	label: string
@@ -28,6 +28,10 @@ export function MessengerRail() {
 
 	return (
 		<nav className="w-14 sm:w-16 shrink-0 border-r border-border bg-background flex flex-col items-center px-2 py-3 gap-2">
+			<button className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground/40 hover:bg-accent/40 transition-colors">
+				<Burger size={19} />
+			</button>
+
 			{RAIL_ITEMS.map((item) => {
 				const isActive = item.href
 					? item.label === "Chat"

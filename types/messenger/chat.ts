@@ -96,7 +96,7 @@ export interface Message {
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
-	reply_to: MessageReplyTo | null
+	reply_to: number | null
 	forwarded_from: unknown | null
 	is_hidden_by_me: boolean
 	is_deleted_for_all: boolean

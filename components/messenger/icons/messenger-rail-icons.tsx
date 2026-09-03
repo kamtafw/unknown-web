@@ -6,6 +6,27 @@ interface IconProps {
 	className?: string
 }
 
+export function Burger({ size = 20, color = "currentColor", className }: IconProps) {
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 20 14"
+			fill="none"
+			className={className}
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<path
+				d="M1 1H19M1 7H19M1 13H19"
+				stroke={color}
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	)
+}
+
 export function Chats({ size = 20, color = "currentColor", className }: IconProps) {
 	return (
 		<svg

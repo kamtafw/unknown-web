@@ -166,7 +166,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 								)
 
 								const repliedMessage = message.reply_to
-									? messageById.get(message.reply_to.id)
+									? messageById.get(message.reply_to)
 									: undefined
 
 								return (

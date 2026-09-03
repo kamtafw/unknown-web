@@ -225,8 +225,6 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 	if (message.is_hidden_by_me) return null
 
-	console.log("REPLY::", JSON.stringify(message))
-
 	const replySenderLabel = message.reply_to
 		? repliedMessage
 			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
@@ -254,7 +252,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					{showActions && (
 						<div
 							className={cn(
-								"absolute -top-3 z-0 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								"absolute -top-3 z-20 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
 								isOwn ? "right-2" : "left-2",
 							)}
 						>
@@ -268,7 +266,6 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 								onUnpin={() => onUnpin?.(message)}
 								onDelete={() => onDelete?.(message)}
 							/>
-							{onReact && <ReactionPicker onReact={(emoji) => onReact(message, emoji)} />}
 						</div>
 					)}
 
