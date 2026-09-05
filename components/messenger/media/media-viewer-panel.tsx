@@ -130,8 +130,8 @@ export function MediaViewerPanel() {
 				</button>
 			</header>
 
-			<div className="relative min-h-0 flex-1 bg-black/5">
-				<div className="absolute inset-0 flex items-center justify-center p-6">
+			<div className="relative min-h-0 flex-1 bg-accent/5">
+				<div className="absolute inset-0 flex items-center justify-center">
 					<ViewerMedia item={item} />
 				</div>
 
@@ -142,9 +142,9 @@ export function MediaViewerPanel() {
 							onClick={previous}
 							className="
 								absolute left-3 top-1/2
-								flex h-10 w-10 -translate-y-1/2
+								flex h-8 w-8 -translate-y-1/2
 								items-center justify-center
-								rounded-full bg-background/90 shadow-sm
+								rounded-full bg-card/80 shadow-sm
 								backdrop-blur
 								hover:bg-background
 								focus-visible:outline-none
@@ -153,7 +153,7 @@ export function MediaViewerPanel() {
 							"
 							aria-label="Previous media"
 						>
-							<ArrowLeft size={19} />
+							<ArrowLeft size={16} />
 						</button>
 
 						<button
@@ -161,9 +161,9 @@ export function MediaViewerPanel() {
 							onClick={next}
 							className="
 								absolute right-3 top-1/2
-								flex h-10 w-10 -translate-y-1/2
+								flex h-8 w-8 -translate-y-1/2
 								items-center justify-center
-								rounded-full bg-background/90 shadow-sm
+								rounded-full bg-card/80 shadow-sm
 								backdrop-blur
 								hover:bg-background
 								focus-visible:outline-none
@@ -172,7 +172,7 @@ export function MediaViewerPanel() {
 							"
 							aria-label="Next media"
 						>
-							<ArrowRight size={19} />
+							<ArrowRight size={16} />
 						</button>
 					</>
 				)}

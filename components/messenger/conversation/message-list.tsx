@@ -26,7 +26,8 @@ interface MessageListProps {
 	onOpenReactionsDialog?: (message: Message) => void
 	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
-	resolveReplySenderName?: (senderId: string) => string
+	/** See MessageBubble's doc comment — only passed by GroupConversationView. */
+	onOpenThread?: (message: Message) => void
 }
 
 export interface MessageListHandle {
@@ -52,7 +53,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 		onOpenReactionsDialog,
 		onVote,
 		onViewPollResults,
-		resolveReplySenderName,
+		onOpenThread,
 	},
 	ref,
 ) {
@@ -165,8 +166,13 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 									previousMessage && previousMessage.sender.id === message.sender.id,
 								)
 
+								// reply_to is a bare message id now — resolve it against
+								// whatever's currently loaded. Not found just means "not
+								// loaded right now" (e.g. an older, not-yet-paginated
+								// page); there's no by-id fetch to fall back to, so
+								// MessageBubble renders a generic label in that case.
 								const repliedMessage = message.reply_to
-									? messageById.get(message.reply_to.id)
+									? messageById.get(message.reply_to)
 									: undefined
 
 								return (
@@ -195,7 +201,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 										onOpenReactionsDialog={onOpenReactionsDialog}
 										onVote={onVote}
 										onViewPollResults={onViewPollResults}
-										resolveReplySenderName={resolveReplySenderName}
+										onOpenThread={onOpenThread}
 									/>
 								)
 							})}

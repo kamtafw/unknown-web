@@ -13,6 +13,7 @@ export type ActiveChatFilter = ChatListFilter | { type: "list"; id: number; name
 interface ChatFilterChipsProps {
 	value: ActiveChatFilter
 	onChange: (filter: ActiveChatFilter) => void
+	onCreateCustomList: () => void
 }
 
 const BASE_FILTERS: { value: ChatListFilter; label: string }[] = [
@@ -26,11 +27,16 @@ function isActive(value: ActiveChatFilter, candidate: ChatListFilter | number): 
 	return value === candidate
 }
 
-export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
+export function ChatFilterChips({ value, onChange, onCreateCustomList }: ChatFilterChipsProps) {
 	const { data: lists } = useCustomLists()
 
 	return (
-		<div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto">
+		<div
+			className="flex items-center gap-2 px-4 pb-3 overflow-x-auto 
+					[&::-webkit-scrollbar]:hidden 
+					[-ms-overflow-style:none] 
+					scrollbar-none"
+		>
 			{BASE_FILTERS.map((filter) => (
 				<button
 					key={filter.value}
@@ -63,7 +69,7 @@ export function ChatFilterChips({ value, onChange }: ChatFilterChipsProps) {
 
 			<button
 				title="Groups — coming in a later milestone"
-				onClick={() => {}}
+				onClick={onCreateCustomList}
 				className="
 				flex items-center gap-0.5 bg-muted text-accent-foreground hover-bg-accent
 				px-3 py-0.5 rounded-full text-sm font-regular shrink-0 transition-colors

@@ -18,12 +18,14 @@ import {
 	GroupMembersData,
 	GroupMessage,
 	GroupRole,
+	GroupThreadRepliesData,
 	ManageGroupMemberRolePayload,
 	PauseGroupPayload,
 	Pkid,
 	RemoveGroupMemberPayload,
 	SendMessagePayload,
 	SyncGroupMembersPayload,
+	ThreadReplyOrder,
 	UpdateGroupPermissionsPayload,
 } from "@/types/messenger"
 import { apiClient } from "../axios"
@@ -58,6 +60,20 @@ export const groupApi = {
 	},
 
 	markSeen: (groupId: number) => apiClient.post(`/api/chats/groups/${groupId}/seen`, {}),
+
+	/**
+	 * A group message's thread replies — NOT another page of the main
+	 * group history. Sending into the thread reuses `groupApi.send`
+	 * (below) with `reply_to` set to the parent's id; this is read-only.
+	 * See use-group-thread.ts for why the response is always re-sorted
+	 * client-side regardless of `order`.
+	 */
+	threadReplies: (groupId: number, messageId: number, order: ThreadReplyOrder = "asc") =>
+		apiClient
+			.get<ApiResponse<GroupThreadRepliesData>>(
+				`/api/chats/groups/${groupId}/messages/${messageId}/replies?order=${order}`,
+			)
+			.then((r) => r.data.data),
 
 	/**
 	 * Same endpoint as chatApi.send(`/api/chats/messages`). Typed separately

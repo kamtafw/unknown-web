@@ -1,27 +1,27 @@
 "use client"
 
-import { MessageList,MessageListHandle } from "@/components/messenger/conversation/message-list"
+import { MessageList, MessageListHandle } from "@/components/messenger/conversation/message-list"
 import { useGroupDetail } from "@/hooks/messenger/use-group-detail"
-import { messageToGroupMessage,useGroupHistory } from "@/hooks/messenger/use-group-history"
+import { messageToGroupMessage, useGroupHistory } from "@/hooks/messenger/use-group-history"
 import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
-import { PendingAttachment,usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
-import { chatApi,MessageDeleteType } from "@/lib/messenger/api"
+import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
 import { deriveGroupComposerState } from "@/lib/messenger/group-permissions"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import { getDisplayName } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import type { GroupListData,Message,Pkid,Uuid } from "@/types/messenger"
-import { InfiniteData,useQueryClient } from "@tanstack/react-query"
-import { useCallback,useEffect,useMemo,useRef,useState } from "react"
+import type { GroupListData, Message, Pkid, Uuid } from "@/types/messenger"
+import { InfiniteData, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "../conversation/composer"
 import { ContactComposerDialog } from "../conversation/contact-composer-dialog"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
@@ -37,6 +37,13 @@ import { GroupConversationHeader } from "./group-conversation-header"
 interface GroupConversationViewProps {
 	groupId: number
 	onOpenProfile: () => void
+	/** Single source of truth for "open this message's thread" — wired to
+	 * both the message menu's "Reply" action and the "N replies"
+	 * affordance (see MessageBubble), so there's one place that decides
+	 * what opening a thread means, not two independent implementations.
+	 * Owned by GroupConversationWorkspace, which renders the ThreadPanel
+	 * as a sibling right-hand panel alongside this view. */
+	onOpenThread: (message: Message) => void
 }
 
 /**
@@ -48,10 +55,17 @@ interface GroupConversationViewProps {
  * working pattern — the dedicated endpoint's behavior for chat_type=group
  * hasn't been independently verified on web yet, so this avoids resting
  * a real screen on an unverified contract for no benefit.
- * Replies-as-threads (separate screen) and reactions (no confirmed HTTP
- * contract yet) remain out of scope.
+ * Replies are threaded (see ThreadPanel, rendered by
+ * GroupConversationWorkspace) rather than quoted inline in this view's
+ * own composer — a group message's "Reply" action and its "N replies"
+ * affordance both call `onOpenThread`, never `setReplyingTo`. Reactions
+ * remain out of scope (no confirmed HTTP contract yet).
  */
-export function GroupConversationView({ groupId, onOpenProfile }: GroupConversationViewProps) {
+export function GroupConversationView({
+	groupId,
+	onOpenProfile,
+	onOpenThread,
+}: GroupConversationViewProps) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
 	const { data: group } = useGroupDetail(groupId)
@@ -75,7 +89,6 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 	const vote = useVotePoll()
 	const voiceRecorder = useVoiceRecorder()
 
-	const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 	const [forwardTarget, setForwardTarget] = useState<Message | null>(null)
 	const [deleteTarget, setDeleteTarget] = useState<Message | null>(null)
 	const [createPollOpen, setCreatePollOpen] = useState(false)
@@ -111,8 +124,7 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 	}, [groupId, queryClient])
 
 	const handleSend = (content: string) => {
-		void send(content, replyingTo)
-		setReplyingTo(null)
+		void send(content)
 	}
 
 	const handleSendMedia = (caption: string) => {
@@ -130,10 +142,9 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 				fileName: a.file.name,
 				caption: resolveCaption(a),
 			})),
-			{ replyingTo, metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
+			{ metadata: { media_file_names: uploaded.map((a) => a.file.name) } },
 		)
 		resetAttachments()
-		setReplyingTo(null)
 	}
 
 	const handleAttachLocation = () => {
@@ -212,15 +223,6 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 		})
 	}
 
-	const resolveReplySenderName = useCallback(
-		(senderId: string): string => {
-			if (currentUser && senderId === currentUser.id) return "You"
-			const member = members.find((m) => m.id === senderId)
-			return member ? getDisplayName(member) : "Unknown"
-		},
-		[currentUser, members],
-	)
-
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0">
 			{search.isOpen ? (
@@ -257,7 +259,7 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 				onLoadOlder={() => fetchNextPage()}
 				remoteTyping={remoteTyping}
 				onRetry={handleRetry}
-				onReply={setReplyingTo}
+				onReply={onOpenThread}
 				onForward={setForwardTarget}
 				onPin={(m) => void pinMessage(messageToGroupMessage(m, groupId))}
 				onUnpin={(m) => void unpinMessage(messageToGroupMessage(m, groupId))}
@@ -266,7 +268,7 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 				onOpenReactionsDialog={setReactionsDialogMessage}
 				onVote={handleVote}
 				onViewPollResults={(m) => setPollResultsMessageId(m.id)}
-				resolveReplySenderName={resolveReplySenderName}
+				onOpenThread={onOpenThread}
 			/>
 			{composerState?.canSend === false ? (
 				<div className="flex items-center justify-center px-4 py-3 border-t border-border bg-muted/30 shrink-0 text-sm text-muted-foreground">
@@ -278,7 +280,6 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 				<Composer
 					onSend={handleSend}
 					onTypingChange={emitTyping}
-					replyingTo={replyingTo}
 					voice={{
 						phase: voiceRecorder.phase,
 						durationSecs: voiceRecorder.durationSecs,
@@ -292,7 +293,6 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 						onPlayPreview: voiceRecorder.playPreview,
 						onStopPreview: voiceRecorder.stopPreview,
 					}}
-					onCancelReply={() => setReplyingTo(null)}
 					onCreatePoll={() => setCreatePollOpen(true)}
 					onFilesPicked={addFiles}
 					onAttachContact={() => setContactDialogOpen(true)}

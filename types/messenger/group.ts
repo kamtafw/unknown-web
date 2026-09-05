@@ -12,13 +12,7 @@
  * not modeled here yet.
  */
 
-import type {
-	EmojiReactionCount,
-	MediaAttachment,
-	MessageReplyTo,
-	MessageStatus,
-	MessageType,
-} from "./chat"
+import type { EmojiReactionCount, MediaAttachment, MessageStatus, MessageType } from "./chat"
 import type { Pkid, Uuid } from "./identity"
 
 export type GroupRole = "admin" | "moderator" | "member"
@@ -144,8 +138,22 @@ export interface GroupMessage {
 	metadata: Record<string, unknown> | null
 	reactions_count?: number
 	receiver: null
+	/**
+	 * Count of thread replies to THIS message. `> 0` means the main
+	 * timeline should expose a "N replies" affordance (see
+	 * `MessageBubble`'s `onOpenThread`) rather than the reply itself ever
+	 * appearing inline. Authoritative — never derived by loading the
+	 * thread just to count it.
+	 */
 	replies_count?: number
-	reply_to: MessageReplyTo | null
+	/**
+	 * `null`, or the numeric id of the message this one is a thread reply
+	 * to. See the CONTRACT CHANGE note on `Message.reply_to` in chat.ts —
+	 * same change applies here, and for groups specifically this id
+	 * points at the thread's parent, not at an ordinary main-timeline
+	 * message a reply would be inlined under.
+	 */
+	reply_to: number | null
 	sender: {
 		id: Uuid
 		pkid: Pkid
@@ -181,6 +189,38 @@ export interface GroupChatHistoryData {
 	next: string | null
 	previous: string | null
 	results: GroupMessage[]
+}
+
+export type ThreadReplyOrder = "asc" | "desc"
+
+/**
+ * `GET chats/groups/:group_id/messages/:message_id/replies?order=asc|desc`.
+ *
+ * ASSUMPTION (not yet confirmed against a live payload): only the
+ * endpoint URL and the `order` query param are confirmed by the backend
+ * so far. The exact response envelope is unconfirmed, so this is
+ * modeled as the smallest shape every consumer here actually needs — a
+ * flat `results` array, matching the existing `{ results: T[] }` shape
+ * already used elsewhere for un-paginated collections (e.g.
+ * `chats/messages/pinned`, `chats/favorites`). Optional `next`/`count`
+ * fields are included defensively in case the backend does paginate this
+ * later; nothing currently reads them. If the real envelope differs,
+ * only `groupApi.threadReplies` and this type need to change — no
+ * consumer depends on more than `.results`.
+ *
+ * Ordering: this client always re-sorts the returned messages ascending
+ * by id/created_at via the same `compareMessageOrder` helper the main
+ * group history uses (see `use-group-thread.ts`), regardless of the
+ * `order` requested. This avoids having to trust — or guess at — how
+ * `order=desc` should be interpreted for display, and keeps thread
+ * replies compatible with optimistic (negative-id) messages the same
+ * way main history already is.
+ */
+export interface GroupThreadRepliesData {
+	results: GroupMessage[]
+	count?: number
+	next?: string | null
+	previous?: string | null
 }
 
 /**
