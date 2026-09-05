@@ -147,7 +147,11 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 
 			<div className="flex items-center gap-2 px-2 pb-1">
 				<div className="flex-1 min-w-0">
-					<ChatFilterChips value={filter} onChange={setFilter} />
+					<ChatFilterChips
+						value={filter}
+						onChange={setFilter}
+						onCreateCustomList={() => setListsDialogOpen(true)}
+					/>
 				</div>
 			</div>
 

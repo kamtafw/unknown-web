@@ -1,27 +1,27 @@
 "use client"
 
-import { MessageList,MessageListHandle } from "@/components/messenger/conversation/message-list"
+import { MessageList, MessageListHandle } from "@/components/messenger/conversation/message-list"
 import { useGroupDetail } from "@/hooks/messenger/use-group-detail"
-import { messageToGroupMessage,useGroupHistory } from "@/hooks/messenger/use-group-history"
+import { messageToGroupMessage, useGroupHistory } from "@/hooks/messenger/use-group-history"
 import { useGroupMembers } from "@/hooks/messenger/use-group-members"
 import { useGroupMessageActions } from "@/hooks/messenger/use-group-message-actions"
 import { useActiveGroupRoom } from "@/hooks/messenger/use-group-rooms"
 import { useGroupTyping } from "@/hooks/messenger/use-group-typing"
-import { PendingAttachment,usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
+import { PendingAttachment, usePendingAttachment } from "@/hooks/messenger/use-media-attachment"
 import { useMessageSearch } from "@/hooks/messenger/use-message-search"
 import { useVotePoll } from "@/hooks/messenger/use-poll-actions"
 import { useSendGroupMessage } from "@/hooks/messenger/use-send-group-message"
 import { useVoiceRecorder } from "@/hooks/messenger/use-voice-recorder"
-import { chatApi,MessageDeleteType } from "@/lib/messenger/api"
+import { chatApi, MessageDeleteType } from "@/lib/messenger/api"
 import { groupApi } from "@/lib/messenger/group-api"
 import { deriveGroupComposerState } from "@/lib/messenger/group-permissions"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import { getDisplayName } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
-import type { GroupListData,Message,Pkid,Uuid } from "@/types/messenger"
-import { InfiniteData,useQueryClient } from "@tanstack/react-query"
-import { useCallback,useEffect,useMemo,useRef,useState } from "react"
+import type { GroupListData, Message, Pkid, Uuid } from "@/types/messenger"
+import { InfiniteData, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Composer } from "../conversation/composer"
 import { ContactComposerDialog } from "../conversation/contact-composer-dialog"
 import { DeleteMessageDialog } from "../conversation/delete-message-dialog"
@@ -213,12 +213,12 @@ export function GroupConversationView({ groupId, onOpenProfile }: GroupConversat
 	}
 
 	const resolveReplySenderName = useCallback(
-		(senderId: string): string => {
-			if (currentUser && senderId === currentUser.id) return "You"
-			const member = members.find((m) => m.id === senderId)
-			return member ? getDisplayName(member) : "Unknown"
-		},
-		[currentUser, members],
+	(senderId: string): string => {
+	if (currentUser && senderId === currentUser.id) return "You"
+	const member = members.find((m) => m.id === senderId)
+	return member ? getDisplayName(member) : "Unknown"
+	},
+	[currentUser, members],
 	)
 
 	return (
