@@ -32,15 +32,7 @@ export function createOptimisticMessage(
 		is_hidden_by_me: false,
 		collection_id: "",
 		status: "queued",
-		reply_to: replyingTo
-			? {
-					id: replyingTo.id,
-					sender_id: replyingTo.sender.id,
-					content: replyingTo.content,
-					message_type: replyingTo.message_type,
-					created_at: replyingTo.created_at,
-				}
-			: null,
+		reply_to: replyingTo ? replyingTo.id : null,
 		forwarded_from: null,
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString(),
