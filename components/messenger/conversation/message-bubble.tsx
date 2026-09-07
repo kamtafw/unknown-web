@@ -37,6 +37,15 @@ interface MessageBubbleProps {
 	repliedMessage?: Message
 	isHighlighted?: boolean
 	sameSenderAsPrevious?: boolean
+	/** Suppresses the reply-quote block ("replying to X: ...") even when
+	 * `message.reply_to` is set. Used by ThreadPanel: every message
+	 * rendered there — the parent and every reply alike — is inherently
+	 * "about" the parent message already pinned at the top of the panel,
+	 * so re-stating that context inside each individual bubble is
+	 * redundant noise, not information. There, the thread structure
+	 * itself carries that context; the bubble should just show its
+	 * content plainly. */
+	hideReplyContext?: boolean
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -210,6 +219,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		repliedMessage,
 		isHighlighted,
 		sameSenderAsPrevious,
+		hideReplyContext,
 		onRetry,
 		onReply,
 		onForward,
@@ -238,13 +248,15 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	// message we already have loaded (`repliedMessage`, looked up by the
 	// caller — see message-list.tsx). If it isn't loaded, there is no
 	// endpoint to fetch it by id, so this falls back to a generic label
-	// rather than fabricating a sender.
-	const replySenderLabel = message.reply_to
+	// rather than fabricating a sender. Skipped entirely when
+	// `hideReplyContext` is set (see its doc comment on the props type).
+	const showReplyContext = !!message.reply_to && !hideReplyContext
+	const replySenderLabel = showReplyContext
 		? repliedMessage
 			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
 			: null
 		: null
-	const replyContentLabel = message.reply_to
+	const replyContentLabel = showReplyContext
 		? repliedMessage
 			? resolveMessagePreviewText(repliedMessage)
 			: "Message"
@@ -308,7 +320,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 							</div>
 						)}
 
-						{message.reply_to && !deleted && (
+						{showReplyContext && !deleted && (
 							<div
 								className={cn(
 									"mb-2 rounded-lg border-l-4 px-2.5 py-1.5 shadow-sm",

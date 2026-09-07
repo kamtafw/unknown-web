@@ -37,6 +37,13 @@ interface ThreadPanelProps {
  * (avatars, media, deleted/optimistic/failed states, timestamps) stays
  * identical to the main timeline's without a second implementation.
  *
+ * Every <MessageBubble/> here is rendered with `hideReplyContext` — the
+ * "replying to X" quote block is redundant everywhere in this panel: the
+ * parent is already pinned above as the whole reason this list exists,
+ * so re-stating "replying to [parent]" identically on every single reply
+ * bubble would just be noise, not information. Messages here render
+ * plainly; the thread structure itself carries that context.
+ *
  * Interactivity is intentionally narrower than the main timeline for
  * this first pass: only retry-on-failure is wired. Reply/forward/pin/
  * delete/react from *within* a thread are deferred, not silently
@@ -133,6 +140,7 @@ export function ThreadPanel({ groupId, group, parentMessage, onClose }: ThreadPa
 					isOwn={parentMessage.sender.id === currentUserUuid}
 					showSender
 					sameSenderAsPrevious={false}
+					hideReplyContext
 				/>
 
 				<div className="my-3 flex items-center gap-2 px-1">
@@ -179,6 +187,7 @@ export function ThreadPanel({ groupId, group, parentMessage, onClose }: ThreadPa
 									showSender={!sameSenderAsPrevious}
 									sameSenderAsPrevious={sameSenderAsPrevious}
 									onRetry={retry}
+									hideReplyContext
 								/>
 							)
 						})}

@@ -234,7 +234,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				<DropdownMenu.Trigger asChild>
 					<button
 						title="New"
-						className="absolute bottom-7 right-7 h-14 w-14 rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:opacity-90 transition-opacity"
+						className="absolute bottom-7 right-7 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:opacity-90 active:scale-95 motion-reduce:transition-none"
 					>
 						<FAB />
 					</button>
@@ -244,7 +244,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 						align="end"
 						side="top"
 						sideOffset={10}
-						className="z-150 bg-transparent backdrop-blur-md border-0 px-2 shadow-none outline-none rounded-2xl
+						className="z-150 rounded-2xl border-0 bg-transparent px-2 shadow-none outline-none backdrop-blur-md
 							data-[state=open]:animate-in data-[state=closed]:animate-out
 							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
 							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
