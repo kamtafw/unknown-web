@@ -1,5 +1,7 @@
 "use client"
 
+import { ChatListEmptyState } from "@/components/messenger/chat-list/chat-list-empty-state"
+import { FAB } from "@/components/messenger/icons/group-list-icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMyStatuses, useStatusFeed } from "@/hooks/messenger/use-status"
 import {
@@ -11,13 +13,14 @@ import { getInitials } from "@/lib/messenger/user-display"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { useStatusMuteStore } from "@/stores/status-mute.store"
+import { useStatusViewedStore } from "@/stores/status-viewed-store"
 import type { Pkid, StatusUser, Uuid } from "@/types/messenger"
-import { ChevronDown, Plus } from "lucide-react"
+import { Camera, ChevronDown, Clock, PenLine, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { DropdownMenu } from "radix-ui"
 import { useMemo, useState } from "react"
 import { StatusCreateDialog } from "./status-create-dialog"
 import { StatusRingAvatar } from "./status-ring-avatar"
-import { useStatusViewedStore } from "@/stores/status-viewed-store"
 
 interface StatusListPanelProps {
 	activeEntryId: string | null
@@ -38,7 +41,7 @@ function StatusRow({
 		<button
 			onClick={onClick}
 			className={cn(
-				"w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+				"group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-accent",
 				isActive ? "bg-accent" : "hover:bg-accent/50",
 			)}
 		>
@@ -51,11 +54,11 @@ function StatusRow({
 				isMuted={entry.isMuted}
 			/>
 			<div className="min-w-0 flex-1">
-				<p className="text-sm font-semibold truncate">{isMe ? "My Status" : entry.name}</p>
-				<p className="text-xs text-muted-foreground truncate">{entry.timestamp}</p>
+				<p className="truncate text-sm font-semibold">{isMe ? "My Status" : entry.name}</p>
+				<p className="truncate text-xs text-muted-foreground">{entry.timestamp}</p>
 			</div>
 			{isMe && entry.totalSegments === 0 && (
-				<span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+				<span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
 					<Plus size={16} />
 				</span>
 			)}
@@ -63,10 +66,17 @@ function StatusRow({
 	)
 }
 
+/** Plain label + whitespace, not a shaded band — a full-width tinted bar
+ * per section reads as a stack of separate little cards; a quiet label
+ * with a hairline above it reads as one continuous list with hierarchy,
+ * matching the reference more closely and the spacing principle used
+ * elsewhere in Messenger (thin separators, not container chrome). */
 function SectionHeader({ label }: { label: string }) {
 	return (
-		<div className="px-4 py-2 bg-muted/50">
-			<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+		<div className="border-t border-border/60 px-4 pt-4 pb-1.5">
+			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+				{label}
+			</p>
 		</div>
 	)
 }
@@ -86,14 +96,17 @@ function CollapsibleSectionHeader({
 	return (
 		<button
 			onClick={onToggle}
-			className="w-full flex items-center justify-between px-4 py-2 bg-muted/50 hover:bg-muted transition-colors"
+			className="flex w-full items-center justify-between border-t border-border/60 px-4 pt-4 pb-1.5 text-left transition-colors hover:bg-accent/30"
 		>
-			<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 				{label} · {count}
 			</p>
 			<ChevronDown
 				size={14}
-				className={cn("text-muted-foreground transition-transform", expanded ? "rotate-180" : "")}
+				className={cn(
+					"text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
+					expanded ? "rotate-180" : "",
+				)}
 			/>
 		</button>
 	)
@@ -106,9 +119,10 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 	const { data: feedData, isLoading: feedLoading } = useStatusFeed()
 	const mutedPkids = useStatusMuteStore((s) => s.mutedPkids)
 	const [createOpen, setCreateOpen] = useState(false)
+	const [createIntent, setCreateIntent] = useState<"text" | "camera">("text")
 	const [viewedExpanded, setViewedExpanded] = useState(true)
 	const [mutedExpanded, setMutedExpanded] = useState(true)
-	
+
 	const viewedIds = useStatusViewedStore((s) => s.viewedIds)
 	const grouped = useMemo(
 		() => groupStatusesByUser(feedData?.results ?? [], new Set(mutedPkids), new Set(viewedIds)),
@@ -135,22 +149,21 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 	const totalOthers = grouped.recent.length + grouped.viewed.length + grouped.muted.length
 	const openEntry = (entry: StatusListEntry) => router.push(`/messenger/status/${entry.id}`)
 
+	const openCreate = (intent: "text" | "camera") => {
+		setCreateIntent(intent)
+		setCreateOpen(true)
+	}
+
 	return (
-		<div className="w-full sm:w-90 shrink-0 border-r border-border flex flex-col h-full bg-background">
+		<div className="relative flex h-full w-full shrink-0 flex-col border-r border-border bg-background sm:w-90">
 			<div className="flex items-center justify-between px-4 pt-4 pb-3">
 				<h1 className="text-xl font-bold">Status</h1>
-				<button
-					onClick={() => setCreateOpen(true)}
-					className="px-3 py-1.5 rounded-full text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-				>
-					New status
-				</button>
 			</div>
 
 			<div className="flex-1 overflow-y-auto">
 				{isLoading ? (
-					<div className="px-4 py-2 space-y-4">
-						{[...Array(4)].map((_, i) => (
+					<div className="space-y-4 px-4 py-2">
+						{[...Array(5)].map((_, i) => (
 							<div key={i} className="flex items-center gap-3">
 								<Skeleton className="h-14 w-14 rounded-full" />
 								<div className="flex-1 space-y-2">
@@ -168,7 +181,7 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 								isMe
 								isActive={activeEntryId === "my"}
 								onClick={() =>
-									myEntry.stories.length > 0 ? openEntry(myEntry) : setCreateOpen(true)
+									myEntry.stories.length > 0 ? openEntry(myEntry) : openCreate("text")
 								}
 							/>
 						)}
@@ -231,15 +244,67 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 						)}
 
 						{!myEntry && totalOthers === 0 && (
-							<p className="text-sm text-muted-foreground text-center py-16">
-								No updates yet — statuses from your contacts will show up here.
-							</p>
+							<ChatListEmptyState
+								icon={Clock}
+								title="No updates yet"
+								description="Statuses from your contacts disappear after 24 hours — check back soon, or share your own."
+								action={{ label: "Add a status", onClick: () => openCreate("text") }}
+							/>
 						)}
 					</>
 				)}
 			</div>
 
-			<StatusCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger asChild>
+					<button
+						title="New status"
+						aria-label="Create a new status"
+						className="absolute bottom-7 right-7 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:opacity-90 active:scale-95 motion-reduce:transition-none"
+					>
+						<FAB />
+					</button>
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Portal>
+					<DropdownMenu.Content
+						align="end"
+						side="top"
+						sideOffset={10}
+						className="z-150 rounded-2xl border-0 bg-transparent px-2 shadow-none outline-none backdrop-blur-md
+							data-[state=open]:animate-in data-[state=closed]:animate-out
+							data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+							data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+					>
+						<div className="flex flex-col items-end gap-2">
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => openCreate("camera")}
+							>
+								<span className="text-[13px] text-foreground">Camera</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<Camera size={17} />
+								</div>
+							</DropdownMenu.Item>
+
+							<DropdownMenu.Item
+								className="flex items-center gap-2 outline-none"
+								onSelect={() => openCreate("text")}
+							>
+								<span className="text-[13px] text-foreground">Text status</span>
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
+									<PenLine size={17} />
+								</div>
+							</DropdownMenu.Item>
+						</div>
+					</DropdownMenu.Content>
+				</DropdownMenu.Portal>
+			</DropdownMenu.Root>
+
+			<StatusCreateDialog
+				open={createOpen}
+				onOpenChange={setCreateOpen}
+				initialIntent={createIntent}
+			/>
 		</div>
 	)
 }

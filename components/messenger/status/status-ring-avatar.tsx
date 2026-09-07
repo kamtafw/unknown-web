@@ -48,8 +48,16 @@ export function StatusRingAvatar({
 	const radius = size / 2 - strokeWidth
 	const cx = size / 2
 	const cy = size / 2
+	// A single segment reads as one unbroken ring (spec: "1 story → one
+	// continuous ring") — a gap only makes sense once there's more than
+	// one segment to separate.
 	const gapDeg = segmentCount > 1 ? Math.min(6, 40 / segmentCount) : 0
 	const segAngle = 360 / Math.max(segmentCount, 1)
+
+	const ringLabel =
+		segmentCount === 0
+			? undefined
+			: `${name}, ${segmentCount} ${segmentCount === 1 ? "status update" : "status updates"}, ${viewedCount} viewed${isMuted ? ", muted" : ""}`
 
 	const avatarNode = (
 		<Avatar.Root className="h-full w-full rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-background">
@@ -72,25 +80,45 @@ export function StatusRingAvatar({
 		)
 	}
 
+	const ringColor = isMuted ? "var(--muted-foreground)" : "var(--primary)"
+	const ringOpacity = isMuted ? 0.4 : 1
+
 	return (
-		<div className="relative shrink-0" style={{ width: size, height: size }}>
-			<svg width={size} height={size} className="absolute inset-0">
-				{Array.from({ length: segmentCount }).map((_, i) => {
-					const start = i * segAngle + gapDeg / 2
-					const end = (i + 1) * segAngle - gapDeg / 2
-					const isViewedSeg = i < viewedCount
-					return (
-						<path
-							key={i}
-							d={describeArc(cx, cy, radius, start, end)}
-							fill="none"
-							stroke={isMuted || isViewedSeg ? "var(--muted-foreground)" : "var(--primary)"}
-							strokeOpacity={isMuted ? 0.4 : isViewedSeg ? 0.5 : 1}
-							strokeWidth={strokeWidth}
-							strokeLinecap="round"
-						/>
-					)
-				})}
+		<div
+			role="img"
+			aria-label={ringLabel}
+			className="relative shrink-0 transition-transform duration-150 ease-out group-active:scale-95 motion-reduce:transition-none motion-reduce:group-active:scale-100"
+			style={{ width: size, height: size }}
+		>
+			<svg width={size} height={size} className="absolute inset-0" aria-hidden="true">
+				{segmentCount === 1 ? (
+					<circle
+						cx={cx}
+						cy={cy}
+						r={radius}
+						fill="none"
+						stroke={ringColor}
+						strokeOpacity={isMuted ? ringOpacity : viewedCount >= 1 ? 0.5 : 1}
+						strokeWidth={strokeWidth}
+					/>
+				) : (
+					Array.from({ length: segmentCount }).map((_, i) => {
+						const start = i * segAngle + gapDeg / 2
+						const end = (i + 1) * segAngle - gapDeg / 2
+						const isViewedSeg = i < viewedCount
+						return (
+							<path
+								key={i}
+								d={describeArc(cx, cy, radius, start, end)}
+								fill="none"
+								stroke={isMuted || isViewedSeg ? "var(--muted-foreground)" : "var(--primary)"}
+								strokeOpacity={isMuted ? 0.4 : isViewedSeg ? 0.5 : 1}
+								strokeWidth={strokeWidth}
+								strokeLinecap="round"
+							/>
+						)
+					})
+				)}
 			</svg>
 			<div className="absolute inset-0 flex items-center justify-center p-0.75">{avatarNode}</div>
 		</div>
