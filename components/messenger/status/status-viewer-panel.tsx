@@ -12,16 +12,17 @@ import {
 	groupStatusesByUser,
 	type StatusListEntry,
 } from "@/lib/messenger/status-grouping"
+import { formatStatusTimestamp } from "@/lib/messenger/status-time"
 import { getInitials } from "@/lib/messenger/user-display"
 import { useAuthStore } from "@/stores/auth-store"
 import { useStatusMuteStore } from "@/stores/status-mute.store"
+import { useStatusViewedStore } from "@/stores/status-viewed-store"
 import type { Pkid, StatusUser, Uuid } from "@/types/messenger"
-import { Bell, BellOff, MoreVertical, Repeat2, Trash2, X } from "lucide-react"
+import { Bell, BellOff, Eye, MoreVertical, Repeat2, Trash2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { StatusViewersSheet } from "./status-viewers-sheet"
-import { useStatusViewedStore } from "@/stores/status-viewed-store"
 
 const IMAGE_STORY_DURATION_MS = 5000
 
@@ -114,6 +115,7 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	const story = entry?.stories[index]
 	const isVideo = story?.status_type === "video"
 	const mediaUrl = story?.media?.[0]?.url
+	const mediaCaption = story?.status_type !== "text" ? story?.media?.[0]?.caption : undefined
 
 	useEffect(() => {
 		if (!story || isOwn) return
@@ -152,7 +154,26 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 		if (index > 0) {
 			setIndex((i) => i - 1)
 			setProgress(0)
+			return
 		}
+		// At the first story — step back to the previous user in the same
+		// chain used for forward auto-advance, mirroring goNext/
+		// advanceToNextEntry's logic in reverse. "My Status" has no
+		// predecessor, and an entry reached outside the chain (a muted
+		// user opened directly from the list) has no defined "previous"
+		// either — both cases just hold at the boundary, per spec.
+		//
+		// Deliberately lands on the previous user's FIRST story rather
+		// than their last: the alternative needs the target index
+		// communicated across the route change (query param, extra
+		// state) purely to serve the "rewind to the end" feel, which
+		// isn't worth the extra moving parts for what backward
+		// navigation across users is mostly used for in practice —
+		// getting back to someone, not landing on a specific story.
+		if (isOwn) return
+		const currentChainIndex = chain.findIndex((e) => e.id === userId)
+		if (currentChainIndex <= 0) return
+		router.replace(`/messenger/status/${chain[currentChainIndex - 1].id}`)
 	}
 
 	useEffect(() => {
@@ -187,19 +208,26 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full min-w-0 bg-black">
-			<div className="flex items-center gap-1 px-3 pt-3">
+			<div
+				className="flex items-center gap-1 px-3 pt-3"
+				role="progressbar"
+				aria-label={`Story ${index + 1} of ${entry.stories.length}`}
+			>
 				{entry.stories.map((s, i) => (
-					<div key={s.id} className="flex-1 h-1 rounded-full bg-white/30 overflow-hidden">
+					<div key={s.id} className="h-0.75 flex-1 overflow-hidden rounded-full bg-white/25">
 						<div
-							className="h-full bg-white"
-							style={{ width: `${i < index ? 100 : i === index ? progress * 100 : 0}%` }}
+							className="h-full rounded-full bg-white"
+							style={{
+								width: `${i < index ? 100 : i === index ? progress * 100 : 0}%`,
+								transition: i === index ? undefined : "width 150ms ease-out",
+							}}
 						/>
 					</div>
 				))}
 			</div>
 
-			<div className="flex items-center gap-2.5 px-3 py-2.5">
-				<Avatar.Root className="h-9 w-9 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+			<div className="flex items-center gap-3 px-4 py-3">
+				<Avatar.Root className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
 					<Avatar.Image
 						src={entry.avatarUrl ?? undefined}
 						alt={entry.name}
@@ -209,44 +237,55 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 						{getInitials(entry.user.first_name, entry.user.last_name)}
 					</Avatar.Fallback>
 				</Avatar.Root>
-				<p className="min-w-0 flex-1 text-sm font-semibold text-white truncate">
-					{isOwn ? "My Status" : entry.name}
-				</p>
 
-				{isOwn ? (
-					<DropdownMenu.Root>
-						<DropdownMenu.Trigger asChild>
-							<button className="h-8 w-8 flex items-center justify-center text-white/80 hover:text-white">
-								<MoreVertical size={18} />
-							</button>
-						</DropdownMenu.Trigger>
-						<DropdownMenu.Portal>
-							<DropdownMenu.Content
-								align="end"
-								sideOffset={4}
-								className="z-150 min-w-44 bg-popover border border-border rounded-2xl p-1.5 shadow-xl"
-							>
+				<div className="min-w-0 flex-1">
+					<p className="truncate text-sm font-semibold leading-tight text-white">
+						{isOwn ? "My Status" : entry.name}
+					</p>
+					<p className="truncate text-xs leading-tight text-white/60">
+						{formatStatusTimestamp(story.created_at)}
+					</p>
+				</div>
+
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger asChild>
+						<button
+							aria-label="Status options"
+							className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+						>
+							<MoreVertical size={18} />
+						</button>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Portal>
+						<DropdownMenu.Content
+							align="end"
+							sideOffset={4}
+							className="z-150 min-w-44 bg-popover border border-border rounded-2xl p-1.5 shadow-xl"
+						>
+							{isOwn ? (
 								<DropdownMenu.Item
 									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent text-destructive"
 									onSelect={() => setConfirmDelete(true)}
 								>
 									<Trash2 size={16} /> Delete status
 								</DropdownMenu.Item>
-							</DropdownMenu.Content>
-						</DropdownMenu.Portal>
-					</DropdownMenu.Root>
-				) : (
-					<button
-						onClick={() => (isMutedNow ? unmute(entry.user.pkid) : mute(entry.user.pkid))}
-						className="h-8 w-8 flex items-center justify-center text-white/80 hover:text-white"
-						title={isMutedNow ? "Unmute" : "Mute"}
-					>
-						{isMutedNow ? <Bell size={18} /> : <BellOff size={18} />}
-					</button>
-				)}
+							) : (
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer select-none outline-none text-sm hover:bg-accent data-highlighted:bg-accent"
+									onSelect={() => (isMutedNow ? unmute(entry.user.pkid) : mute(entry.user.pkid))}
+								>
+									{isMutedNow ? <Bell size={16} /> : <BellOff size={16} />}
+									{isMutedNow ? "Unmute status" : "Mute status"}
+								</DropdownMenu.Item>
+							)}
+						</DropdownMenu.Content>
+					</DropdownMenu.Portal>
+				</DropdownMenu.Root>
+
 				<button
 					onClick={() => router.replace("/messenger/status")}
-					className="h-8 w-8 flex items-center justify-center text-white/80 hover:text-white"
+					aria-label="Close status"
+					className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
 				>
 					<X size={20} />
 				</button>
@@ -298,20 +337,24 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 				/>
 			</div>
 
-			<div className="flex items-center justify-between px-4 py-3">
+			<div className="flex flex-col gap-2 px-4 pb-3 pt-2">
+				{mediaCaption && (
+					<p className="text-sm leading-snug text-white/90 wrap-break-word">{mediaCaption}</p>
+				)}
 				{isOwn ? (
 					<button
 						onClick={() => setViewersOpen(true)}
-						className="text-sm text-white/80 hover:text-white"
+						className="flex w-fit items-center gap-1.5 rounded-full py-1 text-sm text-white/70 transition-colors hover:text-white"
 					>
+						<Eye size={15} />
 						{story.views_count ?? 0} view{story.views_count === 1 ? "" : "s"}
 					</button>
 				) : (
 					<button
 						onClick={() => reshareStatus.mutate({ statusId: story.id })}
-						className="flex items-center gap-1.5 text-sm text-white/80 hover:text-white"
+						className="flex w-fit items-center gap-1.5 rounded-full py-1 text-sm text-white/70 transition-colors hover:text-white"
 					>
-						<Repeat2 size={16} /> Share to my status
+						<Repeat2 size={15} /> Share to my status
 					</button>
 				)}
 			</div>

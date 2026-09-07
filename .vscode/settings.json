@@ -8,6 +8,7 @@
 		"Appscombo",
 		"cooldown",
 		"hashtagged",
+		"misrouted",
 		"normalise",
 		"normalised",
 		"nums",
@@ -20,6 +21,7 @@
 		"repost",
 		"reposted",
 		"reposts",
+		"Reshare",
 		"Totp"
 	]
 }
