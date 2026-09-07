@@ -9,6 +9,13 @@ export interface StatusListEntry {
 	timestamp: string
 	totalSegments: number
 	viewedSegments: number
+	/** Per-story viewed state, same order as `stories`. The ring needs
+	 * this rather than just `viewedSegments`'s count: viewed stories
+	 * aren't guaranteed to be a contiguous prefix of the array (e.g. a
+	 * story posted after you'd already viewed a later one), so coloring
+	 * ring segments by `index < viewedCount` can highlight the wrong
+	 * ones. */
+	viewedFlags: boolean[]
 	isMuted: boolean
 	stories: Status[]
 }
@@ -46,7 +53,8 @@ export function groupStatusesByUser(
 			(a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
 		)
 		const latest = sorted[sorted.length - 1]
-		const viewed = sorted.filter((s) => s.is_viewed || viewedIds.has(s.id)).length
+		const viewedFlags = sorted.map((s) => s.is_viewed || viewedIds.has(s.id))
+		const viewed = viewedFlags.filter(Boolean).length
 		entries.push({
 			id: String(pkid),
 			user: latest.user,
@@ -55,6 +63,7 @@ export function groupStatusesByUser(
 			timestamp: formatStatusTimestamp(latest.created_at),
 			totalSegments: sorted.length,
 			viewedSegments: viewed,
+			viewedFlags,
 			isMuted: mutedPkids.has(pkid),
 			stories: sorted,
 		})
@@ -87,6 +96,7 @@ export function buildMyStatusEntry(
 			timestamp: "Tap to add status",
 			totalSegments: 0,
 			viewedSegments: 0,
+			viewedFlags: [],
 			isMuted: false,
 			stories: [],
 		}
@@ -105,6 +115,7 @@ export function buildMyStatusEntry(
 		// Own statuses render as unseen so there's a clear "you have
 		// active statuses" indicator — matches mobile.
 		viewedSegments: 0,
+		viewedFlags: sorted.map(() => false),
 		isMuted: false,
 		stories: sorted,
 	}

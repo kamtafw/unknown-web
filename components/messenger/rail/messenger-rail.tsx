@@ -2,10 +2,10 @@
 
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
-import { LogOut,Settings } from "lucide-react"
+import { LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Burger,Chats,Groups,Status } from "../icons/messenger-rail-icons"
+import { Burger, Chats, Groups, Status } from "../icons/messenger-rail-icons"
 
 interface RailItem {
 	label: string
@@ -27,7 +27,7 @@ export function MessengerRail() {
 	const topSection = pathname.split("/").filter(Boolean)[1] // e.g. "groups", "status", a uuid, or undefined
 
 	return (
-		<nav className="w-14 sm:w-16 shrink-0 border-r border-border bg-background flex flex-col items-center px-2 py-3 gap-2">
+		<nav className="w-14 sm:w-16 shrink-0 border-r border-r-border bg-background flex flex-col items-center px-2 py-3 gap-3">
 			<button className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground/40 hover:bg-accent/40 transition-colors">
 				<Burger size={19} />
 			</button>
@@ -49,7 +49,7 @@ export function MessengerRail() {
 							className={cn(
 								"relative w-full h-10 rounded-r-xl flex items-center justify-center transition-colors",
 								isActive
-									? "bg-primary/10 text-primary border-l-3 border-l-primary"
+									? "bg-primary/10 text-primary border-l-3 border-solid border-primary"
 									: "text-muted-foreground hover:bg-accent hover:text-foreground",
 							)}
 						>

@@ -6,7 +6,7 @@ const MAX_RING_SEGMENTS = 30
 
 interface StatusRingAvatarProps {
 	total: number
-	viewed: number
+	viewedFlags: boolean[]
 	avatarUrl?: string | null
 	name: string
 	initials: string
@@ -14,28 +14,25 @@ interface StatusRingAvatarProps {
 	isMuted?: boolean
 }
 
+// 1. Corrected Math: Standard clockwise polar coordinate mapper
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
+	// Subtracting 90 degrees ensures 0 deg starts exactly at the top (12 o'clock)
 	const rad = ((angleDeg - 90) * Math.PI) / 180
 	return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
+// 2. Fixed Arc Generator: Uses sweep-flag '1' to draw clockwise from start to end
 function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
-	const start = polarToCartesian(cx, cy, r, endAngle)
-	const end = polarToCartesian(cx, cy, r, startAngle)
+	const start = polarToCartesian(cx, cy, r, startAngle)
+	const end = polarToCartesian(cx, cy, r, endAngle)
 	const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
-	return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`
+	// Sweep flag '1' ensures a clean clockwise arc path
+	return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`
 }
 
-/**
- * Segment count = number of active statuses, capped at 30 (product
- * requirement, literal reading — not proportionally rescaled if someone
- * genuinely has more than 30 active stories, just capped). Unviewed
- * segments render primary-colored, viewed ones dim to muted-foreground —
- * same semantic the old flat ring used, now per-segment.
- */
 export function StatusRingAvatar({
 	total,
-	viewed,
+	viewedFlags,
 	avatarUrl,
 	name,
 	initials,
@@ -43,16 +40,20 @@ export function StatusRingAvatar({
 	isMuted,
 }: StatusRingAvatarProps) {
 	const segmentCount = Math.min(total, MAX_RING_SEGMENTS)
-	const viewedCount = Math.min(viewed, segmentCount)
-	const strokeWidth = 2.5
-	const radius = size / 2 - strokeWidth
+	const flags = viewedFlags.slice(0, segmentCount)
+	const viewedCount = flags.filter(Boolean).length
+
+	const strokeWidth = 3 // Slightly thicker for crisp visibility
+	const gapSize = 4 // Clear spacing between segments
+
+	const radius = size / 2 - strokeWidth / 2
 	const cx = size / 2
 	const cy = size / 2
-	// A single segment reads as one unbroken ring (spec: "1 story → one
-	// continuous ring") — a gap only makes sense once there's more than
-	// one segment to separate.
-	const gapDeg = segmentCount > 1 ? Math.min(6, 40 / segmentCount) : 0
+
+	// Dynamic gap handling based on total segments
+	const gapDeg = segmentCount > 1 ? Math.min(8, 40 / segmentCount) : 0
 	const segAngle = 360 / Math.max(segmentCount, 1)
+	const lineCap: "round" | "butt" = segmentCount > 12 ? "butt" : "round"
 
 	const ringLabel =
 		segmentCount === 0
@@ -60,13 +61,13 @@ export function StatusRingAvatar({
 			: `${name}, ${segmentCount} ${segmentCount === 1 ? "status update" : "status updates"}, ${viewedCount} viewed${isMuted ? ", muted" : ""}`
 
 	const avatarNode = (
-		<Avatar.Root className="h-full w-full rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-background">
+		<Avatar.Root className="h-full w-full rounded-full overflow-hidden bg-muted flex items-center justify-center">
 			<Avatar.Image
 				src={avatarUrl ?? undefined}
 				alt={name}
 				className="h-full w-full object-cover"
 			/>
-			<Avatar.Fallback className="text-sm font-medium text-muted-foreground">
+			<Avatar.Fallback className="text-sm font-semibold text-muted-foreground uppercase">
 				{initials}
 			</Avatar.Fallback>
 		</Avatar.Root>
@@ -81,16 +82,19 @@ export function StatusRingAvatar({
 	}
 
 	const ringColor = isMuted ? "var(--muted-foreground)" : "var(--primary)"
-	const ringOpacity = isMuted ? 0.4 : 1
+
+	// Dynamically calculate the perfect inner spacing for the avatar container
+	const avatarWrapperInset = strokeWidth + gapSize
 
 	return (
 		<div
 			role="img"
 			aria-label={ringLabel}
-			className="relative shrink-0 transition-transform duration-150 ease-out group-active:scale-95 motion-reduce:transition-none motion-reduce:group-active:scale-100"
+			className="relative shrink-0 transition-transform duration-150 ease-out group-active:scale-95 motion-reduce:transition-none"
 			style={{ width: size, height: size }}
 		>
-			<svg width={size} height={size} className="absolute inset-0" aria-hidden="true">
+			{/* Status Ring Container */}
+			<svg width={size} height={size} className="absolute inset-0 -rotate-90" aria-hidden="true">
 				{segmentCount === 1 ? (
 					<circle
 						cx={cx}
@@ -98,29 +102,43 @@ export function StatusRingAvatar({
 						r={radius}
 						fill="none"
 						stroke={ringColor}
-						strokeOpacity={isMuted ? ringOpacity : viewedCount >= 1 ? 0.5 : 1}
+						strokeOpacity={isMuted ? 0.4 : viewedCount >= 1 ? 0.5 : 1}
 						strokeWidth={strokeWidth}
 					/>
 				) : (
 					Array.from({ length: segmentCount }).map((_, i) => {
+						// Calculate exact arc spans with gaps
 						const start = i * segAngle + gapDeg / 2
 						const end = (i + 1) * segAngle - gapDeg / 2
-						const isViewedSeg = i < viewedCount
+						const isViewedSeg = flags[i]
+
 						return (
 							<path
 								key={i}
 								d={describeArc(cx, cy, radius, start, end)}
 								fill="none"
 								stroke={isMuted || isViewedSeg ? "var(--muted-foreground)" : "var(--primary)"}
-								strokeOpacity={isMuted ? 0.4 : isViewedSeg ? 0.5 : 1}
+								strokeOpacity={isMuted ? 0.4 : isViewedSeg ? 0.35 : 1}
 								strokeWidth={strokeWidth}
-								strokeLinecap="round"
+								strokeLinecap={lineCap}
 							/>
 						)
 					})
 				)}
 			</svg>
-			<div className="absolute inset-0 flex items-center justify-center p-0.75">{avatarNode}</div>
+
+			{/* Inner Avatar Wrapper with exact physical offsets */}
+			<div
+				className="absolute flex items-center justify-center bg-background rounded-full"
+				style={{
+					top: avatarWrapperInset,
+					left: avatarWrapperInset,
+					right: avatarWrapperInset,
+					bottom: avatarWrapperInset,
+				}}
+			>
+				{avatarNode}
+			</div>
 		</div>
 	)
 }
