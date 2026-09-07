@@ -45,23 +45,25 @@ function StatusRow({
 				isActive ? "bg-accent" : "hover:bg-accent/50",
 			)}
 		>
-			<StatusRingAvatar
-				total={entry.totalSegments}
-				viewed={entry.viewedSegments}
-				avatarUrl={entry.avatarUrl}
-				name={entry.name}
-				initials={getInitials(entry.user.first_name, entry.user.last_name)}
-				isMuted={entry.isMuted}
-			/>
+			<div className="relative shrink-0">
+				<StatusRingAvatar
+					total={entry.totalSegments}
+					viewedFlags={entry.viewedFlags}
+					avatarUrl={entry.avatarUrl}
+					name={entry.name}
+					initials={getInitials(entry.user.first_name, entry.user.last_name)}
+					isMuted={entry.isMuted}
+				/>
+				{isMe && entry.totalSegments === 0 && (
+					<span className="absolute bottom-0 right-0 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-background">
+						<Plus size={11} strokeWidth={2.75} />
+					</span>
+				)}
+			</div>
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-sm font-semibold">{isMe ? "My Status" : entry.name}</p>
 				<p className="truncate text-xs text-muted-foreground">{entry.timestamp}</p>
 			</div>
-			{isMe && entry.totalSegments === 0 && (
-				<span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-					<Plus size={16} />
-				</span>
-			)}
 		</button>
 	)
 }
@@ -74,7 +76,7 @@ function StatusRow({
 function SectionHeader({ label }: { label: string }) {
 	return (
 		<div className="border-t border-border/60 px-4 pt-4 pb-1.5">
-			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+			<p className="text-xs font-semibold capitalize tracking-wide text-muted-foreground">
 				{label}
 			</p>
 		</div>
@@ -84,12 +86,10 @@ function SectionHeader({ label }: { label: string }) {
 /** Viewed/Muted only — Recent stays always-open by design. */
 function CollapsibleSectionHeader({
 	label,
-	count,
 	expanded,
 	onToggle,
 }: {
 	label: string
-	count: number
 	expanded: boolean
 	onToggle: () => void
 }) {
@@ -98,8 +98,8 @@ function CollapsibleSectionHeader({
 			onClick={onToggle}
 			className="flex w-full items-center justify-between border-t border-border/60 px-4 pt-4 pb-1.5 text-left transition-colors hover:bg-accent/30"
 		>
-			<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-				{label} · {count}
+			<p className="text-xs font-semibold capitalize tracking-wide text-muted-foreground">
+				{label}
 			</p>
 			<ChevronDown
 				size={14}
@@ -205,7 +205,6 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 							<>
 								<CollapsibleSectionHeader
 									label="Viewed updates"
-									count={grouped.viewed.length}
 									expanded={viewedExpanded}
 									onToggle={() => setViewedExpanded((v) => !v)}
 								/>
@@ -226,7 +225,6 @@ export function StatusListPanel({ activeEntryId }: StatusListPanelProps) {
 							<>
 								<CollapsibleSectionHeader
 									label="Muted updates"
-									count={grouped.muted.length}
 									expanded={mutedExpanded}
 									onToggle={() => setMutedExpanded((v) => !v)}
 								/>

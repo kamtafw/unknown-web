@@ -40,9 +40,11 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 
 	const isDetailOpen = isGroupsSection
 		? activeGroupId !== null
-		: isArchiveSection
-			? false
-			: activeUuid !== null
+		: isStatusSection
+			? activeStatusEntryId !== null
+			: isArchiveSection
+				? false
+				: activeUuid !== null
 
 	return (
 		<div className="flex flex-1 min-h-0 overflow-hidden">

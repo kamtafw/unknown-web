@@ -14,11 +14,22 @@ import {
 } from "@/lib/messenger/status-grouping"
 import { formatStatusTimestamp } from "@/lib/messenger/status-time"
 import { getInitials } from "@/lib/messenger/user-display"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { useStatusMuteStore } from "@/stores/status-mute.store"
 import { useStatusViewedStore } from "@/stores/status-viewed-store"
 import type { Pkid, StatusUser, Uuid } from "@/types/messenger"
-import { Bell, BellOff, Eye, MoreVertical, Repeat2, Trash2, X } from "lucide-react"
+import {
+	Bell,
+	BellOff,
+	Eye,
+	ImageOff,
+	Loader2,
+	MoreVertical,
+	Repeat2,
+	Trash2,
+	X,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -94,11 +105,20 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	const [paused, setPaused] = useState(false)
 	const [confirmDelete, setConfirmDelete] = useState(false)
 	const [viewersOpen, setViewersOpen] = useState(false)
+	const [mediaLoaded, setMediaLoaded] = useState(false)
+	const [mediaError, setMediaError] = useState(false)
 
-	useEffect(() => {
+	// Reset in-story position when the URL's userId changes. Done during
+	// render (React's sanctioned "adjusting state when a prop changes"
+	// pattern), not in a useEffect — an effect-based reset would still
+	// let one render commit with the new entry but the old index first.
+	// See the doc comment above for the exact symptom that caused.
+	const [prevUserId, setPrevUserId] = useState(userId)
+	if (userId !== prevUserId) {
+		setPrevUserId(userId)
 		setIndex(0)
 		setProgress(0)
-	}, [userId])
+	}
 
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const rafRef = useRef<number | null>(null)
@@ -112,10 +132,26 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	const unmute = useStatusMuteStore((s) => s.unmute)
 	const isMutedNow = useStatusMuteStore((s) => s.isMuted(entry?.user.pkid ?? -1))
 
-	const story = entry?.stories[index]
+	// Defensive clamp — with the render-phase reset above this should
+	// never actually be needed for a userId change, but it's a cheap
+	// guard against `index` outliving a shorter stories array for any
+	// other reason (e.g. a refetch that drops an expired story).
+	const safeIndex = entry ? Math.min(index, Math.max(entry.stories.length - 1, 0)) : index
+	const story = entry?.stories[safeIndex]
 	const isVideo = story?.status_type === "video"
 	const mediaUrl = story?.media?.[0]?.url
 	const mediaCaption = story?.status_type !== "text" ? story?.media?.[0]?.caption : undefined
+
+	// Per-story media readiness, reset whenever the story being shown
+	// actually changes (manual nav, auto-advance, or a user-boundary
+	// hop). Text stories have nothing to load, so they start "ready".
+	const [prevStoryId, setPrevStoryId] = useState<number | null>(null)
+	const currentStoryId = story?.id ?? null
+	if (currentStoryId !== prevStoryId) {
+		setPrevStoryId(currentStoryId)
+		setMediaLoaded(story?.status_type === "text")
+		setMediaError(false)
+	}
 
 	useEffect(() => {
 		if (!story || isOwn) return
@@ -177,7 +213,7 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 	}
 
 	useEffect(() => {
-		if (!story || isVideo || paused) return
+		if (!story || isVideo || paused || !mediaLoaded || mediaError) return
 		startRef.current = performance.now() - progress * IMAGE_STORY_DURATION_MS
 		const tick = (now: number) => {
 			const pct = Math.min(1, (now - startRef.current) / IMAGE_STORY_DURATION_MS)
@@ -189,7 +225,7 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 		return () => {
 			if (rafRef.current) cancelAnimationFrame(rafRef.current)
 		}
-	}, [story?.id, isVideo, paused])
+	}, [story?.id, isVideo, paused, mediaLoaded, mediaError])
 
 	useEffect(() => {
 		const video = videoRef.current
@@ -197,6 +233,31 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 		if (paused) video.pause()
 		else void video.play()
 	}, [isVideo, paused, story?.id])
+
+	// Desktop keyboard support — arrows to navigate, Escape to close.
+	// goNext/goPrev are plain functions recreated every render (they close
+	// over `index`/`entry`), so the handler reads them via refs rather
+	// than putting them in the effect's deps — otherwise this would tear
+	// down and re-add a global listener on every progress tick (~60/sec
+	// during the image countdown) instead of just when the story or the
+	// overlay-guard actually changes.
+	const goNextRef = useRef(goNext)
+	const goPrevRef = useRef(goPrev)
+	useEffect(() => {
+		goNextRef.current = goNext
+		goPrevRef.current = goPrev
+	})
+
+	useEffect(() => {
+		if (!story || confirmDelete || viewersOpen) return
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "ArrowRight") goNextRef.current()
+			else if (e.key === "ArrowLeft") goPrevRef.current()
+			else if (e.key === "Escape") router.replace("/messenger/status")
+		}
+		window.addEventListener("keydown", handleKeyDown)
+		return () => window.removeEventListener("keydown", handleKeyDown)
+	}, [story?.id, confirmDelete, viewersOpen, router])
 
 	if (!entry || !story) {
 		return (
@@ -211,15 +272,15 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 			<div
 				className="flex items-center gap-1 px-3 pt-3"
 				role="progressbar"
-				aria-label={`Story ${index + 1} of ${entry.stories.length}`}
+				aria-label={`Story ${safeIndex + 1} of ${entry.stories.length}`}
 			>
 				{entry.stories.map((s, i) => (
 					<div key={s.id} className="h-0.75 flex-1 overflow-hidden rounded-full bg-white/25">
 						<div
 							className="h-full rounded-full bg-white"
 							style={{
-								width: `${i < index ? 100 : i === index ? progress * 100 : 0}%`,
-								transition: i === index ? undefined : "width 150ms ease-out",
+								width: `${i < safeIndex ? 100 : i === safeIndex ? progress * 100 : 0}%`,
+								transition: i === safeIndex ? undefined : "width 150ms ease-out",
 							}}
 						/>
 					</div>
@@ -307,23 +368,51 @@ export function StatusViewerPanel({ userId }: StatusViewerPanelProps) {
 							{story.content}
 						</p>
 					</div>
-				) : isVideo && mediaUrl ? (
+				) : mediaError || !mediaUrl ? (
+					<div className="flex flex-col items-center gap-3 px-8 text-center text-white/70">
+						<ImageOff size={28} />
+						<p className="text-sm">This status couldn&apos;t be shown.</p>
+						<button
+							onClick={goNext}
+							className="rounded-full border border-white/25 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
+						>
+							Skip
+						</button>
+					</div>
+				) : isVideo ? (
 					<video
 						ref={videoRef}
 						src={mediaUrl}
 						className="max-h-full max-w-full"
 						autoPlay
 						playsInline
+						onLoadedData={() => setMediaLoaded(true)}
+						onError={() => setMediaError(true)}
 						onTimeUpdate={(e) => {
 							const v = e.currentTarget
 							if (v.duration) setProgress(v.currentTime / v.duration)
 						}}
 						onEnded={goNext}
 					/>
-				) : mediaUrl ? (
+				) : (
 					// eslint-disable-next-line @next/next/no-img-element
-					<img src={mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
-				) : null}
+					<img
+						src={mediaUrl}
+						alt=""
+						className={cn(
+							"max-h-full max-w-full object-contain transition-opacity duration-150 motion-reduce:transition-none",
+							mediaLoaded ? "opacity-100" : "opacity-0",
+						)}
+						onLoad={() => setMediaLoaded(true)}
+						onError={() => setMediaError(true)}
+					/>
+				)}
+
+				{!mediaLoaded && !mediaError && story.status_type !== "text" && mediaUrl && (
+					<div className="absolute inset-0 flex items-center justify-center">
+						<Loader2 size={24} className="animate-spin text-white/70 motion-reduce:animate-none" />
+					</div>
+				)}
 
 				<button
 					onClick={goPrev}

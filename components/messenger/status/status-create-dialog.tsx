@@ -279,7 +279,7 @@ export function StatusCreateDialog({ open, onOpenChange, initialIntent }: Status
 							 * placeholder; the gradient scrim keeps it legible over
 							 * bright media without boxing it in a card. */}
 							{preview && (
-								<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-3 pt-10 pb-3">
+								<div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 via-black/20 to-transparent px-3 pt-10 pb-3">
 									<textarea
 										value={caption}
 										onChange={(e) => setCaption(e.target.value.slice(0, CAPTION_MAX_LENGTH))}
