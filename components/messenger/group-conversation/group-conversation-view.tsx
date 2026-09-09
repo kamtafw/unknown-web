@@ -253,6 +253,7 @@ export function GroupConversationView({
 				ref={messageListRef}
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}
+				showSenderNames
 				isLoading={isLoading}
 				hasOlder={!!hasNextPage}
 				isFetchingOlder={isFetchingNextPage}

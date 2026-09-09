@@ -37,6 +37,11 @@ interface MessageBubbleProps {
 	repliedMessage?: Message
 	isHighlighted?: boolean
 	sameSenderAsPrevious?: boolean
+	/** Needed only to resolve the reply-quote sender label as "You" when
+	 * the current user is the one being quoted, rather than their own
+	 * first name — everywhere else `isOwn` already covers "is this my
+	 * message". */
+	currentUserUuid: string
 	/** Suppresses the reply-quote block ("replying to X: ...") even when
 	 * `message.reply_to` is set. Used by ThreadPanel: every message
 	 * rendered there — the parent and every reply alike — is inherently
@@ -219,6 +224,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		repliedMessage,
 		isHighlighted,
 		sameSenderAsPrevious,
+		currentUserUuid,
 		hideReplyContext,
 		onRetry,
 		onReply,
@@ -253,7 +259,9 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	const showReplyContext = !!message.reply_to && !hideReplyContext
 	const replySenderLabel = showReplyContext
 		? repliedMessage
-			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+			? repliedMessage.sender.id === currentUserUuid
+				? "You"
+				: (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
 			: null
 		: null
 	const replyContentLabel = showReplyContext
