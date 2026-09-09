@@ -1,0 +1,27 @@
+{
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit",
+		"source.organizeImports": "explicit",
+		"source.sortMembers": "explicit"
+	},
+	"cSpell.words": [
+		"Appscombo",
+		"cooldown",
+		"hashtagged",
+		"misrouted",
+		"normalise",
+		"normalised",
+		"nums",
+		"oklch",
+		"optimisation",
+		"personalise",
+		"personalised",
+		"pkid",
+		"Pkids",
+		"repost",
+		"reposted",
+		"reposts",
+		"Reshare",
+		"Totp"
+	]
+}

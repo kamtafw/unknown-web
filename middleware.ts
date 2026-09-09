@@ -1,92 +1,167 @@
-// import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
+import { COOKIE } from "./lib/cookies"
+import { DJANGO_API_URL } from "./lib/server-config"
 
-// export function middleware(request: NextRequest) {
-//   const { pathname } = request.nextUrl;
+const PUBLIC_ROUTES = [
+	"/sign-in",
+	"/sign-up",
+	"/forgot-password",
+	"/create-new-password",
+	"/verify",
+	"/2fa",
+	"/terms",
+	"/privacy-policy",
+	"/about",
+	"/advertising",
+	"/legal-notice",
+	"/account-deletion",
+	"/account-recovery",
+	"/support",
+	"/contact",
+	"/safety-report",
+]
+const ONBOARDING_ROUTES = ["/complete-profile", "/interests", "/friend-suggestions"]
+const ADMIN_ROUTES = ["/admin"]
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 
-//   const publicRoutes = ["/", "/signup", "/forgot-password"];
-//   const protectedAuthRoutes = [
-//     "/otp",
-//     "/profile",
-//     "/interest",
-//     "/verify-email",
-//     "/verify-code",
-//     "/create-password",
-//     "/confirm-password",
-//     "/success",
-//     "/home",
-//   ];
+function matchesPrefix(pathname: string, routes: string[]) {
+	return routes.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+}
 
-//   const isPublicRoute =
-//     publicRoutes.includes(pathname) ||
-//     pathname.startsWith("/layout") ||
-//     pathname.startsWith("/shared");
-//   const accessToken = request.cookies.get("accessToken")?.value;
-//   const signupFlow = request.cookies.get("signupFlow")?.value;
-//   const resetFlow = request.cookies.get("resetFlow")?.value;
-//   // const loginFlow = request.cookies.get("loginFlow")?.value;
-//   const isProtectedAuthRoute = protectedAuthRoutes.includes(pathname);
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+	try {
+		const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")
+		const json = atob(base64)
+		return JSON.parse(json)
+	} catch {
+		return null
+	}
+}
 
-//   if (isPublicRoute) {
-//     return NextResponse.next();
-//   }
-//   if (isProtectedAuthRoute) {
-//     if (
-//       (pathname === "/otp" ||
-//         pathname === "/profile" ||
-//         pathname === "/interest") &&
-//       signupFlow
-//     ) {
-//       return NextResponse.next();
-//     }
+function isTokenExpired(token: string): boolean {
+	const payload = decodeJwtPayload(token)
+	if (!payload || typeof payload.exp !== "number") return true
+	// 10s buffer to avoid edge-case races
+	return Date.now() / 1000 > payload.exp - 10
+}
 
-//     if (
-//       (pathname === "/verify-code" ||
-//         pathname === "/create-password" ||
-//         pathname === "/confirm-password" ||
-//         pathname === "/success") &&
-//       resetFlow
-//     ) {
-//       return NextResponse.next();
-//     }
+function isSameOriginRequest(req: NextRequest) {
+	const origin = req.headers.get("origin")
 
-//     // if (pathname === "/home" && accessToken) {
-//     //   return NextResponse.next();
-//     // }
+	if (!origin) return true
 
-//     if (accessToken) {
-//       return NextResponse.next();
-//     }
+	const originUrl = new URL(origin)
+	const host = req.headers.get("x-forwarded-host") || req.headers.get("host")
 
-//     if (accessToken) {
-//       return NextResponse.next();
-//     }
+	return originUrl.host === host
+}
 
-//     return NextResponse.redirect(new URL("/", request.url));
-//   }
+// function changed so this middleware stops calling itself and have it calling
+// Django and set cookies itself; on Vercel this is invisible plumbing
+// and basically always works; on Coolify, the container sits behind Traefik
+// and this fetch has to go: container → out to the internet → DNS resolve the
+// domain → back into Traefik → back into the same container (or another replica)
+async function refreshAuth(refreshToken: string) {
+	try {
+		const res = await fetch(`${DJANGO_API_URL}/auth/token/refresh`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ refresh: refreshToken }),
+			signal: AbortSignal.timeout(10000),
+		})
 
-//   if (!accessToken) {
-//     return NextResponse.redirect(new URL("/", request.url));
-//   }
+		const json = await res.json().catch(() => null)
+		if (!res.ok || !json?.success) return null
 
-//   return NextResponse.next();
-// }
+		return {
+			access_token: json.data.access_token as string,
+			refresh_token: (json.data.refresh_token as string) ?? refreshToken,
+		}
+	} catch (error) {
+		console.error("[middleware] token refresh failed:", error)
+		return null
+	}
+}
 
-// export const config = {
-//   matcher: [
-//     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif).*)",
-//   ],
-// };
+function clearAndRedirectToSignIn(req: NextRequest) {
+	const res = NextResponse.redirect(new URL("/sign-in", req.url))
+	res.cookies.delete(COOKIE.ACCESS)
+	res.cookies.delete(COOKIE.REFRESH)
+	return res
+}
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+export async function middleware(req: NextRequest) {
+	const { pathname } = req.nextUrl
 
-import { NextRequest, NextResponse } from "next/server";
+	const accessToken = req.cookies.get(COOKIE.ACCESS)?.value
+	const refreshToken = req.cookies.get(COOKIE.REFRESH)?.value
 
-export function middleware(request: NextRequest) {
-  return NextResponse.next();
+	const isPublic = matchesPrefix(pathname, PUBLIC_ROUTES)
+	const isOnboarding = matchesPrefix(pathname, ONBOARDING_ROUTES)
+	const isAdmin = matchesPrefix(pathname, ADMIN_ROUTES)
+	const isApiRoute = pathname.startsWith("/api/")
+
+	if (isApiRoute || pathname.startsWith("/_next")) {
+		if (isApiRoute && !SAFE_METHODS.has(req.method) && !isSameOriginRequest(req)) {
+			return NextResponse.json(
+				{ success: false, message: "Invalid request origin" },
+				{ status: 403 },
+			)
+		}
+
+		return NextResponse.next()
+	}
+
+	if (!accessToken && !refreshToken) {
+		if (isPublic) return NextResponse.next()
+		return NextResponse.redirect(new URL("/sign-in", req.url))
+	}
+
+	if ((!accessToken || isTokenExpired(accessToken)) && refreshToken) {
+		const refreshed = await refreshAuth(refreshToken)
+		if (!refreshed) return clearAndRedirectToSignIn(req)
+
+		const res = isPublic ? NextResponse.redirect(new URL("/home", req.url)) : NextResponse.next()
+		const isProd = process.env.NODE_ENV === "production"
+
+		res.cookies.set(COOKIE.ACCESS, refreshed.access_token, {
+			httpOnly: true,
+			secure: isProd,
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60,
+		})
+		res.cookies.set(COOKIE.REFRESH, refreshed.refresh_token, {
+			httpOnly: true,
+			secure: isProd,
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60 * 24 * 7,
+		})
+		return res
+	}
+
+	if (accessToken && !refreshToken) {
+		if (isPublic) return NextResponse.next()
+		return clearAndRedirectToSignIn(req)
+	}
+
+	if (accessToken && !isTokenExpired(accessToken) && isPublic) {
+		return NextResponse.redirect(new URL("/home", req.url))
+	}
+
+	if (isAdmin && accessToken) {
+		const payload = decodeJwtPayload(accessToken)
+		const isAdministrator = payload?.is_administrator === true
+
+		if (!isAdministrator) {
+			return NextResponse.redirect(new URL("/home", req.url))
+		}
+	}
+
+	return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif).*)",
-  ],
-};
+	matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+}

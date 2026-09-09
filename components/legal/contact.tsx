@@ -1,0 +1,274 @@
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<section className="mb-10 sm:mb-12">
+			<h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mb-4">{title}</h2>
+			{children}
+		</section>
+	)
+}
+
+function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<div className="mt-5">
+			<h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
+			{children}
+		</div>
+	)
+}
+
+function P({ children }: { children: React.ReactNode }) {
+	return <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>
+}
+
+function UL({ children }: { children: React.ReactNode }) {
+	return (
+		<ul className="list-disc pl-5 sm:pl-6 mb-3 text-[13px] sm:text-sm text-muted-foreground leading-relaxed space-y-1">
+			{children}
+		</ul>
+	)
+}
+
+function Divider() {
+	return <hr className="border-border my-8 sm:my-10" />
+}
+
+export function Contact() {
+	return (
+		<>
+			{/* Hero */}
+			<section className="py-14 sm:py-20 px-4 border-b border-border">
+				<div className="max-w-3xl mx-auto">
+					<p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">
+						Contact us
+					</p>
+					<h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight leading-tight mb-4">
+						We&apos;d love to hear from you
+					</h1>
+					<p className="text-muted-foreground leading-relaxed max-w-2xl">
+						At AppsCombo, we&apos;re committed to creating meaningful connections and providing
+						exceptional support to our users, creators, businesses, communities, and partners around
+						the world. Whether you have a question, need assistance, want to report an issue,
+						explore partnership opportunities, or simply share feedback — our team is here to help.
+					</p>
+				</div>
+			</section>
+
+			<div className="max-w-3xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+				<Section title="Get in touch">
+					<P>
+						Our support and customer success teams are available to assist you with inquiries
+						related to your account, technical issues, privacy concerns, business services,
+						advertising, and more.
+					</P>
+
+					<SubSection title="General inquiries">
+						<P>For general questions, feedback, or information about AppsCombo.</P>
+						<a
+							href="mailto:info@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							info@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Customer support">
+						<P>Need help with your account or using AppsCombo? Our support team can assist with:</P>
+						<UL>
+							<li>Account access issues</li>
+							<li>Password resets</li>
+							<li>Profile management</li>
+							<li>Community features</li>
+							<li>Messaging issues</li>
+							<li>Platform navigation and general support</li>
+						</UL>
+						<a
+							href="mailto:support@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							support@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Technical support">
+						<P>
+							Experiencing a technical issue or found a bug? Please include device information,
+							operating system, browser or app version, screenshots (if applicable), and a
+							description of the issue to help us resolve your request more efficiently.
+						</P>
+						<a
+							href="mailto:support@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							support@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Account recovery">
+						<P>
+							If you&apos;ve lost access to your account or believe it has been compromised, our
+							security team will guide you through the recovery process.
+						</P>
+						<a
+							href="mailto:recovery@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							recovery@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Privacy and data protection">
+						<P>
+							Questions about your privacy, personal data, or data protection rights? We can assist
+							with:
+						</P>
+						<UL>
+							<li>Data access requests</li>
+							<li>Data correction requests</li>
+							<li>Account deletion requests</li>
+							<li>Privacy concerns</li>
+							<li>Regulatory compliance inquiries</li>
+						</UL>
+						<a
+							href="mailto:privacy@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							privacy@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Safety and abuse reporting">
+						<P>
+							To report harassment, bullying, hate speech, impersonation, fraud, scams, security
+							concerns, or other policy violations, contact us with as much detail as possible —
+							including screenshots, usernames, and links.
+						</P>
+						<a
+							href="mailto:support@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							support@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Business and advertising inquiries">
+						<P>
+							Interested in promoting your business or advertising on AppsCombo? Our business team
+							can assist with advertising campaigns, brand partnerships, business accounts,
+							sponsored content, and marketing opportunities.
+						</P>
+						<a
+							href="mailto:business@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							business@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Partnerships and strategic alliances">
+						<P>
+							We welcome opportunities to collaborate with organizations, institutions, developers,
+							brands, and technology partners — including technology integration, business
+							collaborations, educational initiatives, community programs, event partnerships, and
+							strategic alliances.
+						</P>
+						<a
+							href="mailto:partnerships@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							partnerships@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Creator and influencer support">
+						<P>
+							Creators, influencers, and public figures can contact our creator relations team for
+							support and collaboration opportunities.
+						</P>
+						<a
+							href="mailto:creators@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							creators@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Media and press inquiries">
+						<P>For media requests, interviews, press releases, and public relations inquiries.</P>
+						<a
+							href="mailto:press@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							press@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Legal department">
+						<P>
+							For legal notices, intellectual property matters, copyright concerns, or
+							compliance-related inquiries.
+						</P>
+						<a
+							href="mailto:legal@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							legal@appscombo.com
+						</a>
+					</SubSection>
+
+					<SubSection title="Developer support">
+						<P>
+							For API access, integrations, technical partnerships, and developer-related questions.
+						</P>
+						<a
+							href="mailto:support@appscombo.com"
+							className="text-[13px] text-primary hover:underline"
+						>
+							support@appscombo.com
+						</a>
+					</SubSection>
+				</Section>
+
+				<Divider />
+
+				<Section title="Corporate headquarters">
+					<P>
+						AppsCombo
+						<br />8 The Green, Ste A, Kent, Dover, DE, 19901, United States
+					</P>
+					<SubSection title="Business hours">
+						<P>Customer support is available 24 hours a day, 7 days a week.</P>
+					</SubSection>
+				</Section>
+
+				<Divider />
+
+				<Section title="Follow AppsCombo">
+					<P>
+						Stay connected and keep up with the latest news, updates, product releases, and
+						community highlights on our official social channels.
+					</P>
+					<p className="text-[13px] text-muted-foreground">
+						Facebook · Instagram · X (Twitter) · LinkedIn · YouTube · TikTok
+						<br />
+						<span className="italic">(Official links coming soon.)</span>
+					</p>
+				</Section>
+
+				<Divider />
+
+				<Section title="Our commitment to you">
+					<P>At AppsCombo, every message matters. We are dedicated to:</P>
+					<UL>
+						<li>Providing timely support</li>
+						<li>Protecting your privacy</li>
+						<li>Ensuring platform safety</li>
+						<li>Improving user experiences</li>
+						<li>Building a stronger global community</li>
+					</UL>
+				</Section>
+
+				<p className="text-center text-xs text-muted-foreground pt-2">AppsCombo — Connect. Engage. Grow.</p>
+			</div>
+		</>
+	)
+}

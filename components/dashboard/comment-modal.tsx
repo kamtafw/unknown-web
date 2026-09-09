@@ -1,0 +1,346 @@
+"use client"
+
+import { useAddComment, usePrependContent } from "@/hooks/socials/use-comment"
+import { useLocationPicker } from "@/hooks/socials/use-location-picker"
+import { useMediaUpload } from "@/hooks/socials/use-media-upload"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
+import { EMOJIS, extractHashtags, insertEmojiAtCursor } from "@/lib/socials/composer"
+import { canReplyTo } from "@/lib/socials/content-permissions"
+import { getInitials } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
+import type { CreateCommentPayload, SocialContent } from "@/types/socials/api"
+import * as Dialog from "@radix-ui/react-dialog"
+import { Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
+import Image from "next/image"
+import { Avatar } from "radix-ui"
+import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
+import { UserAvatar, renderText } from "./post-card"
+import { ReplyRestrictedNotice } from "./reply-restricted-notice"
+
+interface CommentModalProps {
+	post: SocialContent
+	open: boolean
+	onOpenChange: (open: boolean) => void
+}
+
+export function CommentModal({ post, open, onOpenChange }: CommentModalProps) {
+	const user = useAuthStore((s) => s.user)
+	const addComment = useAddComment()
+	const prependContent = usePrependContent()
+	const canReply = canReplyTo(post)
+
+	const [text, setText] = useState("")
+	const [showEmoji, setShowEmoji] = useState(false)
+	const {
+		mediaItems,
+		addFiles,
+		removeMedia,
+		retryUpload,
+		uploadedUrls,
+		anyUploading,
+		reset: resetMedia,
+	} = useMediaUpload()
+	const {
+		location,
+		locationLabel,
+		fetchingLocation,
+		toggleLocation: handleLocation,
+		reset: resetLocation,
+	} = useLocationPicker()
+
+	const fileInputRef = useRef<HTMLInputElement>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
+
+	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
+	const canSubmit = hasContent && !anyUploading
+
+	const reset = () => {
+		resetMedia()
+		setText("")
+		setShowEmoji(false)
+		resetLocation()
+	}
+
+	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		addFiles(e.target.files)
+		e.target.value = ""
+	}
+
+	const handleEmojiClick = (emoji: string) => {
+		insertEmojiAtCursor(textareaRef.current, text, setText, emoji)
+		setShowEmoji(false)
+	}
+
+	const handleSubmit = () => {
+		if (!canSubmit) return
+		const hashtags = extractHashtags(text)
+		const payload: CreateCommentPayload = {
+			post_id: post.id,
+			content: text.trim(),
+			hashtags: hashtags.length ? hashtags : undefined,
+			medial_urls: uploadedUrls.length ? uploadedUrls : undefined,
+			location: location ?? undefined,
+		}
+		addComment.mutate(payload, {
+			onSuccess: (res) => {
+				if (!res.success) return
+				prependContent(post.id, res.data)
+				reset()
+				onOpenChange(false)
+			},
+		})
+	}
+
+	const postAuthorName =
+		[post.user.first_name, post.user.last_name].filter(Boolean).join(" ") || post.user.username
+	const myName = user
+		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
+		: ""
+
+	return (
+		<Dialog.Root
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) reset()
+				onOpenChange(v)
+			}}
+		>
+			<Dialog.Portal>
+				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+				<Dialog.Content
+					className="
+				fixed left-1/2 top-[15%] -translate-x-1/2 z-50
+				w-full max-w-150 max-h-[85vh]
+				bg-card border border-border rounded-2xl shadow-2xl
+				flex flex-col
+				focus:outline-none
+				data-[state=open]:animate-in data-[state=closed]:animate-out
+				data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+				data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+				"
+				>
+					<Dialog.Title className="sr-only">Reply to post</Dialog.Title>
+					<Dialog.Description className="sr-only">
+						Write your comment to {postAuthorName}
+					</Dialog.Description>
+
+					<div className="flex items-center px-4 pt-4 pb-2 shrink-0">
+						<Dialog.Close asChild>
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
+								<X size={18} />
+							</button>
+						</Dialog.Close>
+					</div>
+
+					<div className="flex-1 overflow-y-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
+						{/* Original post */}
+						<div className="flex gap-3">
+							<div className="flex flex-col items-center shrink-0">
+								<UserAvatar
+									src={post.user.profile_photo}
+									first={post.user.first_name}
+									last={post.user.last_name}
+								/>
+								<div className="w-0.5 bg-border flex-1 mt-2 min-h-7" />
+							</div>
+							<div className="flex-1 min-w-0 pb-3">
+								<div className="flex items-center gap-1.5 flex-wrap">
+									<span className="font-semibold text-sm text-foreground">{postAuthorName}</span>
+									<span className="text-muted-foreground text-[13px]">@{post.user.username}</span>
+								</div>
+								{!!post.message && (
+									<p className="text-[13.5px] text-foreground/80 leading-relaxed mt-0.5 line-clamp-3">
+										{renderText(post.message)}
+									</p>
+								)}
+								<p className="text-xs text-muted-foreground mt-1.5">
+									Replying to <span className="text-primary">@{post.user.username}</span>
+								</p>
+							</div>
+						</div>
+
+						{/* Reply input */}
+						{canReply ? (
+							<div className="flex gap-3">
+								<div className="flex flex-col items-center shrink-0 pt-1">
+									<Avatar.Root className="w-10 h-10 rounded-full overflow-hidden">
+										<Avatar.Image
+											src={user?.profile_photo ?? undefined}
+											alt={myName}
+											className="w-full h-full object-cover"
+										/>
+										<Avatar.Fallback className="w-full h-full bg-primary/40 text-primary-foreground text-sm font-semibold flex items-center justify-center">
+											{getInitials(user?.first_name ?? "", user?.last_name ?? "")}
+										</Avatar.Fallback>
+									</Avatar.Root>
+								</div>
+
+								<div className="flex-1 min-w-0 pt-1">
+									<div ref={mentionContainerRef} className="relative mb-3">
+										<HighlightedTextarea
+											ref={textareaRef}
+											value={text}
+											onChange={setText}
+											onSelect={mention.handleSelect}
+											onKeyDown={(e) => {
+												if (mention.handleKeyDown(e)) return
+												if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+											}}
+											placeholder="Post your comment"
+											rows={2}
+											autoFocus
+											className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
+										/>
+										<MentionAutocomplete mention={mention} />
+									</div>
+
+									{mediaItems.length > 0 && (
+										<div
+											className={`mt-2 rounded-xl overflow-hidden grid gap-0.5 ${mediaItems.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+										>
+											{mediaItems.map((item) => (
+												<div
+													key={item.id}
+													className="relative bg-muted aspect-video rounded-lg overflow-hidden"
+												>
+													{item.file.type.startsWith("video/") ? (
+														<video src={item.preview} className="w-full h-full object-cover" />
+													) : (
+														<Image
+															src={item.preview}
+															alt=""
+															className="w-full h-full object-cover"
+														/>
+													)}
+													{item.uploading && (
+														<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+															<Loader2 size={22} className="animate-spin text-white" />
+														</div>
+													)}
+													{item.error && (
+														<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
+															<span className="text-white text-[11px]">Upload failed</span>
+															<button
+																onClick={() => retryUpload(item.id, item.file)}
+																className="flex items-center gap-1 text-white text-[11px] bg-white/20 hover:bg-white/30 rounded-full px-2.5 py-1 transition-colors"
+															>
+																<RefreshCw size={11} /> Retry
+															</button>
+														</div>
+													)}
+													{!item.uploading && (
+														<button
+															onClick={() => removeMedia(item.id)}
+															className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+														>
+															<X size={12} />
+														</button>
+													)}
+												</div>
+											))}
+										</div>
+									)}
+
+									{locationLabel && (
+										<div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+											<MapPin size={11} />
+											{locationLabel}
+											<button onClick={resetLocation} className="ml-0.5 hover:opacity-60">
+												<X size={10} />
+											</button>
+										</div>
+									)}
+
+									{showEmoji && (
+										<div className="mt-2 p-2 border border-border rounded-xl bg-card shadow-lg">
+											<div className="grid grid-cols-10 gap-0.5">
+												{EMOJIS.map((e) => (
+													<button
+														key={e}
+														onClick={() => handleEmojiClick(e)}
+														className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
+													>
+														{e}
+													</button>
+												))}
+											</div>
+										</div>
+									)}
+								</div>
+							</div>
+						) : (
+							<div className="mt-1">
+								<ReplyRestrictedNotice
+									whoCanReply={post.permissions.reply_policy}
+									username={post.user.username}
+									compact
+								/>
+							</div>
+						)}
+					</div>
+
+					{canReply && (
+						<div className="flex items-center justify-between px-4 py-3 border-t border-border shrink-0">
+							<div className="flex items-center gap-0.5">
+								<button
+									onClick={() => fileInputRef.current?.click()}
+									disabled={mediaItems.length >= 4}
+									title="Add photo or video"
+									className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
+								>
+									<ImageIcon size={22} />
+								</button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept="image/*,video/*"
+									multiple
+									className="hidden"
+									onChange={handleMediaSelect}
+								/>
+								<button
+									onClick={() => setShowEmoji((v) => !v)}
+									title="Add emoji"
+									className={`p-2 rounded-full transition-colors ${showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"}`}
+								>
+									<Smile size={22} />
+								</button>
+								<button
+									onClick={handleLocation}
+									disabled={fetchingLocation}
+									title={locationLabel ? "Remove location" : "Add location"}
+									className={`p-2 rounded-full transition-colors disabled:opacity-50 ${locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-primary/10"}`}
+								>
+									<MapPin size={22} />
+								</button>
+							</div>
+							<div className="flex items-center gap-3">
+								{anyUploading && (
+									<span className="text-xs text-muted-foreground flex items-center gap-1.5">
+										<Loader2 size={12} className="animate-spin" /> Uploading…
+									</span>
+								)}
+								<button
+									onClick={handleSubmit}
+									disabled={!canSubmit || addComment.isPending}
+									className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+								>
+									{addComment.isPending ? "Replying…" : "Reply"}
+								</button>
+							</div>
+						</div>
+					)}
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	)
+}

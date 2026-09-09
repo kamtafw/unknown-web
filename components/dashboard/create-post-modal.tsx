@@ -1,0 +1,435 @@
+"use client"
+
+import { useCreatePost } from "@/hooks/socials/use-create-post"
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete"
+import { hasAnyMention } from "@/lib/mentions"
+import { socialsApi } from "@/lib/socials/api"
+import { EMOJIS, extractHashtags } from "@/lib/socials/composer"
+import { getInitials } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
+import type { CreatePostPayload, MediaItem, WhoCanReply, WhoCanSee } from "@/types/socials/api"
+import * as Dialog from "@radix-ui/react-dialog"
+import { Camera, Image as ImageIcon, Loader2, MapPin, RefreshCw, Smile, X } from "lucide-react"
+import Image from "next/image"
+import { Avatar } from "radix-ui"
+import { useRef, useState } from "react"
+import { HighlightedTextarea } from "../shared/highlighted-textarea"
+import { MentionAutocomplete } from "../shared/mention-autocomplete"
+import { WhoCanReplyPicker } from "./who-can-reply-picker"
+import { WhoCanSeePicker } from "./who-can-see-picker"
+
+interface CreatePostModalProps {
+	open: boolean
+	onOpenChange: (open: boolean) => void
+}
+
+export function CreatePostModal({ open, onOpenChange }: CreatePostModalProps) {
+	const user = useAuthStore((s) => s.user)
+	const createPost = useCreatePost()
+
+	const [text, setText] = useState("")
+	const [whoCanSee, setWhoCanSee] = useState<WhoCanSee>("EVERYONE")
+	const [whoCanReply, setWhoCanReply] = useState<WhoCanReply>("EVERYONE")
+	const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+	const [showEmoji, setShowEmoji] = useState(false)
+	const [location, setLocation] = useState<{ longitude: string; latitude: string } | null>(null)
+	const [locationLabel, setLocationLabel] = useState<string | null>(null)
+	const [fetchingLocation, setFetchingLocation] = useState(false)
+
+	const fileInputRef = useRef<HTMLInputElement>(null)
+	const cameraInputRef = useRef<HTMLInputElement>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const mentionContainerRef = useRef<HTMLDivElement>(null)
+	const mention = useMentionAutocomplete({
+		value: text,
+		onChange: setText,
+		textareaRef,
+		containerRef: mentionContainerRef,
+	})
+
+	const uploadedUrls = mediaItems.flatMap((m) => m.urls ?? [])
+	const anyUploading = mediaItems.some((m) => m.uploading)
+	const hasContent = text.trim().length > 0 || uploadedUrls.length > 0
+	const mentionBlocked = whoCanReply === "ONLY_ACCOUNTS_YOU_MENTION" && !hasAnyMention(text)
+	const canSubmit = hasContent && !anyUploading && !mentionBlocked
+
+	const reset = () => {
+		mediaItems.forEach((m) => URL.revokeObjectURL(m.preview))
+		setText("")
+		setMediaItems([])
+		setShowEmoji(false)
+		setLocation(null)
+		setLocationLabel(null)
+		setWhoCanSee("EVERYONE")
+		setWhoCanReply("EVERYONE")
+	}
+
+	const uploadFile = async (id: string, file: File) => {
+		setMediaItems((prev) =>
+			prev.map((m) => (m.id === id ? { ...m, uploading: true, error: false } : m)),
+		)
+		try {
+			const urls = await socialsApi.uploadMedia(file)
+			setMediaItems((prev) => prev.map((m) => (m.id === id ? { ...m, urls, uploading: false } : m)))
+		} catch {
+			setMediaItems((prev) =>
+				prev.map((m) => (m.id === id ? { ...m, uploading: false, error: true } : m)),
+			)
+		}
+	}
+
+	const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const remaining = 4 - mediaItems.length
+		const files = Array.from(e.target.files ?? []).slice(0, remaining)
+
+		files.forEach((file) => {
+			const id = crypto.randomUUID()
+			const preview = URL.createObjectURL(file)
+			setMediaItems((prev) => [
+				...prev,
+				{ id, file, preview, urls: null, uploading: true, error: false },
+			])
+			uploadFile(id, file)
+		})
+		e.target.value = ""
+	}
+
+	const removeMedia = (id: string) => {
+		setMediaItems((prev) => {
+			const item = prev.find((m) => m.id === id)
+			if (item) URL.revokeObjectURL(item.preview)
+			return prev.filter((m) => m.id !== id)
+		})
+	}
+
+	const handleEmojiClick = (emoji: string) => {
+		const ta = textareaRef.current
+		if (ta) {
+			const start = ta.selectionStart ?? text.length
+			const end = ta.selectionEnd ?? text.length
+			const next = text.slice(0, start) + emoji + text.slice(end)
+			setText(next)
+			setTimeout(() => {
+				ta.selectionStart = ta.selectionEnd = start + emoji.length
+				ta.focus()
+			}, 0)
+		} else {
+			setText((t) => t + emoji)
+		}
+		setShowEmoji(false)
+	}
+
+	const handleLocation = () => {
+		if (locationLabel) {
+			setLocation(null)
+			setLocationLabel(null)
+			return
+		}
+		if (!navigator.geolocation) return
+		setFetchingLocation(true)
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				setLocation({
+					longitude: String(pos.coords.longitude),
+					latitude: String(pos.coords.latitude),
+				})
+				setLocationLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`)
+				setFetchingLocation(false)
+			},
+			() => setFetchingLocation(false),
+		)
+	}
+
+	const handleSubmit = () => {
+		if (!canSubmit) return
+		const hashtags = extractHashtags(text)
+		const payload: CreatePostPayload = {
+			content: text.trim(),
+			who_can_see: whoCanSee,
+			who_can_reply: whoCanReply,
+			location: location ?? undefined,
+			hashtags: hashtags.length ? hashtags : undefined,
+			media_urls: uploadedUrls.length ? uploadedUrls : undefined,
+		}
+
+		createPost.mutate(payload)
+
+		reset()
+		onOpenChange(false)
+	}
+
+	const mediaCount = mediaItems.length
+
+	const myName = user
+		? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
+		: ""
+
+	return (
+		<Dialog.Root
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) reset()
+				onOpenChange(v)
+			}}
+		>
+			<Dialog.Portal>
+				<Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+
+				<Dialog.Content
+					className="
+						fixed left-1/2 top-[15%] -translate-x-1/2 z-50
+						w-full max-w-140 max-h-[88vh]
+						bg-card border border-border rounded-2xl shadow-2xl
+						flex flex-col
+						focus:outline-none
+						data-[state=open]:animate-in data-[state=closed]:animate-out
+						data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+						data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+					"
+				>
+					<div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+						<Dialog.Title className="text-lg font-bold text-foreground">Create post</Dialog.Title>
+						<Dialog.Close asChild>
+							<button className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors">
+								<X size={18} />
+							</button>
+						</Dialog.Close>
+					</div>
+
+					<Dialog.Description className="sr-only">Write and publish a new post</Dialog.Description>
+
+					<div className="flex-1 overflow-y-auto px-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
+						{/* User row */}
+						<div className="flex gap-3 mb-4">
+							<Avatar.Root className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+								<Avatar.Image
+									src={user?.profile_photo ?? undefined}
+									alt={myName}
+									className="w-full h-full object-cover"
+								/>
+								<Avatar.Fallback className="w-full h-full bg-primary/40 text-primary-foreground text-sm font-semibold flex items-center justify-center">
+									{getInitials(user?.first_name ?? "", user?.last_name ?? "")}
+								</Avatar.Fallback>
+							</Avatar.Root>
+
+							<div className="flex flex-col justify-center min-w-0">
+								<span className="text-sm font-semibold text-foreground leading-tight">
+									{myName}
+								</span>
+								<span className="text-xs text-muted-foreground">@{user?.username}</span>
+							</div>
+
+							<div className="ml-auto flex items-center">
+								<WhoCanSeePicker value={whoCanSee} onChange={setWhoCanSee} />
+							</div>
+						</div>
+
+						{/* Textarea */}
+						<div ref={mentionContainerRef} className="relative mb-3">
+							<HighlightedTextarea
+								ref={textareaRef}
+								value={text}
+								onChange={setText}
+								onSelect={mention.handleSelect}
+								onKeyDown={(e) => {
+									if (mention.handleKeyDown(e)) return
+									if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit()
+								}}
+								placeholder="What's on your mind?"
+								rows={3}
+								autoFocus
+								className="w-full resize-none text-[15px] text-foreground placeholder:text-muted-foreground outline-none bg-transparent leading-relaxed"
+							/>
+							<MentionAutocomplete mention={mention} />
+						</div>
+
+						{/* Media grid */}
+						{mediaCount > 0 && (
+							<div
+								className={`mb-3 rounded-xl overflow-hidden grid gap-1 ${
+									mediaCount === 1
+										? "grid-cols-1"
+										: mediaCount === 2
+											? "grid-cols-2"
+											: mediaCount === 3
+												? "grid-cols-2"
+												: "grid-cols-2"
+								}`}
+							>
+								{mediaItems.map((item, i) => {
+									const isVideo = item.file.type.startsWith("video/")
+									const spanClass = mediaCount === 3 && i === 0 ? "row-span-2" : ""
+									const aspect = mediaCount === 1 ? "aspect-video" : "aspect-square"
+									return (
+										<div
+											key={item.id}
+											className={`relative bg-muted overflow-hidden rounded-lg ${spanClass} ${aspect}`}
+										>
+											{isVideo ? (
+												<video src={item.preview} className="w-full h-full object-cover" />
+											) : (
+												<Image src={item.preview} alt="" fill={true} className="object-cover" />
+											)}
+
+											{item.uploading && (
+												<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+													<Loader2 size={22} className="animate-spin text-white" />
+												</div>
+											)}
+
+											{item.error && (
+												<div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1.5">
+													<span className="text-white text-[11px]">Upload failed</span>
+													<button
+														onClick={() => uploadFile(item.id, item.file)}
+														className="flex items-center gap-1 text-white text-[11px] bg-white/20 hover:bg-white/30 rounded-full px-2.5 py-1 transition-colors"
+													>
+														<RefreshCw size={11} /> Retry
+													</button>
+												</div>
+											)}
+
+											{!item.uploading && (
+												<button
+													onClick={() => removeMedia(item.id)}
+													className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-colors"
+												>
+													<X size={12} />
+												</button>
+											)}
+										</div>
+									)
+								})}
+							</div>
+						)}
+
+						{/* Location badge */}
+						{locationLabel && (
+							<div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+								<MapPin size={11} />
+								Using live location
+								<button
+									onClick={() => {
+										setLocation(null)
+										setLocationLabel(null)
+									}}
+									className="ml-0.5 hover:opacity-60"
+								>
+									<X size={10} />
+								</button>
+							</div>
+						)}
+
+						{/* Emoji picker */}
+						{showEmoji && (
+							<div className="mb-3 p-2 border border-border rounded-xl bg-card shadow-lg">
+								<div className="grid grid-cols-10 gap-0.5">
+									{EMOJIS.map((e) => (
+										<button
+											key={e}
+											onClick={() => handleEmojiClick(e)}
+											className="w-8 h-8 text-lg rounded hover:bg-accent flex items-center justify-center transition-colors"
+										>
+											{e}
+										</button>
+									))}
+								</div>
+							</div>
+						)}
+					</div>
+
+					<div className="px-5 pb-3 shrink-0">
+						<WhoCanReplyPicker
+							value={whoCanReply}
+							onChange={setWhoCanReply}
+							mentionRequired={mentionBlocked}
+						/>
+					</div>
+
+					<div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border">
+						<div className="flex items-center gap-0.5">
+							{/* Gallery */}
+							<button
+								onClick={() => fileInputRef.current?.click()}
+								disabled={mediaCount >= 4}
+								title="Add photo or video"
+								className="p-2.5 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
+							>
+								<ImageIcon size={20} />
+							</button>
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept="image/*,video/*"
+								multiple
+								className="hidden"
+								onChange={handleMediaSelect}
+							/>
+
+							{/* Camera */}
+							<button
+								onClick={() => cameraInputRef.current?.click()}
+								disabled={mediaCount >= 4}
+								title="Take a photo"
+								className="p-2.5 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
+							>
+								<Camera size={20} />
+							</button>
+							<input
+								ref={cameraInputRef}
+								type="file"
+								accept="image/*"
+								capture="environment"
+								className="hidden"
+								onChange={handleMediaSelect}
+							/>
+
+							{/* Location */}
+							<button
+								onClick={handleLocation}
+								disabled={fetchingLocation}
+								title={locationLabel ? "Remove location" : "Add live location"}
+								className={`p-2.5 rounded-full transition-colors disabled:opacity-50 ${
+									locationLabel ? "bg-primary/10 text-primary" : "text-primary hover:bg-accent"
+								}`}
+							>
+								<MapPin size={20} />
+							</button>
+
+							{/* Hashtag / emoji */}
+							<button
+								onClick={() => setShowEmoji((v) => !v)}
+								title="Add emoji"
+								className={`p-2.5 rounded-full transition-colors ${
+									showEmoji ? "bg-primary/10 text-primary" : "text-primary hover:bg-accent"
+								}`}
+							>
+								<Smile size={20} />
+							</button>
+						</div>
+
+						<div className="flex items-center gap-3">
+							{anyUploading && (
+								<span className="text-xs text-muted-foreground flex items-center gap-1.5">
+									<Loader2 size={12} className="animate-spin" /> Uploading…
+								</span>
+							)}
+							<button
+								onClick={handleSubmit}
+								disabled={!canSubmit || createPost.isPending}
+								title={
+									mentionBlocked
+										? "Mention someone before restricting replies to mentions"
+										: undefined
+								}
+								className="px-6 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+							>
+								{createPost.isPending ? "Posting…" : "Post"}
+							</button>
+						</div>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	)
+}
