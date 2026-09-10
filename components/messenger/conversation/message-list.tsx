@@ -11,6 +11,14 @@ import { TypingIndicator } from "./typing-indicator"
 interface MessageListProps {
 	messages: Message[]
 	currentUserUuid: string
+	/** Whether to ever show a sender-name label above a message. Direct
+	 * chat has exactly two participants — you already know who "the
+	 * other person" is from the conversation header, so a repeated name
+	 * label there is pure redundancy. Groups have more than two, so it
+	 * stays meaningful whenever the sender changes. Required rather than
+	 * defaulted so each caller has to make this call explicitly instead
+	 * of silently inheriting whatever the default happens to be. */
+	showSenderNames: boolean
 	isLoading: boolean
 	hasOlder: boolean
 	isFetchingOlder: boolean
@@ -38,6 +46,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 	{
 		messages,
 		currentUserUuid,
+		showSenderNames,
 		isLoading,
 		hasOlder,
 		isFetchingOlder,
@@ -180,9 +189,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
 										key={message.id}
 										message={message}
 										isOwn={message.sender.id === currentUserUuid}
-										showSender={!sameSender}
+										showSender={showSenderNames && !sameSender}
 										sameSenderAsPrevious={sameSender}
 										repliedMessage={repliedMessage}
+										currentUserUuid={currentUserUuid}
 										isHighlighted={highlightedId === message.id}
 										ref={(node) => {
 											if (node) {

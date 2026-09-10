@@ -250,6 +250,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				ref={messageListRef}
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}
+				showSenderNames={false}
 				isLoading={isLoading}
 				hasOlder={!!hasNextPage}
 				isFetchingOlder={isFetchingNextPage}

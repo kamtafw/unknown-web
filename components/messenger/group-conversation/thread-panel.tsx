@@ -140,6 +140,7 @@ export function ThreadPanel({ groupId, group, parentMessage, onClose }: ThreadPa
 					isOwn={parentMessage.sender.id === currentUserUuid}
 					showSender
 					sameSenderAsPrevious={false}
+					currentUserUuid={currentUserUuid}
 					hideReplyContext
 				/>
 
@@ -186,6 +187,7 @@ export function ThreadPanel({ groupId, group, parentMessage, onClose }: ThreadPa
 									isOwn={message.sender.id === currentUserUuid}
 									showSender={!sameSenderAsPrevious}
 									sameSenderAsPrevious={sameSenderAsPrevious}
+									currentUserUuid={currentUserUuid}
 									onRetry={retry}
 									hideReplyContext
 								/>

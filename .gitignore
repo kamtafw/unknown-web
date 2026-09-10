@@ -51,6 +51,7 @@ vitest.config.ts.timestamp-*
 
 
 bugs-and-incomplete.md
+group-message-events.md
 
 <<<<<<< HEAD
 bundle-code.ps1
