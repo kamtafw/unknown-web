@@ -20,6 +20,12 @@ import { patchGroupMessageReaction } from "./use-group-message-actions"
 
 type HistoryData = InfiniteData<GroupChatHistoryData>
 
+interface GroupStatusPayload {
+	msgId?: number
+	groupId?: number
+	status?: GroupMessage["status"]
+}
+
 interface GroupDeletePayload {
 	msgId?: number
 	groupId?: number
@@ -30,7 +36,7 @@ interface GroupReactionPayload {
 	msgId?: number
 	emoji?: string
 	action?: "add" | "remove" | "update"
-	userPkid?: number | string
+	userPkid?: number
 }
 
 /**
@@ -140,25 +146,24 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 			},
 		)
 
-		const unsubStatus = messengerSocket.on<{
-			msgId?: number
-			groupId?: number
-			status?: GroupMessage["status"]
-		}>(GROUP_SOCKET_EVENTS.STATUS, (payload) => {
-			if (!payload.msgId || !payload.groupId || !payload.status) return
-			queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
-				if (!old) return old
-				return {
-					...old,
-					pages: old.pages.map((page) => ({
-						...page,
-						results: page.results.map((m) =>
-							m.id === payload.msgId ? { ...m, status: payload.status! } : m,
-						),
-					})),
-				}
-			})
-		})
+		const unsubStatus = messengerSocket.on<GroupStatusPayload>(
+			GROUP_SOCKET_EVENTS.STATUS,
+			(payload) => {
+				if (payload.msgId == null || payload.groupId == null || payload.status == null) return
+				queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
+					if (!old) return old
+					return {
+						...old,
+						pages: old.pages.map((page) => ({
+							...page,
+							results: page.results.map((m) =>
+								m.id === payload.msgId ? { ...m, status: payload.status! } : m,
+							),
+						})),
+					}
+				})
+			},
+		)
 
 		// group:message:deleted is broadcast to ALL room members after a
 		// group:delete, including the deleter — see
@@ -170,7 +175,7 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 		const unsubDeleted = messengerSocket.on<GroupDeletePayload>(
 			GROUP_SOCKET_EVENTS.MESSAGE_DELETED,
 			(payload) => {
-				if (!payload.msgId || !payload.groupId) return
+				if (payload.msgId == null || payload.groupId == null) return
 				queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
 					if (!old) return old
 					return {
@@ -198,9 +203,8 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 				if (action !== "add" && action !== "remove" && action !== "update") return
 
 				// Broadcast goes to every member including the actor — skip our own,
-				// already applied optimistically in reactToMessage. Confirmed via
-				// mobile: no field distinguishes "my own echo" except matching pkid.
-				if (currentUserPkid != null && String(payload.userPkid) === String(currentUserPkid)) return
+				// already applied optimistically in reactToMessage.
+				if (currentUserPkid != null && payload.userPkid === currentUserPkid) return
 
 				const actorId = payload.userPkid != null ? String(payload.userPkid) : ""
 				if (!actorId) return
