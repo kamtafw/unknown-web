@@ -165,7 +165,6 @@ export interface GroupMessage {
 	status: MessageStatus
 	updated_at: string
 	views_count?: number
-	deleted?: boolean
 }
 
 /**
