@@ -1,6 +1,8 @@
 "use client"
 
 import { useChatSocket } from "@/hooks/messenger/use-chat-socket"
+import { useGroupMembersSocket } from "@/hooks/messenger/use-group-members-socket"
+import { useGroupMetadataSocket } from "@/hooks/messenger/use-group-metadata-socket"
 import { useGroupRoomSubscription } from "@/hooks/messenger/use-group-rooms"
 import { useGroupSocket } from "@/hooks/messenger/use-group-socket"
 import { cn } from "@/lib/utils"
@@ -12,7 +14,6 @@ import { ArchiveListPanel } from "./chat-list/archive-list-panel"
 import { ChatListPanel } from "./chat-list/chat-list-panel"
 import { GroupListPanel } from "./group-list/group-list-panel"
 import { StatusListPanel } from "./status/status-list-panel"
-import { useGroupMembersSocket } from "@/hooks/messenger/use-group-members-socket"
 
 /**
  * Two-pane on desktop, single-pane on mobile — same shape for both the
@@ -39,6 +40,7 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	useGroupRoomSubscription()
 	useGroupSocket(activeGroupId, currentUserId)
 	useGroupMembersSocket()
+	useGroupMetadataSocket()
 
 	const isDetailOpen = isGroupsSection
 		? activeGroupId !== null
