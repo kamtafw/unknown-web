@@ -8,10 +8,7 @@ export interface GroupComposerState {
 /** Shared by the composer AND the admin surface — one canonical
  * definition of "is this person an admin of this group", not two. */
 export function isGroupAdmin(group: Group, currentUserPkid: Pkid): boolean {
-	return (
-		group.created_by.pkid === currentUserPkid ||
-		group.member_preview.some((m) => m.pkid === currentUserPkid && m.role === "admin")
-	)
+	return group.member_preview.some((m) => m.pkid === currentUserPkid && m.role === "admin")
 }
 
 /**

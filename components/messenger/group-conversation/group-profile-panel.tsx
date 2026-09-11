@@ -163,7 +163,9 @@ export function GroupProfilePanel({ groupId, onClose }: GroupProfilePanelProps) 
 						<p className="mt-1 text-sm text-muted-foreground">
 							Group · {group.members_count} members
 						</p>
-						<p className="text-xs text-muted-foreground">Created {createdAtLabel}</p>
+						<p className="text-xs text-muted-foreground">
+							Created by {getDisplayName(group.created_by)} · {createdAtLabel}
+						</p>
 						{group.is_paused && (
 							<p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-600">
 								<Pause size={12} />
@@ -190,6 +192,8 @@ export function GroupProfilePanel({ groupId, onClose }: GroupProfilePanelProps) 
 							)}
 							{members.map((member) => {
 								const isSelf = member.pkid === currentUser.pkid
+								const isCreator = member.pkid === group.created_by.pkid
+
 								return (
 									<div
 										key={member.pkid}
@@ -210,7 +214,13 @@ export function GroupProfilePanel({ groupId, onClose }: GroupProfilePanelProps) 
 												{getDisplayName(member)}{" "}
 												{isSelf && <span className="text-muted-foreground">(you)</span>}
 											</p>
-											{member.role === "admin" && <p className="text-xs text-primary">Admin</p>}
+											{(isCreator || member.role === "admin") && (
+												<p className="text-xs text-primary">
+													{isCreator && "Creator"}
+													{isCreator && member.role === "admin" && " · "}
+													{member.role === "admin" && "Admin"}
+												</p>
+											)}
 										</div>
 										{admin && !isSelf && (
 											<DropdownMenu.Root>

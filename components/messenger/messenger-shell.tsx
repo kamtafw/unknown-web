@@ -12,6 +12,7 @@ import { ArchiveListPanel } from "./chat-list/archive-list-panel"
 import { ChatListPanel } from "./chat-list/chat-list-panel"
 import { GroupListPanel } from "./group-list/group-list-panel"
 import { StatusListPanel } from "./status/status-list-panel"
+import { useGroupMembersSocket } from "@/hooks/messenger/use-group-members-socket"
 
 /**
  * Two-pane on desktop, single-pane on mobile — same shape for both the
@@ -37,6 +38,7 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	const { typingUuids } = useChatSocket(activeUuid)
 	useGroupRoomSubscription()
 	useGroupSocket(activeGroupId, currentUserId)
+	useGroupMembersSocket()
 
 	const isDetailOpen = isGroupsSection
 		? activeGroupId !== null
