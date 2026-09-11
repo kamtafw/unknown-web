@@ -69,7 +69,7 @@ interface GroupMessagePinnedPayload {
  * the optimistic entry) is already collapsed at read time — see
  * use-group-history.ts's Map-keyed reduction. No extra guard needed here.
  */
-export function useGroupSocket(activeGroupId: number | null, currentUserId: string | undefined) {
+export function useGroupMessageSocket(activeGroupId: number | null, currentUserId: string | undefined) {
 	const queryClient = useQueryClient()
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 	const connectionStatus = useMessengerConnectionStore((s) => s.status)
