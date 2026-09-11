@@ -5,6 +5,7 @@
 		"source.sortMembers": "explicit"
 	},
 	"cSpell.words": [
+		"acks",
 		"Appscombo",
 		"cooldown",
 		"hashtagged",
@@ -22,6 +23,7 @@
 		"reposted",
 		"reposts",
 		"Reshare",
-		"Totp"
+		"Totp",
+		"unsub"
 	]
 }
