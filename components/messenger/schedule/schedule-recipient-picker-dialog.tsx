@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input"
 import { useChatList } from "@/hooks/messenger/use-chat-list"
 import { useGroupList } from "@/hooks/messenger/use-group-list"
 import type { ScheduleRecipientDraft } from "@/lib/messenger/schedule"
-import { Check, Users } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Check, Search, Users } from "lucide-react"
+import { Avatar } from "radix-ui"
 import { useMemo, useState } from "react"
 
 interface SchedulePickerProps {
@@ -18,7 +20,14 @@ const TABS = ["Contacts", "Groups"] as const
 
 /** Recipients come from existing chats/groups, not a fresh user search —
  * confirmed via mobile's select-recipient.tsx. Group filtering is
- * client-side, same as the D1 group-search fix. */
+ * client-side, same as the D1 group-search fix.
+ *
+ * Design note: the supplied mockup shows a phone-number line under each
+ * contact's name. `ChatListItem` (the actual source of this list) has no
+ * `phone_number` field — only `username` is confirmed present — so this
+ * shows `@username` instead of fabricating a phone number, matching every
+ * other recipient picker already in this codebase (NewChatDialog,
+ * ForwardDialog, AddGroupMembersDialog). */
 export function ScheduleRecipientPickerDialog({
 	open,
 	onOpenChange,
@@ -33,21 +42,22 @@ export function ScheduleRecipientPickerDialog({
 
 	const trimmedSearch = search.trim().toLowerCase()
 
+	const allUsers = useMemo(() => chatList?.users ?? [], [chatList?.users])
+	const allGroups = useMemo(() => groupData?.groups ?? [], [groupData?.groups])
+
 	const users = useMemo(() => {
-		const list = chatList?.users ?? []
-		if (!trimmedSearch) return list
-		return list.filter((u) =>
+		if (!trimmedSearch) return allUsers
+		return allUsers.filter((u) =>
 			`${u.first_name ?? ""} ${u.last_name ?? ""} ${u.username}`
 				.toLowerCase()
 				.includes(trimmedSearch),
 		)
-	}, [chatList, trimmedSearch])
+	}, [allUsers, trimmedSearch])
 
 	const groups = useMemo(() => {
-		const list = groupData?.groups ?? []
-		if (!trimmedSearch) return list
-		return list.filter((g) => g.name.toLowerCase().includes(trimmedSearch))
-	}, [groupData, trimmedSearch])
+		if (!trimmedSearch) return allGroups
+		return allGroups.filter((g) => g.name.toLowerCase().includes(trimmedSearch))
+	}, [allGroups, trimmedSearch])
 
 	const toggle = (draft: ScheduleRecipientDraft) => {
 		setSelected((prev) => {
@@ -59,6 +69,15 @@ export function ScheduleRecipientPickerDialog({
 		})
 	}
 
+	const handleOpenChange = (o: boolean) => {
+		onOpenChange(o)
+		if (!o) {
+			setSelected(new Map())
+			setSearch("")
+			setTab("Contacts")
+		}
+	}
+
 	const handleConfirm = () => {
 		onConfirm(Array.from(selected.values()))
 		setSelected(new Map())
@@ -66,26 +85,38 @@ export function ScheduleRecipientPickerDialog({
 		onOpenChange(false)
 	}
 
+	const subtitle = tab === "Contacts" ? `${allUsers.length} Contacts` : `${allGroups.length} Groups`
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
 				<DialogHeader>
-					<DialogTitle>Schedule message</DialogTitle>
+					<DialogTitle>Message schedule</DialogTitle>
+					<p className="-mt-1 text-xs text-muted-foreground">{subtitle}</p>
 				</DialogHeader>
 
-				<Input
-					placeholder="Search"
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="rounded-full bg-muted border-transparent"
-				/>
+				<div className="relative">
+					<Search
+						size={16}
+						className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+					/>
+					<Input
+						placeholder="Search"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="pl-9 rounded-full bg-muted border-transparent"
+					/>
+				</div>
 
-				<div className="flex gap-2 border-b border-border">
+				<div className="flex w-full items-center gap-1 rounded-full bg-muted p-1">
 					{TABS.map((t) => (
 						<button
 							key={t}
 							onClick={() => setTab(t)}
-							className={`px-1 pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
+							className={cn(
+								"flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+								tab === t ? "bg-background shadow-sm" : "text-muted-foreground",
+							)}
 						>
 							{t}
 						</button>
@@ -109,23 +140,27 @@ export function ScheduleRecipientPickerDialog({
 										onClick={() =>
 											toggle({ type: "user", id: u.pkid, name, photo: u.profile_photo || null })
 										}
-										className="w-full flex items-center gap-3 px-2 py-2.5 text-left hover:bg-accent/50 rounded-lg transition-colors"
+										className="w-full flex items-center gap-3 px-2 py-3 text-left hover:bg-accent/50 rounded-lg transition-colors"
 									>
-										<span className="h-10 w-10 rounded-full bg-muted shrink-0 overflow-hidden flex items-center justify-center text-sm font-medium text-muted-foreground">
-											{u.profile_photo ? (
-												// eslint-disable-next-line @next/next/no-img-element
-												<img
-													src={u.profile_photo}
-													alt={name}
-													className="h-full w-full object-cover"
-												/>
-											) : (
-												name.charAt(0).toUpperCase()
-											)}
-										</span>
-										<span className="flex-1 min-w-0 text-sm font-medium truncate">{name}</span>
+										<Avatar.Root className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted flex items-center justify-center">
+											<Avatar.Image
+												src={u.profile_photo}
+												alt={name}
+												className="h-full w-full object-cover"
+											/>
+											<Avatar.Fallback className="text-sm font-medium text-muted-foreground">
+												{name.charAt(0).toUpperCase()}
+											</Avatar.Fallback>
+										</Avatar.Root>
+										<div className="min-w-0 flex-1">
+											<p className="text-sm font-semibold truncate">{name}</p>
+											<p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+										</div>
 										<span
-											className={`h-5 w-5 rounded shrink-0 flex items-center justify-center border-2 ${isSelected ? "bg-primary border-primary" : "border-border"}`}
+											className={cn(
+												"h-5 w-5 rounded shrink-0 flex items-center justify-center border-2 transition-colors",
+												isSelected ? "bg-primary border-primary" : "border-border",
+											)}
 										>
 											{isSelected && <Check size={12} className="text-primary-foreground" />}
 										</span>
@@ -147,19 +182,24 @@ export function ScheduleRecipientPickerDialog({
 									onClick={() =>
 										toggle({ type: "group", id: g.id, name: g.name, photo: g.icon_url || null })
 									}
-									className="w-full flex items-center gap-3 px-2 py-2.5 text-left hover:bg-accent/50 rounded-lg transition-colors"
+									className="w-full flex items-center gap-3 px-2 py-3 text-left hover:bg-accent/50 rounded-lg transition-colors"
 								>
-									<span className="h-10 w-10 rounded-full bg-muted shrink-0 overflow-hidden flex items-center justify-center">
-										{g.icon_url ? (
-											// eslint-disable-next-line @next/next/no-img-element
-											<img src={g.icon_url} alt={g.name} className="h-full w-full object-cover" />
-										) : (
-											<Users size={16} className="text-muted-foreground" />
-										)}
-									</span>
-									<span className="flex-1 min-w-0 text-sm font-medium truncate">{g.name}</span>
+									<Avatar.Root className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted flex items-center justify-center">
+										<Avatar.Image
+											src={g.icon_url ?? undefined}
+											alt={g.name}
+											className="h-full w-full object-cover"
+										/>
+										<Avatar.Fallback className="text-muted-foreground">
+											<Users size={18} />
+										</Avatar.Fallback>
+									</Avatar.Root>
+									<span className="flex-1 min-w-0 text-sm font-semibold truncate">{g.name}</span>
 									<span
-										className={`h-5 w-5 rounded shrink-0 flex items-center justify-center border-2 ${isSelected ? "bg-primary border-primary" : "border-border"}`}
+										className={cn(
+											"h-5 w-5 rounded shrink-0 flex items-center justify-center border-2 transition-colors",
+											isSelected ? "bg-primary border-primary" : "border-border",
+										)}
 									>
 										{isSelected && <Check size={12} className="text-primary-foreground" />}
 									</span>
@@ -174,7 +214,7 @@ export function ScheduleRecipientPickerDialog({
 					disabled={selected.size === 0}
 					className="w-full py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
 				>
-					Next {selected.size > 0 ? `(${selected.size})` : ""}
+					Continue {selected.size > 0 ? `(${selected.size})` : ""}
 				</button>
 			</DialogContent>
 		</Dialog>

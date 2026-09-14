@@ -5,29 +5,41 @@ import { groupApi } from "@/lib/messenger/group-api"
 import { groupKeys } from "@/lib/messenger/query-keys"
 import { toast } from "@/lib/toast"
 import type {
+	GroupListData,
 	GroupRole,
 	PauseGroupPayload,
 	Pkid,
 	UpdateGroupPermissionsPayload,
 } from "@/types/messenger"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-
-/**
- * No optimistic patching here, unlike the chat-list toggles. Mobile only
- * optimistically patches sync/remove/role (via a raw snapshot/restore,
- * not the list-overlay mechanism — that stays scoped to
- * favorites/pin/mute/block/archive, per its own doc comment), and
- * permissions/pause don't optimistically patch at all on mobile either.
- * These are low-frequency, deliberate admin actions, not high-frequency
- * toggles — invalidate-on-success is proportionate for a first cut.
- * Revisit only if testing shows the round-trip latency actually feels
- * bad here.
- */
+import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query"
 
 function invalidateGroupAdmin(queryClient: ReturnType<typeof useQueryClient>, groupId: number) {
 	queryClient.invalidateQueries({ queryKey: groupKeys.members(groupId) })
 	queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) })
 	queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
+}
+
+function removeGroupFromLists(queryClient: ReturnType<typeof useQueryClient>, groupId: number) {
+	queryClient.setQueriesData<InfiniteData<GroupListData>>(
+		{ queryKey: groupKeys.lists() },
+		(old) => {
+			if (!old) return old
+
+			let found = false
+
+			const pages = old.pages.map((page) => {
+				const groups = page.groups.filter((group) => {
+					const keep = group.id !== groupId
+					if (!keep) found = true
+					return keep
+				})
+
+				return groups.length === page.groups.length ? page : { ...page, groups }
+			})
+
+			return found ? { ...old, pages } : old
+		},
+	)
 }
 
 /**
@@ -67,7 +79,10 @@ export function useLeaveGroup(groupId: number) {
 		mutationFn: () => groupApi.leave(groupId),
 		onSuccess: () => {
 			toast.success("Left group")
-			queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
+
+			removeGroupFromLists(queryClient, groupId)
+			queryClient.removeQueries({ queryKey: groupKeys.detail(groupId) })
+			queryClient.removeQueries({ queryKey: groupKeys.members(groupId) })
 		},
 		onError: (err) => toast.error(extractMessage(err, "Failed to leave group")),
 	})

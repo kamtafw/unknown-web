@@ -11,12 +11,12 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { ChatListItem as ChatListItemType, Uuid } from "@/types/messenger"
 import { CheckSquare, List, MessageSquarePlus, Search } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { EmptyFavorites } from "../icons/chat-list-icons"
 import { FAB, Schedule as ScheduleIcon } from "../icons/group-list-icons"
 import { Archive } from "../icons/shared"
-import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { AddToListDialog } from "./add-to-list-dialog"
 import { BulkSelectionBar } from "./bulk-selection-bar"
 import { ActiveChatFilter, ChatFilterChips } from "./chat-filter-chips"
@@ -48,6 +48,7 @@ function ChatListSkeleton() {
 }
 
 export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
+	const router = useRouter()
 	const [filter, setFilter] = useState<ActiveChatFilter>("all")
 	const isCustomListTab = typeof filter === "object"
 	const [search, setSearch] = useState("")
@@ -56,7 +57,6 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 	const [listDialogChat, setListDialogChat] = useState<ChatListItemType | null>(null)
 	const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
 	const [listsDialogOpen, setListsDialogOpen] = useState(false)
-	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
 	const mainList = useChatList(
 		isCustomListTab ? "all" : filter === "favorites" ? "all" : filter,
@@ -252,7 +252,7 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 						<div className="flex flex-col items-end gap-2">
 							<DropdownMenu.Item
 								className="flex items-center gap-2 outline-none"
-								onSelect={() => setScheduleDialogOpen(true)}
+								onSelect={() => router.push("/messenger/schedule")}
 							>
 								<span className="text-[13px] text-foreground">Schedule</span>
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
@@ -280,8 +280,6 @@ export function ChatListPanel({ activeUuid, typingUuids }: ChatListPanelProps) {
 				chat={listDialogChat}
 			/>
 			<CustomListsDialog open={listsDialogOpen} onOpenChange={setListsDialogOpen} />
-
-			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

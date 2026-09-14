@@ -13,6 +13,7 @@ import { ReactNode } from "react"
 import { ArchiveListPanel } from "./chat-list/archive-list-panel"
 import { ChatListPanel } from "./chat-list/chat-list-panel"
 import { GroupListPanel } from "./group-list/group-list-panel"
+import { SchedulePanel } from "./schedule/schedule-panel"
 import { StatusListPanel } from "./status/status-list-panel"
 
 /**
@@ -27,10 +28,13 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	const isGroupsSection = pathname.startsWith("/messenger/groups")
 	const isStatusSection = pathname.startsWith("/messenger/status")
 	const isArchiveSection = pathname.startsWith("/messenger/archive")
+	const isScheduleSection = pathname.startsWith("/messenger/schedule")
 
 	const params = useParams<{ uuid?: string; id?: string; userId?: string }>()
 	const activeUuid = (
-		!isGroupsSection && !isStatusSection && !isArchiveSection ? (params.uuid ?? null) : null
+		!isGroupsSection && !isStatusSection && !isArchiveSection && !isScheduleSection
+			? (params.uuid ?? null)
+			: null
 	) as Uuid | null
 	const activeGroupId = isGroupsSection && params.id ? Number(params.id) : null
 	const activeStatusEntryId = isStatusSection ? (params.userId ?? null) : null
@@ -46,7 +50,7 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 		? activeGroupId !== null
 		: isStatusSection
 			? activeStatusEntryId !== null
-			: isArchiveSection
+			: isArchiveSection || isScheduleSection
 				? false
 				: activeUuid !== null
 
@@ -59,6 +63,8 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 					<StatusListPanel activeEntryId={activeStatusEntryId} />
 				) : isArchiveSection ? (
 					<ArchiveListPanel />
+				) : isScheduleSection ? (
+					<SchedulePanel />
 				) : (
 					<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
 				)}
