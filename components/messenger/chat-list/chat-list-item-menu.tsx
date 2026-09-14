@@ -18,7 +18,6 @@ import {
 	PinOff,
 	Star,
 	Trash2,
-	User,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DropdownMenu } from "radix-ui"
@@ -130,13 +129,6 @@ export function ChatListItemMenu({
 
 					<DropdownMenu.Item className={itemClass} onSelect={onAddToList}>
 						<ListPlus size={16} /> Add to list
-					</DropdownMenu.Item>
-
-					<DropdownMenu.Item
-						className={itemClass}
-						onSelect={() => toast.info("Contact profile is coming in a later milestone")}
-					>
-						<User size={16} /> View contact
 					</DropdownMenu.Item>
 
 					<DropdownMenu.Separator className="h-px bg-border -mx-1.5 my-1" />
