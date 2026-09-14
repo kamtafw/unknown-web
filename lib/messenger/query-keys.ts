@@ -14,7 +14,7 @@
  * confirmed contract — not before.
  */
 
-import { ChatListFilter, Uuid } from "@/types/messenger"
+import { ChatListFilter, ScheduleType, Uuid } from "@/types/messenger"
 
 export const chatKeys = {
 	all: ["messenger", "chats"] as const,
@@ -87,6 +87,8 @@ export const messengerRootKey = ["messenger"] as const
 
 export const scheduleKeys = {
 	all: ["schedules"] as const,
-	list: () => [...scheduleKeys.all, "list"] as const,
+	/** Scoped by type so the Messages and Reminder tabs are independently
+	 * cached — switching tabs never shows a stale cross-type list. */
+	list: (type: ScheduleType) => [...scheduleKeys.all, "list", type] as const,
 	detail: (id: number) => [...scheduleKeys.all, "detail", id] as const,
 }

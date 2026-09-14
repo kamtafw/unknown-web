@@ -3,7 +3,12 @@
 import { usePathname, useRouter } from "next/navigation"
 import { useLayoutEffect, useRef } from "react"
 
-const NON_CHAT_TAB_PREFIXES = ["/messenger/groups", "/messenger/status", "/messenger/archive"]
+const NON_CHAT_TAB_PREFIXES = [
+	"/messenger/groups",
+	"/messenger/status",
+	"/messenger/archive",
+	"/messenger/schedule",
+]
 const DETAIL_ROUTE_BASES: { prefix: string; base: string }[] = [
 	{ prefix: "/messenger/groups/", base: "/messenger/groups" },
 	{ prefix: "/messenger/status/", base: "/messenger/status" },
@@ -18,7 +23,10 @@ function resolveRedirectTarget(pathname: string): string | null {
 
 	// Anything else under /messenger/ that isn't another tab's own route is
 	// a 1:1 conversation UUID — the chat tab's detail route.
-	if (pathname.startsWith("/messenger/") && !NON_CHAT_TAB_PREFIXES.some((p) => pathname.startsWith(p))) {
+	if (
+		pathname.startsWith("/messenger/") &&
+		!NON_CHAT_TAB_PREFIXES.some((p) => pathname.startsWith(p))
+	) {
 		return "/messenger"
 	}
 

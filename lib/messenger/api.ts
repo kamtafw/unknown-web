@@ -13,7 +13,7 @@ import {
 	ArchiveListData,
 	ChatListFilter,
 	ChatListItem,
-	CreateMessageSchedulePayload,
+	CreateSchedulePayload,
 	CursorPage,
 	Message,
 	MessageReaction,
@@ -23,7 +23,9 @@ import {
 	ReportUserPayload,
 	Schedule,
 	ScheduleListData,
+	ScheduleType,
 	SendMessagePayload,
+	UpdateSchedulePayload,
 	UserAttachmentsData,
 } from "@/types/messenger"
 import { apiClient } from "../axios"
@@ -310,19 +312,20 @@ export const chatApi = {
 }
 
 export const scheduleApi = {
-	list: () =>
+	/** `type` is always explicit — never omitted — so a `call` schedule
+	 * (backend-supported but out of scope here, see DECISIONS.md) never
+	 * has a path to reach the client. */
+	list: (type: ScheduleType) =>
 		apiClient
-			.get<ApiResponse<ScheduleListData>>("/api/chats/schedules", {
-				params: { type: "message" },
-			})
+			.get<ApiResponse<ScheduleListData>>("/api/chats/schedules", { params: { type } })
 			.then((r) => r.data.data.results),
 	get: (scheduleId: number) =>
 		apiClient
 			.get<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`)
 			.then((r) => r.data.data),
-	create: (payload: CreateMessageSchedulePayload) =>
+	create: (payload: CreateSchedulePayload) =>
 		apiClient.post<ApiResponse<Schedule>>("/api/chats/schedules", payload).then((r) => r.data.data),
-	update: (scheduleId: number, payload: Partial<CreateMessageSchedulePayload>) =>
+	update: (scheduleId: number, payload: UpdateSchedulePayload) =>
 		apiClient
 			.patch<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`, payload)
 			.then((r) => r.data.data),
