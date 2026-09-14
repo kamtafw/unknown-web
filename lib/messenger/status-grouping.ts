@@ -1,4 +1,5 @@
 import type { Status, StatusUser } from "@/types/messenger"
+import { formatStatusTimestamp } from "./status-time"
 
 export interface StatusListEntry {
 	id: string
@@ -8,6 +9,13 @@ export interface StatusListEntry {
 	timestamp: string
 	totalSegments: number
 	viewedSegments: number
+	/** Per-story viewed state, same order as `stories`. The ring needs
+	 * this rather than just `viewedSegments`'s count: viewed stories
+	 * aren't guaranteed to be a contiguous prefix of the array (e.g. a
+	 * story posted after you'd already viewed a later one), so coloring
+	 * ring segments by `index < viewedCount` can highlight the wrong
+	 * ones. */
+	viewedFlags: boolean[]
 	isMuted: boolean
 	stories: Status[]
 }
@@ -21,17 +29,6 @@ export interface GroupedStatuses {
 function fullName(user: StatusUser): string {
 	const name = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
 	return name || user.username || "Unknown"
-}
-
-function formatRelativeTime(iso: string): string {
-	const then = new Date(iso).getTime()
-	if (Number.isNaN(then)) return ""
-	const mins = Math.floor((Date.now() - then) / 60_000)
-	if (mins < 1) return "just now"
-	if (mins < 60) return `${mins}m ago`
-	const hours = Math.floor(mins / 60)
-	if (hours < 24) return `${hours}h ago`
-	return `${Math.floor(hours / 24)}d ago`
 }
 
 /** Groups statuses by author, sorted newest-first within each group, then
@@ -56,15 +53,17 @@ export function groupStatusesByUser(
 			(a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
 		)
 		const latest = sorted[sorted.length - 1]
-		const viewed = sorted.filter((s) => s.is_viewed || viewedIds.has(s.id)).length
+		const viewedFlags = sorted.map((s) => s.is_viewed || viewedIds.has(s.id))
+		const viewed = viewedFlags.filter(Boolean).length
 		entries.push({
 			id: String(pkid),
 			user: latest.user,
 			name: fullName(latest.user),
 			avatarUrl: latest.user.profile_photo,
-			timestamp: formatRelativeTime(latest.created_at),
+			timestamp: formatStatusTimestamp(latest.created_at),
 			totalSegments: sorted.length,
 			viewedSegments: viewed,
+			viewedFlags,
 			isMuted: mutedPkids.has(pkid),
 			stories: sorted,
 		})
@@ -97,6 +96,7 @@ export function buildMyStatusEntry(
 			timestamp: "Tap to add status",
 			totalSegments: 0,
 			viewedSegments: 0,
+			viewedFlags: [],
 			isMuted: false,
 			stories: [],
 		}
@@ -110,11 +110,12 @@ export function buildMyStatusEntry(
 		user: latest.user,
 		name: "My Status",
 		avatarUrl: latest.user.profile_photo,
-		timestamp: formatRelativeTime(latest.created_at),
+		timestamp: formatStatusTimestamp(latest.created_at),
 		totalSegments: sorted.length,
 		// Own statuses render as unseen so there's a clear "you have
 		// active statuses" indicator — matches mobile.
 		viewedSegments: 0,
+		viewedFlags: sorted.map(() => false),
 		isMuted: false,
 		stories: sorted,
 	}

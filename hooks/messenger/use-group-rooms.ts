@@ -61,7 +61,7 @@ export function useGroupRoomSubscription() {
  */
 export function useActiveGroupRoom(groupId: number | null) {
 	useEffect(() => {
-		if (!groupId) return
+		if (groupId == null) return
 		messengerSocket.joinRoom(GROUP_SOCKET_EVENTS.JOIN, { groupId }, roomKey(groupId))
 	}, [groupId])
 }

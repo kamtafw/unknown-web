@@ -5,9 +5,11 @@
 		"source.sortMembers": "explicit"
 	},
 	"cSpell.words": [
+		"acks",
 		"Appscombo",
 		"cooldown",
 		"hashtagged",
+		"misrouted",
 		"normalise",
 		"normalised",
 		"nums",
@@ -20,6 +22,9 @@
 		"repost",
 		"reposted",
 		"reposts",
-		"Totp"
+		"Reshare",
+		"Totp",
+		"unsub",
+		"unwired"
 	]
 }

@@ -35,10 +35,12 @@ interface ChatStatusPayload {
 export function useChatSocket(activeUuid: Uuid | null) {
 	const queryClient = useQueryClient()
 	const connectionStatus = useMessengerConnectionStore((s) => s.status)
+
 	const activeUuidRef = useRef(activeUuid)
 	useEffect(() => {
 		activeUuidRef.current = activeUuid
 	}, [activeUuid])
+
 	const [typingUuids, setTypingUuids] = useState<Set<Uuid>>(new Set())
 	const typingTimersRef = useRef<Map<Uuid, ReturnType<typeof setTimeout>>>(new Map())
 
@@ -71,13 +73,6 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		}
 	}, [connectionStatus, queryClient])
 
-	// isVisible is no longer read here — the earlier version had a
-	// visibility-triggered invalidation effect (removed above). The
-	// chat:receive handler's own "only ack seen while visible" check reads
-	// `document.visibilityState` directly as a one-off DOM check, not
-	// through this hook's reactive state — so useDocumentVisible() isn't
-	// needed in this file anymore.
-
 	useEffect(() => {
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
@@ -108,8 +103,12 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					last_message_time: message.created_at,
 					unread_count: isOpen ? existing.unread_count : existing.unread_count + 1,
 				}
+				if (updated.is_pinned) {
+					return { ...old, users: old.users.with(idx, updated) }
+				}
+				const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
 				const rest = old.users.filter((_, i) => i !== idx)
-				return { ...old, users: [updated, ...rest] }
+				return { ...old, users: [...pinned, updated, ...rest] }
 			})
 			return found
 		}
@@ -123,7 +122,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 			// trusting `message.sender.id` would break both
 			const message = rawMessage
 			if (process.env.NODE_ENV !== "production") {
-				console.debug("[messenger] chat:receive payload", rawMessage)
+				console.info("[messenger] chat:receive payload", rawMessage)
 			}
 
 			// BUG FIX (2026-08-15): this branch used to invalidate and then

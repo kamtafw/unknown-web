@@ -238,7 +238,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					receiver_id: receiverPkid,
 					message_type: failedMessage.message_type,
 					content: failedMessage.content,
-					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to.id } : {}),
+					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to } : {}),
 				})
 				replaceOptimistic(failedMessage.id, sent)
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })

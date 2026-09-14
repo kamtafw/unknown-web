@@ -1,8 +1,10 @@
 "use client"
 
 import { useChatSocket } from "@/hooks/messenger/use-chat-socket"
+import { useGroupMembersSocket } from "@/hooks/messenger/use-group-members-socket"
+import { useGroupMessageSocket } from "@/hooks/messenger/use-group-message-socket"
+import { useGroupMetadataSocket } from "@/hooks/messenger/use-group-metadata-socket"
 import { useGroupRoomSubscription } from "@/hooks/messenger/use-group-rooms"
-import { useGroupSocket } from "@/hooks/messenger/use-group-socket"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Uuid } from "@/types/messenger"
@@ -11,6 +13,7 @@ import { ReactNode } from "react"
 import { ArchiveListPanel } from "./chat-list/archive-list-panel"
 import { ChatListPanel } from "./chat-list/chat-list-panel"
 import { GroupListPanel } from "./group-list/group-list-panel"
+import { SchedulePanel } from "./schedule/schedule-panel"
 import { StatusListPanel } from "./status/status-list-panel"
 
 /**
@@ -25,10 +28,13 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 	const isGroupsSection = pathname.startsWith("/messenger/groups")
 	const isStatusSection = pathname.startsWith("/messenger/status")
 	const isArchiveSection = pathname.startsWith("/messenger/archive")
+	const isScheduleSection = pathname.startsWith("/messenger/schedule")
 
 	const params = useParams<{ uuid?: string; id?: string; userId?: string }>()
 	const activeUuid = (
-		!isGroupsSection && !isStatusSection && !isArchiveSection ? (params.uuid ?? null) : null
+		!isGroupsSection && !isStatusSection && !isArchiveSection && !isScheduleSection
+			? (params.uuid ?? null)
+			: null
 	) as Uuid | null
 	const activeGroupId = isGroupsSection && params.id ? Number(params.id) : null
 	const activeStatusEntryId = isStatusSection ? (params.userId ?? null) : null
@@ -36,13 +42,17 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 
 	const { typingUuids } = useChatSocket(activeUuid)
 	useGroupRoomSubscription()
-	useGroupSocket(activeGroupId, currentUserId)
+	useGroupMessageSocket(activeGroupId, currentUserId)
+	useGroupMembersSocket()
+	useGroupMetadataSocket()
 
 	const isDetailOpen = isGroupsSection
 		? activeGroupId !== null
-		: isArchiveSection
-			? false
-			: activeUuid !== null
+		: isStatusSection
+			? activeStatusEntryId !== null
+			: isArchiveSection || isScheduleSection
+				? false
+				: activeUuid !== null
 
 	return (
 		<div className="flex flex-1 min-h-0 overflow-hidden">
@@ -53,6 +63,8 @@ export function MessengerShell({ children }: { children: ReactNode }) {
 					<StatusListPanel activeEntryId={activeStatusEntryId} />
 				) : isArchiveSection ? (
 					<ArchiveListPanel />
+				) : isScheduleSection ? (
+					<SchedulePanel />
 				) : (
 					<ChatListPanel activeUuid={activeUuid} typingUuids={typingUuids} />
 				)}

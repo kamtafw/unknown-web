@@ -4,15 +4,16 @@ import { useUnreadChatCount } from "@/hooks/messenger/use-chat-list"
 import { useLinkedAccounts, useSwitchAccount } from "@/hooks/use-linked-accounts"
 import { authApi } from "@/lib/api"
 import { resolveMediaUrl } from "@/lib/server-config"
-import { getInitials } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import * as Dialog from "@radix-ui/react-dialog"
 import { useQueryClient } from "@tanstack/react-query"
 import { ChevronDown, Loader2, LogOut, Plus, Search, UserPlus, X } from "lucide-react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useState } from "react"
+import { Input } from "../ui/input"
 import { Bell, Event, Marketplace, Message, Social } from "./icons"
 
 const CATEGORY_ICONS = [
@@ -105,6 +106,7 @@ function LogoutDialog({
 }
 
 export function TopBar() {
+	const pathname = usePathname()
 	const user = useAuthStore((s) => s.user)
 	const logoutStore = useAuthStore((s) => s.logout)
 	const router = useRouter()
@@ -162,12 +164,17 @@ export function TopBar() {
 					<div className={`relative shrink-0 ${searchOpen ? "hidden" : "hidden sm:block"} sm:w-60`}>
 						<Search
 							size={14}
-							className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+							className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground pointer-events-none"
 						/>
-						<input
-							type="text"
+
+						<Input
 							placeholder="What are you looking for?"
-							className="w-full h-10 pl-9 pr-4 bg-muted border border-border rounded-full text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary focus:bg-card transition-all"
+							className="
+													w-full pl-9 pr-4 bg-muted text-foreground rounded-full
+													border-2 border-primary transition-all duration-150
+													outline-none caret-primary
+													focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-card
+												"
 						/>
 					</div>
 
@@ -181,21 +188,30 @@ export function TopBar() {
 
 					{/* Category nav */}
 					<nav className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
-						{CATEGORY_ICONS.map(({ label, icon: Icon, href }) => (
-							<button
-								key={label}
-								title={label}
-								onClick={href ? () => router.push(href) : undefined}
-								className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-muted-foreground border border-border hover:bg-accent hover:text-primary transition-colors"
-							>
-								<Icon />
-								{label === "Messenger" && !!unreadCount && (
-									<span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-										{unreadCount > 99 ? "99+" : unreadCount}
-									</span>
-								)}
-							</button>
-						))}
+						{CATEGORY_ICONS.map(({ label, icon: Icon, href }) => {
+							const isActive = href ? pathname === href || pathname.startsWith(`${href}/`) : false
+
+							return (
+								<button
+									key={label}
+									title={label}
+									onClick={href ? () => router.push(href) : undefined}
+									className={cn(
+										"relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all duration-150",
+										isActive
+											? "border-primary bg-primary/10 text-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+											: "border-border text-muted-foreground hover:bg-accent hover:text-primary",
+									)}
+								>
+									<Icon className={cn("w-5 h-5", isActive ? "text-primary fill-current" : "")} />
+									{label === "Messenger" && !!unreadCount && (
+										<span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+											{unreadCount > 99 ? "99+" : unreadCount}
+										</span>
+									)}
+								</button>
+							)
+						})}
 					</nav>
 
 					<div className="flex-1 md:hidden" />

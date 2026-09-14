@@ -17,7 +17,18 @@ type HistoryData = InfiniteData<GroupChatHistoryData>
 
 let optimisticCounter = 0
 
-function createOptimisticGroupMessage(
+/**
+ * Exported so use-group-thread.ts's `useSendGroupThreadReply` can build
+ * an optimistic thread-reply message with the exact same shape as a
+ * regular optimistic group message — the only thing that ever differs
+ * between the two is which query-cache entry it gets upserted into (main
+ * history vs. a thread's own cache entry), not how the optimistic
+ * message itself is constructed. `reply_to` is a bare id now (see
+ * chat.ts's CONTRACT CHANGE note) — `replyingTo` is still accepted as a
+ * full `Message` because both call sites already have one in hand
+ * (the message being replied to, or the thread's parent message).
+ */
+export function createOptimisticGroupMessage(
 	groupId: number,
 	content: string,
 	replyingTo: Message | null | undefined,
@@ -39,15 +50,7 @@ function createOptimisticGroupMessage(
 		is_hidden_by_me: false,
 		collection_id: "",
 		status: "queued",
-		reply_to: replyingTo
-			? {
-					id: replyingTo.id,
-					sender_id: replyingTo.sender.id,
-					content: replyingTo.content,
-					message_type: replyingTo.message_type,
-					created_at: replyingTo.created_at,
-				}
-			: null,
+		reply_to: replyingTo ? replyingTo.id : null,
 		forwarded_from: null,
 		created_at: new Date().toISOString(),
 		updated_at: new Date().toISOString(),
@@ -264,7 +267,7 @@ export function useSendGroupMessage(groupId: number) {
 					group_id: groupId,
 					message_type: failedMessage.message_type,
 					content: failedMessage.content,
-					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to.id } : {}),
+					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to } : {}),
 				})
 				replaceOptimistic(failedMessage.id, sent)
 				queryClient.invalidateQueries({ queryKey: groupKeys.lists() })

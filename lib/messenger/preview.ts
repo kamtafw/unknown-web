@@ -84,9 +84,11 @@ export function resolvePreviewFallbackLabel(type: MessageType | string | null | 
 
 /** Shared by PinnedMessageBanner, the reply-quote inside MessageBubble,
  * and ReplyPreviewBar — one place for "what should this message look like
- * when quoted/previewed", instead of three divergent copies. Works on
- * both a full Message and the slimmer embedded MessageReplyTo shape,
- * since both carry message_type + content. */
+ * when quoted/previewed", instead of three divergent copies. Takes just
+ * the two fields it needs rather than a full `Message`, since callers may
+ * only have a resolved-from-history lookup result to hand it (`reply_to`
+ * is now a bare numeric id — see chat.ts — so there's no embedded object
+ * to pass through anymore; the caller must resolve it first). */
 export function resolveMessagePreviewText(message: {
 	message_type: string
 	content: string | null | undefined

@@ -3,6 +3,22 @@ import { DJANGO_API_URL } from "@/lib/server-config"
 import { proxyJson } from "@/lib/server-fetch"
 import { NextRequest, NextResponse } from "next/server"
 
+export async function GET(req: NextRequest) {
+	const accessToken = await getAccessToken()
+
+	if (!accessToken) {
+		return NextResponse.json({ success: false, message: "Not Authenticated" }, { status: 401 })
+	}
+
+	return proxyJson(`${DJANGO_API_URL}/chats/archive-list${req.nextUrl.search}`, {
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			"Content-Type": "application/json",
+		},
+		cache: "no-store",
+	})
+}
+
 export async function POST(req: NextRequest) {
 	const body = await req.json()
 	const accessToken = await getAccessToken()

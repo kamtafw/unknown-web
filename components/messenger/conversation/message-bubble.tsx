@@ -16,6 +16,7 @@ import {
 	Forward,
 	Image as ImageIcon,
 	MapPin,
+	MessageSquare,
 	Mic,
 	Phone,
 	Share2,
@@ -36,7 +37,20 @@ interface MessageBubbleProps {
 	repliedMessage?: Message
 	isHighlighted?: boolean
 	sameSenderAsPrevious?: boolean
-	resolveReplySenderName?: (senderId: string) => string
+	/** Needed only to resolve the reply-quote sender label as "You" when
+	 * the current user is the one being quoted, rather than their own
+	 * first name — everywhere else `isOwn` already covers "is this my
+	 * message". */
+	currentUserUuid: string
+	/** Suppresses the reply-quote block ("replying to X: ...") even when
+	 * `message.reply_to` is set. Used by ThreadPanel: every message
+	 * rendered there — the parent and every reply alike — is inherently
+	 * "about" the parent message already pinned at the top of the panel,
+	 * so re-stating that context inside each individual bubble is
+	 * redundant noise, not information. There, the thread structure
+	 * itself carries that context; the bubble should just show its
+	 * content plainly. */
+	hideReplyContext?: boolean
 	onRetry?: (message: Message) => void
 	onReply?: (message: Message) => void
 	onForward?: (message: Message) => void
@@ -47,6 +61,14 @@ interface MessageBubbleProps {
 	onOpenReactionsDialog?: (message: Message) => void
 	onVote?: (message: Message, optionId: number) => void
 	onViewPollResults?: (message: Message) => void
+	/** Group-only: renders the "N replies" affordance when
+	 * `message.replies_count > 0` and opens that message's thread when
+	 * either the affordance or the existing "Reply" menu action is
+	 * chosen. Omitted entirely for direct chat, where a reply stays an
+	 * inline quoted reply instead of a thread — see
+	 * ConversationView/GroupConversationView for which one each wires
+	 * `onReply` to. */
+	onOpenThread?: (message: Message) => void
 }
 
 function formatTime(iso: string): string {
@@ -202,7 +224,8 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		repliedMessage,
 		isHighlighted,
 		sameSenderAsPrevious,
-		resolveReplySenderName,
+		currentUserUuid,
+		hideReplyContext,
 		onRetry,
 		onReply,
 		onForward,
@@ -213,6 +236,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 		onOpenReactionsDialog,
 		onVote,
 		onViewPollResults,
+		onOpenThread,
 	},
 	ref,
 ) {
@@ -225,16 +249,27 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 	if (message.is_hidden_by_me) return null
 
-	console.log("REPLY::", JSON.stringify(message))
-
-	const replySenderLabel = message.reply_to
+	// `reply_to` is a bare message id now (see chat.ts) — the only way to
+	// show who/what is being replied to is resolving that id against a
+	// message we already have loaded (`repliedMessage`, looked up by the
+	// caller — see message-list.tsx). If it isn't loaded, there is no
+	// endpoint to fetch it by id, so this falls back to a generic label
+	// rather than fabricating a sender. Skipped entirely when
+	// `hideReplyContext` is set (see its doc comment on the props type).
+	const showReplyContext = !!message.reply_to && !hideReplyContext
+	const replySenderLabel = showReplyContext
 		? repliedMessage
-			? (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
-			: (resolveReplySenderName?.(message.reply_to.sender_id) ?? "Unknown")
+			? repliedMessage.sender.id === currentUserUuid
+				? "You"
+				: (repliedMessage.sender.first_name ?? repliedMessage.sender.username)
+			: null
 		: null
-	const replyContentLabel = message.reply_to
-		? resolveMessagePreviewText(repliedMessage ?? message.reply_to)
+	const replyContentLabel = showReplyContext
+		? repliedMessage
+			? resolveMessagePreviewText(repliedMessage)
+			: "Message"
 		: null
+	const repliesCount = message.replies_count ?? 0
 
 	return (
 		<div
@@ -254,7 +289,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 					{showActions && (
 						<div
 							className={cn(
-								"absolute -top-3 z-0 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
+								"absolute -top-3 z-20 opacity-0 transition-opacity group-hover:opacity-100 has-data-[state=open]:opacity-100",
 								isOwn ? "right-2" : "left-2",
 							)}
 						>
@@ -268,7 +303,6 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 								onUnpin={() => onUnpin?.(message)}
 								onDelete={() => onDelete?.(message)}
 							/>
-							{onReact && <ReactionPicker onReact={(emoji) => onReact(message, emoji)} />}
 						</div>
 					)}
 
@@ -294,14 +328,18 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 							</div>
 						)}
 
-						{message.reply_to && !deleted && (
+						{showReplyContext && !deleted && (
 							<div
 								className={cn(
 									"mb-2 rounded-lg border-l-4 px-2.5 py-1.5 shadow-sm",
 									isOwn ? "bg-background/50 border-primary" : "bg-muted border-primary/70",
 								)}
 							>
-								<p className="mb-0.5 text-[11px] font-semibold text-primary">{replySenderLabel}</p>
+								{replySenderLabel && (
+									<p className="mb-0.5 text-[11px] font-semibold text-primary">
+										{replySenderLabel}
+									</p>
+								)}
 								<p className="truncate text-xs text-foreground/70">{replyContentLabel}</p>
 							</div>
 						)}
@@ -319,6 +357,20 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 								isOwn={isOwn}
 								onOpenDialog={() => onOpenReactionsDialog(message)}
 							/>
+						)}
+
+						{onOpenThread && repliesCount > 0 && (
+							<button
+								type="button"
+								onClick={() => onOpenThread(message)}
+								className={cn(
+									"mt-2 flex items-center gap-1.5 text-xs font-medium text-primary hover:underline",
+									isOwn ? "justify-end w-full" : "justify-start",
+								)}
+							>
+								<MessageSquare size={13} />
+								{repliesCount} {repliesCount === 1 ? "reply" : "replies"}
+							</button>
 						)}
 					</div>
 

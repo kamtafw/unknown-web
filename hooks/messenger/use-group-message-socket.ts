@@ -20,9 +20,22 @@ import { patchGroupMessageReaction } from "./use-group-message-actions"
 
 type HistoryData = InfiniteData<GroupChatHistoryData>
 
-interface GroupDeletePayload {
+interface GroupStatusPayload {
 	msgId?: number
 	groupId?: number
+	status?: GroupMessage["status"]
+}
+
+interface GroupDeletePayload {
+	groupId?: number
+	msgIds?: number[]
+	deleteType?: "both"
+}
+
+interface HiddenMessagesPayload {
+	msgIds?: number[]
+	userId?: string
+	deleteType?: "self"
 }
 
 interface GroupReactionPayload {
@@ -30,7 +43,14 @@ interface GroupReactionPayload {
 	msgId?: number
 	emoji?: string
 	action?: "add" | "remove" | "update"
-	userPkid?: number | string
+	userPkid?: number
+}
+
+interface GroupMessagePinnedPayload {
+	groupId?: number
+	msgId?: number
+	pinnedByPkid?: number
+	action?: "pin" | "unpin"
 }
 
 /**
@@ -49,7 +69,7 @@ interface GroupReactionPayload {
  * the optimistic entry) is already collapsed at read time — see
  * use-group-history.ts's Map-keyed reduction. No extra guard needed here.
  */
-export function useGroupSocket(activeGroupId: number | null, currentUserId: string | undefined) {
+export function useGroupMessageSocket(activeGroupId: number | null, currentUserId: string | undefined) {
 	const queryClient = useQueryClient()
 	const currentUserPkid = useAuthStore((s) => s.user?.pkid)
 	const connectionStatus = useMessengerConnectionStore((s) => s.status)
@@ -114,6 +134,38 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 			return found
 		}
 
+		const patchEditedListPreview = (message: GroupMessage) => {
+			queryClient.setQueriesData<InfiniteData<GroupListData>>(
+				{ queryKey: groupKeys.lists() },
+				(old) => {
+					if (!old) return old
+
+					let changed = false
+
+					const pages = old.pages.map((page) => {
+						const groups = page.groups.map((group) => {
+							if (
+								group.id !== message.group.id ||
+								!sameTimestamp(group.last_message_time, message.created_at)
+							) {
+								return group
+							}
+
+							changed = true
+
+							return {
+								...group,
+								last_message_preview: message.content || null,
+								last_message_type: message.message_type,
+							}
+						})
+						return { ...page, groups }
+					})
+					return changed ? { ...old, pages } : old
+				},
+			)
+		}
+
 		const unsubMessage = messengerSocket.on<GroupMessage>(
 			GROUP_SOCKET_EVENTS.MESSAGE,
 			(message) => {
@@ -140,37 +192,10 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 			},
 		)
 
-		const unsubStatus = messengerSocket.on<{
-			msgId?: number
-			groupId?: number
-			status?: GroupMessage["status"]
-		}>(GROUP_SOCKET_EVENTS.STATUS, (payload) => {
-			if (!payload.msgId || !payload.groupId || !payload.status) return
-			queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
-				if (!old) return old
-				return {
-					...old,
-					pages: old.pages.map((page) => ({
-						...page,
-						results: page.results.map((m) =>
-							m.id === payload.msgId ? { ...m, status: payload.status! } : m,
-						),
-					})),
-				}
-			})
-		})
-
-		// group:message:deleted is broadcast to ALL room members after a
-		// group:delete, including the deleter — see
-		// use-group-message-actions.ts. Patches via the shared {deleted,
-		// content: ""} convention M2 already established for 1:1 delete,
-		// not mobile's own internal "overwrite content with literal text"
-		// representation — keeps MessageBubble's existing deleted-state
-		// rendering the single source of truth.
-		const unsubDeleted = messengerSocket.on<GroupDeletePayload>(
-			GROUP_SOCKET_EVENTS.MESSAGE_DELETED,
+		const unsubStatus = messengerSocket.on<GroupStatusPayload>(
+			GROUP_SOCKET_EVENTS.STATUS,
 			(payload) => {
-				if (!payload.msgId || !payload.groupId) return
+				if (payload.msgId == null || payload.groupId == null || payload.status == null) return
 				queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
 					if (!old) return old
 					return {
@@ -178,12 +203,71 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 						pages: old.pages.map((page) => ({
 							...page,
 							results: page.results.map((m) =>
-								m.id === payload.msgId ? { ...m, deleted: true, content: "" } : m,
+								m.id === payload.msgId ? { ...m, status: payload.status! } : m,
 							),
 						})),
 					}
 				})
+			},
+		)
+
+		const unsubMessageDeleted = messengerSocket.on<GroupDeletePayload>(
+			GROUP_SOCKET_EVENTS.MESSAGE_DELETED,
+			(payload) => {
+				if (!payload.msgIds?.length || payload.groupId == null) return
+
+				const ids = new Set(payload.msgIds.map(Number))
+
+				queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
+					if (!old) return old
+
+					return {
+						...old,
+						pages: old.pages.map((page) => ({
+							...page,
+							results: page.results.map((message) =>
+								ids.has(message.id)
+									? { ...message, is_deleted_for_all: true, content: "" }
+									: message,
+							),
+						})),
+					}
+				})
+
 				queryClient.invalidateQueries({ queryKey: groupKeys.lists() })
+			},
+		)
+
+		const unsubMessageHidden = messengerSocket.on<HiddenMessagesPayload>(
+			GROUP_SOCKET_EVENTS.HIDDEN,
+			(payload) => {
+				if (!payload.msgIds?.length) return
+
+				const ids = new Set(payload.msgIds.map(Number))
+
+				queryClient.setQueriesData<HistoryData>({ queryKey: groupKeys.histories() }, (old) => {
+					if (!old) return old
+
+					return {
+						...old,
+						pages: old.pages.map((page) => ({
+							...page,
+							results: page.results.map((message) =>
+								ids.has(message.id) ? { ...message, is_hidden_by_me: true } : message,
+							),
+						})),
+					}
+				})
+			},
+		)
+
+		const unsubMessageUpdated = messengerSocket.on<GroupMessage>(
+			GROUP_SOCKET_EVENTS.MESSAGE_UPDATED,
+			(message) => {
+				if (!message?.group?.id || message.id == null) return
+
+				upsertMessage(message)
+				patchEditedListPreview(message)
 			},
 		)
 
@@ -198,9 +282,8 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 				if (action !== "add" && action !== "remove" && action !== "update") return
 
 				// Broadcast goes to every member including the actor — skip our own,
-				// already applied optimistically in reactToMessage. Confirmed via
-				// mobile: no field distinguishes "my own echo" except matching pkid.
-				if (currentUserPkid != null && String(payload.userPkid) === String(currentUserPkid)) return
+				// already applied optimistically in reactToMessage.
+				if (currentUserPkid != null && payload.userPkid === currentUserPkid) return
 
 				const actorId = payload.userPkid != null ? String(payload.userPkid) : ""
 				if (!actorId) return
@@ -216,11 +299,38 @@ export function useGroupSocket(activeGroupId: number | null, currentUserId: stri
 			},
 		)
 
+		const unsubMessagePinned = messengerSocket.on<GroupMessagePinnedPayload>(
+			GROUP_SOCKET_EVENTS.MESSAGE_PINNED,
+			(payload) => {
+				if (payload.groupId == null || payload.msgId == null) return
+				if (payload.action !== "pin" && payload.action !== "unpin") return
+
+				queryClient.setQueryData<HistoryData>(groupKeys.history(payload.groupId), (old) => {
+					if (!old) return old
+
+					return {
+						...old,
+						pages: old.pages.map((page) => ({
+							...page,
+							results: page.results.map((message) =>
+								message.id === payload.msgId
+									? { ...message, is_pinned: payload.action === "pin" }
+									: message,
+							),
+						})),
+					}
+				})
+			},
+		)
+
 		return () => {
 			unsubMessage()
 			unsubStatus()
-			unsubDeleted()
+			unsubMessageDeleted()
+			unsubMessageHidden()
+			unsubMessageUpdated()
 			unsubReaction()
+			unsubMessagePinned()
 		}
 	}, [queryClient, currentUserId, currentUserPkid])
 }
@@ -230,4 +340,13 @@ function dedupeAppend(existing: GroupMessage[], incoming: GroupMessage): GroupMe
 		return existing.map((m) => (m.id === incoming.id ? incoming : m))
 	}
 	return [...existing, incoming]
+}
+
+function sameTimestamp(a: string | null, b: string): boolean {
+	if (!a) return false
+
+	const aTime = Date.parse(a)
+	const bTime = Date.parse(b)
+
+	return Number.isFinite(aTime) && aTime === bTime
 }

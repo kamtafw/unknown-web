@@ -8,10 +8,10 @@ import { useGroupList } from "@/hooks/messenger/use-group-list"
 import { toast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
 import { Search, Users } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { CreateGroup, FAB, Schedule } from "../icons/group-list-icons"
-import { ScheduledMessagesDialog } from "../schedule/scheduled-messages-dialog"
 import { CreateGroupDialog } from "./create-group-dialog"
 import { GroupListItem } from "./group-list-item"
 
@@ -21,20 +21,21 @@ interface GroupListPanelProps {
 
 /**
  * Groups/Communities panel, reached from the rail's "Groups" item — see
- * DECISIONS.md. Communities and "Schedule message" on the FAB are inert
- * (Tier 3 / Tier 2 respectively, not M3) — only "New Group" is wired.
+ * DECISIONS.md. Communities on the tab bar is inert (Tier 3, not M3) —
+ * "Schedule" navigates to the routed `/messenger/schedule` screen (shared
+ * with the Chats FAB) and "Create Group" opens CreateGroupDialog.
  *
  * Search is client-side over the already-fetched list — confirmed via
  * mobile's chat-search-overlay.tsx: useGetGroups() has no `search` param
  * there either, it filters the fetched groups by name in JS. Same here.
  */
 export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
+	const router = useRouter()
 	const [tab, setTab] = useState<"groups" | "communities">("groups")
 	const [createOpen, setCreateOpen] = useState(false)
 	const [search, setSearch] = useState("")
 	const { data, isLoading } = useGroupList()
 	const groups = data?.groups ?? []
-	const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
 	const trimmedSearch = search.trim().toLowerCase()
 	const filteredGroups = trimmedSearch
@@ -53,7 +54,12 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 						placeholder="What are you looking for"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="pr-11 rounded-full bg-muted border-transparent"
+						className="
+								pr-11 bg-muted text-foreground rounded-full
+								border-2 border-primary transition-all duration-150
+								outline-none caret-primary
+								focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary focus-visible:bg-card
+							"
 					/>
 					<div className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-primary">
 						<Search size={14} className="text-primary-foreground" />
@@ -148,7 +154,7 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 						<div className="flex flex-col items-end gap-2">
 							<DropdownMenu.Item
 								className="flex items-center gap-2 outline-none"
-								onSelect={() => setScheduleDialogOpen(true)}
+								onSelect={() => router.push("/messenger/schedule")}
 							>
 								<span className="text-[13px] text-foreground">Schedule</span>
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-background shadow-lg">
@@ -171,8 +177,6 @@ export function GroupListPanel({ activeGroupId }: GroupListPanelProps) {
 			</DropdownMenu.Root>
 
 			<CreateGroupDialog open={createOpen} onOpenChange={setCreateOpen} />
-
-			<ScheduledMessagesDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} />
 		</div>
 	)
 }

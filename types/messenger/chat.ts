@@ -70,20 +70,29 @@ export interface SendMessagePayload {
 	sender_ephemeral_key?: string
 }
 
-/** Embedded reply context — NOT a bare id. Confirmed via live payload
- * inspection (2026-08-29): both the POST create-response and the
- * `chat:receive` socket event return this full object. Only the CREATE
- * payload (`SendMessagePayload.reply_to`) is a bare id — that's what's
- * sent to create a reply; this is what comes back describing it. */
-export interface MessageReplyTo {
-	id: number
-	sender_id: Uuid
-	content: string
-	message_type: MessageType
-	created_at: string
-}
-
-/** A message is returned by the server */
+/**
+ * CONTRACT CHANGE (confirmed against a live group-message payload,
+ * 2026-09-04): `reply_to` is no longer an embedded message object. It is
+ * now either `null` or the numeric id of the parent message — identical
+ * in shape to `SendMessagePayload.reply_to` (the create-time id). There
+ * is exactly one representation now, not a "bare id in, full object out"
+ * asymmetry.
+ *
+ * Practical effect: the client can no longer read a replied-to message's
+ * sender/content/type directly off `reply_to`. Callers that want to show
+ * reply context must resolve the id against messages they already have
+ * loaded (see `resolveMessagePreviewText` and the `repliedMessage`
+ * lookup in `message-list.tsx`) and fall back gracefully when the
+ * referenced message isn't in the currently loaded window — there is no
+ * dedicated fetch-by-id endpoint to fall back to.
+ *
+ * For GROUP messages specifically, a reply is now a THREAD reply (see
+ * `GroupMessage.replies_count` and `groupApi.threadReplies` in
+ * `group.ts`/`group-api.ts`) rather than another item in the main
+ * timeline. Direct-chat replies are unaffected behaviorally — they
+ * remain inline quoted replies in the main conversation; only the
+ * shape of `reply_to` itself changed.
+ */
 export interface Message {
 	id: number
 	sender: MessageSender
@@ -96,7 +105,7 @@ export interface Message {
 	is_pinned: boolean
 	collection_id: string
 	status: MessageStatus
-	reply_to: MessageReplyTo | null
+	reply_to: number | null
 	forwarded_from: unknown | null
 	is_hidden_by_me: boolean
 	is_deleted_for_all: boolean

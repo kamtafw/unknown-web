@@ -36,7 +36,7 @@ class MessengerSocketManager {
 	/** replay functions for room joins, keyed so a feature can re-register
 	 * without duplicating; replayed on every `connect` event, including
 	 * reconnects — room membership belongs to the old connection and is
-	 * lost when it drops (confirmed by the guide, SN"Group socket events"). */
+	 * lost when it drops (confirmed by the guide, S~"Group socket events"). */
 	private roomJoins = new Map<string, () => void>()
 
 	/**
@@ -160,10 +160,11 @@ class MessengerSocketManager {
 	}
 
 	/** Fire-and-drop if the socket isn't connected yet — deliberately NOT
-	 * queued like `on()`'s listeners. Emits carry a point-in-time payload
-	 * (e.g. typing state); replaying a stale one later once the socket
-	 * connects could show incorrect state, unlike a listener registration
-	 * which is safe to attach whenever the connection becomes ready. */
+	 * queued like `on()`'s listeners. Emits are appropriate for ephemeral
+	 * events or transient UI signals (e.g. typing state); replaying a 
+	 * stale one later once the socket connects could show incorrect state,
+	 * unlike a listener registration or actual messages which are safe to
+	 * attach whenever the connection becomes ready. */
 	emit(event: string, payload?: unknown): void {
 		this.socket?.emit(event, payload)
 	}

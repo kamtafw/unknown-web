@@ -217,15 +217,6 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 		if (msg) void reactToMessage(msg, emoji)
 	}
 
-	const resolveReplySenderName = useCallback(
-		(senderId: string): string => {
-			if (currentUser && senderId === currentUser.id) return "You"
-			if (peer && senderId === uuid) return getDisplayName(peer)
-			return "Unknown"
-		},
-		[currentUser, peer, uuid],
-	)
-
 	return (
 		<div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
 			{search.isOpen ? (
@@ -259,6 +250,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				ref={messageListRef}
 				messages={messages}
 				currentUserUuid={currentUser?.id ?? ""}
+				showSenderNames={false}
 				isLoading={isLoading}
 				hasOlder={!!hasNextPage}
 				isFetchingOlder={isFetchingNextPage}
@@ -272,7 +264,6 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				onDelete={setDeleteTarget}
 				onReact={(m, emoji) => void reactToMessage(m, emoji)}
 				onOpenReactionsDialog={setReactionsDialogMessage}
-				resolveReplySenderName={resolveReplySenderName}
 			/>
 
 			<div className="shrink-0">
