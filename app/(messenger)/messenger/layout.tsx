@@ -1,5 +1,6 @@
 import { TopBar } from "@/components/dashboard/top-bar"
 import { MediaViewerProvider } from "@/components/messenger/media/media-viewer-context"
+import { MessengerE2eeBootstrap } from "@/components/messenger/messenger-e2ee-bootstrap"
 import { MessengerFreshLoadGuard } from "@/components/messenger/messenger-fresh-load-guard"
 import { MessengerShell } from "@/components/messenger/messenger-shell"
 import { MessengerSocketBootstrap } from "@/components/messenger/messenger-socket-bootstrap"
@@ -20,6 +21,7 @@ export default function MessengerLayout({ children }: { children: ReactNode }) {
 			<div className="h-screen flex flex-col overflow-hidden bg-background">
 				<DashboardAuthBootstrap />
 				<MessengerSocketBootstrap />
+				<MessengerE2eeBootstrap />
 				<MessengerFreshLoadGuard />
 				<TopBar />
 
