@@ -68,6 +68,10 @@ export interface SendMessagePayload {
 	metadata?: Record<string, unknown>
 	nonce?: string
 	sender_ephemeral_key?: string
+	e2ee?: boolean
+	e2ee_version?: number
+	e2ee_algorithm?: string
+	e2ee_content_hash?: string
 }
 
 /**

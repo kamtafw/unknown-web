@@ -38,6 +38,28 @@ const eslintConfig = [
 			"react-hooks/purity": "off",
 		},
 	},
+
+	{
+		// E2EE: tweetnacl is imported ONLY by lib/messenger/e2ee/nacl.ts (its tests may
+		// import it to cross-check constants). Everything else uses the app-owned wrappers
+		// exported from lib/messenger/e2ee.
+		files: ["**/*.{ts,tsx}"],
+		ignores: ["lib/messenger/e2ee/nacl.ts", "lib/messenger/e2ee/**/*.test.ts"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [
+						{
+							name: "tweetnacl",
+							message:
+								"Import from '@/lib/messenger/e2ee' instead. tweetnacl is only allowed inside lib/messenger/e2ee/nacl.ts.",
+						},
+					],
+				},
+			],
+		},
+	},
 ]
 
 export default eslintConfig

@@ -8,6 +8,7 @@
  * Django directly.
  */
 
+import { isAxiosError } from "axios"
 import { ApiResponse } from "@/types/api"
 import {
 	ArchiveListData,
@@ -28,6 +29,7 @@ import {
 	UpdateSchedulePayload,
 	UserAttachmentsData,
 } from "@/types/messenger"
+import { classifyBackup, type BackupClassification } from "./e2ee/backup-validation"
 import { apiClient } from "../axios"
 
 interface ChatHistoryData extends CursorPage<Message> {
@@ -264,6 +266,13 @@ export const chatApi = {
 			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
 			.then((r) => r.data.data),
 
+	getUserEncryptionBundle: (userPkid: number) =>
+		apiClient
+			.get<ApiResponse<{ identity_public_key: string }>>(
+				`/api/chats/users/${userPkid}/encryption-bundle`,
+			)
+			.then((r) => r.data.data),
+
 	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
 		const params = new URLSearchParams({ type })
 		if (cursor) params.set("cursor", cursor)
@@ -330,4 +339,36 @@ export const scheduleApi = {
 			.patch<ApiResponse<Schedule>>(`/api/chats/schedules/${scheduleId}`, payload)
 			.then((r) => r.data.data),
 	delete: (scheduleId: number) => apiClient.delete(`/api/chats/schedules/${scheduleId}`),
+}
+
+/**
+ * E2EE key-backup retrieval — restore-only (D-E2EE-03,
+ * E2EE-KEY-BACKUP-WEB-IMPLEMENTATION-1.md §6). `getKeyBackup` is the ONLY
+ * function that may ever exist here for this endpoint: web must never call
+ * PUT or DELETE on `chats/users/key-backup`.
+ *
+ * The response body is typed `unknown`, not a backup interface. A raw HTTP
+ * JSON payload is not a validated backup — `classifyBackup`
+ * (lib/messenger/e2ee/backup-validation.ts) does the actual field-by-field
+ * runtime narrowing before anything here is treated as trustworthy. Typing
+ * this as an interface would let a caller skip that step and just believe
+ * the wire response, which is exactly the mistake this boundary exists to
+ * prevent.
+ */
+export type BackupFetchResult = BackupClassification | { status: "backup-unavailable" }
+
+export const backupApi = {
+	getKeyBackup: async (): Promise<BackupFetchResult> => {
+		try {
+			const data = await apiClient
+				.get<ApiResponse<unknown>>("/api/chats/users/key-backup")
+				.then((r) => r.data.data)
+			return classifyBackup(data)
+		} catch (error) {
+			if (isAxiosError(error) && error.response?.status === 404) {
+				return { status: "backup-unavailable" }
+			}
+			throw error
+		}
+	},
 }
