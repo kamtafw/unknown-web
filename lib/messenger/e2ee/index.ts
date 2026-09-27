@@ -25,6 +25,12 @@
  *    `components/messenger/messenger-e2ee-bootstrap.tsx`.
  */
 
+export { recoverIdentityFromBackup } from "./backup-recovery"
+export {
+	classifyBackup,
+	type BackupClassification,
+	type ValidatedBackupV1,
+} from "./backup-validation"
 export {
 	BACKUP_CIPHERTEXT_LENGTH,
 	BACKUP_ENCRYPTION_ALGORITHM,
@@ -46,11 +52,6 @@ export {
 	SHA256_DIGEST_LENGTH,
 } from "./constants"
 export { buildContentHashInput, computeContentHash, type ContentHashInput } from "./content-hash"
-export {
-	classifyBackup,
-	type BackupClassification,
-	type ValidatedBackupV1,
-} from "./backup-validation"
 export {
 	base64ToBytes,
 	base64ToBytesOfLength,
