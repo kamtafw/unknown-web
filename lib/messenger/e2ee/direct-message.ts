@@ -1,13 +1,27 @@
-import type { MediaAttachment, MessageType, Pkid, SendMessagePayload } from "@/types/messenger"
+import type {
+	CursorPage,
+	MediaAttachment,
+	Message,
+	MessageType,
+	Pkid,
+	SendMessagePayload,
+} from "@/types/messenger"
 import {
+	BOX_NONCE_LENGTH,
 	BOX_PUBLIC_KEY_LENGTH,
 	E2EE_MESSAGE_ALGORITHM_V1,
 	E2EE_MESSAGE_VERSION,
 } from "./constants"
 import { computeContentHash } from "./content-hash"
-import { bytesToBase64, base64ToBytesOfLength, utf8ToBytes } from "./encoding"
-import { type StoredIdentity } from "./identity-store"
-import { boxPublicKeyFromSecretKey, boxSeal, constantTimeEqual } from "./nacl"
+import {
+	base64ToBytes,
+	base64ToBytesOfLength,
+	bytesToBase64,
+	bytesToUtf8,
+	utf8ToBytes,
+} from "./encoding"
+import { getIdentity, type StoredIdentity } from "./identity-store"
+import { boxOpen, boxPublicKeyFromSecretKey, boxSeal, constantTimeEqual } from "./nacl"
 import { generateNonce } from "./random"
 import { e2eeRuntime } from "./runtime"
 import { getTrustedKey, pinIfAbsent } from "./trust-store"
@@ -152,9 +166,124 @@ export async function prepareDirectMessageSendPayload({
 	}
 }
 
-export async function getPreparedSenderIdentity(
-	accountId: Pkid,
-): Promise<StoredIdentity | null> {
+export async function getPreparedSenderIdentity(accountId: Pkid): Promise<StoredIdentity | null> {
 	await e2eeRuntime.activate(accountId)
 	return e2eeRuntime.getState()?.identity ?? null
+}
+
+export type IncomingDirectMessage = Message & {
+	content?: string
+	nonce?: string
+	sender_ephemeral_key?: string
+	e2ee?: boolean
+	e2ee_version?: number
+	e2ee_algorithm?: string
+	e2ee_content_hash?: string
+}
+
+export interface DecryptDirectMessageEnvelopeParams {
+	accountId: Pkid
+	senderPkid?: Pkid | null
+	message: IncomingDirectMessage
+	recipientIdentity?: StoredIdentity | null
+}
+
+function resolveSenderPkid(message: Partial<IncomingDirectMessage>): Pkid | null {
+	const candidate =
+		(message.sender && typeof message.sender === "object" && "pkid" in message.sender
+			? message.sender.pkid
+			: undefined) ??
+		(message as { senderPkid?: unknown }).senderPkid ??
+		(message as { sender_id?: unknown }).sender_id ??
+		(message as { senderId?: unknown }).senderId ??
+		(message as { sender_pkid?: unknown }).sender_pkid
+
+	if (typeof candidate === "number" && Number.isFinite(candidate)) return candidate as Pkid
+	if (typeof candidate === "string" && /^\d+$/.test(candidate)) return Number(candidate) as Pkid
+	return null
+}
+
+function isEncryptedDirectMessageEnvelope(message: unknown): message is IncomingDirectMessage {
+	if (!message || typeof message !== "object") return false
+	const candidate = message as IncomingDirectMessage
+	return candidate.e2ee === true
+}
+
+export async function decryptDirectMessageEnvelope({
+	accountId,
+	senderPkid,
+	message,
+	recipientIdentity,
+}: DecryptDirectMessageEnvelopeParams): Promise<Message | null> {
+	if (!isEncryptedDirectMessageEnvelope(message)) return message as Message
+	if (message.e2ee_version !== E2EE_MESSAGE_VERSION) return null
+	if (message.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
+	if (typeof message.content !== "string") return null
+	if (typeof message.nonce !== "string") return null
+	if (typeof message.sender_ephemeral_key !== "string") return null
+	if (typeof message.e2ee_content_hash !== "string") return null
+
+	try {
+		const senderPublicKey = base64ToBytesOfLength(
+			message.sender_ephemeral_key,
+			BOX_PUBLIC_KEY_LENGTH,
+		)
+		const nonce = base64ToBytesOfLength(message.nonce, BOX_NONCE_LENGTH)
+		const ciphertext = base64ToBytes(message.content)
+		const actualHash = await computeContentHash({
+			ciphertext: message.content,
+			nonce: message.nonce,
+			senderPublicKey: message.sender_ephemeral_key,
+		})
+		if (actualHash.toLowerCase() !== message.e2ee_content_hash.toLowerCase()) return null
+		if (ciphertext.length < 16) return null
+
+		const resolvedSenderPkid = senderPkid ?? resolveSenderPkid(message)
+		if (!resolvedSenderPkid) return null
+
+		const identity =
+			recipientIdentity ?? (await getIdentity(accountId)) ?? e2eeRuntime.getState()?.identity
+		if (!identity) return null
+		const trusted = await getTrustedKey(accountId, resolvedSenderPkid)
+		if (trusted && !constantTimeEqual(trusted.publicKey, senderPublicKey)) return null
+		if (!trusted) {
+			const pinResult = await pinIfAbsent(accountId, resolvedSenderPkid, senderPublicKey)
+			if (
+				!pinResult.pinned &&
+				pinResult.existing &&
+				!constantTimeEqual(pinResult.existing.publicKey, senderPublicKey)
+			) {
+				return null
+			}
+		}
+
+		const opened = boxOpen({
+			ciphertext,
+			nonce,
+			peerPublicKey: senderPublicKey,
+			ownSecretKey: identity.privateKey,
+		})
+		if (opened === null) return null
+
+		const plaintext = bytesToUtf8(opened)
+		return { ...message, content: plaintext } as Message
+	} catch {
+		return null
+	}
+}
+
+export async function decryptDirectMessageHistoryPage<T extends CursorPage<Message>>(
+	accountId: Pkid,
+	page: T,
+): Promise<T> {
+	const results: Message[] = []
+	for (const message of page.results) {
+		const decrypted = await decryptDirectMessageEnvelope({
+			accountId,
+			senderPkid: resolveSenderPkid(message),
+			message: message as IncomingDirectMessage,
+		})
+		if (decrypted) results.push(decrypted)
+	}
+	return { ...page, results } as T
 }

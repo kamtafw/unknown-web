@@ -1,9 +1,11 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { decryptDirectMessageHistoryPage } from "@/lib/messenger/e2ee/direct-message"
 import { compareMessageOrder } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import type { Message, Uuid } from "@/types/messenger"
+import { useAuthStore } from "@/stores/auth-store"
+import type { Message, Pkid, Uuid } from "@/types/messenger"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 
@@ -38,10 +40,14 @@ function extractCursor(url: string | null | undefined): string | undefined {
 }
 
 export function useChatHistory(userUuid: Uuid | undefined) {
+	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 	const query = useInfiniteQuery({
 		queryKey: chatKeys.history(userUuid ?? ("" as Uuid)),
-		queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
-			chatApi.history(userUuid as string, pageParam),
+		queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+			const page = await chatApi.history(userUuid as string, pageParam)
+			if (!accountId) return page
+			return decryptDirectMessageHistoryPage(accountId, page)
+		},
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => extractCursor(lastPage.previous),
 		enabled: !!userUuid,

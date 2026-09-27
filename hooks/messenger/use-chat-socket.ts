@@ -1,11 +1,13 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { decryptDirectMessageEnvelope } from "@/lib/messenger/e2ee/direct-message"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
+import { useAuthStore } from "@/stores/auth-store"
 import { useMessengerConnectionStore } from "@/stores/messenger-connection.store"
-import type { ChatListItem, CursorPage, Message, Uuid } from "@/types/messenger"
+import type { ChatListItem, CursorPage, Message, Pkid, Uuid } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 
@@ -35,6 +37,7 @@ interface ChatStatusPayload {
 export function useChatSocket(activeUuid: Uuid | null) {
 	const queryClient = useQueryClient()
 	const connectionStatus = useMessengerConnectionStore((s) => s.status)
+	const currentAccountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 
 	const activeUuidRef = useRef(activeUuid)
 	useEffect(() => {
@@ -74,6 +77,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 	}, [connectionStatus, queryClient])
 
 	useEffect(() => {
+		const typingTimers = typingTimersRef.current
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
 			queryClient.setQueryData<HistoryData>(chatKeys.history(senderUuid), (old) => {
@@ -113,67 +117,81 @@ export function useChatSocket(activeUuid: Uuid | null) {
 			return found
 		}
 
-		const unsubReceive = messengerSocket.on<Message>(CHAT_SOCKET_EVENTS.RECEIVE, (rawMessage) => {
-			// Defensive normalization: the guide only describes this event as
-			// a table entry, not an exact JSON schema, and it's never been
-			// verified against a real payload from this environment. If the
-			// real event nests sender differently than the REST `Message`
-			// shape (e.g. a flat `senderId` instead of `sender.id`), silently
-			// trusting `message.sender.id` would break both
-			const message = rawMessage
-			if (process.env.NODE_ENV !== "production") {
-				console.info("[messenger] chat:receive payload", rawMessage)
-			}
-
-			// BUG FIX (2026-08-15): this branch used to invalidate and then
-			// fall through into `message.sender.id` anyway — a missing
-			// `return` meant a malformed payload could throw here instead of
-			// degrading gracefully to a refetch
-			if (!message?.sender?.id) {
+		const unsubReceive = messengerSocket.on<Message>(
+			CHAT_SOCKET_EVENTS.RECEIVE,
+			async (rawMessage) => {
+				// Defensive normalization: the guide only describes this event as
+				// a table entry, not an exact JSON schema, and it's never been
+				// verified against a real payload from this environment. If the
+				// real event nests sender differently than the REST `Message`
+				// shape (e.g. a flat `senderId` instead of `sender.id`), silently
+				// trusting `message.sender.id` would break both
+				const message = rawMessage
 				if (process.env.NODE_ENV !== "production") {
-					console.warn(
-						"[messenger] chat:receive arrived without a usable sender.id — ",
-						+"see the console.debug above and check MESSENGER.md's open items.",
-					)
+					console.info("[messenger] chat:receive payload", rawMessage)
 				}
-				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
-				queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
-				return
-			}
 
-			const isOpen = activeUuidRef.current === message.sender.id
-			upsertMessage(message)
-			const patchedList = bumpListPreview(message, isOpen)
+				const decrypted =
+					currentAccountId !== null
+						? await decryptDirectMessageEnvelope({
+								accountId: currentAccountId,
+								senderPkid: message?.sender?.pkid ?? null,
+								message: message as never,
+							})
+						: null
 
-			// BUG FIX (2026-08-15): this condition was inverted
-			// (`if (patchedList)`), which is very likely the main cause of
-			// the cross-browser badge inconsistency. As written before, it
-			// forced a refetch every time the optimistic patch *succeeded*
-			// (racing that fresh, correct update against a possibly-stale
-			// server response) and did nothing when the patch *failed*
-			// (leaving the badge silently wrong with no fallback at all —
-			// the exact "message shows in the list but no badge" symptom).
-			// Different browsers' focus/throttling timing made the race
-			// land differently, which is why it looked browser-specific
-			// rather than a clean always-fails bug.
-			if (!patchedList) {
-				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
-			}
-			if (!isOpen) {
-				// The TopBar total is a separate cached number, not derived
-				// from the list — always refresh it on an unread-producing
-				// event rather than trying to keep a local counter in sync.
-				queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
-			}
+				const normalized = decrypted ?? message
 
-			// Always ack delivered; only ack seen while the conversation is
-			// actually open and the tab is visible — a socket connection
-			// alone is never enough to mark something seen (guide, S~4).
-			void chatApi.updateStatus(message.id, "delivered").catch(() => undefined)
-			if (isOpen && document.visibilityState === "visible") {
-				void chatApi.updateStatus(message.id, "seen").catch(() => undefined)
-			}
-		})
+				// BUG FIX (2026-08-15): this branch used to invalidate and then
+				// fall through into `message.sender.id` anyway — a missing
+				// `return` meant a malformed payload could throw here instead of
+				// degrading gracefully to a refetch
+				if (!normalized?.sender?.id) {
+					if (process.env.NODE_ENV !== "production") {
+						console.warn(
+							"[messenger] chat:receive arrived without a usable sender.id — ",
+							+"see the console.debug above and check MESSENGER.md's open items.",
+						)
+					}
+					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+					return
+				}
+
+				const isOpen = activeUuidRef.current === normalized.sender.id
+				upsertMessage(normalized)
+				const patchedList = bumpListPreview(normalized, isOpen)
+
+				// BUG FIX (2026-08-15): this condition was inverted
+				// (`if (patchedList)`), which is very likely the main cause of
+				// the cross-browser badge inconsistency. As written before, it
+				// forced a refetch every time the optimistic patch *succeeded*
+				// (racing that fresh, correct update against a possibly-stale
+				// server response) and did nothing when the patch *failed*
+				// (leaving the badge silently wrong with no fallback at all —
+				// the exact "message shows in the list but no badge" symptom).
+				// Different browsers' focus/throttling timing made the race
+				// land differently, which is why it looked browser-specific
+				// rather than a clean always-fails bug.
+				if (!patchedList) {
+					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+				}
+				if (!isOpen) {
+					// The TopBar total is a separate cached number, not derived
+					// from the list — always refresh it on an unread-producing
+					// event rather than trying to keep a local counter in sync.
+					queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
+				}
+
+				// Always ack delivered; only ack seen while the conversation is
+				// actually open and the tab is visible — a socket connection
+				// alone is never enough to mark something seen (guide, S~4).
+				void chatApi.updateStatus(normalized.id, "delivered").catch(() => undefined)
+				if (isOpen && document.visibilityState === "visible") {
+					void chatApi.updateStatus(normalized.id, "seen").catch(() => undefined)
+				}
+			},
+		)
 
 		// BUG FIX (2026-08-15): previously resolved a single "peerUuid" from
 		// `payload.senderId ?? payload.receiverId` and wrote directly to
@@ -268,13 +286,9 @@ export function useChatSocket(activeUuid: Uuid | null) {
 			unsubStatus()
 			unsubSent()
 			unsubTyping()
-			// Deliberately reads the ref's live value here, not a snapshot
-			// captured at effect setup — this Map accumulates timers for the
-			// whole effect lifetime and cleanup needs to clear whatever
-			// currently exists, not what existed when the effect first ran.
-			for (const timer of typingTimersRef.current.values()) clearTimeout(timer)
+			for (const timer of typingTimers.values()) clearTimeout(timer)
 		}
-	}, [queryClient])
+	}, [currentAccountId, queryClient])
 
 	return { typingUuids }
 }

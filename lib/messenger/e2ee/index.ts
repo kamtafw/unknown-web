@@ -32,14 +32,6 @@ export {
 	type ValidatedBackupV1,
 } from "./backup-validation"
 export {
-	prepareDirectMessageEnvelope,
-	prepareDirectMessageSendPayload,
-	type DirectMessageEnvelope,
-	type DirectMessageEncryptionBundle,
-	type PrepareDirectMessageEnvelopeParams,
-	type PrepareDirectMessageSendPayloadParams,
-} from "./direct-message"
-export {
 	BACKUP_CIPHERTEXT_LENGTH,
 	BACKUP_ENCRYPTION_ALGORITHM,
 	BACKUP_KDF_ALGORITHM,
@@ -60,6 +52,18 @@ export {
 	SHA256_DIGEST_LENGTH,
 } from "./constants"
 export { buildContentHashInput, computeContentHash, type ContentHashInput } from "./content-hash"
+export {
+	decryptDirectMessageEnvelope,
+	decryptDirectMessageHistoryPage,
+	prepareDirectMessageEnvelope,
+	prepareDirectMessageSendPayload,
+	type DecryptDirectMessageEnvelopeParams,
+	type DirectMessageEncryptionBundle,
+	type DirectMessageEnvelope,
+	type IncomingDirectMessage,
+	type PrepareDirectMessageEnvelopeParams,
+	type PrepareDirectMessageSendPayloadParams,
+} from "./direct-message"
 export {
 	base64ToBytes,
 	base64ToBytesOfLength,
