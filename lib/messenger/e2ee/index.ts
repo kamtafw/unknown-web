@@ -47,6 +47,11 @@ export {
 } from "./constants"
 export { buildContentHashInput, computeContentHash, type ContentHashInput } from "./content-hash"
 export {
+	classifyBackup,
+	type BackupClassification,
+	type ValidatedBackupV1,
+} from "./backup-validation"
+export {
 	base64ToBytes,
 	base64ToBytesOfLength,
 	bytesToBase64,

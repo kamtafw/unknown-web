@@ -21,6 +21,8 @@ export const E2EE_MESSAGE_ALGORITHM_V1 = "nacl_box_curve25519xsalsa20poly1305" a
 
 // --- Key-backup protocol (v1) -----------------------------------------------
 
+export const BACKUP_FORMAT_VERSION = 1 as const
+export const BACKUP_RECOVERY_METHOD = "six_digit_pin" as const
 export const BACKUP_ENCRYPTION_ALGORITHM = "nacl_secretbox_xsalsa20poly1305" as const
 export const BACKUP_KDF_ALGORITHM = "pbkdf2" as const
 export const BACKUP_KDF_PRF = "hmac_sha256" as const
