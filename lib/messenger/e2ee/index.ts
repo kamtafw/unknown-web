@@ -32,6 +32,14 @@ export {
 	type ValidatedBackupV1,
 } from "./backup-validation"
 export {
+	prepareDirectMessageEnvelope,
+	prepareDirectMessageSendPayload,
+	type DirectMessageEnvelope,
+	type DirectMessageEncryptionBundle,
+	type PrepareDirectMessageEnvelopeParams,
+	type PrepareDirectMessageSendPayloadParams,
+} from "./direct-message"
+export {
 	BACKUP_CIPHERTEXT_LENGTH,
 	BACKUP_ENCRYPTION_ALGORITHM,
 	BACKUP_KDF_ALGORITHM,

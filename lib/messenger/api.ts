@@ -266,6 +266,13 @@ export const chatApi = {
 			.get<ApiResponse<MessengerUserProfile>>(`/api/chats/users/${userUuid}/profile`)
 			.then((r) => r.data.data),
 
+	getUserEncryptionBundle: (userPkid: number) =>
+		apiClient
+			.get<ApiResponse<{ identity_public_key: string }>>(
+				`/api/chats/users/${userPkid}/encryption-bundle`,
+			)
+			.then((r) => r.data.data),
+
 	getAttachments: (userUuid: string, type: "media" | "doc" | "link", cursor?: string) => {
 		const params = new URLSearchParams({ type })
 		if (cursor) params.set("cursor", cursor)

@@ -1,6 +1,8 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { prepareDirectMessageSendPayload } from "@/lib/messenger/e2ee/direct-message"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { createOptimisticMessage, withStatus } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
@@ -10,7 +12,6 @@ import type {
 	Message,
 	MessageType,
 	Pkid,
-	SendMessagePayload,
 	Uuid,
 } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
@@ -29,10 +30,42 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
 	const historyKey = chatKeys.history(receiverUuid)
-	// encryption-related variables — their values are random at the
-	// moment as encryption isn't functional yet.
-	const NONCE = "NONCE"
-	const SENDER_EPHEMERAL_KEY = "SENDER_EPHEMERAL_KEY"
+
+	const getDirectMessagePayload = useCallback(
+		async (
+			messageType: MessageType,
+			content: string,
+			options: {
+				media?: MediaAttachment[]
+				metadata?: Record<string, unknown>
+				replyingTo?: Message | null
+			},
+		) => {
+			if (!currentUser || !currentUser.pkid) return null
+
+			await e2eeRuntime.activate(currentUser.pkid as Pkid)
+			const identity = e2eeRuntime.getState()?.identity ?? null
+			if (!identity) return null
+
+			try {
+				const bundle = await chatApi.getUserEncryptionBundle(receiverPkid)
+				return prepareDirectMessageSendPayload({
+					accountId: currentUser.pkid as Pkid,
+					recipientId: receiverPkid,
+					plaintext: content,
+					senderIdentity: identity,
+					bundle,
+					messageType,
+					media: options.media,
+					metadata: options.metadata,
+					reply_to: options.replyingTo ? options.replyingTo.id : undefined,
+				})
+			} catch {
+				return null
+			}
+		},
+		[currentUser, receiverPkid],
+	)
 
 	const upsertOptimistic = useCallback(
 		(message: Message) => {
@@ -97,16 +130,12 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		) => {
 			if (!currentUser) return
 
-			const payload: SendMessagePayload = {
-				receiver_id: receiverPkid,
-				message_type: messageType,
-				content: options.content,
+			const payload = await getDirectMessagePayload(messageType, options.content ?? "", {
 				media: options.media,
 				metadata: options.metadata,
-				...(options.replyingTo ? { reply_to: options.replyingTo.id } : {}),
-				nonce: NONCE,
-				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
-			}
+				replyingTo: options.replyingTo,
+			})
+			if (!payload) return
 
 			const optimistic = createOptimisticMessage(
 				payload,
@@ -130,7 +159,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				markFailed(optimistic.id)
 			}
 		},
-		[currentUser, receiverPkid, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+		[
+			currentUser,
+			getDirectMessagePayload,
+			upsertOptimistic,
+			replaceOptimistic,
+			markFailed,
+			queryClient,
+		],
 	)
 
 	/** Caption lives on `media[].caption`, not `content` — confirmed via
@@ -184,14 +220,8 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
 
-			const payload: SendMessagePayload = {
-				receiver_id: receiverPkid,
-				message_type: "text",
-				content,
-				...(replyingTo ? { reply_to: replyingTo.id } : {}),
-				nonce: NONCE,
-				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
-			}
+			const payload = await getDirectMessagePayload("text", content, { replyingTo })
+			if (!payload) return
 
 			const optimistic = createOptimisticMessage(
 				payload,
@@ -215,7 +245,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				markFailed(optimistic.id)
 			}
 		},
-		[currentUser, receiverPkid, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+		[
+			currentUser,
+			getDirectMessagePayload,
+			upsertOptimistic,
+			replaceOptimistic,
+			markFailed,
+			queryClient,
+		],
 	)
 
 	const retry = useCallback(
