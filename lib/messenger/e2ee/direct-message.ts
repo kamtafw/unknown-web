@@ -21,6 +21,7 @@ import {
 	utf8ToBytes,
 } from "./encoding"
 import { getIdentity, type StoredIdentity } from "./identity-store"
+import { getLocalMessageCopy } from "./local-message-store"
 import { boxOpen, boxPublicKeyFromSecretKey, boxSeal, constantTimeEqual } from "./nacl"
 import { generateNonce } from "./random"
 import { e2eeRuntime } from "./runtime"
@@ -213,6 +214,73 @@ function resolveSenderPkid(message: Partial<IncomingDirectMessage>): Pkid | null
 	return null
 }
 
+function hasAnyE2EEIndicator(message: Record<string, unknown>): boolean {
+	const metadata =
+		message.metadata && typeof message.metadata === "object"
+			? (message.metadata as Record<string, unknown>)
+			: null
+
+	return (
+		Boolean(
+			metadata &&
+			("e2ee" in metadata ||
+				"e2ee_version" in metadata ||
+				"e2ee_algorithm" in metadata ||
+				"e2ee_content_hash" in metadata),
+		) ||
+		"nonce" in message ||
+		"sender_ephemeral_key" in message ||
+		"e2ee" in message ||
+		"e2ee_version" in message ||
+		"e2ee_algorithm" in message ||
+		"e2ee_content_hash" in message
+	)
+}
+
+function getMessageEnvelopeHash(message: IncomingDirectMessage): string | null {
+	const metadata =
+		message.metadata && typeof message.metadata === "object" ? message.metadata : null
+
+	const metadataHash =
+		typeof metadata?.e2ee_content_hash === "string" ? metadata.e2ee_content_hash : null
+
+	if (metadataHash) return metadataHash
+
+	const topLevelHash = (
+		message as IncomingDirectMessage & {
+			e2ee_content_hash?: unknown
+		}
+	).e2ee_content_hash
+
+	return typeof topLevelHash === "string" ? topLevelHash : null
+}
+
+function getE2EEEnvelopeMetadata(message: IncomingDirectMessage) {
+	const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata : {}
+
+	return {
+		e2ee:
+			metadata.e2ee === true ||
+			(message as IncomingDirectMessage & { e2ee?: unknown }).e2ee === true,
+
+		e2ee_version:
+			metadata.e2ee_version ??
+			(message as IncomingDirectMessage & { e2ee_version?: unknown }).e2ee_version,
+
+		e2ee_algorithm:
+			metadata.e2ee_algorithm ??
+			(message as IncomingDirectMessage & { e2ee_algorithm?: unknown }).e2ee_algorithm,
+
+		e2ee_content_hash:
+			metadata.e2ee_content_hash ??
+			(
+				message as IncomingDirectMessage & {
+					e2ee_content_hash?: unknown
+				}
+			).e2ee_content_hash,
+	}
+}
+
 export type DirectMessageEnvelopeKind = "encrypted" | "plain" | "malformed-encrypted"
 
 export function classifyDirectMessageEnvelope(message: unknown): DirectMessageEnvelopeKind {
@@ -221,29 +289,31 @@ export function classifyDirectMessageEnvelope(message: unknown): DirectMessageEn
 	}
 
 	const candidate = message as Record<string, unknown>
+
 	const metadata =
 		candidate.metadata && typeof candidate.metadata === "object"
 			? (candidate.metadata as Record<string, unknown>)
 			: null
 
-	const hasE2EEMetadata =
-		metadata &&
-		("e2ee" in metadata ||
-			"e2ee_version" in metadata ||
-			"e2ee_algorithm" in metadata ||
-			"e2ee_content_hash" in metadata)
-
-	const hasE2EETransport = "nonce" in candidate || "sender_ephemeral_key" in candidate
-
-	if (!hasE2EEMetadata && !hasE2EETransport) {
+	/*
+	 * Any cryptographic indicator means this is intended to be an
+	 * encrypted envelope. Never downgrade it to plaintext merely because
+	 * part of the envelope is missing.
+	 */
+	if (!hasAnyE2EEIndicator(candidate)) {
 		return "plain"
 	}
 
-	if (
-		metadata?.e2ee === true &&
-		metadata.e2ee_version === E2EE_MESSAGE_VERSION &&
-		metadata.e2ee_algorithm === E2EE_MESSAGE_ALGORITHM_V1
-	) {
+	const version = metadata?.e2ee_version ?? candidate.e2ee_version
+
+	const algorithm = metadata?.e2ee_algorithm ?? candidate.e2ee_algorithm
+
+	const encrypted =
+		(metadata?.e2ee === true || candidate.e2ee === true) &&
+		version === E2EE_MESSAGE_VERSION &&
+		algorithm === E2EE_MESSAGE_ALGORITHM_V1
+
+	if (encrypted) {
 		return "encrypted"
 	}
 
@@ -266,9 +336,8 @@ export async function decryptDirectMessageEnvelope({
 		return null
 	}
 
-	const metadata = message.metadata
+	const metadata = getE2EEEnvelopeMetadata(message)
 
-	if (!metadata) return null
 	if (metadata.e2ee !== true) return null
 	if (metadata.e2ee_version !== E2EE_MESSAGE_VERSION) return null
 	if (metadata.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
@@ -348,18 +417,50 @@ export async function decryptDirectMessageHistoryPage<T extends CursorPage<Messa
 	accountId: Pkid,
 	page: T,
 ): Promise<T> {
+	const identity = await getIdentity(accountId)
 	const results: Message[] = []
 
 	for (const message of page.results) {
-		results.push(
-			await normalizeDirectMessage({
-				accountId,
-				senderPkid: resolveSenderPkid(message),
-				message,
-			}),
-		)
+		const senderPkid = resolveSenderPkid(message)
+
+		/* Messages sent by the current account cannot be decrypted from
+		 * the server ciphertext. They were encrypted with:
+		 *   our private key + recipient public key
+		 * so our own private key alone cannot open them.
+		 *
+		 * Restore the display plaintext from the account-scoped local
+		 * encrypted copy instead. */
+		if (identity && senderPkid === accountId) {
+			const localCopy = await getLocalMessageCopy(accountId, message.id)
+
+			if (localCopy) {
+				/* Verify that the local plaintext belongs to the exact
+				 * server envelope currently being displayed. */
+				const envelopeHash = getMessageEnvelopeHash(message)
+
+				if (envelopeHash && envelopeHash === localCopy.envelopeHash) {
+					results.push({ ...message, content: localCopy.plaintext })
+					continue
+				}
+			}
+
+			/* We know this is an encrypted message belonging to us, but
+			 * there is no matching local copy. Never expose ciphertext. */
+			const kind = classifyDirectMessageEnvelope(message)
+
+			if (kind === "encrypted" || kind === "malformed-encrypted") {
+				results.push({ ...message, content: E2EE_FAILURE_CONTENT })
+				continue
+			}
+		}
+
+		results.push(await normalizeDirectMessage({ accountId, senderPkid, message }))
 	}
-	return { ...page, results } as T
+
+	return {
+		...page,
+		results,
+	} as T
 }
 
 export interface NormalizeDirectMessageParams {

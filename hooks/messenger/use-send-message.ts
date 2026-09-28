@@ -159,23 +159,21 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const sent = await chatApi.send(payload)
-				const displayMessage = { ...sent, content: options.content ?? "" }
-
-				replaceOptimistic(optimistic.id, displayMessage)
 
 				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
-					const peerId = receiverPkid
-
-					void saveLocalMessageCopy({
+					await saveLocalMessageCopy({
 						accountId: currentUser.pkid as Pkid,
 						messageId: sent.id,
-						peerId,
+						peerId: receiverPkid,
 						envelopeHash: String(payload.metadata.e2ee_content_hash),
 						plaintext: options.content ?? "",
 						messageType: sent.message_type,
 						createdAt: sent.created_at,
-					}).catch(() => undefined)
+					})
 				}
+
+				const displayMessage = { ...sent, content: options.content ?? "" }
+				replaceOptimistic(optimistic.id, displayMessage)
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
@@ -264,23 +262,20 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const sent = await chatApi.send(payload)
-				const displayMessage = { ...sent, content }
-
-				replaceOptimistic(optimistic.id, displayMessage)
 
 				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
-					const peerId = receiverPkid
-
-					void saveLocalMessageCopy({
+					await saveLocalMessageCopy({
 						accountId: currentUser.pkid as Pkid,
 						messageId: sent.id,
-						peerId,
+						peerId: receiverPkid,
 						envelopeHash: String(payload.metadata.e2ee_content_hash),
-						plaintext: content ?? "",
+						plaintext: content,
 						messageType: sent.message_type,
 						createdAt: sent.created_at,
-					}).catch(() => undefined)
+					})
 				}
+
+				replaceOptimistic(optimistic.id, { ...sent, content })
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
