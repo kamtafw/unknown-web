@@ -147,19 +147,23 @@ export async function prepareDirectMessageSendPayload({
 			nonce,
 		})
 
+		const e2eeMetadata = {
+			...(metadata ?? {}),
+			e2ee: envelope.e2ee,
+			e2ee_version: envelope.e2ee_version,
+			e2ee_algorithm: envelope.e2ee_algorithm,
+			e2ee_content_hash: envelope.e2ee_content_hash,
+		}
+
 		return {
 			receiver_id: recipientId,
 			message_type: messageType,
 			content: envelope.content,
 			media,
-			metadata,
+			metadata: e2eeMetadata,
 			...(reply_to ? { reply_to } : {}),
 			nonce: envelope.nonce,
 			sender_ephemeral_key: envelope.sender_ephemeral_key,
-			e2ee: envelope.e2ee,
-			e2ee_version: envelope.e2ee_version,
-			e2ee_algorithm: envelope.e2ee_algorithm,
-			e2ee_content_hash: envelope.e2ee_content_hash,
 		}
 	} catch {
 		return null
@@ -171,14 +175,17 @@ export async function getPreparedSenderIdentity(accountId: Pkid): Promise<Stored
 	return e2eeRuntime.getState()?.identity ?? null
 }
 
+type E2EEMessageMetadata = {
+	e2ee: true
+	e2ee_version: number
+	e2ee_algorithm: string
+	e2ee_content_hash: string
+}
+
 export type IncomingDirectMessage = Message & {
-	content?: string
 	nonce?: string
 	sender_ephemeral_key?: string
-	e2ee?: boolean
-	e2ee_version?: number
-	e2ee_algorithm?: string
-	e2ee_content_hash?: string
+	metadata: (Record<string, unknown> & Partial<E2EEMessageMetadata>) | null
 }
 
 export interface DecryptDirectMessageEnvelopeParams {
@@ -205,8 +212,17 @@ function resolveSenderPkid(message: Partial<IncomingDirectMessage>): Pkid | null
 
 function isEncryptedDirectMessageEnvelope(message: unknown): message is IncomingDirectMessage {
 	if (!message || typeof message !== "object") return false
+
 	const candidate = message as IncomingDirectMessage
-	return candidate.e2ee === true
+	const metadata = candidate.metadata
+
+	return (
+		!!metadata &&
+		typeof metadata === "object" &&
+		metadata.e2ee === true &&
+		metadata.e2ee_version === E2EE_MESSAGE_VERSION &&
+		metadata.e2ee_algorithm === E2EE_MESSAGE_ALGORITHM_V1
+	)
 }
 
 export async function decryptDirectMessageEnvelope({
@@ -216,12 +232,15 @@ export async function decryptDirectMessageEnvelope({
 	recipientIdentity,
 }: DecryptDirectMessageEnvelopeParams): Promise<Message | null> {
 	if (!isEncryptedDirectMessageEnvelope(message)) return message as Message
-	if (message.e2ee_version !== E2EE_MESSAGE_VERSION) return null
-	if (message.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
+
+	const metadata = message.metadata
+
+	if (metadata?.e2ee_version !== E2EE_MESSAGE_VERSION) return null
+	if (metadata?.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
+	if (typeof metadata.e2ee_content_hash !== "string") return null
 	if (typeof message.content !== "string") return null
 	if (typeof message.nonce !== "string") return null
 	if (typeof message.sender_ephemeral_key !== "string") return null
-	if (typeof message.e2ee_content_hash !== "string") return null
 
 	try {
 		const senderPublicKey = base64ToBytesOfLength(
@@ -235,7 +254,7 @@ export async function decryptDirectMessageEnvelope({
 			nonce: message.nonce,
 			senderPublicKey: message.sender_ephemeral_key,
 		})
-		if (actualHash.toLowerCase() !== message.e2ee_content_hash.toLowerCase()) return null
+		if (actualHash.toLowerCase() !== metadata.e2ee_content_hash.toLowerCase()) return null
 		if (ciphertext.length < 16) return null
 
 		const resolvedSenderPkid = senderPkid ?? resolveSenderPkid(message)
@@ -277,12 +296,14 @@ export async function decryptDirectMessageHistoryPage<T extends CursorPage<Messa
 	page: T,
 ): Promise<T> {
 	const results: Message[] = []
+
 	for (const message of page.results) {
 		const decrypted = await decryptDirectMessageEnvelope({
 			accountId,
 			senderPkid: resolveSenderPkid(message),
-			message: message as IncomingDirectMessage,
+			message: message,
 		})
+
 		if (decrypted) results.push(decrypted)
 	}
 	return { ...page, results } as T
