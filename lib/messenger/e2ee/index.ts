@@ -53,17 +53,27 @@ export {
 } from "./constants"
 export { buildContentHashInput, computeContentHash, type ContentHashInput } from "./content-hash"
 export {
+	classifyDirectMessageEnvelope,
 	decryptDirectMessageEnvelope,
 	decryptDirectMessageHistoryPage,
+	normalizeDirectMessage,
 	prepareDirectMessageEnvelope,
 	prepareDirectMessageSendPayload,
 	type DecryptDirectMessageEnvelopeParams,
 	type DirectMessageEncryptionBundle,
 	type DirectMessageEnvelope,
+	type DirectMessageEnvelopeKind,
 	type IncomingDirectMessage,
 	type PrepareDirectMessageEnvelopeParams,
 	type PrepareDirectMessageSendPayloadParams,
 } from "./direct-message"
+export {
+	clearDirectMessageOutbox,
+	getDirectMessageOutboxEntry,
+	removeDirectMessageOutboxEntry,
+	saveDirectMessageOutboxEntry,
+	type DirectMessageOutboxEntry,
+} from "./direct-message-outbox"
 export {
 	base64ToBytes,
 	base64ToBytesOfLength,
@@ -80,6 +90,13 @@ export {
 	saveIdentity,
 	type StoredIdentity,
 } from "./identity-store"
+export {
+	getLatestLocalMessageCopy,
+	getLocalMessageCopy,
+	removeLocalMessageCopies,
+	saveLocalMessageCopy,
+	type LocalMessageCopy,
+} from "./local-message-store"
 export {
 	boxOpen,
 	boxPublicKeyFromSecretKey,

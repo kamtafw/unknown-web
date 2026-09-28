@@ -26,6 +26,9 @@ import { generateNonce } from "./random"
 import { e2eeRuntime } from "./runtime"
 import { getTrustedKey, pinIfAbsent } from "./trust-store"
 
+export const E2EE_FAILURE_CONTENT = "Unable to decrypt message"
+export const E2EE_UNSUPPORTED_CONTENT = "Unsupported encrypted message"
+
 export interface DirectMessageEncryptionBundle {
 	identity_public_key: string
 }
@@ -210,19 +213,41 @@ function resolveSenderPkid(message: Partial<IncomingDirectMessage>): Pkid | null
 	return null
 }
 
-function isEncryptedDirectMessageEnvelope(message: unknown): message is IncomingDirectMessage {
-	if (!message || typeof message !== "object") return false
+export type DirectMessageEnvelopeKind = "encrypted" | "plain" | "malformed-encrypted"
 
-	const candidate = message as IncomingDirectMessage
-	const metadata = candidate.metadata
+export function classifyDirectMessageEnvelope(message: unknown): DirectMessageEnvelopeKind {
+	if (!message || typeof message !== "object") {
+		return "malformed-encrypted"
+	}
 
-	return (
-		!!metadata &&
-		typeof metadata === "object" &&
-		metadata.e2ee === true &&
+	const candidate = message as Record<string, unknown>
+	const metadata =
+		candidate.metadata && typeof candidate.metadata === "object"
+			? (candidate.metadata as Record<string, unknown>)
+			: null
+
+	const hasE2EEMetadata =
+		metadata &&
+		("e2ee" in metadata ||
+			"e2ee_version" in metadata ||
+			"e2ee_algorithm" in metadata ||
+			"e2ee_content_hash" in metadata)
+
+	const hasE2EETransport = "nonce" in candidate || "sender_ephemeral_key" in candidate
+
+	if (!hasE2EEMetadata && !hasE2EETransport) {
+		return "plain"
+	}
+
+	if (
+		metadata?.e2ee === true &&
 		metadata.e2ee_version === E2EE_MESSAGE_VERSION &&
 		metadata.e2ee_algorithm === E2EE_MESSAGE_ALGORITHM_V1
-	)
+	) {
+		return "encrypted"
+	}
+
+	return "malformed-encrypted"
 }
 
 export async function decryptDirectMessageEnvelope({
@@ -231,12 +256,22 @@ export async function decryptDirectMessageEnvelope({
 	message,
 	recipientIdentity,
 }: DecryptDirectMessageEnvelopeParams): Promise<Message | null> {
-	if (!isEncryptedDirectMessageEnvelope(message)) return message as Message
+	const kind = classifyDirectMessageEnvelope(message)
+
+	if (kind === "plain") {
+		return message as Message
+	}
+
+	if (kind === "malformed-encrypted") {
+		return null
+	}
 
 	const metadata = message.metadata
 
-	if (metadata?.e2ee_version !== E2EE_MESSAGE_VERSION) return null
-	if (metadata?.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
+	if (!metadata) return null
+	if (metadata.e2ee !== true) return null
+	if (metadata.e2ee_version !== E2EE_MESSAGE_VERSION) return null
+	if (metadata.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
 	if (typeof metadata.e2ee_content_hash !== "string") return null
 	if (typeof message.content !== "string") return null
 	if (typeof message.nonce !== "string") return null
@@ -247,26 +282,41 @@ export async function decryptDirectMessageEnvelope({
 			message.sender_ephemeral_key,
 			BOX_PUBLIC_KEY_LENGTH,
 		)
+
 		const nonce = base64ToBytesOfLength(message.nonce, BOX_NONCE_LENGTH)
+
 		const ciphertext = base64ToBytes(message.content)
+
+		if (ciphertext.length < 16) return null
+
 		const actualHash = await computeContentHash({
 			ciphertext: message.content,
 			nonce: message.nonce,
 			senderPublicKey: message.sender_ephemeral_key,
 		})
-		if (actualHash.toLowerCase() !== metadata.e2ee_content_hash.toLowerCase()) return null
-		if (ciphertext.length < 16) return null
+
+		if (actualHash.toLowerCase() !== metadata.e2ee_content_hash.toLowerCase()) {
+			return null
+		}
 
 		const resolvedSenderPkid = senderPkid ?? resolveSenderPkid(message)
+
 		if (!resolvedSenderPkid) return null
 
 		const identity =
 			recipientIdentity ?? (await getIdentity(accountId)) ?? e2eeRuntime.getState()?.identity
+
 		if (!identity) return null
+
 		const trusted = await getTrustedKey(accountId, resolvedSenderPkid)
-		if (trusted && !constantTimeEqual(trusted.publicKey, senderPublicKey)) return null
+
+		if (trusted && !constantTimeEqual(trusted.publicKey, senderPublicKey)) {
+			return null
+		}
+
 		if (!trusted) {
 			const pinResult = await pinIfAbsent(accountId, resolvedSenderPkid, senderPublicKey)
+
 			if (
 				!pinResult.pinned &&
 				pinResult.existing &&
@@ -282,10 +332,13 @@ export async function decryptDirectMessageEnvelope({
 			peerPublicKey: senderPublicKey,
 			ownSecretKey: identity.privateKey,
 		})
+
 		if (opened === null) return null
 
-		const plaintext = bytesToUtf8(opened)
-		return { ...message, content: plaintext } as Message
+		return {
+			...message,
+			content: bytesToUtf8(opened),
+		} as Message
 	} catch {
 		return null
 	}
@@ -298,13 +351,53 @@ export async function decryptDirectMessageHistoryPage<T extends CursorPage<Messa
 	const results: Message[] = []
 
 	for (const message of page.results) {
-		const decrypted = await decryptDirectMessageEnvelope({
-			accountId,
-			senderPkid: resolveSenderPkid(message),
-			message: message,
-		})
-
-		if (decrypted) results.push(decrypted)
+		results.push(
+			await normalizeDirectMessage({
+				accountId,
+				senderPkid: resolveSenderPkid(message),
+				message,
+			}),
+		)
 	}
 	return { ...page, results } as T
+}
+
+export interface NormalizeDirectMessageParams {
+	accountId: Pkid
+	message: IncomingDirectMessage
+	senderPkid?: Pkid | null
+}
+
+export async function normalizeDirectMessage({
+	accountId,
+	message,
+	senderPkid,
+}: NormalizeDirectMessageParams): Promise<Message> {
+	const kind = classifyDirectMessageEnvelope(message)
+
+	if (kind === "plain") {
+		return message as Message
+	}
+
+	if (kind === "malformed-encrypted") {
+		return {
+			...message,
+			content: E2EE_UNSUPPORTED_CONTENT,
+		}
+	}
+
+	const decrypted = await decryptDirectMessageEnvelope({
+		accountId,
+		senderPkid,
+		message,
+	})
+
+	if (!decrypted) {
+		return {
+			...message,
+			content: E2EE_FAILURE_CONTENT,
+		}
+	}
+
+	return decrypted
 }

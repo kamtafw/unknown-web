@@ -1,7 +1,7 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
-import { decryptDirectMessageEnvelope } from "@/lib/messenger/e2ee/direct-message"
+import { normalizeDirectMessage } from "@/lib/messenger/e2ee/direct-message"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
@@ -131,16 +131,14 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					console.info("[messenger] chat:receive payload", rawMessage)
 				}
 
-				const decrypted =
+				const normalized =
 					currentAccountId !== null
-						? await decryptDirectMessageEnvelope({
+						? await normalizeDirectMessage({
 								accountId: currentAccountId,
-								senderPkid: message?.sender?.pkid ?? null,
+								senderPkid: message.sender.pkid ?? null,
 								message: message as never,
 							})
-						: null
-
-				const normalized = decrypted ?? message
+						: message
 
 				// BUG FIX (2026-08-15): this branch used to invalidate and then
 				// fall through into `message.sender.id` anyway — a missing
