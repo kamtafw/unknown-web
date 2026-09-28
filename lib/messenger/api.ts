@@ -8,7 +8,6 @@
  * Django directly.
  */
 
-import { isAxiosError } from "axios"
 import { ApiResponse } from "@/types/api"
 import {
 	ArchiveListData,
@@ -29,8 +28,9 @@ import {
 	UpdateSchedulePayload,
 	UserAttachmentsData,
 } from "@/types/messenger"
-import { classifyBackup, type BackupClassification } from "./e2ee/backup-validation"
+import { isAxiosError } from "axios"
 import { apiClient } from "../axios"
+import { classifyBackup, type BackupClassification } from "./e2ee/backup-validation"
 
 interface ChatHistoryData extends CursorPage<Message> {
 	previous: string | null
@@ -360,13 +360,31 @@ export type BackupFetchResult = BackupClassification | { status: "backup-unavail
 export const backupApi = {
 	getKeyBackup: async (): Promise<BackupFetchResult> => {
 		try {
-			const data = await apiClient
-				.get<ApiResponse<unknown>>("/api/chats/users/key-backup")
-				.then((r) => r.data.data)
+			const response = await apiClient.get<ApiResponse<unknown>>("/api/chats/users/key-backup")
+			if (process.env.NODE_ENV !== "production") {
+				const envelope = response?.data
+				console.info("[messenger][e2ee-debug][api] backup fetch", {
+					hasEnvelopeData: !!envelope && typeof envelope === "object" && "data" in envelope,
+					topLevelKeys:
+						envelope && typeof envelope === "object" ? Object.keys(envelope as object) : [],
+					httpStatus: response.status,
+				})
+			}
+			const data = response.data.data
 			return classifyBackup(data)
 		} catch (error) {
 			if (isAxiosError(error) && error.response?.status === 404) {
+				if (process.env.NODE_ENV !== "production") {
+					console.info("[messenger][e2ee-debug][api] backup fetch unavailable", {
+						httpStatus: error.response?.status ?? null,
+					})
+				}
 				return { status: "backup-unavailable" }
+			}
+			if (process.env.NODE_ENV !== "production") {
+				console.info("[messenger][e2ee-debug][api] backup fetch failure", {
+					httpStatus: isAxiosError(error) ? (error.response?.status ?? null) : null,
+				})
 			}
 			throw error
 		}
