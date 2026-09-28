@@ -153,7 +153,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const sent = await chatApi.send(payload)
-				replaceOptimistic(optimistic.id, sent)
+				replaceOptimistic(optimistic.id, { ...sent, content: options.content ?? "" })
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
 				markFailed(optimistic.id)

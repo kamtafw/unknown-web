@@ -40,10 +40,10 @@ export async function recoverIdentityFromBackup(
 	if (!VALID_PIN_PATTERN.test(pin)) return null
 
 	const existing = await getIdentity(accountId)
-	if (existing !== null && existing.privateKey.length === BOX_SECRET_KEY_LENGTH) {
-		// This is not a destructive overwrite path. The recovery below only
-		// persists after a verified identity check succeeds.
-	}
+	if (existing !== null) return null
+
+	const activeAccountId = e2eeRuntime.getActiveAccountId()
+	if (activeAccountId !== null && activeAccountId !== accountId) return null
 
 	try {
 		const wrappingKey = await pbkdf2HmacSha256({
@@ -61,6 +61,10 @@ export async function recoverIdentityFromBackup(
 
 		const publicKey = boxPublicKeyFromSecretKey(privateKey)
 		if (!constantTimeEqual(publicKey, backup.identityPublicKey)) return null
+
+		const currentActiveAccountId = e2eeRuntime.getActiveAccountId()
+		if (currentActiveAccountId !== null && currentActiveAccountId !== accountId) return null
+		if (e2eeRuntime.getState()?.identity) return null
 
 		const identity: StoredIdentity = {
 			privateKey,
