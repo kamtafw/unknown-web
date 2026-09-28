@@ -174,7 +174,8 @@ describe("direct-message E2EE send envelope", () => {
 				{ ...history.results[0], content: "%%%", nonce: "%%%", sender_ephemeral_key: "%%%" },
 			],
 		})
-		expect(failed.results).toHaveLength(0)
+		expect(failed.results).toHaveLength(1)
+		expect(failed.results[0].content).toBe("Unable to decrypt message")
 	})
 
 	it("rejects wrong sender key, corrupted ciphertext, malformed or unknown envelopes, missing identity, and invalid UTF-8", async () => {

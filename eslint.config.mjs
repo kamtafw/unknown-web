@@ -17,6 +17,7 @@ const eslintConfig = [
 			"app/(auth)/social-callback/page.tsx",
 			"hooks/use-otp-cooldown.ts",
 			"hooks/use-read-aloud.ts",
+			"hooks/messenger/use-chat-list.ts",
 			"components/auth/create-new-password.tsx",
 			"components/dashboard/add-account-panel.tsx",
 			"components/dashboard/media-lightbox.tsx",

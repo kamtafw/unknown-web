@@ -20,7 +20,10 @@
 import { openDatabase } from "./indexeddb"
 
 export const E2EE_DATABASE_NAME = "appscombo-messenger-e2ee"
-export const E2EE_DATABASE_VERSION = 1
+export const E2EE_DATABASE_VERSION = 2
+
+export const LOCAL_MESSAGE_COPIES_STORE = "localMessageCopies"
+export const LOCAL_MESSAGE_COPIES_BY_ACCOUNT_PEER_INDEX = "byAccountPeer"
 
 export const IDENTITIES_STORE = "identities"
 export const TRUSTED_KEYS_STORE = "trustedKeys"
@@ -43,6 +46,29 @@ export interface StoredTrustedKeyRow {
 	pinnedAt: number
 }
 
+export interface StoredLocalMessageCopyRow {
+	accountId: number
+	messageId: number
+	peerId: number
+
+	/**
+	 * SHA-256 fingerprint of the exact server envelope:
+	 * ciphertext + nonce + sender public key.
+	 */
+	envelopeHash: string
+
+	/**
+	 * Plaintext is never stored directly.
+	 * It is encrypted with the account's restored identity private key.
+	 */
+	ciphertext: Uint8Array
+	nonce: Uint8Array
+
+	messageType: string
+	createdAt: number
+	updatedAt: number
+}
+
 function upgrade(db: IDBDatabase, oldVersion: number): void {
 	if (oldVersion < 1) {
 		db.createObjectStore(IDENTITIES_STORE, { keyPath: "accountId" })
@@ -51,6 +77,18 @@ function upgrade(db: IDBDatabase, oldVersion: number): void {
 			keyPath: ["accountId", "recipientId"],
 		})
 		trustedKeys.createIndex(TRUSTED_KEYS_BY_ACCOUNT_INDEX, "accountId", { unique: false })
+	}
+
+	if (oldVersion < 2) {
+		const localMessageCopies = db.createObjectStore(LOCAL_MESSAGE_COPIES_STORE, {
+			keyPath: ["accountId", "messageId"],
+		})
+
+		localMessageCopies.createIndex(
+			LOCAL_MESSAGE_COPIES_BY_ACCOUNT_PEER_INDEX,
+			["accountId", "peerId"],
+			{ unique: false },
+		)
 	}
 }
 

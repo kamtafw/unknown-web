@@ -1,6 +1,7 @@
 "use client"
 
 import { e2eeRuntime } from "@/lib/messenger/e2ee"
+import { clearDirectMessageOutbox } from "@/lib/messenger/e2ee/direct-message-outbox"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Pkid } from "@/types/messenger"
 import { useEffect } from "react"
@@ -48,6 +49,7 @@ export function MessengerE2eeBootstrap() {
 	useEffect(() => {
 		if (accountId === null) {
 			e2eeRuntime.clear()
+			clearDirectMessageOutbox()
 			return
 		}
 
@@ -55,6 +57,7 @@ export function MessengerE2eeBootstrap() {
 
 		return () => {
 			e2eeRuntime.clear()
+			clearDirectMessageOutbox()
 		}
 	}, [accountId])
 

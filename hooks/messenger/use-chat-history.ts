@@ -1,6 +1,7 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { e2eeRuntime } from "@/lib/messenger/e2ee"
 import { decryptDirectMessageHistoryPage } from "@/lib/messenger/e2ee/direct-message"
 import { compareMessageOrder } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
@@ -45,7 +46,11 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 		queryKey: chatKeys.history(userUuid ?? ("" as Uuid)),
 		queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
 			const page = await chatApi.history(userUuid as string, pageParam)
+			
 			if (!accountId) return page
+			
+			await e2eeRuntime.activate(accountId)
+			
 			return decryptDirectMessageHistoryPage(accountId, page)
 		},
 		initialPageParam: undefined as string | undefined,
