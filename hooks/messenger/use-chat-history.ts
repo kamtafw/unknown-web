@@ -46,16 +46,22 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 		queryKey: chatKeys.history(userUuid ?? ("" as Uuid)),
 		queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
 			const page = await chatApi.history(userUuid as string, pageParam)
-			
+
+			console.log("[history e2ee]", {
+				userUuid,
+				accountId,
+				pageMessages: page.results.length,
+			})
+
 			if (!accountId) return page
-			
+
 			await e2eeRuntime.activate(accountId)
-			
+
 			return decryptDirectMessageHistoryPage(accountId, page)
 		},
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => extractCursor(lastPage.previous),
-		enabled: !!userUuid,
+		enabled: !!userUuid && accountId !== null,
 		staleTime: 60_000,
 	})
 
