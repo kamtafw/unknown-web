@@ -3,7 +3,7 @@ import { recoverIdentityFromBackup } from "@/lib/messenger/e2ee"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { MessengerE2eeRecoverySurface } from "./messenger-e2ee-debug-panel"
+import { MessengerE2eeRecoverySurface } from "./messenger-e2ee-recovery-surface"
 
 const runtimeState = { identity: null as { privateKey: Uint8Array; publicKey: Uint8Array } | null }
 const authState = { user: { pkid: 42 } }
