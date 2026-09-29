@@ -66,6 +66,12 @@ export interface SendMessagePayload {
 	reply_to?: number
 	excluded_users?: Pkid[]
 	metadata?: Record<string, unknown>
+	/**
+	 * E2EE transport fields.
+	 *
+	 * Protocol v1 deliberately keeps these outside metadata because the
+	 * backend consumes them as part of the encrypted envelope.
+	 */
 	nonce?: string
 	sender_ephemeral_key?: string
 }

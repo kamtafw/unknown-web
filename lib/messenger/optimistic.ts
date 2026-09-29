@@ -16,15 +16,17 @@ export function createOptimisticMessage(
 	payload: SendMessagePayload,
 	sender: MessageSender,
 	replyingTo?: Message | null,
+	displayContent?: string,
 ): Message {
 	counter -= 1
+
 	return {
 		id: counter,
 		sender,
 		receiver: null,
 		group: payload.group_id ? String(payload.group_id) : null,
 		message_type: payload.message_type,
-		content: payload.content ?? "",
+		content: displayContent ?? payload.content ?? "",
 		media: payload.media ?? null,
 		metadata: payload.metadata ?? null,
 		is_pinned: false,

@@ -1,6 +1,13 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { prepareDirectMessageSendPayload } from "@/lib/messenger/e2ee/direct-message"
+import {
+	getDirectMessageOutboxEntry,
+	removeDirectMessageOutboxEntry,
+} from "@/lib/messenger/e2ee/direct-message-outbox"
+import { saveLocalMessageCopy } from "@/lib/messenger/e2ee/local-message-store"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { createOptimisticMessage, withStatus } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
@@ -10,7 +17,6 @@ import type {
 	Message,
 	MessageType,
 	Pkid,
-	SendMessagePayload,
 	Uuid,
 } from "@/types/messenger"
 import { InfiniteData, useQueryClient } from "@tanstack/react-query"
@@ -29,10 +35,42 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
 	const historyKey = chatKeys.history(receiverUuid)
-	// encryption-related variables — their values are random at the
-	// moment as encryption isn't functional yet.
-	const NONCE = "NONCE"
-	const SENDER_EPHEMERAL_KEY = "SENDER_EPHEMERAL_KEY"
+
+	const getDirectMessagePayload = useCallback(
+		async (
+			messageType: MessageType,
+			content: string,
+			options: {
+				media?: MediaAttachment[]
+				metadata?: Record<string, unknown>
+				replyingTo?: Message | null
+			},
+		) => {
+			if (!currentUser || !currentUser.pkid) return null
+
+			await e2eeRuntime.activate(currentUser.pkid as Pkid)
+			const identity = e2eeRuntime.getState()?.identity ?? null
+			if (!identity) return null
+
+			try {
+				const bundle = await chatApi.getUserEncryptionBundle(receiverPkid)
+				return prepareDirectMessageSendPayload({
+					accountId: currentUser.pkid as Pkid,
+					recipientId: receiverPkid,
+					plaintext: content,
+					senderIdentity: identity,
+					bundle,
+					messageType,
+					media: options.media,
+					metadata: options.metadata,
+					reply_to: options.replyingTo ? options.replyingTo.id : undefined,
+				})
+			} catch {
+				return null
+			}
+		},
+		[currentUser, receiverPkid],
+	)
 
 	const upsertOptimistic = useCallback(
 		(message: Message) => {
@@ -97,16 +135,12 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		) => {
 			if (!currentUser) return
 
-			const payload: SendMessagePayload = {
-				receiver_id: receiverPkid,
-				message_type: messageType,
-				content: options.content,
+			const payload = await getDirectMessagePayload(messageType, options.content ?? "", {
 				media: options.media,
 				metadata: options.metadata,
-				...(options.replyingTo ? { reply_to: options.replyingTo.id } : {}),
-				nonce: NONCE,
-				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
-			}
+				replyingTo: options.replyingTo,
+			})
+			if (!payload) return
 
 			const optimistic = createOptimisticMessage(
 				payload,
@@ -119,18 +153,42 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					profile_photo: currentUser.profile_photo,
 				},
 				options.replyingTo,
+				options.content ?? "",
 			)
 			upsertOptimistic(optimistic)
 
 			try {
 				const sent = await chatApi.send(payload)
-				replaceOptimistic(optimistic.id, sent)
+
+				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
+					await saveLocalMessageCopy({
+						accountId: currentUser.pkid as Pkid,
+						messageId: sent.id,
+						peerId: receiverPkid,
+						envelopeHash: String(payload.metadata.e2ee_content_hash),
+						plaintext: options.content ?? "",
+						messageType: sent.message_type,
+						createdAt: sent.created_at,
+					})
+				}
+
+				const displayMessage = { ...sent, content: options.content ?? "" }
+				replaceOptimistic(optimistic.id, displayMessage)
+
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
 				markFailed(optimistic.id)
 			}
 		},
-		[currentUser, receiverPkid, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+		[
+			currentUser,
+			getDirectMessagePayload,
+			upsertOptimistic,
+			replaceOptimistic,
+			queryClient,
+			receiverPkid,
+			markFailed,
+		],
 	)
 
 	/** Caption lives on `media[].caption`, not `content` — confirmed via
@@ -184,14 +242,8 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		async (content: string, replyingTo?: Message | null) => {
 			if (!currentUser) return
 
-			const payload: SendMessagePayload = {
-				receiver_id: receiverPkid,
-				message_type: "text",
-				content,
-				...(replyingTo ? { reply_to: replyingTo.id } : {}),
-				nonce: NONCE,
-				sender_ephemeral_key: SENDER_EPHEMERAL_KEY,
-			}
+			const payload = await getDirectMessagePayload("text", content, { replyingTo })
+			if (!payload) return
 
 			const optimistic = createOptimisticMessage(
 				payload,
@@ -204,24 +256,53 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					profile_photo: currentUser.profile_photo,
 				},
 				replyingTo,
+				content,
 			)
 			upsertOptimistic(optimistic)
 
 			try {
 				const sent = await chatApi.send(payload)
-				replaceOptimistic(optimistic.id, sent)
+
+				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
+					await saveLocalMessageCopy({
+						accountId: currentUser.pkid as Pkid,
+						messageId: sent.id,
+						peerId: receiverPkid,
+						envelopeHash: String(payload.metadata.e2ee_content_hash),
+						plaintext: content,
+						messageType: sent.message_type,
+						createdAt: sent.created_at,
+					})
+				}
+
+				replaceOptimistic(optimistic.id, { ...sent, content })
+
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
 				markFailed(optimistic.id)
 			}
 		},
-		[currentUser, receiverPkid, upsertOptimistic, replaceOptimistic, markFailed, queryClient],
+		[
+			currentUser,
+			getDirectMessagePayload,
+			upsertOptimistic,
+			replaceOptimistic,
+			queryClient,
+			receiverPkid,
+			markFailed,
+		],
 	)
 
 	const retry = useCallback(
 		async (failedMessage: Message) => {
+			const entry = getDirectMessageOutboxEntry(failedMessage.id)
+
+			if (!entry || !currentUser) return
+
+			// mark sending
 			queryClient.setQueryData<HistoryData>(historyKey, (old) => {
 				if (!old) return old
+
 				return {
 					...old,
 					pages: old.pages.map((page) => ({
@@ -234,19 +315,44 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 			})
 
 			try {
-				const sent = await chatApi.send({
-					receiver_id: receiverPkid,
-					message_type: failedMessage.message_type,
-					content: failedMessage.content,
-					...(failedMessage.reply_to ? { reply_to: failedMessage.reply_to } : {}),
+				const payload = await getDirectMessagePayload(entry.messageType, entry.plaintext, {
+					media: entry.media,
+					metadata: entry.metadata,
+					replyingTo: null,
 				})
-				replaceOptimistic(failedMessage.id, sent)
+
+				if (!payload) {
+					throw new Error("Unable to prepare encrypted retry")
+				}
+
+				const sent = await chatApi.send(payload)
+
+				replaceOptimistic(failedMessage.id, {
+					...sent,
+					content: entry.plaintext,
+					status: sent.status,
+				})
+
+				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
+					void saveLocalMessageCopy({
+						accountId: entry.accountId,
+						messageId: sent.id,
+						peerId: entry.recipientId,
+						envelopeHash: String(payload.metadata.e2ee_content_hash),
+						plaintext: entry.plaintext,
+						messageType: sent.message_type,
+						createdAt: sent.created_at,
+					}).catch(() => undefined)
+				}
+
+				removeDirectMessageOutboxEntry(failedMessage.id)
+
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 			} catch {
 				markFailed(failedMessage.id)
 			}
 		},
-		[queryClient, historyKey, receiverPkid, replaceOptimistic, markFailed],
+		[currentUser, getDirectMessagePayload, historyKey, queryClient, replaceOptimistic, markFailed],
 	)
 
 	return { send, sendMedia, sendContact, sendLocation, sendVoice, retry }

@@ -17,12 +17,14 @@ const eslintConfig = [
 			"app/(auth)/social-callback/page.tsx",
 			"hooks/use-otp-cooldown.ts",
 			"hooks/use-read-aloud.ts",
+			"hooks/messenger/use-chat-list.ts",
 			"components/auth/create-new-password.tsx",
 			"components/dashboard/add-account-panel.tsx",
 			"components/dashboard/media-lightbox.tsx",
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
+			"components/messenger/messenger-e2ee-recovery-surface.tsx",
 			"components/messenger/conversation/reaction-row.tsx",
 			"components/messenger/conversation/poll-bubble.tsx",
 			"components/messenger/conversation/conversation-workspace.tsx",
@@ -36,6 +38,28 @@ const eslintConfig = [
 			"react-hooks/set-state-in-effect": "off",
 			"react-hooks/exhaustive-deps": "off",
 			"react-hooks/purity": "off",
+		},
+	},
+
+	{
+		// E2EE: tweetnacl is imported ONLY by lib/messenger/e2ee/nacl.ts (its tests may
+		// import it to cross-check constants). Everything else uses the app-owned wrappers
+		// exported from lib/messenger/e2ee.
+		files: ["**/*.{ts,tsx}"],
+		ignores: ["lib/messenger/e2ee/nacl.ts", "lib/messenger/e2ee/**/*.test.ts"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [
+						{
+							name: "tweetnacl",
+							message:
+								"Import from '@/lib/messenger/e2ee' instead. tweetnacl is only allowed inside lib/messenger/e2ee/nacl.ts.",
+						},
+					],
+				},
+			],
 		},
 	},
 ]
