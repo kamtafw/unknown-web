@@ -24,6 +24,7 @@ const eslintConfig = [
 			"components/dashboard/photo-crop-modal.tsx",
 			"components/dashboard/read-aloud-modal.tsx",
 			"components/dashboard/profile-edit-panels.tsx",
+			"components/messenger/messenger-e2ee-recovery-surface.tsx",
 			"components/messenger/conversation/reaction-row.tsx",
 			"components/messenger/conversation/poll-bubble.tsx",
 			"components/messenger/conversation/conversation-workspace.tsx",

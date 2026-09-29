@@ -1,7 +1,7 @@
 import { TopBar } from "@/components/dashboard/top-bar"
 import { MediaViewerProvider } from "@/components/messenger/media/media-viewer-context"
 import { MessengerE2eeBootstrap } from "@/components/messenger/messenger-e2ee-bootstrap"
-import { MessengerE2eeRecoverySurface } from "@/components/messenger/messenger-e2ee-debug-panel"
+import { MessengerE2eeRecoverySurface } from "@/components/messenger/messenger-e2ee-recovery-surface"
 import { MessengerFreshLoadGuard } from "@/components/messenger/messenger-fresh-load-guard"
 import { MessengerShell } from "@/components/messenger/messenger-shell"
 import { MessengerSocketBootstrap } from "@/components/messenger/messenger-socket-bootstrap"
