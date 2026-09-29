@@ -1,7 +1,13 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
-import { normalizeDirectMessage } from "@/lib/messenger/e2ee/direct-message"
+import { saveLocalMessageCopy } from "@/lib/messenger/e2ee"
+import {
+	classifyDirectMessageEnvelope,
+	E2EE_FAILURE_CONTENT,
+	getMessageEnvelopeHash,
+	normalizeDirectMessage,
+} from "@/lib/messenger/e2ee/direct-message"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
@@ -139,6 +145,31 @@ export function useChatSocket(activeUuid: Uuid | null) {
 								message: message as never,
 							})
 						: message
+
+				if (
+					currentAccountId !== null &&
+					classifyDirectMessageEnvelope(message) === "encrypted" &&
+					normalized.content !== E2EE_FAILURE_CONTENT
+				) {
+					const envelopeHash = getMessageEnvelopeHash(message as never)
+					const peerId = message.sender.pkid
+
+					if (message.id > 0 && envelopeHash && peerId !== undefined) {
+						try {
+							await saveLocalMessageCopy({
+								accountId: currentAccountId,
+								messageId: message.id,
+								peerId: peerId as Pkid,
+								envelopeHash,
+								plaintext: normalized.content,
+								messageType: normalized.message_type,
+								createdAt: normalized.created_at,
+							})
+						} catch {
+							// Local preview persistence must not prevent realtime delivery.
+						}
+					}
+				}
 
 				// BUG FIX (2026-08-15): this branch used to invalidate and then
 				// fall through into `message.sender.id` anyway — a missing

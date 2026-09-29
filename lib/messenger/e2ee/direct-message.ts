@@ -237,7 +237,7 @@ function hasAnyE2EEIndicator(message: Record<string, unknown>): boolean {
 	)
 }
 
-function getMessageEnvelopeHash(message: IncomingDirectMessage): string | null {
+export function getMessageEnvelopeHash(message: IncomingDirectMessage): string | null {
 	const metadata =
 		message.metadata && typeof message.metadata === "object" ? message.metadata : null
 
