@@ -111,7 +111,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					return { ...old, users: old.users.with(idx, updated) }
 				}
 				const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
-				const rest = old.users.filter((_, i) => i !== idx)
+				const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
 				return { ...old, users: [...pinned, updated, ...rest] }
 			})
 			return found
