@@ -271,6 +271,18 @@ describe("installRecoveredIdentity", () => {
 		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
 		expect(e2eeRuntime.getState()!.identity).toBeNull()
 	})
+
+	it("cancels recovery installation when logout clears the runtime", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		const install = e2eeRuntime.installRecoveredIdentity(accountA, keypair(10), token)
+
+		e2eeRuntime.clear()
+
+		await expect(install).resolves.toBe(false)
+		expect(e2eeRuntime.getState()).toBeNull()
+		expect(await getIdentity(accountA)).toBeNull()
+	})
 })
 
 describe("installIdentity", () => {
