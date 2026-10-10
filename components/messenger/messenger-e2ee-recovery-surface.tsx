@@ -139,9 +139,11 @@ export function MessengerE2eeRecoverySurface() {
 
 		setBackup(null)
 
-		await e2eeRuntime.activate(accountId)
+		// recoverIdentityFromBackup installs into the already-active runtime
+		// through a generation-guarded operation. Do not start another async
+		// activation here: logout/account switching may supersede this attempt.
 
-		if (e2eeRuntime.getState()?.identity) {
+		if (e2eeRuntime.getState()?.accountId === accountId && e2eeRuntime.getState()?.identity) {
 			setPhase("success")
 			setOpen(false)
 			return
