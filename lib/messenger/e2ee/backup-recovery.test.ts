@@ -49,6 +49,28 @@ describe("recoverIdentityFromBackup", () => {
 		await expect(recoverIdentityFromBackup(accountId, validBackup, validPin)).resolves.toBeNull()
 		expect(await getIdentity(accountId)).toBeNull()
 	})
+
+	it("discards recovery if the active account changes during key derivation", async () => {
+		const derivedKey = deferred<Uint8Array>()
+		let markStarted!: () => void
+		const started = new Promise<void>((resolve) => {
+			markStarted = resolve
+		})
+		vi.spyOn(webcryptoModule, "pbkdf2HmacSha256").mockImplementationOnce(async () => {
+			markStarted()
+			return derivedKey.promise
+		})
+
+		const recovery = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		await started
+		await e2eeRuntime.activate(otherAccountId)
+		derivedKey.resolve(new Uint8Array(32).fill(7))
+
+		await expect(recovery).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+		expect(e2eeRuntime.getState()?.accountId).toBe(otherAccountId)
+		expect(e2eeRuntime.getState()?.identity).toBeNull()
+	})
 	it("restores the identity for a valid PIN and valid backup", async () => {
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
 		expect(recovered).not.toBeNull()
