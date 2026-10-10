@@ -45,16 +45,42 @@ export async function getIdentity(accountId: Pkid): Promise<StoredIdentity | nul
  * recovery flow's public-key comparison (E2). This function does not
  * re-derive or re-check anything; it persists exactly what it's given.
  */
-export async function saveIdentity(accountId: Pkid, identity: StoredIdentity): Promise<void> {
+export async function saveIdentity(
+	accountId: Pkid,
+	identity: StoredIdentity,
+	signal?: AbortSignal,
+): Promise<void> {
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
 	const db = await getE2eeDatabase()
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
 	const tx = db.transaction(IDENTITIES_STORE, "readwrite")
-	tx.objectStore(IDENTITIES_STORE).put({
-		accountId,
-		privateKey: identity.privateKey,
-		publicKey: identity.publicKey,
-		updatedAt: identity.updatedAt,
-	} satisfies StoredIdentityRow)
-	await promisifyTransaction(tx)
+	const abortTransaction = () => {
+		try {
+			tx.abort()
+		} catch {
+			// The transaction may already have completed or aborted.
+		}
+	}
+	signal?.addEventListener("abort", abortTransaction, { once: true })
+
+	try {
+		if (signal?.aborted) {
+			abortTransaction()
+		} else {
+			tx.objectStore(IDENTITIES_STORE).put({
+				accountId,
+				privateKey: identity.privateKey,
+				publicKey: identity.publicKey,
+				updatedAt: identity.updatedAt,
+			} satisfies StoredIdentityRow)
+		}
+		await promisifyTransaction(tx)
+		if (signal?.aborted) throw new Error("Identity installation aborted")
+	} finally {
+		signal?.removeEventListener("abort", abortTransaction)
+	}
 }
 
 /**
