@@ -1,5 +1,5 @@
-import { isAxiosError } from "axios"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { isAxiosError } from "axios"
 import { apiClient } from "../axios"
 import { backupApi } from "./api"
 import { BACKUP_VECTOR } from "./e2ee/e2ee-test-vectors"
