@@ -70,6 +70,11 @@ export function MessengerE2eeRecoverySurface() {
 					setOpen(true)
 					return
 
+				case "api-error":
+					setPhase("retryable")
+					setOpen(true)
+					return
+
 				case "malformed":
 				default:
 					setPhase("unavailable")
