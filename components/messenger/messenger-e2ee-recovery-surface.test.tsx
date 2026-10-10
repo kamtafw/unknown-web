@@ -57,16 +57,16 @@ describe("MessengerE2eeRecoverySurface", () => {
 	it("checks for a backup when no identity exists", async () => {
 		render(<MessengerE2eeRecoverySurface />)
 		await waitFor(() => expect(backupApi.getKeyBackup).toHaveBeenCalledTimes(1))
-		expect(screen.getByLabelText("PIN")).toBeInTheDocument()
+		expect(screen.getByLabelText("Six-digit recovery PIN")).toBeInTheDocument()
 	})
 
 	it("shows mobile-enrollment guidance when no backup is available", async () => {
 		vi.mocked(backupApi.getKeyBackup).mockResolvedValue({ status: "backup-unavailable" })
 		render(<MessengerE2eeRecoverySurface />)
-		await waitFor(() =>
-			expect(screen.getByText(/No backup is available for this account yet/i)).toBeInTheDocument(),
-		)
-		expect(screen.queryByLabelText("PIN")).not.toBeInTheDocument()
+		expect(
+			await screen.findByText(/There is no messaging backup for this account yet/i),
+		).toBeInTheDocument()
+		expect(screen.queryByLabelText("Six-digit recovery PIN")).not.toBeInTheDocument()
 	})
 
 	it("shows unsupported guidance without a PIN prompt", async () => {
@@ -75,20 +75,20 @@ describe("MessengerE2eeRecoverySurface", () => {
 			reason: "different format",
 		})
 		render(<MessengerE2eeRecoverySurface />)
-		await waitFor(() => expect(screen.getByText(/different device or format/i)).toBeInTheDocument())
-		expect(screen.queryByLabelText("PIN")).not.toBeInTheDocument()
+		expect(
+			await screen.findByText(/This backup was created with an older security format/i),
+		).toBeInTheDocument()
+		expect(screen.queryByLabelText("Six-digit recovery PIN")).not.toBeInTheDocument()
 	})
 
 	it("clears the PIN after a failed attempt", async () => {
 		const user = userEvent.setup()
 		vi.mocked(recoverIdentityFromBackup).mockResolvedValueOnce(null)
 		render(<MessengerE2eeRecoverySurface />)
-		const input = await screen.findByLabelText("PIN")
+		const input = await screen.findByLabelText("Six-digit recovery PIN")
 		await user.type(input, "123456")
-		await user.click(screen.getByRole("button", { name: /restore key/i }))
-
-		await waitFor(() => typeof (input as HTMLInputElement).value === "string")
-		expect((input as HTMLInputElement).value).toBe("")
-		expect(screen.getByText(/That PIN was not accepted/i)).toBeInTheDocument()
+		await user.click(screen.getByRole("button", { name: /^restore$/i }))
+		expect(await screen.findByText(/That PIN wasn't accepted/i)).toBeInTheDocument()
+		expect(input).toHaveValue("")
 	})
 })
