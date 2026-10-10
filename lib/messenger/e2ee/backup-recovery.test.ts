@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { asPkid } from "@/types/messenger"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { recoverIdentityFromBackup } from "./backup-recovery"
 import { BACKUP_VECTOR, hexToBytes } from "./e2ee-test-vectors"
 import { base64ToBytesOfLength, utf8ToBytes } from "./encoding"
@@ -9,11 +9,21 @@ import { boxPublicKeyFromSecretKey, secretboxSeal } from "./nacl"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
 import { pbkdf2HmacSha256 } from "./webcrypto"
+import * as webcryptoModule from "./webcrypto"
 
 setupFreshE2eeDatabase()
 
 const accountId = asPkid(777)
+const otherAccountId = asPkid(888)
 const validPin = "123456"
+
+function deferred<T>() {
+	let resolve!: (value: T) => void
+	const promise = new Promise<T>((res) => {
+		resolve = res
+	})
+	return { promise, resolve }
+}
 const validBackup = {
 	identityPublicKey: base64ToBytesOfLength(BACKUP_VECTOR.identityPublicKeyBase64, 32),
 	ciphertext: base64ToBytesOfLength(BACKUP_VECTOR.ciphertextBase64, 48),
@@ -24,12 +34,21 @@ const validBackup = {
 	},
 }
 
+beforeEach(async () => {
+	await e2eeRuntime.activate(accountId)
+})
+
 afterEach(() => {
 	vi.restoreAllMocks()
 	e2eeRuntime.clear()
 })
 
 describe("recoverIdentityFromBackup", () => {
+	it("refuses to recover when the runtime has been cleared by logout", async () => {
+		e2eeRuntime.clear()
+		await expect(recoverIdentityFromBackup(accountId, validBackup, validPin)).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+	})
 	it("restores the identity for a valid PIN and valid backup", async () => {
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
 		expect(recovered).not.toBeNull()
