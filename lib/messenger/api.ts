@@ -369,7 +369,9 @@ export const backupApi = {
 				typeof envelope !== "object" ||
 				envelope === null ||
 				Array.isArray(envelope) ||
-				!("data" in envelope)
+				!("data" in envelope) ||
+				!("success" in envelope) ||
+				(envelope as Record<string, unknown>).success !== true
 			) {
 				return { status: "api-error" }
 			}
