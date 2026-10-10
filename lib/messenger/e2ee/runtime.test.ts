@@ -261,6 +261,18 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 	})
 })
 
+describe("installRecoveredIdentity", () => {
+	it("rejects a recovery install whose generation token is stale", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		await e2eeRuntime.activate(accountB)
+
+		await expect(e2eeRuntime.installRecoveredIdentity(accountA, keypair(9), token)).resolves.toBe(false)
+		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
+		expect(e2eeRuntime.getState()!.identity).toBeNull()
+	})
+})
+
 describe("installIdentity", () => {
 	it("persists the identity via the store", async () => {
 		await e2eeRuntime.installIdentity(accountA, keypair(1))
