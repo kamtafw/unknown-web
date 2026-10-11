@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { recoverIdentityFromBackup } from "./backup-recovery"
 import { BACKUP_VECTOR, hexToBytes } from "./e2ee-test-vectors"
 import { base64ToBytesOfLength, utf8ToBytes } from "./encoding"
-import { getIdentity } from "./identity-store"
+import { getIdentity, removeIdentity } from "./identity-store"
 import { boxPublicKeyFromSecretKey, secretboxSeal } from "./nacl"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
@@ -35,6 +35,10 @@ const validBackup = {
 }
 
 beforeEach(async () => {
+	// Ensure each test begins with an empty identity store for both accounts.
+	// Runtime activation alone can rehydrate persisted data left by a prior test.
+	await removeIdentity(accountId)
+	await removeIdentity(otherAccountId)
 	await e2eeRuntime.activate(accountId)
 })
 
