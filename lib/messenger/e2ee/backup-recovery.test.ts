@@ -184,6 +184,21 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(stored!.publicKey)).toEqual(Array.from(existing.publicKey))
 	})
 
+	it("allows only one of two concurrent recoveries to install an identity", async () => {
+		const [first, second] = await Promise.all([
+			recoverIdentityFromBackup(accountId, validBackup, validPin),
+			recoverIdentityFromBackup(accountId, validBackup, validPin),
+		])
+
+		expect([first, second].filter((result) => result !== null)).toHaveLength(1)
+		const persisted = await getIdentity(accountId)
+		expect(persisted).not.toBeNull()
+		expect(Array.from(persisted!.privateKey)).toEqual(
+			Array.from(hexToBytes(BACKUP_VECTOR.identitySecretKeyHex)),
+		)
+		expect(e2eeRuntime.getState()?.identity).not.toBeNull()
+	})
+
 	it("persists the recovered identity through the E0.2 runtime storage abstraction", async () => {
 		await e2eeRuntime.activate(accountId)
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
