@@ -62,7 +62,7 @@ export async function saveIdentity(
 		try {
 			tx.abort()
 		} catch {
-			// the transaction may already have completed or aborted
+			// The transaction may already have completed or aborted.
 		}
 	}
 	signal?.addEventListener("abort", abortTransaction, { once: true })
@@ -80,6 +80,68 @@ export async function saveIdentity(
 		}
 		await promisifyTransaction(tx)
 		if (signal?.aborted) throw new Error("Identity installation aborted")
+	} finally {
+		signal?.removeEventListener("abort", abortTransaction)
+	}
+}
+
+/**
+ * Atomically installs an identity only when this account has no identity.
+ *
+ * IndexedDB's readwrite transaction serializes competing writers, and
+ * ObjectStore.add() enforces insert-only semantics at the storage boundary.
+ * This is the only write path recovery should use: a prior getIdentity()
+ * check alone cannot prevent two concurrent recoveries from overwriting one
+ * another.
+ *
+ * Returns false when another operation has already installed an identity.
+ * The optional signal aborts an in-flight transaction on logout/account switch.
+ */
+export async function installIdentityIfAbsent(
+	accountId: Pkid,
+	identity: StoredIdentity,
+	signal?: AbortSignal,
+): Promise<boolean> {
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
+	const db = await getE2eeDatabase()
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
+	const tx = db.transaction(IDENTITIES_STORE, "readwrite")
+	const abortTransaction = () => {
+		try {
+			tx.abort()
+		} catch {
+			// The transaction may already have completed or aborted.
+		}
+	}
+	signal?.addEventListener("abort", abortTransaction, { once: true })
+
+	let alreadyExists = false
+	try {
+		if (signal?.aborted) {
+			abortTransaction()
+		} else {
+			const request = tx.objectStore(IDENTITIES_STORE).add({
+				accountId,
+				privateKey: identity.privateKey,
+				publicKey: identity.publicKey,
+				updatedAt: identity.updatedAt,
+			} satisfies StoredIdentityRow)
+
+			request.onerror = (event) => {
+				if (request.error?.name === "ConstraintError") {
+					// A row already exists. Prevent this expected insert-only
+					// conflict from aborting the transaction; no write occurred.
+					event.preventDefault()
+					event.stopPropagation()
+					alreadyExists = true
+				}
+			}
+		}
+		await promisifyTransaction(tx)
+		if (signal?.aborted) throw new Error("Identity installation aborted")
+		return !alreadyExists
 	} finally {
 		signal?.removeEventListener("abort", abortTransaction)
 	}
