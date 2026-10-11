@@ -18,12 +18,12 @@ import { resetE2eeDatabaseForTests } from "./database"
  * connection and deletes the backing database by name. */
 export function setupFreshE2eeDatabase(): void {
 	afterEach(async () => {
-		resetE2eeDatabaseForTests()
+		await resetE2eeDatabaseForTests()
 		await new Promise<void>((resolve, reject) => {
 			const request = indexedDB.deleteDatabase("appscombo-messenger-e2ee")
 			request.onsuccess = () => resolve()
 			request.onerror = () => reject(request.error)
-			request.onblocked = () => resolve() // shouldn't happen once the connection is closed
+			request.onblocked = () => reject(new Error("E2EE test database deletion was blocked"))
 		})
 	})
 }
