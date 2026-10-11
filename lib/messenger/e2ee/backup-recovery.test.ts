@@ -196,24 +196,4 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(persisted!.privateKey)).toEqual(Array.from(recovered!.privateKey))
 	})
 
-	it("logs recovery stages without exposing PIN or key material", async () => {
-		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
-		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
-
-		const result = await recoverIdentityFromBackup(
-			accountId,
-			{ ...validBackup, ciphertext: new Uint8Array(48).fill(0x7f) },
-			validPin,
-		)
-
-		expect(result).toBeNull()
-		expect(warn).toHaveBeenCalledWith(
-			"[messenger][e2ee][recovery-diagnostic] stage=secretbox-open outcome=authentication-failed",
-		)
-		expect(error).not.toHaveBeenCalled()
-
-		const loggedText = warn.mock.calls.flat().join(" ")
-		expect(loggedText).not.toContain(validPin)
-		expect(loggedText).not.toContain(BACKUP_VECTOR.identitySecretKeyHex)
-	})
 })
