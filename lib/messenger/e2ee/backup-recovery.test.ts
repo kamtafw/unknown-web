@@ -86,6 +86,35 @@ describe("recoverIdentityFromBackup", () => {
 		)
 	})
 
+	it("allows only one of two concurrent recoveries to install an identity", async () => {
+		const originalDerive = webcryptoModule.pbkdf2HmacSha256
+		const bothDerivationsStarted = deferred<void>()
+		const releaseDerivations = deferred<void>()
+		let derivationCount = 0
+
+		vi.spyOn(webcryptoModule, "pbkdf2HmacSha256").mockImplementation(async (options) => {
+			derivationCount += 1
+			if (derivationCount === 2) bothDerivationsStarted.resolve()
+			await releaseDerivations.promise
+			return originalDerive(options)
+		})
+
+		const firstAttempt = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		const secondAttempt = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		await bothDerivationsStarted.promise
+		releaseDerivations.resolve()
+
+		const results = await Promise.all([firstAttempt, secondAttempt])
+		expect(results.filter((identity) => identity !== null)).toHaveLength(1)
+
+		const persisted = await getIdentity(accountId)
+		expect(persisted).not.toBeNull()
+		expect(Array.from(persisted!.privateKey)).toEqual(
+			Array.from(hexToBytes(BACKUP_VECTOR.identitySecretKeyHex)),
+		)
+		expect(e2eeRuntime.getState()?.identity).not.toBeNull()
+	})
+
 	it("rejects invalid PIN format", async () => {
 		await expect(recoverIdentityFromBackup(accountId, validBackup, "12345")).resolves.toBeNull()
 	})
@@ -167,24 +196,4 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(persisted!.privateKey)).toEqual(Array.from(recovered!.privateKey))
 	})
 
-	it("logs recovery stages without exposing PIN or key material", async () => {
-		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
-		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
-
-		const result = await recoverIdentityFromBackup(
-			accountId,
-			{ ...validBackup, ciphertext: new Uint8Array(48).fill(0x7f) },
-			validPin,
-		)
-
-		expect(result).toBeNull()
-		expect(warn).toHaveBeenCalledWith(
-			"[messenger][e2ee][recovery-diagnostic] stage=secretbox-open outcome=authentication-failed",
-		)
-		expect(error).not.toHaveBeenCalled()
-
-		const loggedText = warn.mock.calls.flat().join(" ")
-		expect(loggedText).not.toContain(validPin)
-		expect(loggedText).not.toContain(BACKUP_VECTOR.identitySecretKeyHex)
-	})
 })

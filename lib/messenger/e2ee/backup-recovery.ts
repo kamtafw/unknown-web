@@ -31,65 +31,40 @@ import { pbkdf2HmacSha256 } from "./webcrypto"
 
 const VALID_PIN_PATTERN = /^[0-9]{6}$/
 
-/**
- * Temporary, stage-only diagnostics for the recovery regression.
- * Never log identifiers, PINs, backup bytes, keys, or exception messages.
- * Remove after the failing stage is identified.
- */
-function recoveryDiagnostic(stage: string, outcome: string): void {
-	if (process.env.NODE_ENV !== "production") {
-		console.warn(`[messenger][e2ee][recovery-diagnostic] stage=${stage} outcome=${outcome}`)
-	}
-}
-
 /** Returns `null` on any generic recovery failure. Diagnostics are stage-only. */
 export async function recoverIdentityFromBackup(
 	accountId: Pkid,
 	backup: ValidatedBackupV1,
 	pin: string,
 ): Promise<StoredIdentity | null> {
-	let stage = "pin-validation"
 	if (!VALID_PIN_PATTERN.test(pin)) {
-		recoveryDiagnostic(stage, "rejected")
 		return null
 	}
 
 	// Recovery must start inside the intended account's active runtime. A null
 	// runtime is not permission to continue after logout.
-	stage = "initial-account-guard"
 	const generationToken = e2eeRuntime.getGenerationToken()
 	if (!e2eeRuntime.isCurrentAccount(accountId, generationToken)) {
-		recoveryDiagnostic(stage, "rejected")
 		return null
 	}
 
 	try {
-		stage = "read-existing-identity"
 		const existing = await getIdentity(accountId)
-		stage = "post-identity-read-account-guard"
 		if (!e2eeRuntime.isCurrentAccount(accountId, generationToken)) {
-			recoveryDiagnostic(stage, "stale")
 			return null
 		}
 		if (existing !== null) {
-			recoveryDiagnostic("existing-identity-check", "identity-already-present")
 			return null
 		}
-
-		stage = "pbkdf2-derive"
 		const wrappingKey = await pbkdf2HmacSha256({
 			password: utf8ToBytes(pin),
 			salt: backup.kdf.salt,
 			iterations: backup.kdf.iterations,
 		})
-		stage = "post-pbkdf2-account-guard"
 		if (!e2eeRuntime.isCurrentAccount(accountId, generationToken)) {
 			wrappingKey.fill(0)
-			recoveryDiagnostic(stage, "stale")
 			return null
 		}
-
-		stage = "secretbox-open"
 		const privateKey = secretboxOpen({
 			ciphertext: backup.ciphertext,
 			nonce: backup.nonce,
@@ -97,36 +72,24 @@ export async function recoverIdentityFromBackup(
 		})
 		wrappingKey.fill(0)
 		if (privateKey === null) {
-			recoveryDiagnostic(stage, "authentication-failed")
 			return null
 		}
-		stage = "decrypted-key-length"
 		if (privateKey.length !== BOX_SECRET_KEY_LENGTH) {
 			privateKey.fill(0)
-			recoveryDiagnostic(stage, "rejected")
 			return null
 		}
-
-		stage = "derive-public-key"
 		const publicKey = boxPublicKeyFromSecretKey(privateKey)
-		stage = "verify-public-key"
 		if (!constantTimeEqual(publicKey, backup.identityPublicKey)) {
 			privateKey.fill(0)
-			recoveryDiagnostic(stage, "mismatch")
 			return null
 		}
-
-		stage = "pre-install-account-guard"
 		if (!e2eeRuntime.isCurrentAccount(accountId, generationToken)) {
 			privateKey.fill(0)
-			recoveryDiagnostic(stage, "stale")
 			return null
 		}
-		stage = "pre-install-runtime-state"
 		const state = e2eeRuntime.getState()
 		if (!state || state.accountId !== accountId || state.identity !== null) {
 			privateKey.fill(0)
-			recoveryDiagnostic(stage, "rejected")
 			return null
 		}
 
@@ -135,8 +98,6 @@ export async function recoverIdentityFromBackup(
 			publicKey,
 			updatedAt: Date.now(),
 		}
-
-		stage = "install-recovered-identity"
 		const installed = await e2eeRuntime.installRecoveredIdentity(
 			accountId,
 			identity,
@@ -145,16 +106,10 @@ export async function recoverIdentityFromBackup(
 		if (!installed) {
 			privateKey.fill(0)
 			publicKey.fill(0)
-			recoveryDiagnostic(stage, "rejected-or-stale")
 			return null
 		}
-		recoveryDiagnostic("complete", "success")
 		return identity
-	} catch (error) {
-		// Only emit the stage and exception class. Error messages can contain
-		// implementation details and are intentionally excluded.
-		const errorType = error instanceof Error ? error.name : "non-error-throwable"
-		recoveryDiagnostic(stage, `threw-${errorType}`)
+	} catch {
 		return null
 	}
 }

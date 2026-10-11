@@ -29,7 +29,7 @@
  */
 
 import { type Pkid } from "@/types/messenger"
-import { getIdentity, saveIdentity, type StoredIdentity } from "./identity-store"
+import { getIdentity, installIdentityIfAbsent, saveIdentity, type StoredIdentity } from "./identity-store"
 import { listTrustedKeys, pinIfAbsent, type PinIfAbsentResult } from "./trust-store"
 
 export type E2eeRuntimeErrorCode = "no_active_account"
@@ -185,8 +185,8 @@ class E2eeRuntime {
 		this.pendingIdentityInstallControllers.add(controller)
 
 		try {
-			await saveIdentity(accountId, identity, controller.signal)
-			if (!this.isCurrentAccount(accountId, generationToken)) return false
+			const installed = await installIdentityIfAbsent(accountId, identity, controller.signal)
+			if (!installed || !this.isCurrentAccount(accountId, generationToken)) return false
 
 			this.activeIdentity = identity
 			return true
