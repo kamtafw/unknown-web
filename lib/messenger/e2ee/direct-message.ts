@@ -6,6 +6,7 @@ import type {
 	Pkid,
 	SendMessagePayload,
 } from "@/types/messenger"
+import { chatApi } from "../api"
 import {
 	BOX_NONCE_LENGTH,
 	BOX_PUBLIC_KEY_LENGTH,
@@ -209,8 +210,12 @@ function resolveSenderPkid(message: Partial<IncomingDirectMessage>): Pkid | null
 		(message as { senderId?: unknown }).senderId ??
 		(message as { sender_pkid?: unknown }).sender_pkid
 
-	if (typeof candidate === "number" && Number.isFinite(candidate)) return candidate as Pkid
-	if (typeof candidate === "string" && /^\d+$/.test(candidate)) return Number(candidate) as Pkid
+	if (typeof candidate === "number" && Number.isSafeInteger(candidate) && candidate > 0)
+		return candidate as Pkid
+	if (typeof candidate === "string" && /^[1-9]\d*$/.test(candidate)) {
+		const parsed = Number(candidate)
+		if (Number.isSafeInteger(parsed) && parsed > 0) return parsed as Pkid
+	}
 	return null
 }
 
@@ -341,7 +346,11 @@ export async function decryptDirectMessageEnvelope({
 	if (metadata.e2ee !== true) return null
 	if (metadata.e2ee_version !== E2EE_MESSAGE_VERSION) return null
 	if (metadata.e2ee_algorithm !== E2EE_MESSAGE_ALGORITHM_V1) return null
-	if (typeof metadata.e2ee_content_hash !== "string") return null
+	if (
+		typeof metadata.e2ee_content_hash !== "string" ||
+		!/^[a-f0-9]{64}$/i.test(metadata.e2ee_content_hash)
+	)
+		return null
 	if (typeof message.content !== "string") return null
 	if (typeof message.nonce !== "string") return null
 	if (typeof message.sender_ephemeral_key !== "string") return null
@@ -377,19 +386,27 @@ export async function decryptDirectMessageEnvelope({
 
 		if (!identity) return null
 
-		const trusted = await getTrustedKey(accountId, resolvedSenderPkid)
-
-		if (trusted && !constantTimeEqual(trusted.publicKey, senderPublicKey)) {
+		// Bind the message's untrusted sender key to the authenticated API bundle
+		// before pinning it or using it for decryption.
+		const bundle = await chatApi.getUserEncryptionBundle(resolvedSenderPkid)
+		if (!bundle || typeof bundle !== "object" || typeof bundle.identity_public_key !== "string")
 			return null
-		}
+
+		const authenticatedSenderKey = base64ToBytesOfLength(
+			bundle.identity_public_key,
+			BOX_PUBLIC_KEY_LENGTH,
+		)
+		if (!constantTimeEqual(authenticatedSenderKey, senderPublicKey)) return null
+
+		const trusted = await getTrustedKey(accountId, resolvedSenderPkid)
+		if (trusted && !constantTimeEqual(trusted.publicKey, authenticatedSenderKey)) return null
 
 		if (!trusted) {
-			const pinResult = await pinIfAbsent(accountId, resolvedSenderPkid, senderPublicKey)
-
+			const pinResult = await pinIfAbsent(accountId, resolvedSenderPkid, authenticatedSenderKey)
 			if (
 				!pinResult.pinned &&
-				pinResult.existing &&
-				!constantTimeEqual(pinResult.existing.publicKey, senderPublicKey)
+				(!pinResult.existing ||
+					!constantTimeEqual(pinResult.existing.publicKey, authenticatedSenderKey))
 			) {
 				return null
 			}

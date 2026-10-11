@@ -2,7 +2,8 @@
 // @vitest-environment node
 
 import { asPkid } from "@/types/messenger"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { chatApi } from "../api"
 import { createOptimisticMessage } from "../optimistic"
 import {
 	decryptDirectMessageEnvelope,
@@ -19,11 +20,228 @@ import { getTrustedKey, saveTrustedKey } from "./trust-store"
 
 setupFreshE2eeDatabase()
 
+beforeEach(() => {
+	vi.spyOn(chatApi, "getUserEncryptionBundle").mockResolvedValue({
+		identity_public_key: bytesToBase64(BOX_VECTOR.alicePublicKey),
+	})
+})
+
 afterEach(() => {
 	e2eeRuntime.clear()
+	vi.restoreAllMocks()
 })
 
 describe("direct-message E2EE send envelope", () => {
+	it("rejects a sender key that does not match the authenticated bundle without pinning it", async () => {
+		const accountId = asPkid(8101),
+			senderId = asPkid(8102)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: bytesToBase64(BOX_VECTOR.bobPublicKey),
+		})
+		const message = {
+			id: 8103,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+		expect(
+			await decryptDirectMessageEnvelope({
+				accountId,
+				senderPkid: senderId,
+				message,
+				recipientIdentity,
+			}),
+		).toBeNull()
+		expect(await getTrustedKey(accountId, senderId)).toBeNull()
+	})
+
+	it("decrypts and pins only after the authenticated bundle matches the sender key", async () => {
+		const accountId = asPkid(8201),
+			senderId = asPkid(8202)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8203,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+		const decrypted = await decryptDirectMessageEnvelope({
+			accountId,
+			senderPkid: senderId,
+			message,
+			recipientIdentity,
+		})
+		expect(decrypted?.content).toBe("authenticated sender test")
+		const trusted = await getTrustedKey(accountId, senderId)
+		expect(trusted).not.toBeNull()
+		expect(Array.from(trusted!.publicKey)).toEqual(Array.from(BOX_VECTOR.alicePublicKey))
+	})
+
+	it("rejects malformed bundle keys and malformed content hashes without pinning", async () => {
+		const accountId = asPkid(8301),
+			senderId = asPkid(8302)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8303,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: "%%%not-base64%%%",
+		})
+		expect(
+			await decryptDirectMessageEnvelope({
+				accountId,
+				senderPkid: senderId,
+				message,
+				recipientIdentity,
+			}),
+		).toBeNull()
+		expect(await getTrustedKey(accountId, senderId)).toBeNull()
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: bytesToBase64(BOX_VECTOR.alicePublicKey),
+		})
+		expect(
+			await decryptDirectMessageEnvelope({
+				accountId,
+				senderPkid: senderId,
+				message: { ...message, e2ee_content_hash: "not-a-sha256-hash" },
+				recipientIdentity,
+			}),
+		).toBeNull()
+		expect(await getTrustedKey(accountId, senderId)).toBeNull()
+	})
+
+	it("does not replace an existing trusted key when the authenticated sender key changes", async () => {
+		const accountId = asPkid(8401),
+			senderId = asPkid(8402)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		const oldTrustedKey = new Uint8Array(32).fill(0x1a)
+		await saveTrustedKey(accountId, senderId, oldTrustedKey)
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8403,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+		expect(
+			await decryptDirectMessageEnvelope({
+				accountId,
+				senderPkid: senderId,
+				message,
+				recipientIdentity,
+			}),
+		).toBeNull()
+		const stillTrusted = await getTrustedKey(accountId, senderId)
+		expect(Array.from(stillTrusted!.publicKey)).toEqual(Array.from(oldTrustedKey))
+	})
+
+	it("rejects invalid sender identifiers before requesting a bundle", async () => {
+		const accountId = asPkid(8501)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8502,
+			sender: { pkid: 0 },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+		const bundleSpy = vi.mocked(chatApi.getUserEncryptionBundle)
+		await expect(
+			decryptDirectMessageEnvelope({ accountId, message, recipientIdentity }),
+		).resolves.toBeNull()
+		expect(bundleSpy).not.toHaveBeenCalled()
+	})
+
 	it("decrypts a valid incoming direct message and normalizes the UI content", async () => {
 		const accountId = asPkid(2001)
 		const senderId = asPkid(42)
@@ -409,5 +627,54 @@ describe("direct-message E2EE send envelope", () => {
 		})
 		expect(optimistic.content).toBe(payload!.content)
 		expect(optimistic.content).not.toBe("hello world")
+	})
+})
+
+describe("concurrent incoming sender trust", () => {
+	it("allows concurrent messages from the same authenticated key without overwriting the first pin", async () => {
+		const accountId = asPkid(8601)
+		const senderId = asPkid(8602)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "concurrent authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8603,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+
+		const [first, second] = await Promise.all([
+			decryptDirectMessageEnvelope({ accountId, senderPkid: senderId, message, recipientIdentity }),
+			decryptDirectMessageEnvelope({
+				accountId,
+				senderPkid: senderId,
+				message: { ...message, id: 8604 },
+				recipientIdentity,
+			}),
+		])
+
+		expect(first?.content).toBe("concurrent authenticated sender test")
+		expect(second?.content).toBe("concurrent authenticated sender test")
+		const trusted = await getTrustedKey(accountId, senderId)
+		expect(trusted).not.toBeNull()
+		expect(Array.from(trusted!.publicKey)).toEqual(Array.from(BOX_VECTOR.alicePublicKey))
 	})
 })
