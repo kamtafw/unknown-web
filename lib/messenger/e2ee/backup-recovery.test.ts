@@ -1,19 +1,29 @@
 // @vitest-environment node
 import { asPkid } from "@/types/messenger"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { recoverIdentityFromBackup } from "./backup-recovery"
 import { BACKUP_VECTOR, hexToBytes } from "./e2ee-test-vectors"
 import { base64ToBytesOfLength, utf8ToBytes } from "./encoding"
-import { getIdentity } from "./identity-store"
+import { getIdentity, removeIdentity } from "./identity-store"
 import { boxPublicKeyFromSecretKey, secretboxSeal } from "./nacl"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
 import { pbkdf2HmacSha256 } from "./webcrypto"
+import * as webcryptoModule from "./webcrypto"
 
 setupFreshE2eeDatabase()
 
 const accountId = asPkid(777)
+const otherAccountId = asPkid(888)
 const validPin = "123456"
+
+function deferred<T>() {
+	let resolve!: (value: T) => void
+	const promise = new Promise<T>((res) => {
+		resolve = res
+	})
+	return { promise, resolve }
+}
 const validBackup = {
 	identityPublicKey: base64ToBytesOfLength(BACKUP_VECTOR.identityPublicKeyBase64, 32),
 	ciphertext: base64ToBytesOfLength(BACKUP_VECTOR.ciphertextBase64, 48),
@@ -24,12 +34,47 @@ const validBackup = {
 	},
 }
 
+beforeEach(async () => {
+	// Ensure each test begins with an empty identity store for both accounts.
+	// Runtime activation alone can rehydrate persisted data left by a prior test.
+	await removeIdentity(accountId)
+	await removeIdentity(otherAccountId)
+	await e2eeRuntime.activate(accountId)
+})
+
 afterEach(() => {
 	vi.restoreAllMocks()
 	e2eeRuntime.clear()
 })
 
 describe("recoverIdentityFromBackup", () => {
+	it("refuses to recover when the runtime has been cleared by logout", async () => {
+		e2eeRuntime.clear()
+		await expect(recoverIdentityFromBackup(accountId, validBackup, validPin)).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+	})
+
+	it("discards recovery if the active account changes during key derivation", async () => {
+		const derivedKey = deferred<Uint8Array>()
+		let markStarted!: () => void
+		const started = new Promise<void>((resolve) => {
+			markStarted = resolve
+		})
+		vi.spyOn(webcryptoModule, "pbkdf2HmacSha256").mockImplementationOnce(async () => {
+			markStarted()
+			return derivedKey.promise
+		})
+
+		const recovery = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		await started
+		await e2eeRuntime.activate(otherAccountId)
+		derivedKey.resolve(new Uint8Array(32).fill(7))
+
+		await expect(recovery).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+		expect(e2eeRuntime.getState()?.accountId).toBe(otherAccountId)
+		expect(e2eeRuntime.getState()?.identity).toBeNull()
+	})
 	it("restores the identity for a valid PIN and valid backup", async () => {
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
 		expect(recovered).not.toBeNull()
@@ -122,7 +167,7 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(persisted!.privateKey)).toEqual(Array.from(recovered!.privateKey))
 	})
 
-	it("does not expose the private key through logs or error strings", async () => {
+	it("logs recovery stages without exposing PIN or key material", async () => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
 		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
 
@@ -133,7 +178,13 @@ describe("recoverIdentityFromBackup", () => {
 		)
 
 		expect(result).toBeNull()
-		expect(warn).not.toHaveBeenCalled()
+		expect(warn).toHaveBeenCalledWith(
+			"[messenger][e2ee][recovery-diagnostic] stage=secretbox-open outcome=authentication-failed",
+		)
 		expect(error).not.toHaveBeenCalled()
+
+		const loggedText = warn.mock.calls.flat().join(" ")
+		expect(loggedText).not.toContain(validPin)
+		expect(loggedText).not.toContain(BACKUP_VECTOR.identitySecretKeyHex)
 	})
 })

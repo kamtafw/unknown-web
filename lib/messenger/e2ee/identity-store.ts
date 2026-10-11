@@ -3,9 +3,9 @@
  * keypair recovered from the mobile-created backup — see E1/E2).
  *
  * This module is MECHANICAL storage only: it does not validate a keypair,
- * derive a public key, or decide whether an identity is trustworthy. E2's
- * recovery flow does that verification and then calls `saveIdentity` once,
- * atomically, with an already-verified keypair.
+ * derive a public key, or decide whether an identity is trustworthy. The
+ * recovery flow verifies the keypair, then uses the runtime's guarded install
+ * path, which calls `saveIdentity` with cancellation tied to account lifecycle.
  *
  * Isolation: every operation is keyed by `accountId`. `getIdentity(A)` can
  * only ever read the row stored at key `A` — there is no "get all, then
@@ -41,20 +41,48 @@ export async function getIdentity(accountId: Pkid): Promise<StoredIdentity | nul
 
 /**
  * Overwrites whatever identity (if any) is stored for this account. Callers
- * are responsible for verifying the keypair BEFORE calling this — see the
- * recovery flow's public-key comparison (E2). This function does not
- * re-derive or re-check anything; it persists exactly what it's given.
+ * are responsible for verifying the keypair BEFORE calling this — the
+ * recovery path does that in `backup-recovery.ts`. This function does not
+ * re-derive or re-check anything; it persists exactly what it's given. When
+ * supplied, the AbortSignal cancels the transaction if the account lifecycle
+ * supersedes the recovery attempt.
  */
-export async function saveIdentity(accountId: Pkid, identity: StoredIdentity): Promise<void> {
+export async function saveIdentity(
+	accountId: Pkid,
+	identity: StoredIdentity,
+	signal?: AbortSignal,
+): Promise<void> {
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
 	const db = await getE2eeDatabase()
+	if (signal?.aborted) throw new Error("Identity installation aborted")
+
 	const tx = db.transaction(IDENTITIES_STORE, "readwrite")
-	tx.objectStore(IDENTITIES_STORE).put({
-		accountId,
-		privateKey: identity.privateKey,
-		publicKey: identity.publicKey,
-		updatedAt: identity.updatedAt,
-	} satisfies StoredIdentityRow)
-	await promisifyTransaction(tx)
+	const abortTransaction = () => {
+		try {
+			tx.abort()
+		} catch {
+			// The transaction may already have completed or aborted.
+		}
+	}
+	signal?.addEventListener("abort", abortTransaction, { once: true })
+
+	try {
+		if (signal?.aborted) {
+			abortTransaction()
+		} else {
+			tx.objectStore(IDENTITIES_STORE).put({
+				accountId,
+				privateKey: identity.privateKey,
+				publicKey: identity.publicKey,
+				updatedAt: identity.updatedAt,
+			} satisfies StoredIdentityRow)
+		}
+		await promisifyTransaction(tx)
+		if (signal?.aborted) throw new Error("Identity installation aborted")
+	} finally {
+		signal?.removeEventListener("abort", abortTransaction)
+	}
 }
 
 /**
