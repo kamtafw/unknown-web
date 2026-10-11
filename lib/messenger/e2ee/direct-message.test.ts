@@ -484,3 +484,48 @@ describe("direct-message E2EE send envelope", () => {
 		expect(optimistic.content).not.toBe("hello world")
 	})
 })
+
+
+describe("concurrent incoming sender trust", () => {
+	it("allows concurrent messages from the same authenticated key without overwriting the first pin", async () => {
+		const accountId = asPkid(8601)
+		const senderId = asPkid(8602)
+		const recipientIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.bobSecretKey,
+			publicKey: BOX_VECTOR.bobPublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, recipientIdentity)
+
+		const env = await prepareDirectMessageEnvelope({
+			plaintext: "concurrent authenticated sender test",
+			senderPrivateKey: BOX_VECTOR.aliceSecretKey,
+			senderPublicKey: BOX_VECTOR.alicePublicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const message = {
+			id: 8603,
+			sender: { pkid: senderId },
+			content: env.content,
+			nonce: env.nonce,
+			sender_ephemeral_key: env.sender_ephemeral_key,
+			e2ee: true,
+			e2ee_version: 1,
+			e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+			e2ee_content_hash: env.e2ee_content_hash,
+			metadata: null,
+		} as any
+
+		const [first, second] = await Promise.all([
+			decryptDirectMessageEnvelope({ accountId, senderPkid: senderId, message, recipientIdentity }),
+			decryptDirectMessageEnvelope({ accountId, senderPkid: senderId, message: { ...message, id: 8604 }, recipientIdentity }),
+		])
+
+		expect(first?.content).toBe("concurrent authenticated sender test")
+		expect(second?.content).toBe("concurrent authenticated sender test")
+		const trusted = await getTrustedKey(accountId, senderId)
+		expect(trusted).not.toBeNull()
+		expect(Array.from(trusted!.publicKey)).toEqual(Array.from(BOX_VECTOR.alicePublicKey))
+	})
+})
