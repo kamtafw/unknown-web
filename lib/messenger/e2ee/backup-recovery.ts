@@ -31,7 +31,7 @@ import { pbkdf2HmacSha256 } from "./webcrypto"
 
 const VALID_PIN_PATTERN = /^[0-9]{6}$/
 
-/** Returns `null` on any generic recovery failure. Diagnostics are stage-only. */
+/** Returns `null` on any generic recovery failure without logging sensitive data. */
 export async function recoverIdentityFromBackup(
 	accountId: Pkid,
 	backup: ValidatedBackupV1,
