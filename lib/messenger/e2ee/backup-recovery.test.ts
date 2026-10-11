@@ -167,7 +167,7 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(persisted!.privateKey)).toEqual(Array.from(recovered!.privateKey))
 	})
 
-	it("does not expose the private key through logs or error strings", async () => {
+	it("logs recovery stages without exposing PIN or key material", async () => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
 		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
 
@@ -178,7 +178,13 @@ describe("recoverIdentityFromBackup", () => {
 		)
 
 		expect(result).toBeNull()
-		expect(warn).not.toHaveBeenCalled()
+		expect(warn).toHaveBeenCalledWith(
+			"[messenger][e2ee][recovery-diagnostic] stage=secretbox-open outcome=authentication-failed",
+		)
 		expect(error).not.toHaveBeenCalled()
+
+		const loggedText = warn.mock.calls.flat().join(" ")
+		expect(loggedText).not.toContain(validPin)
+		expect(loggedText).not.toContain(BACKUP_VECTOR.identitySecretKeyHex)
 	})
 })
