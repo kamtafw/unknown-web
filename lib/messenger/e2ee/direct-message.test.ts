@@ -529,3 +529,79 @@ describe("concurrent incoming sender trust", () => {
 		expect(Array.from(trusted!.publicKey)).toEqual(Array.from(BOX_VECTOR.alicePublicKey))
 	})
 })
+
+
+describe("legacy sent-message cross-device recovery", () => {
+	async function createLegacySentHistory(accountId: ReturnType<typeof asPkid>, recipientId: ReturnType<typeof asPkid>) {
+		const senderIdentity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, senderIdentity)
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "legacy sent message after local storage was cleared",
+			senderPrivateKey: senderIdentity.privateKey,
+			senderPublicKey: senderIdentity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		return {
+			senderIdentity,
+			ciphertext: envelope.content,
+			history: {
+				results: [{
+					id: 8703,
+					sender: { pkid: accountId },
+					receiver: { pkid: recipientId },
+					group: null,
+					message_type: "text",
+					content: envelope.content,
+					nonce: envelope.nonce,
+					sender_ephemeral_key: envelope.sender_ephemeral_key,
+					metadata: {
+						e2ee: true,
+						e2ee_version: 1,
+						e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+						e2ee_content_hash: envelope.e2ee_content_hash,
+						// Legacy message: intentionally no recipient_identity_public_key.
+					},
+					status: "sent",
+				} as any],
+				next: null,
+				previous: null,
+			},
+		}
+	}
+
+	it("recovers a legacy sent message after local copies are absent when the authenticated fallback recipient key works", async () => {
+		const accountId = asPkid(8701)
+		const recipientId = asPkid(8702)
+		const { history, ciphertext } = await createLegacySentHistory(accountId, recipientId)
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: bytesToBase64(BOX_VECTOR.bobPublicKey),
+		})
+
+		const recovered = await decryptDirectMessageHistoryPage(accountId, history)
+
+		expect(recovered.results[0].content).toBe("legacy sent message after local storage was cleared")
+		expect(recovered.results[0].content).not.toBe(ciphertext)
+		expect(recovered.results[0].content).not.toBe("Unable to decrypt message")
+		expect(chatApi.getUserEncryptionBundle).toHaveBeenCalledWith(recipientId)
+	})
+
+	it("returns the unavailable state for a legacy sent message when no valid fallback recipient key exists", async () => {
+		const accountId = asPkid(8801)
+		const recipientId = asPkid(8802)
+		const { history, ciphertext } = await createLegacySentHistory(accountId, recipientId)
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: "not-a-valid-public-key",
+		})
+
+		const recovered = await decryptDirectMessageHistoryPage(accountId, history)
+
+		expect(recovered.results[0].content).toBe("Unable to decrypt message")
+		expect(recovered.results[0].content).not.toBe(ciphertext)
+		expect(recovered.results[0].content).not.toContain(ciphertext)
+	})
+})
