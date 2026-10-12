@@ -610,3 +610,102 @@ describe("concurrent incoming sender trust", () => {
 		expect(Array.from(trusted!.publicKey)).toEqual(Array.from(BOX_VECTOR.alicePublicKey))
 	})
 })
+
+
+describe("legacy cross-device sent-message recovery", () => {
+	it("recovers a legacy sent message using the authenticated current recipient key when no local copy or recorded recipient key exists", async () => {
+		const accountId = asPkid(9301)
+		const recipientId = asPkid(9302)
+		const identity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, identity)
+
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "legacy sent message recovered after local storage was cleared",
+			senderPrivateKey: identity.privateKey,
+			senderPublicKey: identity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: bytesToBase64(BOX_VECTOR.bobPublicKey),
+		})
+
+		const page = {
+			results: [{
+				id: 9303,
+				sender: { pkid: accountId },
+				receiver: { pkid: recipientId },
+				message_type: "text",
+				content: envelope.content,
+				nonce: envelope.nonce,
+				sender_ephemeral_key: envelope.sender_ephemeral_key,
+				metadata: {
+					e2ee: true,
+					e2ee_version: 1,
+					e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+					e2ee_content_hash: envelope.e2ee_content_hash,
+				},
+			} as any],
+			next: null,
+		}
+
+		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
+
+		expect(chatApi.getUserEncryptionBundle).toHaveBeenCalledWith(recipientId)
+		expect(recovered.results[0].content).toBe(
+			"legacy sent message recovered after local storage was cleared",
+		)
+		expect(recovered.results[0].content).not.toBe(envelope.content)
+	})
+
+	it("returns unavailable rather than ciphertext when a legacy sent message has no valid authenticated fallback key", async () => {
+		const accountId = asPkid(9401)
+		const recipientId = asPkid(9402)
+		const identity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, identity)
+
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "legacy plaintext must remain unavailable",
+			senderPrivateKey: identity.privateKey,
+			senderPublicKey: identity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: "not-a-valid-base64-key",
+		})
+
+		const page = {
+			results: [{
+				id: 9403,
+				sender: { pkid: accountId },
+				receiver: { pkid: recipientId },
+				message_type: "text",
+				content: envelope.content,
+				nonce: envelope.nonce,
+				sender_ephemeral_key: envelope.sender_ephemeral_key,
+				metadata: {
+					e2ee: true,
+					e2ee_version: 1,
+					e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+					e2ee_content_hash: envelope.e2ee_content_hash,
+				},
+			} as any],
+			next: null,
+		}
+
+		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
+
+		expect(recovered.results[0].content).toBe("Unable to decrypt message")
+		expect(recovered.results[0].content).not.toBe(envelope.content)
+		expect(recovered.results[0].content).not.toContain(envelope.content)
+	})
+})
