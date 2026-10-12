@@ -458,9 +458,87 @@ export async function decryptDirectMessageHistoryPage<T extends CursorPage<Messa
 				}
 			}
 
-			/* We know this is an encrypted message belonging to us, but
-			 * there is no matching local copy. Never expose ciphertext. */
+			/* Recover sent ciphertext on a restored device. Prefer the recipient
+			 * key recorded at send time; for legacy records only, use the
+			 * authenticated current bundle as a best-effort fallback. */
 			const kind = classifyDirectMessageEnvelope(message)
+
+			if (kind === "encrypted") {
+				try {
+					const metadata = getE2EEEnvelopeMetadata(message)
+					const senderPublicKey = base64ToBytesOfLength(
+						message.sender_ephemeral_key!,
+						BOX_PUBLIC_KEY_LENGTH,
+					)
+					const nonce = base64ToBytesOfLength(message.nonce!, BOX_NONCE_LENGTH)
+					const ciphertext = base64ToBytes(message.content)
+					const derivedSenderPublicKey = boxPublicKeyFromSecretKey(identity.privateKey)
+					if (
+						!constantTimeEqual(senderPublicKey, derivedSenderPublicKey) ||
+						ciphertext.length < 16 ||
+						typeof metadata.e2ee_content_hash !== "string" ||
+						!/^[a-f0-9]{64}$/i.test(metadata.e2ee_content_hash)
+					) {
+						results.push({ ...message, content: E2EE_FAILURE_CONTENT })
+						continue
+					}
+
+					const actualHash = await computeContentHash({
+						ciphertext: message.content,
+						nonce: message.nonce!,
+						senderPublicKey: message.sender_ephemeral_key!,
+					})
+					if (actualHash.toLowerCase() !== metadata.e2ee_content_hash.toLowerCase()) {
+						results.push({ ...message, content: E2EE_FAILURE_CONTENT })
+						continue
+					}
+
+					const recordedRecipientKey = message.metadata &&
+						typeof message.metadata === "object" &&
+						typeof message.metadata.recipient_identity_public_key === "string"
+						? message.metadata.recipient_identity_public_key
+						: null
+					let recipientPublicKey: Uint8Array | null = null
+
+					if (recordedRecipientKey) {
+						recipientPublicKey = base64ToBytesOfLength(
+							recordedRecipientKey,
+							BOX_PUBLIC_KEY_LENGTH,
+						)
+					} else {
+						const receiverPkid = resolveSenderPkid({
+							sender: (message as IncomingDirectMessage & { receiver?: { pkid?: unknown } }).receiver as never,
+					} as Partial<IncomingDirectMessage>)
+						if (receiverPkid) {
+							const bundle = await chatApi.getUserEncryptionBundle(receiverPkid)
+						if (bundle && typeof bundle.identity_public_key === "string") {
+							recipientPublicKey = base64ToBytesOfLength(
+								bundle.identity_public_key,
+								BOX_PUBLIC_KEY_LENGTH,
+							)
+						}
+					}
+					}
+
+					if (!recipientPublicKey) {
+						results.push({ ...message, content: E2EE_FAILURE_CONTENT })
+						continue
+					}
+
+					const opened = boxOpen({
+						ciphertext,
+						nonce,
+						peerPublicKey: recipientPublicKey,
+						ownSecretKey: identity.privateKey,
+					})
+					if (opened !== null) {
+						results.push({ ...message, content: bytesToUtf8(opened) })
+						continue
+					}
+				} catch {
+					// Keep the unavailable state below; never surface ciphertext.
+				}
+			}
 
 			if (kind === "encrypted" || kind === "malformed-encrypted") {
 				results.push({ ...message, content: E2EE_FAILURE_CONTENT })
