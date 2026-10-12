@@ -2,7 +2,7 @@
 // @vitest-environment node
 
 import { asPkid } from "@/types/messenger"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach,beforeEach,describe,expect,it,vi } from "vitest"
 import { chatApi } from "../api"
 import { createOptimisticMessage } from "../optimistic"
 import {
@@ -11,12 +11,12 @@ import {
 	prepareDirectMessageEnvelope,
 	prepareDirectMessageSendPayload,
 } from "./direct-message"
-import { BOX_VECTOR, CONTENT_HASH_VECTORS } from "./e2ee-test-vectors"
+import { BOX_VECTOR,CONTENT_HASH_VECTORS } from "./e2ee-test-vectors"
 import { bytesToBase64 } from "./encoding"
 import { type StoredIdentity } from "./identity-store"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
-import { getTrustedKey, saveTrustedKey } from "./trust-store"
+import { getTrustedKey,saveTrustedKey } from "./trust-store"
 
 setupFreshE2eeDatabase()
 
@@ -559,6 +559,9 @@ describe("direct-message E2EE send envelope", () => {
 		})
 
 		expect(result).not.toBeNull()
+		expect(result!.metadata?.recipient_identity_public_key).toBe(
+			bytesToBase64(BOX_VECTOR.bobPublicKey),
+		)
 		const pinned = await getTrustedKey(accountId, recipientId)
 		expect(pinned).not.toBeNull()
 		expect(Array.from(pinned!.publicKey)).toEqual(Array.from(BOX_VECTOR.bobPublicKey))
@@ -627,6 +630,90 @@ describe("direct-message E2EE send envelope", () => {
 		})
 		expect(optimistic.content).toBe(payload!.content)
 		expect(optimistic.content).not.toBe("hello world")
+	})
+})
+
+describe("cross-device sent-message recovery", () => {
+	it("decrypts sent server ciphertext with the restored sender identity and recorded recipient key", async () => {
+		const accountId = asPkid(9101)
+		const recipientId = asPkid(9102)
+		const identity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, identity)
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "sent message recovered on another device",
+			senderPrivateKey: identity.privateKey,
+			senderPublicKey: identity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const page = {
+			results: [
+				{
+					id: 9103,
+					sender: { pkid: accountId },
+					receiver: { pkid: recipientId },
+					message_type: "text",
+					content: envelope.content,
+					nonce: envelope.nonce,
+					sender_ephemeral_key: envelope.sender_ephemeral_key,
+					metadata: {
+						e2ee: true,
+						e2ee_version: 1,
+						e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+						e2ee_content_hash: envelope.e2ee_content_hash,
+						recipient_identity_public_key: bytesToBase64(BOX_VECTOR.bobPublicKey),
+					},
+				} as any,
+			],
+			next: null,
+		}
+		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
+		expect(recovered.results[0].content).toBe("sent message recovered on another device")
+	})
+
+	it("returns unavailable rather than ciphertext when sent-message recovery fails", async () => {
+		const accountId = asPkid(9201)
+		const identity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, identity)
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "must not leak ciphertext",
+			senderPrivateKey: identity.privateKey,
+			senderPublicKey: identity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+		const page = {
+			results: [
+				{
+					id: 9202,
+					sender: { pkid: accountId },
+					receiver: { pkid: asPkid(9203) },
+					message_type: "text",
+					content: envelope.content,
+					nonce: envelope.nonce,
+					sender_ephemeral_key: envelope.sender_ephemeral_key,
+					metadata: {
+						e2ee: true,
+						e2ee_version: 1,
+						e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+						e2ee_content_hash: envelope.e2ee_content_hash,
+						recipient_identity_public_key: bytesToBase64(BOX_VECTOR.alicePublicKey),
+					},
+				} as any,
+			],
+			next: null,
+		}
+		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
+		expect(recovered.results[0].content).toBe("Unable to decrypt message")
+		expect(recovered.results[0].content).not.toBe(envelope.content)
 	})
 })
 

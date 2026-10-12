@@ -51,6 +51,7 @@ export interface DirectMessageEnvelope {
 	e2ee_version: typeof E2EE_MESSAGE_VERSION
 	e2ee_algorithm: typeof E2EE_MESSAGE_ALGORITHM_V1
 	e2ee_content_hash: string
+	recipient_identity_public_key: string
 }
 
 export async function prepareDirectMessageEnvelope({
@@ -85,6 +86,7 @@ export async function prepareDirectMessageEnvelope({
 		e2ee_version: E2EE_MESSAGE_VERSION,
 		e2ee_algorithm: E2EE_MESSAGE_ALGORITHM_V1,
 		e2ee_content_hash: e2eeContentHash,
+		recipient_identity_public_key: bytesToBase64(recipientPublicKey),
 	}
 }
 
@@ -158,6 +160,9 @@ export async function prepareDirectMessageSendPayload({
 			e2ee_version: envelope.e2ee_version,
 			e2ee_algorithm: envelope.e2ee_algorithm,
 			e2ee_content_hash: envelope.e2ee_content_hash,
+			...(messageType === "text"
+				? { recipient_identity_public_key: envelope.recipient_identity_public_key }
+				: {}),
 		}
 
 		return {
@@ -430,6 +435,58 @@ export async function decryptDirectMessageEnvelope({
 	}
 }
 
+async function decryptSentTextForRestoredIdentity(
+	accountId: Pkid,
+	message: IncomingDirectMessage,
+	identity: StoredIdentity,
+): Promise<string | null> {
+	try {
+		if (
+			typeof message.content !== "string" ||
+			typeof message.nonce !== "string" ||
+			typeof message.sender_ephemeral_key !== "string"
+		)
+			return null
+
+		const metadata =
+			message.metadata && typeof message.metadata === "object" ? message.metadata : {}
+		const recordedRecipientKey = metadata.recipient_identity_public_key
+		const senderPublicKey = base64ToBytesOfLength(
+			message.sender_ephemeral_key,
+			BOX_PUBLIC_KEY_LENGTH,
+		)
+		const nonce = base64ToBytesOfLength(message.nonce, BOX_NONCE_LENGTH)
+		const ciphertext = base64ToBytes(message.content)
+		if (ciphertext.length < 16) return null
+
+		const derivedSenderPublicKey = boxPublicKeyFromSecretKey(identity.privateKey)
+		if (!constantTimeEqual(senderPublicKey, derivedSenderPublicKey)) return null
+
+		let recipientPublicKey: Uint8Array
+		if (typeof recordedRecipientKey === "string") {
+			recipientPublicKey = base64ToBytesOfLength(recordedRecipientKey, BOX_PUBLIC_KEY_LENGTH)
+		} else {
+			// Legacy messages lack the recorded key. The authenticated current key
+			// is only a best-effort candidate; NaCl authentication decides validity.
+			const recipientId = message.receiver?.pkid
+			if (!recipientId || recipientId === accountId) return null
+			const bundle = await chatApi.getUserEncryptionBundle(recipientId)
+			if (!bundle || typeof bundle.identity_public_key !== "string") return null
+			recipientPublicKey = base64ToBytesOfLength(bundle.identity_public_key, BOX_PUBLIC_KEY_LENGTH)
+		}
+
+		const opened = boxOpen({
+			ciphertext,
+			nonce,
+			peerPublicKey: recipientPublicKey,
+			ownSecretKey: identity.privateKey,
+		})
+		return opened === null ? null : bytesToUtf8(opened)
+	} catch {
+		return null
+	}
+}
+
 export async function decryptDirectMessageHistoryPage<T extends CursorPage<Message>>(
 	accountId: Pkid,
 	page: T,
@@ -461,11 +518,20 @@ export async function decryptDirectMessageHistoryPage<T extends CursorPage<Messa
 				}
 			}
 
-			/* We know this is an encrypted message belonging to us, but
-			 * there is no matching local copy. Never expose ciphertext. */
+			/* Local encrypted copies are the fast path. If absent/stale, recover
+			 * from the server envelope using the restored identity and recorded
+			 * recipient key; never expose ciphertext on any failure. */
 			const kind = classifyDirectMessageEnvelope(message)
-
-			if (kind === "encrypted" || kind === "malformed-encrypted") {
+			if (kind === "encrypted") {
+				const recovered = await decryptSentTextForRestoredIdentity(
+					accountId,
+					message as IncomingDirectMessage,
+					identity,
+				)
+				results.push({ ...message, content: recovered ?? E2EE_FAILURE_CONTENT })
+				continue
+			}
+			if (kind === "malformed-encrypted") {
 				results.push({ ...message, content: E2EE_FAILURE_CONTENT })
 				continue
 			}
