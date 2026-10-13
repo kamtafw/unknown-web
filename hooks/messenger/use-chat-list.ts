@@ -49,6 +49,8 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						accountId as Pkid,
 						user.pkid as Pkid,
 						user.last_message_preview,
+						user.last_message_time,
+						user.last_message_type,
 					)
 
 					return [user.pkid, preview] as const
@@ -74,7 +76,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 							Boolean(user.last_message_preview || user.last_message_time),
 							user.last_message_type,
 						),
-				})),,
+				})),
 			}
 		: query.data
 
