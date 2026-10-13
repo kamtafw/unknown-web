@@ -46,7 +46,13 @@ Requirements:
 
 The web client's existing type vocabulary includes values such as `text`, `media`, `image`, `video`, `audio`, `voice`, `document`, `location`, `contact`, `sticker`, `poll`, `call`, and `share`. Backend owners should confirm the canonical supported set.
 
-### 2.2 Authoritative E2EE preview-safety signal
+### 2.2 `last_message_id` for local-preview freshness
+
+Add a nullable numeric `last_message_id` beside `last_message_type` and `last_message_time` on the same list targets. It must identify the exact latest message represented by those fields. This lets the web client match a locally decrypted copy by message ID rather than relying on timestamp equality, which can collide when messages are created within the same millisecond. Return `null` when there is no latest message.
+
+The frontend can temporarily use timestamp matching when this field is absent, but the ID is the preferred authoritative freshness check.
+
+### 2.3 Authoritative E2EE preview-safety signal
 
 Backend review is needed to agree on how the web client can distinguish an E2EE direct-message preview from a non-E2EE preview without inspecting the preview string.
 
@@ -87,6 +93,7 @@ The frontend must not infer encryption from `last_message_type`, `last_message_p
 ## 5. Acceptance criteria for backend review
 
 - [ ] Confirm `last_message_type` and its canonical values.
+- [ ] Confirm `last_message_id` and ensure it identifies the same latest message as the type and timestamp.
 - [ ] Confirm null/empty semantics when no message exists.
 - [ ] Confirm whether encryption state is message-level or conversation-level.
 - [ ] Choose and document the authoritative E2EE signal and its exact field name.
