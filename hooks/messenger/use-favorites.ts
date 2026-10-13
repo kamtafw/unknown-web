@@ -31,6 +31,7 @@ function toChatListItem(favorite: FavoriteItem): ChatListItem | null {
 		unread_count: t.unread_count,
 		last_message_preview: t.last_message_preview,
 		last_message_time: t.last_message_time,
+		last_message_type: t.last_message_type,
 		is_pinned: false,
 		is_blocked: false,
 		has_blocked_me: false,
