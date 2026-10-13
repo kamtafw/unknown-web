@@ -30,10 +30,10 @@ interface ArchiveRowProps {
 }
 
 /**
- * No `last_message_type` on this contract (confirmed absent from the
- * sample payload for both variants), so — unlike ChatListItem/
- * GroupListItem rows — this can't show a media/voice/etc. preview icon
- * without inventing a field. Plain-text preview only.
+ * The current archive response may omit `last_message_type` and `last_message_id`;
+ * both are optional until the backend contract proposal is reviewed. User rows
+ * use a safe E2EE fallback when metadata is absent. Group preview behavior stays
+ * unchanged because group E2EE is outside the current protocol.
  *
  * Unarchive is user-only: chatApi.unarchive only ever takes a userPkid,
  * no confirmed group equivalent exists. Group rows get an inert button
