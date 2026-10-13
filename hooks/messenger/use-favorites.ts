@@ -50,11 +50,11 @@ export function useFavorites() {
 			return projectWithOverlays<ChatListItem>(OVERLAY_KEY, items)
 		},
 	})
-	const [previewOverrides, setPreviewOverrides] = useState<Map<number, string>>(new Map())
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, string> } | null>(null)
 
 	useEffect(() => {
 		if (!accountId || !query.data?.length) {
-			setPreviewOverrides(new Map())
+			setPreviewOverrides(null)
 			return
 		}
 		let cancelled = false
@@ -62,7 +62,7 @@ export function useFavorites() {
 			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type)
 			return [user.pkid, preview] as const
 		})).then((entries) => {
-			if (!cancelled) setPreviewOverrides(new Map(entries))
+			if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
 		})
 		return () => { cancelled = true }
 	}, [accountId, query.data])
@@ -71,7 +71,7 @@ export function useFavorites() {
 		...query,
 		data: query.data?.map((user) => ({
 			...user,
-			last_message_preview: previewOverrides.get(user.pkid) ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
+			last_message_preview: (previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined) ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
 		})),
 	}
 }
