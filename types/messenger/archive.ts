@@ -4,6 +4,7 @@ export interface ArchiveTargetBase {
 	unread_count: number
 	last_message_preview: string | null
 	last_message_time: string | null
+	last_message_type?: string | null
 	icon_url: string
 }
 
