@@ -7,7 +7,6 @@
 - Repository: `kamtafw/unknown-web`
 - Local checkout previously used: `C:\Users\salva\appscombo\appscombo_frontend`
 - Current guide/source of truth: `E2EE-KEY-BACKUP-WEB-IMPLEMENTATION.md` on `main`
-- Acceptance-document commit: `7e7ff27a259e70b56c7605c40bba638a502221b1` (created on the working branch; verify current branch head before relying on this as latest).
 
 ## What the user is trying to achieve
 
