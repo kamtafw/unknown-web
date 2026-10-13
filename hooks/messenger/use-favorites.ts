@@ -63,16 +63,22 @@ export function useFavorites() {
 			return [user.pkid, { lastMessageTime: user.last_message_time, preview }] as const
 		})).then((entries) => {
 			if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
+		}).catch(() => {
+			if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
 		})
 		return () => { cancelled = true }
 	}, [accountId, query.data])
 
 	return {
 		...query,
-		data: query.data?.map((user) => ({
-			...user,
-			last_message_preview: (previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid)?.lastMessageTime === user.last_message_time ? previewOverrides.values.get(user.pkid)?.preview : undefined) ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
-		})),
+		data: query.data?.map((user) => {
+			const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
+			const localPreview = cached?.lastMessageTime === user.last_message_time ? cached.preview : undefined
+			return {
+				...user,
+				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
+			}
+		}),
 	}
 }
 
