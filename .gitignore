@@ -53,5 +53,7 @@ vitest.config.ts.timestamp-*
 
 bugs-and-incomplete.md
 group-message-events.md
+e2ee_implementation_brief.md
+e2ee-chat-list-preview-contract.md
 
 bundle-code.ps1

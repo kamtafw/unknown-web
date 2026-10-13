@@ -138,6 +138,7 @@ export interface ChatListItem {
 	last_message_preview: string | null
 	last_message_time: string | null
 	last_message_type?: MessageType | string | null
+	last_message_id?: number | null
 	is_pinned: boolean
 	is_blocked: boolean
 	has_blocked_me: boolean
