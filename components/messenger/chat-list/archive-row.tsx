@@ -3,10 +3,14 @@
 import { useChatListActions } from "@/hooks/messenger/use-chat-list-actions"
 import { extractMessage } from "@/lib/api-error"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
+import { useAuthStore } from "@/stores/auth-store"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import type { ArchiveEntry, ArchiveTarget, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
 import { ArchiveRestore } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
@@ -43,6 +47,24 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	const isUser = target.chat_type === "user"
 	const name = resolveArchiveTargetName(target)
 	const href = isUser ? `/messenger/${target.id}` : `/messenger/groups/${target.id}`
+	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
+	const [userPreview, setUserPreview] = useState<string | null>(() =>
+		isUser ? resolveEncryptedPreviewFallback(Boolean(target.last_message_preview || target.last_message_time), target.last_message_type) : null,
+	)
+
+	useEffect(() => {
+		if (target.chat_type !== "user" || !accountId) {
+			setUserPreview(null)
+			return
+		}
+		let cancelled = false
+		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type)
+			.then((preview) => { if (!cancelled) setUserPreview(preview) })
+		return () => { cancelled = true }
+	}, [accountId, target])
+	const previewText = isUser
+		? userPreview ?? resolveEncryptedPreviewFallback(Boolean(target.last_message_preview || target.last_message_time), target.last_message_type) ?? ""
+		: target.last_message_preview || "No messages yet"
 
 	const handleUnarchive = async (e: React.MouseEvent) => {
 		e.preventDefault()
@@ -98,7 +120,7 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 				</div>
 				<div className="flex items-center justify-between gap-2 mt-0.5">
 					<span className="text-sm text-muted-foreground truncate">
-						{target.last_message_preview || "No messages yet"}
+						{previewText}
 					</span>
 					{target.unread_count > 0 && (
 						<span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold flex items-center justify-center">
