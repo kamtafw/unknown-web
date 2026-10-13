@@ -66,7 +66,7 @@ export function ChatListItem({
 	const Icon = PreviewIcon ? PREVIEW_ICONS[PreviewIcon] : null
 	const previewText =
 		chat.last_message_preview ||
-		(chat.last_message_type ? resolvePreviewFallbackLabel(chat.last_message_type) : "")
+		(chat.last_message_type ? resolvePreviewFallbackLabel(chat.last_message_type) : "Preview unavailable")
 
 	const handleMarkedRead = async () => {
 		try {
