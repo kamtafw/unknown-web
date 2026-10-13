@@ -31,11 +31,11 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		}),
 	})
 
-	const [previewOverrides, setPreviewOverrides] = useState<Map<number, string>>(new Map())
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, string> } | null>(null)
 
 	useEffect(() => {
 		if (!accountId || !query.data?.users.length) {
-			setPreviewOverrides(new Map())
+			setPreviewOverrides(null)
 			return
 		}
 
@@ -57,7 +57,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 				}),
 		).then((entries) => {
 			if (cancelled) return
-			setPreviewOverrides(new Map(entries))
+			setPreviewOverrides({ accountId, values: new Map(entries) })
 		})
 
 		return () => {
@@ -71,7 +71,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 				users: query.data.users.map((user) => ({
 					...user,
 					last_message_preview:
-						previewOverrides.get(user.pkid) ??
+						(previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined) ??
 						resolveEncryptedPreviewFallback(
 							Boolean(user.last_message_preview || user.last_message_time),
 							user.last_message_type,
