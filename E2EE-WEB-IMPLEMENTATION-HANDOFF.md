@@ -6,10 +6,7 @@
 
 - Repository: `kamtafw/unknown-web`
 - Local checkout previously used: `C:\Users\salva\appscombo\appscombo_frontend`
-- Working branch: `fix/e2ee-cross-device-sent-recovery`
 - Current guide/source of truth: `E2EE-KEY-BACKUP-WEB-IMPLEMENTATION.md` on `main`
-- Phase 3 acceptance record: `E2EE-PHASE-3-ACCEPTANCE-AND-REMAINING-REQUIREMENTS.md`
-- Phase 3 implementation commit reviewed: `b959fcf1ad18e6f342a3febb3be40cd2bbac2a2a`
 - Acceptance-document commit: `7e7ff27a259e70b56c7605c40bba638a502221b1` (created on the working branch; verify current branch head before relying on this as latest).
 
 ## What the user is trying to achieve
@@ -114,10 +111,9 @@ Inspect the current guide and current branch before acting. Do not assume the li
 
 1. Read this handoff and fetch the current `E2EE-KEY-BACKUP-WEB-IMPLEMENTATION.md` from `main`, plus the current branch head and relevant implementation.
 2. Confirm the current Git branch/HEAD and working-tree state in the user's local checkout; the GitHub branch may have moved since this handoff.
-3. Run the full relevant E2EE test suite and `npx tsc --noEmit`; record exact counts/errors as a baseline. Do not start a broad refactor before knowing the baseline.
-4. Resume at **Phase 4: Correct preview behavior**, because Phase 3 is accepted and Phases 4–6 are already the user's planned roadmap.
-5. Trace current preview derivation and rendering across Chats, Favorites, Archive, and group chats. Identify the actual preview data source and existing type definitions before coding. Add focused regression tests, implement the smallest change, then run focused tests, full relevant tests, and TypeScript.
-6. Keep a short phase ledger: acceptance criteria, files changed, commands/results, unverified items, and next blocker.
+3. Resume at **Phase 4: Correct preview behavior**, because Phase 3 is accepted and Phases 4–6 are already the user's planned roadmap.
+4. Trace current preview derivation and rendering across Chats, Favorites, Archive, and group chats. Identify the actual preview data source and existing type definitions before coding. Add focused regression tests, implement the smallest change, then run focused tests, full relevant tests, and TypeScript.
+5. Keep a short phase ledger: acceptance criteria, files changed, commands/results, unverified items, and next blocker.
 
 ## Security and implementation constraints
 
