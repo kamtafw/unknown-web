@@ -48,7 +48,7 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	const name = resolveArchiveTargetName(target)
 	const href = isUser ? `/messenger/${target.id}` : `/messenger/groups/${target.id}`
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
-	const [userPreview, setUserPreview] = useState<{ accountId: number; targetId: string; preview: string } | null>(null)
+	const [userPreview, setUserPreview] = useState<{ accountId: number; targetId: string; lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string } | null>(null)
 
 	useEffect(() => {
 		if (target.chat_type !== "user" || !accountId) {
@@ -57,11 +57,11 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 		}
 		let cancelled = false
 		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type, target.last_message_id)
-			.then((preview) => { if (!cancelled) setUserPreview({ accountId, targetId: target.id, preview }) })
+			.then((preview) => { if (!cancelled) setUserPreview({ accountId, targetId: target.id, lastMessageTime: target.last_message_time, lastMessageId: target.last_message_id, preview }) })
 			.catch(() => { if (!cancelled) setUserPreview(null) })
 		return () => { cancelled = true }
 	}, [accountId, target])
-	const resolvedUserPreview = userPreview?.accountId === accountId && userPreview.targetId === target.id
+	const resolvedUserPreview = userPreview?.accountId === accountId && userPreview.targetId === target.id && userPreview.lastMessageTime === target.last_message_time && userPreview.lastMessageId === target.last_message_id
 		? userPreview.preview
 		: resolveEncryptedPreviewFallback(Boolean(target.last_message_preview || target.last_message_time), target.last_message_type) ?? ""
 	const previewText = isUser ? resolvedUserPreview : target.last_message_preview || "No messages yet"
