@@ -31,7 +31,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		}),
 	})
 
-	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; preview: string }> } | null>(null)
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
 
 	useEffect(() => {
 		if (!accountId || !query.data?.users.length) {
@@ -54,7 +54,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						user.last_message_id,
 					)
 
-					return [user.pkid, { lastMessageTime: user.last_message_time, preview }] as const
+					return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
 				}),
 		).then((entries) => {
 			if (cancelled) return
@@ -73,7 +73,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 				...query.data,
 				users: query.data.users.map((user) => {
 					const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
-					const localPreview = cached?.lastMessageTime === user.last_message_time ? cached.preview : undefined
+					const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
 					return {
 						...user,
 						last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
