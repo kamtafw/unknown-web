@@ -65,6 +65,7 @@ export interface FavoriteUserTarget {
 	last_message_preview: string
 	last_message_time: string | null
 	last_message_type?: string | null
+	last_message_id?: number | null
 }
 export interface FavoriteGroupTarget {
 	id: number
