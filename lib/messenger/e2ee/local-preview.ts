@@ -34,5 +34,8 @@ export async function resolveLocalChatPreview(
 	}
 
 	// The server preview may be ciphertext; never return it.
-	return resolveEncryptedPreviewFallback(Boolean(serverPreview || lastMessageTime), lastMessageType) ?? ""
+	return resolveEncryptedPreviewFallback(
+		Boolean(serverPreview || lastMessageTime || lastMessageType || lastMessageId !== null),
+		lastMessageType,
+	) ?? ""
 }
