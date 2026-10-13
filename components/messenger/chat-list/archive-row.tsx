@@ -56,7 +56,7 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 			return
 		}
 		let cancelled = false
-		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type)
+		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type, target.last_message_id)
 			.then((preview) => { if (!cancelled) setUserPreview({ accountId, targetId: target.id, preview }) })
 			.catch(() => { if (!cancelled) setUserPreview(null) })
 		return () => { cancelled = true }
