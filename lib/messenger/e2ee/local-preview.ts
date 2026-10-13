@@ -2,7 +2,13 @@ import type { MessageType, Pkid } from "@/types/messenger"
 import { resolveEncryptedPreviewFallback, resolvePreviewFallbackLabel } from "../preview"
 import { getLatestLocalMessageCopy } from "./local-message-store"
 
-function isSameLatestMessage(createdAt: number, lastMessageTime: string | null): boolean {
+function isSameLatestMessage(
+	messageId: number,
+	createdAt: number,
+	lastMessageTime: string | null,
+	lastMessageId: number | null,
+): boolean {
+	if (lastMessageId !== null) return messageId === lastMessageId
 	if (!lastMessageTime) return false
 	const expected = Date.parse(lastMessageTime)
 	return Number.isFinite(expected) && createdAt === expected
@@ -19,10 +25,11 @@ export async function resolveLocalChatPreview(
 	serverPreview: string | null,
 	lastMessageTime: string | null = null,
 	lastMessageType: MessageType | string | null = null,
+	lastMessageId: number | null = null,
 ): Promise<string> {
 	const local = await getLatestLocalMessageCopy(accountId, peerId)
 
-	if (local && isSameLatestMessage(local.createdAt, lastMessageTime)) {
+	if (local && isSameLatestMessage(local.messageId, local.createdAt, lastMessageTime, lastMessageId)) {
 		return local.plaintext || resolvePreviewFallbackLabel(local.messageType)
 	}
 
