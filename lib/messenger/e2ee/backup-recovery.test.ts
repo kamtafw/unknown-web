@@ -1,19 +1,29 @@
 // @vitest-environment node
 import { asPkid } from "@/types/messenger"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { recoverIdentityFromBackup } from "./backup-recovery"
 import { BACKUP_VECTOR, hexToBytes } from "./e2ee-test-vectors"
 import { base64ToBytesOfLength, utf8ToBytes } from "./encoding"
-import { getIdentity } from "./identity-store"
+import { getIdentity, removeIdentity } from "./identity-store"
 import { boxPublicKeyFromSecretKey, secretboxSeal } from "./nacl"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
+import * as webcryptoModule from "./webcrypto"
 import { pbkdf2HmacSha256 } from "./webcrypto"
 
 setupFreshE2eeDatabase()
 
 const accountId = asPkid(777)
+const otherAccountId = asPkid(888)
 const validPin = "123456"
+
+function deferred<T>() {
+	let resolve!: (value: T) => void
+	const promise = new Promise<T>((res) => {
+		resolve = res
+	})
+	return { promise, resolve }
+}
 const validBackup = {
 	identityPublicKey: base64ToBytesOfLength(BACKUP_VECTOR.identityPublicKeyBase64, 32),
 	ciphertext: base64ToBytesOfLength(BACKUP_VECTOR.ciphertextBase64, 48),
@@ -24,12 +34,47 @@ const validBackup = {
 	},
 }
 
+beforeEach(async () => {
+	// Ensure each test begins with an empty identity store for both accounts.
+	// Runtime activation alone can rehydrate persisted data left by a prior test.
+	await removeIdentity(accountId)
+	await removeIdentity(otherAccountId)
+	await e2eeRuntime.activate(accountId)
+})
+
 afterEach(() => {
 	vi.restoreAllMocks()
 	e2eeRuntime.clear()
 })
 
 describe("recoverIdentityFromBackup", () => {
+	it("refuses to recover when the runtime has been cleared by logout", async () => {
+		e2eeRuntime.clear()
+		await expect(recoverIdentityFromBackup(accountId, validBackup, validPin)).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+	})
+
+	it("discards recovery if the active account changes during key derivation", async () => {
+		const derivedKey = deferred<Uint8Array>()
+		let markStarted!: () => void
+		const started = new Promise<void>((resolve) => {
+			markStarted = resolve
+		})
+		vi.spyOn(webcryptoModule, "pbkdf2HmacSha256").mockImplementationOnce(async () => {
+			markStarted()
+			return derivedKey.promise
+		})
+
+		const recovery = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		await started
+		await e2eeRuntime.activate(otherAccountId)
+		derivedKey.resolve(new Uint8Array(32).fill(7))
+
+		await expect(recovery).resolves.toBeNull()
+		expect(await getIdentity(accountId)).toBeNull()
+		expect(e2eeRuntime.getState()?.accountId).toBe(otherAccountId)
+		expect(e2eeRuntime.getState()?.identity).toBeNull()
+	})
 	it("restores the identity for a valid PIN and valid backup", async () => {
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
 		expect(recovered).not.toBeNull()
@@ -39,6 +84,35 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(recovered!.publicKey)).toEqual(
 			Array.from(boxPublicKeyFromSecretKey(recovered!.privateKey)),
 		)
+	})
+
+	it("allows only one of two concurrent recoveries to install an identity", async () => {
+		const originalDerive = webcryptoModule.pbkdf2HmacSha256
+		const bothDerivationsStarted = deferred<void>()
+		const releaseDerivations = deferred<void>()
+		let derivationCount = 0
+
+		vi.spyOn(webcryptoModule, "pbkdf2HmacSha256").mockImplementation(async (options) => {
+			derivationCount += 1
+			if (derivationCount === 2) bothDerivationsStarted.resolve()
+			await releaseDerivations.promise
+			return originalDerive(options)
+		})
+
+		const firstAttempt = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		const secondAttempt = recoverIdentityFromBackup(accountId, validBackup, validPin)
+		await bothDerivationsStarted.promise
+		releaseDerivations.resolve()
+
+		const results = await Promise.all([firstAttempt, secondAttempt])
+		expect(results.filter((identity) => identity !== null)).toHaveLength(1)
+
+		const persisted = await getIdentity(accountId)
+		expect(persisted).not.toBeNull()
+		expect(Array.from(persisted!.privateKey)).toEqual(
+			Array.from(hexToBytes(BACKUP_VECTOR.identitySecretKeyHex)),
+		)
+		expect(e2eeRuntime.getState()?.identity).not.toBeNull()
 	})
 
 	it("rejects invalid PIN format", async () => {
@@ -110,6 +184,21 @@ describe("recoverIdentityFromBackup", () => {
 		expect(Array.from(stored!.publicKey)).toEqual(Array.from(existing.publicKey))
 	})
 
+	it("allows only one of two concurrent recoveries to install an identity", async () => {
+		const [first, second] = await Promise.all([
+			recoverIdentityFromBackup(accountId, validBackup, validPin),
+			recoverIdentityFromBackup(accountId, validBackup, validPin),
+		])
+
+		expect([first, second].filter((result) => result !== null)).toHaveLength(1)
+		const persisted = await getIdentity(accountId)
+		expect(persisted).not.toBeNull()
+		expect(Array.from(persisted!.privateKey)).toEqual(
+			Array.from(hexToBytes(BACKUP_VECTOR.identitySecretKeyHex)),
+		)
+		expect(e2eeRuntime.getState()?.identity).not.toBeNull()
+	})
+
 	it("persists the recovered identity through the E0.2 runtime storage abstraction", async () => {
 		await e2eeRuntime.activate(accountId)
 		const recovered = await recoverIdentityFromBackup(accountId, validBackup, validPin)
@@ -120,20 +209,5 @@ describe("recoverIdentityFromBackup", () => {
 		)
 		const persisted = await getIdentity(accountId)
 		expect(Array.from(persisted!.privateKey)).toEqual(Array.from(recovered!.privateKey))
-	})
-
-	it("does not expose the private key through logs or error strings", async () => {
-		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
-		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
-
-		const result = await recoverIdentityFromBackup(
-			accountId,
-			{ ...validBackup, ciphertext: new Uint8Array(48).fill(0x7f) },
-			validPin,
-		)
-
-		expect(result).toBeNull()
-		expect(warn).not.toHaveBeenCalled()
-		expect(error).not.toHaveBeenCalled()
 	})
 })

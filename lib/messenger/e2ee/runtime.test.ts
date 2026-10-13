@@ -1,12 +1,12 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from "vitest"
 import { asPkid } from "@/types/messenger"
-import { getIdentity, saveIdentity } from "./identity-store"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import * as identityStore from "./identity-store"
+import { getIdentity, saveIdentity } from "./identity-store"
 import { e2eeRuntime, E2eeRuntimeError } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
-import { getTrustedKey, listTrustedKeys, saveTrustedKey } from "./trust-store"
 import * as trustStore from "./trust-store"
+import { getTrustedKey, listTrustedKeys, saveTrustedKey } from "./trust-store"
 
 setupFreshE2eeDatabase()
 
@@ -258,6 +258,32 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 		await slowActivate
 
 		expect(e2eeRuntime.getState()).toBeNull() // must still be cleared
+	})
+})
+
+describe("installRecoveredIdentity", () => {
+	it("rejects a recovery install whose generation token is stale", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		await e2eeRuntime.activate(accountB)
+
+		await expect(e2eeRuntime.installRecoveredIdentity(accountA, keypair(9), token)).resolves.toBe(
+			false,
+		)
+		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
+		expect(e2eeRuntime.getState()!.identity).toBeNull()
+	})
+
+	it("cancels recovery installation when logout clears the runtime", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		const install = e2eeRuntime.installRecoveredIdentity(accountA, keypair(10), token)
+
+		e2eeRuntime.clear()
+
+		await expect(install).resolves.toBe(false)
+		expect(e2eeRuntime.getState()).toBeNull()
+		expect(await getIdentity(accountA)).toBeNull()
 	})
 })
 
