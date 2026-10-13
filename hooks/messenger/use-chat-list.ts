@@ -51,6 +51,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						user.last_message_preview,
 						user.last_message_time,
 						user.last_message_type,
+						user.last_message_id,
 					)
 
 					return [user.pkid, { lastMessageTime: user.last_message_time, preview }] as const
