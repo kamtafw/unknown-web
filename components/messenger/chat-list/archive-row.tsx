@@ -63,7 +63,10 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	}, [accountId, target])
 	const resolvedUserPreview = userPreview?.accountId === accountId && userPreview.targetId === target.id && userPreview.lastMessageTime === target.last_message_time && userPreview.lastMessageId === target.last_message_id
 		? userPreview.preview
-		: resolveEncryptedPreviewFallback(Boolean(target.last_message_preview || target.last_message_time), target.last_message_type) ?? ""
+		: resolveEncryptedPreviewFallback(
+			Boolean(target.last_message_preview || target.last_message_time || target.last_message_type || target.last_message_id != null),
+			target.last_message_type,
+		) ?? "Preview unavailable"
 	const previewText = isUser ? resolvedUserPreview : target.last_message_preview || "No messages yet"
 	const handleUnarchive = async (e: React.MouseEvent) => {
 		e.preventDefault()
