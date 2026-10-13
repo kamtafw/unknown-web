@@ -32,6 +32,7 @@ function toChatListItem(favorite: FavoriteItem): ChatListItem | null {
 		last_message_preview: t.last_message_preview,
 		last_message_time: t.last_message_time,
 		last_message_type: t.last_message_type,
+		last_message_id: t.last_message_id,
 		is_pinned: false,
 		is_blocked: false,
 		has_blocked_me: false,
@@ -76,7 +77,7 @@ export function useFavorites() {
 			const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
 			return {
 				...user,
-				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
+				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null), user.last_message_type),
 			}
 		}),
 	}
