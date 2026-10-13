@@ -10,6 +10,7 @@ import { saveLocalMessageCopy } from "@/lib/messenger/e2ee/local-message-store"
 import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { createOptimisticMessage, withStatus } from "@/lib/messenger/optimistic"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { useAuthStore } from "@/stores/auth-store"
 import type {
 	CursorPage,
@@ -176,6 +177,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				replaceOptimistic(optimistic.id, displayMessage)
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
 				markFailed(optimistic.id)
 			}
@@ -278,6 +280,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				replaceOptimistic(optimistic.id, { ...sent, content })
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
 				markFailed(optimistic.id)
 			}
@@ -348,6 +351,7 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				removeDirectMessageOutboxEntry(failedMessage.id)
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
 				markFailed(failedMessage.id)
 			}
