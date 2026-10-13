@@ -50,7 +50,7 @@ export function useFavorites() {
 			return projectWithOverlays<ChatListItem>(OVERLAY_KEY, items)
 		},
 	})
-	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; preview: string }> } | null>(null)
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
 
 	useEffect(() => {
 		if (!accountId || !query.data?.length) {
@@ -60,7 +60,7 @@ export function useFavorites() {
 		let cancelled = false
 		void Promise.all(query.data.map(async (user) => {
 			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type, user.last_message_id)
-			return [user.pkid, { lastMessageTime: user.last_message_time, preview }] as const
+			return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
 		})).then((entries) => {
 			if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
 		}).catch(() => {
@@ -73,7 +73,7 @@ export function useFavorites() {
 		...query,
 		data: query.data?.map((user) => {
 			const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
-			const localPreview = cached?.lastMessageTime === user.last_message_time ? cached.preview : undefined
+			const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
 			return {
 				...user,
 				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time), user.last_message_type),
