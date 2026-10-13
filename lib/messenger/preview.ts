@@ -84,6 +84,19 @@ export function resolvePreviewFallbackLabel(type: MessageType | string | null | 
 
 
 /**
+ * Final display fallback for a sanitized direct-chat preview. This does not
+ * inspect or return server payloads; callers must resolve E2EE previews first.
+ */
+export function resolveChatListDisplayPreview(
+	preview: string | null | undefined,
+	type: MessageType | string | null | undefined,
+): string {
+	const trimmed = preview?.trim()
+	if (trimmed) return trimmed
+	return type ? resolvePreviewFallbackLabel(type) : "Preview unavailable"
+}
+
+/**
  * Safe fallback for an E2EE direct-message preview when no matching local
  * plaintext is available. The message type is presentation metadata only; it
  * does not make the server-provided preview safe to render.
