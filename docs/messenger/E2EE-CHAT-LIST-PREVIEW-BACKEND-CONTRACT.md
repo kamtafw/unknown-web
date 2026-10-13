@@ -32,7 +32,8 @@ Suggested shape:
 {
   "last_message_preview": "Image",
   "last_message_time": "2026-10-12T07:12:21.948133Z",
-  "last_message_type": "image"
+  "last_message_type": "image",
+  "last_message_id": 123
 }
 ```
 
