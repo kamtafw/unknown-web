@@ -5,6 +5,7 @@ export interface ArchiveTargetBase {
 	last_message_preview: string | null
 	last_message_time: string | null
 	last_message_type?: string | null
+	last_message_id?: number | null
 	icon_url: string
 }
 
