@@ -14,6 +14,7 @@ import {
 import { BOX_VECTOR, CONTENT_HASH_VECTORS } from "./e2ee-test-vectors"
 import { bytesToBase64 } from "./encoding"
 import { type StoredIdentity } from "./identity-store"
+import { getLocalMessageCopy } from "./local-message-store"
 import { e2eeRuntime } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
 import { getTrustedKey, saveTrustedKey } from "./trust-store"
@@ -809,6 +810,9 @@ describe("legacy cross-device sent-message recovery", () => {
 			next: null,
 		}
 
+		// Prove that recovery cannot rely on a cached local sender copy.
+		expect(await getLocalMessageCopy(accountId, 9303)).toBeNull()
+
 		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
 
 		expect(chatApi.getUserEncryptionBundle).toHaveBeenCalledWith(recipientId)
@@ -862,6 +866,67 @@ describe("legacy cross-device sent-message recovery", () => {
 
 		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
 
+		expect(recovered.results[0].content).toBe("Unable to decrypt message")
+		expect(recovered.results[0].content).not.toBe(envelope.content)
+		expect(recovered.results[0].content).not.toContain(envelope.content)
+	})
+
+	it("returns unavailable rather than ciphertext when the legacy fallback key is valid but incorrect", async () => {
+		const accountId = asPkid(9501)
+		const recipientId = asPkid(9502)
+
+		const identity: StoredIdentity = {
+			privateKey: BOX_VECTOR.aliceSecretKey,
+			publicKey: BOX_VECTOR.alicePublicKey,
+			updatedAt: Date.now(),
+		}
+
+		await e2eeRuntime.activate(accountId)
+		await e2eeRuntime.installIdentity(accountId, identity)
+
+		// Encrypt for Bob, so Alice's public key is not the correct
+		// recipient key for recovering this sent message.
+		const envelope = await prepareDirectMessageEnvelope({
+			plaintext: "legacy message must not be exposed",
+			senderPrivateKey: identity.privateKey,
+			senderPublicKey: identity.publicKey,
+			recipientPublicKey: BOX_VECTOR.bobPublicKey,
+		})
+
+		// This is valid Base64 representing a correctly sized 32-byte
+		// public key, but it is not the recipient key used for encryption.
+		vi.mocked(chatApi.getUserEncryptionBundle).mockResolvedValueOnce({
+			identity_public_key: bytesToBase64(BOX_VECTOR.alicePublicKey),
+		})
+
+		const page = {
+			results: [
+				{
+					id: 9503,
+					sender: { pkid: accountId },
+					receiver: { pkid: recipientId },
+					message_type: "text",
+					content: envelope.content,
+					nonce: envelope.nonce,
+					sender_ephemeral_key: envelope.sender_ephemeral_key,
+					metadata: {
+						e2ee: true,
+						e2ee_version: 1,
+						e2ee_algorithm: "nacl_box_curve25519xsalsa20poly1305",
+						e2ee_content_hash: envelope.e2ee_content_hash,
+					},
+				} as any,
+			],
+			next: null,
+		}
+
+		// Confirm that this exercises server-side legacy recovery,
+		// rather than displaying a locally cached plaintext copy.
+		expect(await getLocalMessageCopy(accountId, 9503)).toBeNull()
+
+		const recovered = await decryptDirectMessageHistoryPage(accountId, page)
+
+		expect(chatApi.getUserEncryptionBundle).toHaveBeenCalledWith(recipientId)
 		expect(recovered.results[0].content).toBe("Unable to decrypt message")
 		expect(recovered.results[0].content).not.toBe(envelope.content)
 		expect(recovered.results[0].content).not.toContain(envelope.content)
