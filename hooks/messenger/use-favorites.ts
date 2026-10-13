@@ -59,7 +59,7 @@ export function useFavorites() {
 		}
 		let cancelled = false
 		void Promise.all(query.data.map(async (user) => {
-			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type)
+			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type, user.last_message_id)
 			return [user.pkid, { lastMessageTime: user.last_message_time, preview }] as const
 		})).then((entries) => {
 			if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
