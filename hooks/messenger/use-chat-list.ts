@@ -42,7 +42,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 
 		void Promise.all(
 			query.data.users
-				.filter((user) => user.last_message_preview)
+				.filter((user) => user.last_message_preview || user.last_message_time)
 				.map(async (user) => {
 					const preview = await resolveLocalChatPreview(
 						accountId as Pkid,
@@ -69,7 +69,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 					...user,
 					last_message_preview:
 						previewOverrides.get(user.pkid) ??
-						(user.last_message_preview ? "Encrypted message" : null),
+						(user.last_message_preview || user.last_message_time\n\t\t\t\t\t\t\t? user.last_message_type\n\t\t\t\t\t\t\t\t? user.last_message_type === "text"\n\t\t\t\t\t\t\t\t\t? "Encrypted message"\n\t\t\t\t\t\t\t\t\t: user.last_message_type === "image" || user.last_message_type === "media"\n\t\t\t\t\t\t\t\t\t\t? "Image"\n\t\t\t\t\t\t\t\t\t\t: user.last_message_type === "voice" || user.last_message_type === "audio"\n\t\t\t\t\t\t\t\t\t\t\t? "Voice message"\n\t\t\t\t\t\t\t\t\t\t\t: user.last_message_type === "video" ? "Video" : user.last_message_type === "poll" ? "Poll" : user.last_message_type === "document" ? "Document" : user.last_message_type === "location" ? "Location" : user.last_message_type === "contact" ? "Contact" : user.last_message_type === "call" ? "Call" : user.last_message_type === "share" ? "Shared post" : "Encrypted message"\n\t\t\t\t\t\t\t\t\t: "Encrypted message"\n\t\t\t\t\t\t\t: null),
 				})),
 			}
 		: query.data
