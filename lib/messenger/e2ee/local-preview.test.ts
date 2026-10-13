@@ -23,6 +23,15 @@ describe("resolveLocalChatPreview", () => {
 		await expect(resolveLocalChatPreview(accountId, peerId, "ciphertext", latestTime, "text")).resolves.toBe("Hello")
 	})
 
+	it("requires an exact local message ID when the list provides one", async () => {
+		getLatestMock.mockResolvedValue({
+			accountId, messageId: 7, peerId, envelopeHash: "hash", plaintext: "Possibly stale",
+			messageType: "text", createdAt: Date.parse(latestTime), updatedAt: Date.now(),
+		})
+		await expect(resolveLocalChatPreview(accountId, peerId, "ciphertext", latestTime, "text", 8)).resolves.toBe("Encrypted message")
+		await expect(resolveLocalChatPreview(accountId, peerId, "ciphertext", latestTime, "text", 7)).resolves.toBe("Possibly stale")
+	})
+
 	it("does not use an older local copy as the latest preview", async () => {
 		getLatestMock.mockResolvedValue({
 			accountId, messageId: 6, peerId, envelopeHash: "old-hash", plaintext: "Old plaintext",
