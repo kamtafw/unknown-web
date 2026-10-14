@@ -2,10 +2,10 @@
 
 import { e2eeRuntime } from "@/lib/messenger/e2ee"
 import { clearDirectMessageOutbox } from "@/lib/messenger/e2ee/direct-message-outbox"
-import { useAuthStore } from "@/stores/auth-store"
 import { messengerRootKey } from "@/lib/messenger/query-keys"
-import { useQueryClient } from "@tanstack/react-query"
+import { useAuthStore } from "@/stores/auth-store"
 import type { Pkid } from "@/types/messenger"
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 
 /**
