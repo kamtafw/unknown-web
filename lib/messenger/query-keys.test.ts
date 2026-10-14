@@ -30,6 +30,12 @@ describe("chat-list query keys", () => {
 		)
 	})
 
+	it("isolates separate login sessions for the same account", () => {
+		expect(chatKeys.list("all", "", accountA, 1)).not.toEqual(
+			chatKeys.list("all", "", accountA, 3),
+		)
+	})
+
 	it("keeps all account-scoped lists under the broad lists prefix", () => {
 		const prefix = chatKeys.lists()
 		const key = chatKeys.list("unread", "", accountA)
