@@ -65,10 +65,11 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 			// fallback covers first-load ordering without allowing an old
 			// history request to reactivate an account after logout/switch.
 			if (e2eeRuntime.getActiveAccountId() !== accountId) {
-				await e2eeRuntime.activate(
+				const activated = await e2eeRuntime.activate(
 					accountId,
 					() => useAuthStore.getState().user?.pkid === accountId,
 				)
+				if (!activated) throw new StaleAccountHistoryRequestError()
 			}
 			if (
 				useAuthStore.getState().user?.pkid !== accountId ||
