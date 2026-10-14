@@ -9,6 +9,7 @@ import {
 	normalizeDirectMessage,
 } from "@/lib/messenger/e2ee/direct-message"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
 import { useAuthStore } from "@/stores/auth-store"
@@ -76,6 +77,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		if (!reconnected) return
 
 		queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+		invalidateSecondaryChatPreviewLists(queryClient)
 		queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
 		if (activeUuidRef.current) {
 			queryClient.invalidateQueries({ queryKey: chatKeys.history(activeUuidRef.current) })
@@ -183,6 +185,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						)
 					}
 					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					invalidateSecondaryChatPreviewLists(queryClient)
 					queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
 					return
 				}
@@ -190,6 +193,9 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				const isOpen = activeUuidRef.current === normalized.sender.id
 				upsertMessage(normalized)
 				const patchedList = bumpListPreview(normalized, isOpen)
+				// Favorites and Archive are separate query keys, so the main-list
+				// cache patch above cannot keep their previews current.
+				invalidateSecondaryChatPreviewLists(queryClient)
 
 				// BUG FIX (2026-08-15): this condition was inverted
 				// (`if (patchedList)`), which is very likely the main cause of

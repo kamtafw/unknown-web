@@ -82,6 +82,59 @@ export function resolvePreviewFallbackLabel(type: MessageType | string | null | 
 	}
 }
 
+
+/**
+ * Final display fallback for a sanitized direct-chat preview. This does not
+ * inspect or return server payloads; callers must resolve E2EE previews first.
+ */
+export function resolveChatListDisplayPreview(
+	preview: string | null | undefined,
+	type: MessageType | string | null | undefined,
+): string {
+	const trimmed = preview?.trim()
+	if (trimmed) return trimmed
+	return type ? resolvePreviewFallbackLabel(type) : "Preview unavailable"
+}
+
+/**
+ * Safe fallback for an E2EE direct-message preview when no matching local
+ * plaintext is available. The message type is presentation metadata only; it
+ * does not make the server-provided preview safe to render.
+ */
+export function resolveEncryptedPreviewFallback(
+	hasMessage: boolean,
+	type: MessageType | string | null | undefined,
+): string | null {
+	if (!hasMessage) return null
+
+	switch (type) {
+		case "image":
+		case "media":
+			return "Image"
+		case "video":
+			return "Video"
+		case "audio":
+		case "voice":
+			return "Voice message"
+		case "document":
+			return "Document"
+		case "location":
+			return "Location"
+		case "contact":
+			return "Contact"
+		case "poll":
+			return "Poll"
+		case "call":
+			return "Call"
+		case "share":
+			return "Shared post"
+		case "sticker":
+			return "Sticker"
+		default:
+			return "Encrypted message"
+	}
+}
+
 /** Shared by PinnedMessageBanner, the reply-quote inside MessageBubble,
  * and ReplyPreviewBar — one place for "what should this message look like
  * when quoted/previewed", instead of three divergent copies. Takes just

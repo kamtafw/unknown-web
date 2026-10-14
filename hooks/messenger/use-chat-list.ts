@@ -2,6 +2,7 @@
 
 import { chatApi } from "@/lib/messenger/api"
 import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { projectWithOverlays } from "@/lib/messenger/list-overlay"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
@@ -30,11 +31,11 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		}),
 	})
 
-	const [previewOverrides, setPreviewOverrides] = useState<Map<number, string>>(new Map())
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
 
 	useEffect(() => {
 		if (!accountId || !query.data?.users.length) {
-			setPreviewOverrides(new Map())
+			setPreviewOverrides(null)
 			return
 		}
 
@@ -42,19 +43,24 @@ export function useChatList(filter: ChatListFilter, search: string) {
 
 		void Promise.all(
 			query.data.users
-				.filter((user) => user.last_message_preview)
+				.filter((user) => user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null)
 				.map(async (user) => {
 					const preview = await resolveLocalChatPreview(
 						accountId as Pkid,
 						user.pkid as Pkid,
 						user.last_message_preview,
+						user.last_message_time,
+						user.last_message_type,
+						user.last_message_id,
 					)
 
-					return [user.pkid, preview] as const
+					return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
 				}),
 		).then((entries) => {
 			if (cancelled) return
-			setPreviewOverrides(new Map(entries))
+			setPreviewOverrides({ accountId, values: new Map(entries) })
+		}).catch(() => {
+			if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
 		})
 
 		return () => {
@@ -65,12 +71,14 @@ export function useChatList(filter: ChatListFilter, search: string) {
 	const data = query.data
 		? {
 				...query.data,
-				users: query.data.users.map((user) => ({
-					...user,
-					last_message_preview:
-						previewOverrides.get(user.pkid) ??
-						(user.last_message_preview ? "Encrypted message" : null),
-				})),
+				users: query.data.users.map((user) => {
+					const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
+					const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
+					return {
+						...user,
+						last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null), user.last_message_type),
+					}
+				}),
 			}
 		: query.data
 
