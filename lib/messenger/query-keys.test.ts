@@ -18,3 +18,21 @@ describe("direct-message history query keys", () => {
 		expect(chatKeys.history(peerUuid, accountA).slice(0, prefix.length)).toEqual(prefix)
 	})
 })
+
+
+describe("chat-list query keys", () => {
+	const accountA = 101 as Pkid
+	const accountB = 202 as Pkid
+
+	it("isolates the same filter and search by authenticated account", () => {
+		expect(chatKeys.list("all", "alice", accountA)).not.toEqual(
+			chatKeys.list("all", "alice", accountB),
+		)
+	})
+
+	it("keeps all account-scoped lists under the broad lists prefix", () => {
+		const prefix = chatKeys.lists()
+		const key = chatKeys.list("unread", "", accountA)
+		expect(key.slice(0, prefix.length)).toEqual(prefix)
+	})
+})
