@@ -127,18 +127,13 @@ export function useChatSocket(activeUuid: Uuid | null) {
 
 		const unsubReceive = messengerSocket.on<Message>(
 			CHAT_SOCKET_EVENTS.RECEIVE,
-			async (rawMessage) => {
+			async (message) => {
 				// Defensive normalization: the guide only describes this event as
 				// a table entry, not an exact JSON schema, and it's never been
 				// verified against a real payload from this environment. If the
 				// real event nests sender differently than the REST `Message`
 				// shape (e.g. a flat `senderId` instead of `sender.id`), silently
 				// trusting `message.sender.id` would break both
-				const message = rawMessage
-				if (process.env.NODE_ENV !== "production") {
-					console.info("[messenger] chat:receive payload", rawMessage)
-				}
-
 				const normalized =
 					currentAccountId !== null
 						? await normalizeDirectMessage({
@@ -180,8 +175,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				if (!normalized?.sender?.id) {
 					if (process.env.NODE_ENV !== "production") {
 						console.warn(
-							"[messenger] chat:receive arrived without a usable sender.id — ",
-							+"see the console.debug above and check MESSENGER.md's open items.",
+							"[messenger] chat:receive arrived without a usable sender.id — check MESSENGER.md's open items.",
 						)
 					}
 					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
