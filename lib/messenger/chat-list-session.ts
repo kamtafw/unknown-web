@@ -1,3 +1,8 @@
+export interface ChatListSession {
+	accountId: number | null
+	generation: number
+}
+
 export class StaleChatListSessionError extends Error {
 	constructor() {
 		super("Chat-list request belongs to a stale account session")
@@ -6,24 +11,27 @@ export class StaleChatListSessionError extends Error {
 }
 
 /**
- * Prevents an account's outstanding list request from producing cacheable
- * data after logout or an account switch. Query keys must also include the
- * captured account ID; this guard closes the in-flight request race.
+ * Prevents a request from producing cacheable data after logout, account
+ * switch, or logout/relogin to the same account. Query keys must also include
+ * the captured account ID and session generation.
  */
 export async function fetchForChatListSession<T>(
-	accountId: number | null,
-	getCurrentAccountId: () => number | null,
+	session: ChatListSession,
+	getCurrentSession: () => ChatListSession,
 	fetchList: () => Promise<T>,
 ): Promise<T> {
-	if (accountId === null || getCurrentAccountId() !== accountId) {
-		throw new StaleChatListSessionError()
+	const isCurrent = () => {
+		const current = getCurrentSession()
+		return current.accountId !== null &&
+			current.accountId === session.accountId &&
+			current.generation === session.generation
 	}
+
+	if (!isCurrent()) throw new StaleChatListSessionError()
 
 	const result = await fetchList()
 
-	if (getCurrentAccountId() !== accountId) {
-		throw new StaleChatListSessionError()
-	}
+	if (!isCurrent()) throw new StaleChatListSessionError()
 
 	return result
 }
