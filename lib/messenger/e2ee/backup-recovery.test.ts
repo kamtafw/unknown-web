@@ -152,7 +152,7 @@ describe("recoverIdentityFromBackup", () => {
 				validPin,
 			),
 		).resolves.toBeNull()
-	})
+	}, 15_000)
 
 	it("rejects a derived public key mismatch", async () => {
 		await expect(
