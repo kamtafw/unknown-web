@@ -56,11 +56,6 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 				throw new StaleAccountHistoryRequestError()
 			}
 
-			const page = await chatApi.history(userUuid as string, pageParam)
-			if (useAuthStore.getState().user?.pkid !== accountId) {
-				throw new StaleAccountHistoryRequestError()
-			}
-
 			// The lifecycle bootstrap normally owns activation. The guarded
 			// fallback covers first-load ordering without allowing an old
 			// history request to reactivate an account after logout/switch.
@@ -77,8 +72,16 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 			) {
 				throw new StaleAccountHistoryRequestError()
 			}
-
 			const sessionToken = e2eeRuntime.getSessionToken()
+
+			const page = await chatApi.history(userUuid as string, pageParam)
+			if (
+				useAuthStore.getState().user?.pkid !== accountId ||
+				!e2eeRuntime.isCurrentSession(accountId, sessionToken)
+			) {
+				throw new StaleAccountHistoryRequestError()
+			}
+
 			const decrypted = await decryptDirectMessageHistoryPage(accountId, page)
 			if (
 				useAuthStore.getState().user?.pkid !== accountId ||
