@@ -22,6 +22,8 @@ interface AuthStore {
 	isAuthenticated: boolean
 	pendingAuth: PendingAuth | null
 	photoVersions: PhotoVersions
+	/** In-memory epoch bumped on logout and authenticated account changes; never persisted. */
+	sessionGeneration: number
 	setPendingAuth: (data: LoginUser, pre_auth_token?: string) => void
 	setUser: (data: FullUser) => void
 	bumpPhotoVersion: (type: keyof PhotoVersions) => void
@@ -46,6 +48,7 @@ export const useAuthStore = create<AuthStore>()(
 			isAuthenticated: false,
 			pendingAuth: null,
 			photoVersions: { profile: 0, cover: 0 },
+			sessionGeneration: 0,
 
 			setPendingAuth: (loginUser, pre_auth_token) =>
 				set({
@@ -67,6 +70,7 @@ export const useAuthStore = create<AuthStore>()(
 					},
 					isAuthenticated: true,
 					pendingAuth: null,
+					sessionGeneration: state.sessionGeneration + (state.user?.pkid !== user.pkid ? 1 : 0),
 				})),
 
 			bumpPhotoVersion: (type) =>
@@ -74,7 +78,7 @@ export const useAuthStore = create<AuthStore>()(
 					photoVersions: { ...state.photoVersions, [type]: Date.now() },
 				})),
 			clearPendingAuth: () => set({ pendingAuth: null }),
-			logout: () => set({ user: null, isAuthenticated: false, pendingAuth: null }),
+			logout: () => set((state) => ({ user: null, isAuthenticated: false, pendingAuth: null, sessionGeneration: state.sessionGeneration + 1 })),
 		}),
 		{
 			name: "auth-store",
