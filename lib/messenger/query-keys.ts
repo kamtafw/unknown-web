@@ -20,8 +20,8 @@ export const chatKeys = {
 	all: ["messenger", "chats"] as const,
 
 	lists: () => [...chatKeys.all, "list"] as const,
-	list: (filter: ChatListFilter, search?: string) =>
-		[...chatKeys.lists(), { filter, search: search ?? "" }] as const,
+	list: (filter: ChatListFilter, search?: string, accountId?: Pkid | null) =>
+		[...chatKeys.lists(), { filter, search: search ?? "", accountId: accountId ?? null }] as const,
 	unreadCount: () => [...chatKeys.all, "unread-count"] as const,
 
 	histories: () => [...chatKeys.all, "history"] as const,
