@@ -77,11 +77,11 @@ export function useChatHistory(userUuid: Uuid | undefined) {
 				throw new StaleAccountHistoryRequestError()
 			}
 
-			const generation = e2eeRuntime.getGenerationToken()
+			const sessionToken = e2eeRuntime.getSessionToken()
 			const decrypted = await decryptDirectMessageHistoryPage(accountId, page)
 			if (
 				useAuthStore.getState().user?.pkid !== accountId ||
-				!e2eeRuntime.isCurrentAccount(accountId, generation)
+				!e2eeRuntime.isCurrentSession(accountId, sessionToken)
 			) {
 				throw new StaleAccountHistoryRequestError()
 			}
