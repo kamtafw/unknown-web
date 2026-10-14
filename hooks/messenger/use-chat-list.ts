@@ -28,11 +28,10 @@ export function useChatList(filter: ChatListFilter, search: string) {
 			!(error instanceof StaleChatListSessionError) && failureCount < 3,
 		staleTime: 30_000,
 		// Field-toggle and list-membership mutations (pin/mute/archive/
-		// block) register an overlay against the single "chat-list" bucket
-		// — deliberately not scoped per filter/search variant, so pinning
-		// or archiving a row while on "All" is reflected immediately on
-		// "Unread" too, not just whichever tab was open when the action
-		// happened. See hooks/messenger/use-chat-list-actions.ts and
+		// block) register an overlay against one account's chat-list bucket
+		// — deliberately shared across that account's filter/search variants,
+		// so pinning or archiving on "All" is reflected on "Unread" too
+		// without projecting one account's optimistic state into another's. See hooks/messenger/use-chat-list-actions.ts and
 		// lib/messenger/list-overlay.ts `select` re-runs on every fresh
 		// fetch, which is exactly when overlays need to reconcile.
 		select: (data) => ({
