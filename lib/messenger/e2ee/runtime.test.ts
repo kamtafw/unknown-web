@@ -261,6 +261,20 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 	})
 })
 
+describe("guarded activate", () => {
+	it("does not supersede the runtime when its caller is already stale", async () => {
+		await e2eeRuntime.activate(accountB)
+		const generation = e2eeRuntime.getGenerationToken()
+		const sessionToken = e2eeRuntime.getSessionToken()
+
+		await e2eeRuntime.activate(accountA, () => false)
+
+		expect(e2eeRuntime.getActiveAccountId()).toBe(accountB)
+		expect(e2eeRuntime.getGenerationToken()).toBe(generation)
+		expect(e2eeRuntime.getSessionToken()).toBe(sessionToken)
+	})
+})
+
 describe("session token", () => {
 	it("remains stable across same-account storage refreshes but changes on account switch and clear", async () => {
 		await e2eeRuntime.activate(accountA)
