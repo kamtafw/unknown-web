@@ -33,7 +33,7 @@ async function saveCopy(accountId: typeof accountA, messageId: number, plaintext
 		envelopeHash: `envelope-${messageId}`,
 		plaintext,
 		messageType: "text",
-		createdAt: "2026-10-14T08:00:00.000Z",
+		createdAt: new Date(Date.parse("2026-10-14T08:00:00.000Z") + messageId * 1000).toISOString(),
 	})
 }
 
