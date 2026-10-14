@@ -2,8 +2,12 @@
 
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, FavoriteItem, isFavoriteUserTarget } from "@/lib/messenger/api"
-import { clearListOverlay, projectWithOverlays, setListOverlay } from "@/lib/messenger/list-overlay"
 import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+import { clearListOverlay, projectWithOverlays, setListOverlay } from "@/lib/messenger/list-overlay"
+<<<<<<< HEAD
+import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+=======
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { toast } from "@/lib/toast"
@@ -51,7 +55,17 @@ export function useFavorites() {
 			return projectWithOverlays<ChatListItem>(OVERLAY_KEY, items)
 		},
 	})
+<<<<<<< HEAD
 	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
+=======
+	const [previewOverrides, setPreviewOverrides] = useState<{
+		accountId: number
+		values: Map<
+			number,
+			{ lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }
+		>
+	} | null>(null)
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 	useEffect(() => {
 		if (!accountId || !query.data?.length) {
@@ -59,6 +73,7 @@ export function useFavorites() {
 			return
 		}
 		let cancelled = false
+<<<<<<< HEAD
 		void Promise.all(query.data.map(async (user) => {
 			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type, user.last_message_id)
 			return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
@@ -68,16 +83,68 @@ export function useFavorites() {
 			if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
 		})
 		return () => { cancelled = true }
+=======
+		void Promise.all(
+			query.data.map(async (user) => {
+				const preview = await resolveLocalChatPreview(
+					accountId as Pkid,
+					user.pkid as Pkid,
+					user.last_message_preview,
+					user.last_message_time,
+					user.last_message_type,
+					user.last_message_id,
+				)
+				return [
+					user.pkid,
+					{ lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview },
+				] as const
+			}),
+		)
+			.then((entries) => {
+				if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
+			})
+			.catch(() => {
+				if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
+			})
+		return () => {
+			cancelled = true
+		}
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 	}, [accountId, query.data])
 
 	return {
 		...query,
 		data: query.data?.map((user) => {
+<<<<<<< HEAD
 			const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
 			const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
 			return {
 				...user,
 				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null), user.last_message_type),
+=======
+			const cached =
+				previewOverrides?.accountId === accountId
+					? previewOverrides.values.get(user.pkid)
+					: undefined
+			const localPreview =
+				cached?.lastMessageTime === user.last_message_time &&
+				cached.lastMessageId === user.last_message_id
+					? cached.preview
+					: undefined
+			return {
+				...user,
+				last_message_preview:
+					localPreview ??
+					resolveEncryptedPreviewFallback(
+						Boolean(
+							user.last_message_preview ||
+							user.last_message_time ||
+							user.last_message_type ||
+							user.last_message_id != null,
+						),
+						user.last_message_type,
+					),
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 			}
 		}),
 	}

@@ -29,33 +29,33 @@ This is an **encryption identity-key backup**, not a complete chat-history backu
 Retrieve the authenticated user's backup:
 
 ```http
-GET /api/v1/chats/users/key-backup  
+GET /api/v1/chats/users/key-backup
 Authorization: Bearer <token>
 ```
 
 The backend wraps successful responses. With Axios, read `response.data.data` as the backup; `response.data` is the API envelope, not the backup:
 
 ```json
-{  
-"success": true,  
-"status_code": 200,  
-"message": null,  
-"data": {  
-"format_version": 1,  
-"recovery_method": "six_digit_pin",  
-"identity_public_key": "<standard Base64>",  
-"encryption_algorithm": "nacl_secretbox_xsalsa20poly1305",  
-"ciphertext": "<standard Base64>",  
-"nonce": "<standard Base64>",  
-"kdf": {  
-"algorithm": "pbkdf2",  
-"prf": "hmac_sha256",  
-"salt": "<standard Base64>",  
-"iterations": 600000,  
-"output_length": 32  
-},  
-"updated_at": "<ISO 8601 timestamp>"  
-}  
+{
+	"success": true,
+	"status_code": 200,
+	"message": null,
+	"data": {
+		"format_version": 1,
+		"recovery_method": "six_digit_pin",
+		"identity_public_key": "<standard Base64>",
+		"encryption_algorithm": "nacl_secretbox_xsalsa20poly1305",
+		"ciphertext": "<standard Base64>",
+		"nonce": "<standard Base64>",
+		"kdf": {
+			"algorithm": "pbkdf2",
+			"prf": "hmac_sha256",
+			"salt": "<standard Base64>",
+			"iterations": 600000,
+			"output_length": 32
+		},
+		"updated_at": "<ISO 8601 timestamp>"
+	}
 }
 ```
 
@@ -71,9 +71,8 @@ When the user opens Messenger without a local account identity, show recovery in
 
 Require the version-1 fixed values and decoded byte lengths:
 
-
 | Field                  | Required value                                    |
-|------------------------|---------------------------------------------------|
+| ---------------------- | ------------------------------------------------- |
 | `format_version`       | `1`                                               |
 | `recovery_method`      | `six_digit_pin`                                   |
 | `encryption_algorithm` | `nacl_secretbox_xsalsa20poly1305`                 |
@@ -86,7 +85,6 @@ Require the version-1 fixed values and decoded byte lengths:
 | `kdf.iterations`       | Integer from `600000` through `2000000` inclusive |
 | `kdf.output_length`    | `32`                                              |
 
-
 The GET envelope's `data` field contains the normative backup object plus the optional `updated_at` timestamp. Permit that response metadata inside `data`; reject other unknown backup or KDF fields, Base64URL, malformed Base64, unsupported values, and incorrect decoded lengths before key derivation. All decoded lengths apply to raw bytes, not Base64 string lengths. Use the downloaded iteration count, not a hard-coded restore default.
 
 ### 2.2 Legacy and unsupported backups
@@ -98,7 +96,6 @@ Show **Update the backup on your original device**, with these instructions:
 1. On an original mobile device that still holds the matching private identity key, open Messenger settings → Encryption key backup.
 2. Enter and confirm a six-digit recovery PIN and replace the backup. Mobile creates a fresh PBKDF2 backup with a new salt and nonce while preserving the same identity key.
 3. In the browser, select **Check for updated backup**. Refetch using GET, reclassify and validate the response, then offer PIN recovery only for a supported backup.
-
 
 Warn users not to delete the legacy backup unless an original device still holds the matching private key. If no device retains that key, first verify that the unwrapped backup is genuinely unsupported rather than a misread API envelope. If no compatible backup reader exists, matching messages cannot be recovered. The mobile app may offer an explicit new-key setup after explaining that it cannot unlock old messages; web must never migrate the backup or generate replacement keys.
 
@@ -115,40 +112,36 @@ Warn users not to delete the legacy backup unless an original device still holds
 9. Clear PIN state and mutable temporary buffers where possible.
 
 ```ts
-const material = await crypto.subtle.importKey(  
-  "raw",  
-  new TextEncoder().encode(pin),  
-  "PBKDF2",  
-  false,  
-  ["deriveBits"],  
-);  
-const bits = await crypto.subtle.deriveBits(  
-  {  
-    name: "PBKDF2",  
-    hash: "SHA-256",  
-    salt: decodedSalt,  
-    iterations: backup.kdf.iterations,  
-  },  
-  material,  
-  256,  
-);  
-const wrappingKey = new Uint8Array(bits);  
-const privateKey = nacl.secretbox.open(  
-  decodedCiphertext,  
-  decodedNonce,  
-  wrappingKey,  
-);
+const material = await crypto.subtle.importKey(
+	"raw",
+	new TextEncoder().encode(pin),
+	"PBKDF2",
+	false,
+	["deriveBits"],
+)
+const bits = await crypto.subtle.deriveBits(
+	{
+		name: "PBKDF2",
+		hash: "SHA-256",
+		salt: decodedSalt,
+		iterations: backup.kdf.iterations,
+	},
+	material,
+	256,
+)
+const wrappingKey = new Uint8Array(bits)
+const privateKey = nacl.secretbox.open(decodedCiphertext, decodedNonce, wrappingKey)
 ```
 
 Before installation, derive and verify the public key. The identity is already registered by mobile; web must not call identity-registration/upload endpoints, even with the same key:
 
 ```ts
-if (!privateKey || privateKey.length !== 32) throw new Error("Recovery failed");  
-const keyPair = nacl.box.keyPair.fromSecretKey(privateKey);  
-if (!constantTimeEqual(keyPair.publicKey, decodedIdentityPublicKey)) {  
-throw new Error("Recovery failed");  
-}  
-await identityStorage.installAtomically(accountId, keyPair);
+if (!privateKey || privateKey.length !== 32) throw new Error("Recovery failed")
+const keyPair = nacl.box.keyPair.fromSecretKey(privateKey)
+if (!constantTimeEqual(keyPair.publicKey, decodedIdentityPublicKey)) {
+	throw new Error("Recovery failed")
+}
+await identityStorage.installAtomically(accountId, keyPair)
 ```
 
 The PIN remains local. Web must never call the backup endpoint with `PUT` or `DELETE`.
@@ -160,10 +153,10 @@ On failure, install nothing, retain any existing verified local identity, clear 
 After successful recovery, preserve message-version dispatch for existing records:
 
 ```json
-{  
-  "e2ee": true,  
-  "e2ee_version": 1,  
-  "e2ee_algorithm": "nacl_box_curve25519xsalsa20poly1305"  
+{
+	"e2ee": true,
+	"e2ee_version": 1,
+	"e2ee_algorithm": "nacl_box_curve25519xsalsa20poly1305"
 }
 ```
 
@@ -191,18 +184,18 @@ The server stores ciphertext and routing metadata. It must never receive direct-
 Before encrypting a direct message, fetch the recipient's bundle using their numeric PKID:
 
 ```http
-GET /api/v1/chats/users/{recipientPkid}/encryption-bundle  
+GET /api/v1/chats/users/{recipientPkid}/encryption-bundle
 Authorization: Bearer <token>
 ```
 
 The relevant response field is:
 
 ```json
-{  
-  "data": {  
-    "user_id": 42,  
-    "identity_public_key": "<standard Base64 of 32 bytes>"  
-  }  
+{
+	"data": {
+		"user_id": 42,
+		"identity_public_key": "<standard Base64 of 32 bytes>"
+	}
 }
 ```
 
@@ -220,36 +213,36 @@ Encryption inputs are:
 - a new random 24-byte nonce.
 
 ```ts
-import nacl from "tweetnacl";  
-import util from "tweetnacl-util";  
+import nacl from "tweetnacl"
+import util from "tweetnacl-util"
 
-function encryptDirectText(  
-plaintext: string,  
-recipientPublicKeyBase64: string,  
-senderPrivateKeyBase64: string,  
-) {  
-const recipientPublicKey = util.decodeBase64(recipientPublicKeyBase64);  
-const senderPrivateKey = util.decodeBase64(senderPrivateKeyBase64);  
+function encryptDirectText(
+	plaintext: string,
+	recipientPublicKeyBase64: string,
+	senderPrivateKeyBase64: string,
+) {
+	const recipientPublicKey = util.decodeBase64(recipientPublicKeyBase64)
+	const senderPrivateKey = util.decodeBase64(senderPrivateKeyBase64)
 
-if (recipientPublicKey.length !== nacl.box.publicKeyLength) {  
-throw new Error("Recipient encryption key must be 32 bytes");  
-}  
-if (senderPrivateKey.length !== nacl.box.secretKeyLength) {  
-throw new Error("Sender encryption key must be 32 bytes");  
-}  
+	if (recipientPublicKey.length !== nacl.box.publicKeyLength) {
+		throw new Error("Recipient encryption key must be 32 bytes")
+	}
+	if (senderPrivateKey.length !== nacl.box.secretKeyLength) {
+		throw new Error("Sender encryption key must be 32 bytes")
+	}
 
-const nonce = nacl.randomBytes(nacl.box.nonceLength);  
-const ciphertext = nacl.box(  
-util.decodeUTF8(plaintext),  
-nonce,  
-recipientPublicKey,  
-senderPrivateKey,  
-);  
+	const nonce = nacl.randomBytes(nacl.box.nonceLength)
+	const ciphertext = nacl.box(
+		util.decodeUTF8(plaintext),
+		nonce,
+		recipientPublicKey,
+		senderPrivateKey,
+	)
 
-return {  
-ciphertext: util.encodeBase64(ciphertext),  
-nonce: util.encodeBase64(nonce),  
-};  
+	return {
+		ciphertext: util.encodeBase64(ciphertext),
+		nonce: util.encodeBase64(nonce),
+	}
 }
 ```
 
@@ -258,25 +251,25 @@ The sender's public identity key is placed in the transport field named `sender_
 Send the encrypted message through the normal direct-message endpoint:
 
 ```http
-POST /api/v1/chats/messages  
-Authorization: Bearer <token>  
+POST /api/v1/chats/messages
+Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
 ```json
-{  
-"receiver_id": 42,  
-"message_type": "text",  
-"content": "<standard Base64 ciphertext>",  
-"nonce": "<standard Base64 24-byte nonce>",  
-"sender_ephemeral_key": "<sender identity public key; standard Base64, 32 bytes>",  
-"metadata": {  
-"e2ee": true,  
-"e2ee_version": 1,  
-"e2ee_algorithm": "nacl_box_curve25519xsalsa20poly1305",  
-"recipient_identity_public_key": "<recipient key used to encrypt this message; standard Base64, 32 bytes>",  
-"e2ee_content_hash": "<SHA-256 envelope fingerprint>"  
-}  
+{
+	"receiver_id": 42,
+	"message_type": "text",
+	"content": "<standard Base64 ciphertext>",
+	"nonce": "<standard Base64 24-byte nonce>",
+	"sender_ephemeral_key": "<sender identity public key; standard Base64, 32 bytes>",
+	"metadata": {
+		"e2ee": true,
+		"e2ee_version": 1,
+		"e2ee_algorithm": "nacl_box_curve25519xsalsa20poly1305",
+		"recipient_identity_public_key": "<recipient key used to encrypt this message; standard Base64, 32 bytes>",
+		"e2ee_content_hash": "<SHA-256 envelope fingerprint>"
+	}
 }
 ```
 
@@ -285,9 +278,9 @@ Include ordinary fields such as `reply_to` when applicable. Do not put plaintext
 For compatibility, calculate `e2ee_content_hash` as lowercase hexadecimal SHA-256 of this exact UTF-8 string:
 
 ```ts
-const canonicalEnvelope = [ciphertext, nonce, senderPublicKey]  
-  .map((value) => `${value.length}:${value}`)  
-  .join("|");
+const canonicalEnvelope = [ciphertext, nonce, senderPublicKey]
+	.map((value) => `${value.length}:${value}`)
+	.join("|")
 ```
 
 The string lengths are JavaScript string lengths of the Base64 values. The hash fingerprints the envelope for local plaintext-cache validation; it is not a replacement for NaCl authentication.
@@ -297,13 +290,12 @@ The string lengths are JavaScript string lengths of the Base64 values. The hash 
 Treat a message as v1 encrypted only when all of these are true:
 
 ```ts
-message.metadata?.e2ee === true &&  
-message.metadata?.e2ee_version === 1 &&  
-message.metadata?.e2ee_algorithm ===  
-"nacl_box_curve25519xsalsa20poly1305" &&  
-typeof message.content === "string" &&  
-typeof message.nonce === "string" &&  
-typeof message.sender_ephemeral_key === "string"
+message.metadata?.e2ee === true &&
+	message.metadata?.e2ee_version === 1 &&
+	message.metadata?.e2ee_algorithm === "nacl_box_curve25519xsalsa20poly1305" &&
+	typeof message.content === "string" &&
+	typeof message.nonce === "string" &&
+	typeof message.sender_ephemeral_key === "string"
 ```
 
 Do not attempt to decrypt partially marked or unsupported envelopes. Fail closed and show an unavailable-encrypted-message state.
@@ -320,38 +312,33 @@ For a received message, use:
 Verify that the message's sender key matches the account-scoped trusted key for `message.sender.pkid`. If trust has not yet been established, compare it with a freshly authenticated encryption bundle before pinning it. A mismatch must not be silently accepted.
 
 ```ts
-function decryptIncomingText(  
-  ciphertextBase64: string,  
-  nonceBase64: string,  
-  senderPublicKeyBase64: string,  
-  recipientPrivateKeyBase64: string,  
-): string | null {  
-  const ciphertext = util.decodeBase64(ciphertextBase64);  
-  const nonce = util.decodeBase64(nonceBase64);  
-  const senderPublicKey = util.decodeBase64(senderPublicKeyBase64);  
-  const recipientPrivateKey = util.decodeBase64(recipientPrivateKeyBase64);  
-  
-  if (nonce.length !== nacl.box.nonceLength) {  
-    throw new Error("Encrypted message nonce must be 24 bytes");  
-  }  
-  if (senderPublicKey.length !== nacl.box.publicKeyLength) {  
-    throw new Error("Sender encryption key must be 32 bytes");  
-  }  
-  if (recipientPrivateKey.length !== nacl.box.secretKeyLength) {  
-    throw new Error("Recipient encryption key must be 32 bytes");  
-  }  
-  if (ciphertext.length < nacl.box.overheadLength) {  
-    throw new Error("Encrypted message ciphertext is too short");  
-  }  
-  
-  const plaintext = nacl.box.open(  
-    ciphertext,  
-    nonce,  
-    senderPublicKey,  
-    recipientPrivateKey,  
-  );  
-  
-  return plaintext ? util.encodeUTF8(plaintext) : null;  
+function decryptIncomingText(
+	ciphertextBase64: string,
+	nonceBase64: string,
+	senderPublicKeyBase64: string,
+	recipientPrivateKeyBase64: string,
+): string | null {
+	const ciphertext = util.decodeBase64(ciphertextBase64)
+	const nonce = util.decodeBase64(nonceBase64)
+	const senderPublicKey = util.decodeBase64(senderPublicKeyBase64)
+	const recipientPrivateKey = util.decodeBase64(recipientPrivateKeyBase64)
+
+	if (nonce.length !== nacl.box.nonceLength) {
+		throw new Error("Encrypted message nonce must be 24 bytes")
+	}
+	if (senderPublicKey.length !== nacl.box.publicKeyLength) {
+		throw new Error("Sender encryption key must be 32 bytes")
+	}
+	if (recipientPrivateKey.length !== nacl.box.secretKeyLength) {
+		throw new Error("Recipient encryption key must be 32 bytes")
+	}
+	if (ciphertext.length < nacl.box.overheadLength) {
+		throw new Error("Encrypted message ciphertext is too short")
+	}
+
+	const plaintext = nacl.box.open(ciphertext, nonce, senderPublicKey, recipientPrivateKey)
+
+	return plaintext ? util.encodeUTF8(plaintext) : null
 }
 ```
 
@@ -364,32 +351,34 @@ For each new direct text message, store the recipient public identity key used f
 After restoring the sender's identity on a new device, read the sent message's ciphertext and nonce from the server. Verify that its `sender_ephemeral_key` matches the public key derived from the restored sender private key. Decode and validate the recorded recipient public key, nonce, and ciphertext, then decrypt with the restored sender private key:
 
 ```ts
-function decryptSentText(  
-ciphertextBase64: string,  
-nonceBase64: string,  
-senderPublicKeyBase64: string,  
-recipientPublicKeyBase64: string,  
-senderPrivateKeyBase64: string,  
-): string | null {  
-const ciphertext = util.decodeBase64(ciphertextBase64);  
-const nonce = util.decodeBase64(nonceBase64);  
-const senderPublicKey = util.decodeBase64(senderPublicKeyBase64);  
-const recipientPublicKey = util.decodeBase64(recipientPublicKeyBase64);  
-const senderPrivateKey = util.decodeBase64(senderPrivateKeyBase64);  
+function decryptSentText(
+	ciphertextBase64: string,
+	nonceBase64: string,
+	senderPublicKeyBase64: string,
+	recipientPublicKeyBase64: string,
+	senderPrivateKeyBase64: string,
+): string | null {
+	const ciphertext = util.decodeBase64(ciphertextBase64)
+	const nonce = util.decodeBase64(nonceBase64)
+	const senderPublicKey = util.decodeBase64(senderPublicKeyBase64)
+	const recipientPublicKey = util.decodeBase64(recipientPublicKeyBase64)
+	const senderPrivateKey = util.decodeBase64(senderPrivateKeyBase64)
 
-if (ciphertext.length < nacl.box.overheadLength ||  
-nonce.length !== nacl.box.nonceLength ||  
-senderPublicKey.length !== nacl.box.publicKeyLength ||  
-recipientPublicKey.length !== nacl.box.publicKeyLength ||  
-senderPrivateKey.length !== nacl.box.secretKeyLength) {  
-throw new Error("Invalid encrypted message envelope");  
-}  
-if (!nacl.verify(senderPublicKey, nacl.box.keyPair.fromSecretKey(senderPrivateKey).publicKey)) {  
-throw new Error("Sent message does not match restored sender identity");  
-}  
+	if (
+		ciphertext.length < nacl.box.overheadLength ||
+		nonce.length !== nacl.box.nonceLength ||
+		senderPublicKey.length !== nacl.box.publicKeyLength ||
+		recipientPublicKey.length !== nacl.box.publicKeyLength ||
+		senderPrivateKey.length !== nacl.box.secretKeyLength
+	) {
+		throw new Error("Invalid encrypted message envelope")
+	}
+	if (!nacl.verify(senderPublicKey, nacl.box.keyPair.fromSecretKey(senderPrivateKey).publicKey)) {
+		throw new Error("Sent message does not match restored sender identity")
+	}
 
-const plaintext = nacl.box.open(ciphertext, nonce, recipientPublicKey, senderPrivateKey);  
-return plaintext ? util.encodeUTF8(plaintext) : null;  
+	const plaintext = nacl.box.open(ciphertext, nonce, recipientPublicKey, senderPrivateKey)
+	return plaintext ? util.encodeUTF8(plaintext) : null
 }
 ```
 
@@ -418,9 +407,7 @@ If the browser does not have an approved E2EE key/session:
 
 Suggested product text:
 
->
 > This encrypted message is unavailable on this device. Restore your encryption key, or use the AppsCombo mobile app to create a backup first.
->
 
 Do not say that the message is corrupt, deleted, or permanently unrecoverable unless the server supplies a distinct authoritative state.
 
@@ -481,5 +468,3 @@ Clear mutable temporary key and plaintext buffers where possible. PIN strings ar
 - A future protocol uses a new message version while retaining the v1 identity key and read-only v1 decryptor for supported history; old ciphertext is never rewritten in place.
 
 Do not extend web beyond restore-only backup access without a new explicit product and security decision.
-
- 

@@ -9,6 +9,7 @@ import {
 import { saveLocalMessageCopy } from "@/lib/messenger/e2ee/local-message-store"
 import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { createOptimisticMessage, withStatus } from "@/lib/messenger/optimistic"
+import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { useAuthStore } from "@/stores/auth-store"
@@ -60,10 +61,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				const activated = await e2eeRuntime.activate(activeAccountId, isCurrentAccount)
 				if (!activated) return null
 			}
+<<<<<<< HEAD
 			if (
 				!isCurrentAccount() ||
 				e2eeRuntime.getActiveAccountId() !== activeAccountId
 			) {
+=======
+			if (!isCurrentAccount() || e2eeRuntime.getActiveAccountId() !== activeAccountId) {
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				return null
 			}
 			const sessionToken = e2eeRuntime.getSessionToken()
@@ -72,10 +77,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const bundle = await chatApi.getUserEncryptionBundle(receiverPkid)
+<<<<<<< HEAD
 				if (
 					!isCurrentAccount() ||
 					!e2eeRuntime.isCurrentSession(activeAccountId, sessionToken)
 				) {
+=======
+				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(activeAccountId, sessionToken)) {
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					return null
 				}
 				const payload = await prepareDirectMessageSendPayload({
@@ -89,10 +98,14 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					metadata: options.metadata,
 					reply_to: options.replyingTo ? options.replyingTo.id : undefined,
 				})
+<<<<<<< HEAD
 				if (
 					!isCurrentAccount() ||
 					!e2eeRuntime.isCurrentSession(activeAccountId, sessionToken)
 				) {
+=======
+				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(activeAccountId, sessionToken)) {
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					return null
 				}
 				return payload ? { payload, sessionToken } : null
@@ -175,7 +188,12 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				!prepared ||
 				!isCurrentAccount() ||
 				!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+<<<<<<< HEAD
 			) return
+=======
+			)
+				return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 			const payload = prepared.payload
 
 			const optimistic = createOptimisticMessage(
@@ -195,7 +213,15 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const sent = await chatApi.send(payload)
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
 					await saveLocalMessageCopy({
@@ -209,14 +235,30 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					})
 				}
 
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				const displayMessage = { ...sent, content: options.content ?? "" }
 				replaceOptimistic(optimistic.id, displayMessage)
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				markFailed(optimistic.id)
 			}
 		},
@@ -288,7 +330,12 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				!prepared ||
 				!isCurrentAccount() ||
 				!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+<<<<<<< HEAD
 			) return
+=======
+			)
+				return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 			const payload = prepared.payload
 
 			const optimistic = createOptimisticMessage(
@@ -308,7 +355,15 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 			try {
 				const sent = await chatApi.send(payload)
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (sent.id > 0 && payload.metadata?.e2ee_content_hash) {
 					await saveLocalMessageCopy({
@@ -322,13 +377,29 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					})
 				}
 
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				replaceOptimistic(optimistic.id, { ...sent, content })
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				markFailed(optimistic.id)
 			}
 		},
@@ -348,7 +419,12 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 		async (failedMessage: Message) => {
 			const entry = getDirectMessageOutboxEntry(failedMessage.id)
 
+<<<<<<< HEAD
 			if (!entry || !currentUser || entry.accountId !== currentUser.pkid || !isCurrentAccount()) return
+=======
+			if (!entry || !currentUser || entry.accountId !== currentUser.pkid || !isCurrentAccount())
+				return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 			// mark sending
 			queryClient.setQueryData<HistoryData>(historyKey, (old) => {
@@ -382,7 +458,15 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 
 				const payload = prepared.payload
 				const sent = await chatApi.send(payload)
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				replaceOptimistic(failedMessage.id, {
 					...sent,
@@ -402,12 +486,21 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 					}).catch(() => undefined)
 				}
 
+<<<<<<< HEAD
 				if (!isCurrentAccount() || !e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)) return
+=======
+				if (
+					!isCurrentAccount() ||
+					!e2eeRuntime.isCurrentSession(currentUser.pkid as Pkid, prepared.sessionToken)
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				removeDirectMessageOutboxEntry(failedMessage.id)
 
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
+<<<<<<< HEAD
 				if (
 					!isCurrentAccount() ||
 					getDirectMessageOutboxEntry(failedMessage.id) !== entry
@@ -416,6 +509,21 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 			}
 		},
 		[currentUser, getDirectMessagePayload, historyKey, queryClient, replaceOptimistic, markFailed, isCurrentAccount],
+=======
+				if (!isCurrentAccount() || getDirectMessageOutboxEntry(failedMessage.id) !== entry) return
+				markFailed(failedMessage.id)
+			}
+		},
+		[
+			currentUser,
+			getDirectMessagePayload,
+			historyKey,
+			queryClient,
+			replaceOptimistic,
+			markFailed,
+			isCurrentAccount,
+		],
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 	)
 
 	return { send, sendMedia, sendContact, sendLocation, sendVoice, retry }

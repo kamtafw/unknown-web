@@ -29,13 +29,18 @@ export async function resolveLocalChatPreview(
 ): Promise<string> {
 	const local = await getLatestLocalMessageCopy(accountId, peerId)
 
-	if (local && isSameLatestMessage(local.messageId, local.createdAt, lastMessageTime, lastMessageId)) {
+	if (
+		local &&
+		isSameLatestMessage(local.messageId, local.createdAt, lastMessageTime, lastMessageId)
+	) {
 		return local.plaintext || resolvePreviewFallbackLabel(local.messageType)
 	}
 
 	// The server preview may be ciphertext; never return it.
-	return resolveEncryptedPreviewFallback(
-		Boolean(serverPreview || lastMessageTime || lastMessageType || lastMessageId !== null),
-		lastMessageType,
-	) ?? ""
+	return (
+		resolveEncryptedPreviewFallback(
+			Boolean(serverPreview || lastMessageTime || lastMessageType || lastMessageId !== null),
+			lastMessageType,
+		) ?? ""
+	)
 }

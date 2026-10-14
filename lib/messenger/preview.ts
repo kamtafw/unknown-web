@@ -82,7 +82,10 @@ export function resolvePreviewFallbackLabel(type: MessageType | string | null | 
 	}
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 /**
  * Final display fallback for a sanitized direct-chat preview. This does not
  * inspect or return server payloads; callers must resolve E2EE previews first.

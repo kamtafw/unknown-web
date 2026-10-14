@@ -92,7 +92,13 @@ describe("MessengerE2eeRecoverySurface", () => {
 
 		await user.click(await screen.findByRole("button", { name: /Check for updated backup/i }))
 
+<<<<<<< HEAD
 		expect(await screen.findByRole("alert")).toHaveTextContent(/current recovery options are unchanged/i)
+=======
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			/current recovery options are unchanged/i,
+		)
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 		expect(screen.getByText(/Update the backup on your original device/i)).toBeInTheDocument()
 		expect(screen.getByRole("button", { name: /Check for updated backup/i })).toBeInTheDocument()
 		expect(backupApi.getKeyBackup).toHaveBeenCalledTimes(2)

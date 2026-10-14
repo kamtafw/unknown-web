@@ -9,6 +9,8 @@ import {
 	getMessageEnvelopeHash,
 	normalizeDirectMessage,
 } from "@/lib/messenger/e2ee/direct-message"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
+import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
@@ -90,6 +92,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
 			if (currentAccountId === null) return
+<<<<<<< HEAD
 			queryClient.setQueryData<HistoryData>(chatKeys.history(senderUuid, currentAccountId), (old) => {
 				if (!old) return old // no cache for this conversation yet — list refetch covers preview
 				const pages = old.pages.map((page, i) =>
@@ -99,6 +102,20 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				)
 				return { ...old, pages }
 			})
+=======
+			queryClient.setQueryData<HistoryData>(
+				chatKeys.history(senderUuid, currentAccountId),
+				(old) => {
+					if (!old) return old // no cache for this conversation yet — list refetch covers preview
+					const pages = old.pages.map((page, i) =>
+						i === old.pages.length - 1
+							? { ...page, results: dedupeAppend(page.results, message) }
+							: page,
+					)
+					return { ...old, pages }
+				},
+			)
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 		}
 
 		/** Returns whether it actually found and patched a cached row. */
@@ -130,10 +147,15 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		const unsubReceive = messengerSocket.on<Message>(
 			CHAT_SOCKET_EVENTS.RECEIVE,
 			async (rawMessage) => {
+<<<<<<< HEAD
 				if (
 					currentAccountId === null ||
 					useAuthStore.getState().user?.pkid !== currentAccountId
 				) return
+=======
+				if (currentAccountId === null || useAuthStore.getState().user?.pkid !== currentAccountId)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (e2eeRuntime.getActiveAccountId() !== currentAccountId) {
 					// Runtime activation may still be in flight on first load.
@@ -165,7 +187,12 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				if (
 					useAuthStore.getState().user?.pkid !== currentAccountId ||
 					!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+<<<<<<< HEAD
 				) return
+=======
+				)
+					return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (
 					currentAccountId !== null &&
@@ -192,7 +219,12 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						if (
 							useAuthStore.getState().user?.pkid !== currentAccountId ||
 							!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+<<<<<<< HEAD
 						) return
+=======
+						)
+							return
+>>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					}
 				}
 
