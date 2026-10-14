@@ -16,7 +16,8 @@ import { useCallback } from "react"
 
 export function useMessageActions(peerUuid: Uuid, peerPkid: Pkid) {
 	const queryClient = useQueryClient()
-	const historyKey = chatKeys.history(peerUuid)
+	const currentUser = useAuthStore((s) => s.user)
+	const historyKey = chatKeys.history(peerUuid, currentUser?.pkid as Pkid | undefined)
 	const pinnedKey = chatKeys.pinnedMessages(peerUuid)
 
 	const forward = useCallback(
@@ -165,7 +166,7 @@ function readMessageReactionCounts(old: unknown, messageId: number): EmojiReacti
 export function useReactToMessage(peerUuid: Uuid) {
 	const queryClient = useQueryClient()
 	const currentUser = useAuthStore((s) => s.user)
-	const historyKey = chatKeys.history(peerUuid)
+	const historyKey = chatKeys.history(peerUuid, currentUser?.pkid as Pkid | undefined)
 
 	return useCallback(
 		async (message: Message, emoji: string) => {
