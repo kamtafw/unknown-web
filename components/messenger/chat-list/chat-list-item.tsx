@@ -64,14 +64,10 @@ export function ChatListItem({
 	const name = getDisplayName(chat)
 	const PreviewIcon = resolvePreviewIcon(chat.last_message_type)
 	const Icon = PreviewIcon ? PREVIEW_ICONS[PreviewIcon] : null
-<<<<<<< HEAD
-	const previewText = resolveChatListDisplayPreview(chat.last_message_preview, chat.last_message_type)
-=======
 	const previewText = resolveChatListDisplayPreview(
 		chat.last_message_preview,
 		chat.last_message_type,
 	)
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 	const handleMarkedRead = async () => {
 		try {

@@ -5,15 +5,11 @@ import { extractMessage } from "@/lib/api-error"
 import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
 import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
-import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
-import { useAuthStore } from "@/stores/auth-store"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import { useAuthStore } from "@/stores/auth-store"
 import type { ArchiveEntry, ArchiveTarget, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
 import { ArchiveRestore } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
@@ -52,9 +48,6 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	const name = resolveArchiveTargetName(target)
 	const href = isUser ? `/messenger/${target.id}` : `/messenger/groups/${target.id}`
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
-<<<<<<< HEAD
-	const [userPreview, setUserPreview] = useState<{ accountId: number; targetId: string; lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string } | null>(null)
-=======
 	const [userPreview, setUserPreview] = useState<{
 		accountId: number
 		targetId: string
@@ -62,7 +55,6 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 		lastMessageId: number | null | undefined
 		preview: string
 	} | null>(null)
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 	useEffect(() => {
 		if (target.chat_type !== "user" || !accountId) {
@@ -70,20 +62,6 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 			return
 		}
 		let cancelled = false
-<<<<<<< HEAD
-		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type, target.last_message_id)
-			.then((preview) => { if (!cancelled) setUserPreview({ accountId, targetId: target.id, lastMessageTime: target.last_message_time, lastMessageId: target.last_message_id, preview }) })
-			.catch(() => { if (!cancelled) setUserPreview(null) })
-		return () => { cancelled = true }
-	}, [accountId, target])
-	const resolvedUserPreview = userPreview?.accountId === accountId && userPreview.targetId === target.id && userPreview.lastMessageTime === target.last_message_time && userPreview.lastMessageId === target.last_message_id
-		? userPreview.preview
-		: resolveEncryptedPreviewFallback(
-			Boolean(target.last_message_preview || target.last_message_time || target.last_message_type || target.last_message_id != null),
-			target.last_message_type,
-		) ?? "Preview unavailable"
-	const previewText = isUser ? resolvedUserPreview : target.last_message_preview || "No messages yet"
-=======
 		void resolveLocalChatPreview(
 			accountId as Pkid,
 			target.pkid as Pkid,
@@ -127,7 +105,6 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	const previewText = isUser
 		? resolvedUserPreview
 		: target.last_message_preview || "No messages yet"
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 	const handleUnarchive = async (e: React.MouseEvent) => {
 		e.preventDefault()
 		e.stopPropagation()
@@ -181,13 +158,7 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 					</span>
 				</div>
 				<div className="flex items-center justify-between gap-2 mt-0.5">
-<<<<<<< HEAD
-					<span className="text-sm text-muted-foreground truncate">
-						{previewText}
-					</span>
-=======
 					<span className="text-sm text-muted-foreground truncate">{previewText}</span>
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					{target.unread_count > 0 && (
 						<span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold flex items-center justify-center">
 							{target.unread_count > 99 ? "99+" : target.unread_count}

@@ -343,15 +343,9 @@ export function MessengerE2eeRecoverySurface() {
 						{phase === "mobile-enrollment" && (
 							<div className="mt-6 rounded-xl bg-muted/50 p-4">
 								<p className="text-sm leading-6 text-muted-foreground">
-<<<<<<< HEAD
-									On an original mobile device that still has this account&apos;s matching
-									private identity key, open Messenger settings → Encryption key backup and
-									create or update the six-digit-PIN backup. Then return here and check again.
-=======
 									On an original mobile device that still has this account&apos;s matching private
 									identity key, open Messenger settings → Encryption key backup and create or update
 									the six-digit-PIN backup. Then return here and check again.
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 								</p>
 							</div>
 						)}
@@ -365,19 +359,10 @@ export function MessengerE2eeRecoverySurface() {
 										key, open Messenger settings → Encryption key backup.
 									</li>
 									<li>
-<<<<<<< HEAD
-										Create a new six-digit-PIN backup. The mobile app should replace the old
-										backup with the current PBKDF2 format while preserving the same identity key.
-									</li>
-									<li>
-										Return to this browser and select “Check for updated backup.”
-									</li>
-=======
 										Create a new six-digit-PIN backup. The mobile app should replace the old backup
 										with the current PBKDF2 format while preserving the same identity key.
 									</li>
 									<li>Return to this browser and select “Check for updated backup.”</li>
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 								</ol>
 								<p className="text-sm leading-6 text-destructive">
 									Do not delete the old backup unless an original device still holds the matching
@@ -390,13 +375,8 @@ export function MessengerE2eeRecoverySurface() {
 						{(phase === "unavailable" || phase === "retryable") && (
 							<div className="mt-6 rounded-xl bg-muted/50 p-4">
 								<p className="text-sm leading-6 text-muted-foreground">
-<<<<<<< HEAD
-									No replacement identity was created. You can retry recovery without changing
-									your existing account data.
-=======
 									No replacement identity was created. You can retry recovery without changing your
 									existing account data.
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 								</p>
 							</div>
 						)}
