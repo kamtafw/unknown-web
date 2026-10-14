@@ -104,7 +104,9 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		/** Returns whether it actually found and patched a cached row. */
 		const bumpListPreview = (message: Message, isOpen: boolean): boolean => {
 			let found = false
-			queryClient.setQueriesData<ChatListData>({ queryKey: chatKeys.lists() }, (old) => {
+			queryClient.setQueriesData<ChatListData>(
+				{ queryKey: chatKeys.lists(), predicate: (query) => query.queryKey[3] === currentAccountId },
+				(old) => {
 				if (!old) return old
 				const idx = old.users.findIndex((u) => u.id === message.sender.id)
 				if (idx === -1) return old
