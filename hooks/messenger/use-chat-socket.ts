@@ -107,25 +107,25 @@ export function useChatSocket(activeUuid: Uuid | null) {
 			queryClient.setQueriesData<ChatListData>(
 				{ queryKey: chatKeys.lists(), predicate: (query) => query.queryKey[3] === currentAccountId },
 				(old) => {
-				if (!old) return old
-				const idx = old.users.findIndex((u) => u.id === message.sender.id)
-				if (idx === -1) return old
-				found = true
-				const existing = old.users[idx]
-				const updated: ChatListItem = {
-					...existing,
-					last_message_preview: message.content || null,
-					last_message_type: message.message_type,
-					last_message_time: message.created_at,
-					unread_count: isOpen ? existing.unread_count : existing.unread_count + 1,
-				}
-				if (updated.is_pinned) {
-					return { ...old, users: old.users.with(idx, updated) }
-				}
-				const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
-				const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
-				return { ...old, users: [...pinned, updated, ...rest] }
-			})
+					if (!old) return old
+					const idx = old.users.findIndex((u) => u.id === message.sender.id)
+					if (idx === -1) return old
+					found = true
+					const existing = old.users[idx]
+					const updated: ChatListItem = {
+						...existing,
+						last_message_preview: message.content || null,
+						last_message_type: message.message_type,
+						last_message_time: message.created_at,
+						unread_count: isOpen ? existing.unread_count : existing.unread_count + 1,
+					}
+					if (updated.is_pinned) {
+						return { ...old, users: old.users.with(idx, updated) }
+					}
+					const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
+					const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
+					return { ...old, users: [...pinned, updated, ...rest] }
+				})
 			return found
 		}
 
