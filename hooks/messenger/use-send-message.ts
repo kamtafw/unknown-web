@@ -408,7 +408,10 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 				queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
 				invalidateSecondaryChatPreviewLists(queryClient)
 			} catch {
-				if (!isCurrentAccount()) return
+				if (
+					!isCurrentAccount() ||
+					getDirectMessageOutboxEntry(failedMessage.id) !== entry
+				) return
 				markFailed(failedMessage.id)
 			}
 		},
