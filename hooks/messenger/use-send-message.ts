@@ -56,7 +56,10 @@ export function useSendMessage(receiverUuid: Uuid, receiverPkid: Pkid) {
 			if (!currentUser || !currentUser.pkid || !isCurrentAccount()) return null
 			const activeAccountId = currentUser.pkid as Pkid
 
-			await e2eeRuntime.activate(activeAccountId, isCurrentAccount)
+			if (e2eeRuntime.getActiveAccountId() !== activeAccountId) {
+				const activated = await e2eeRuntime.activate(activeAccountId, isCurrentAccount)
+				if (!activated) return null
+			}
 			if (
 				!isCurrentAccount() ||
 				e2eeRuntime.getActiveAccountId() !== activeAccountId
