@@ -1,6 +1,7 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
+import { fetchForChatListSession, StaleChatListSessionError } from "@/lib/messenger/chat-list-session"
 import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
 import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { projectWithOverlays } from "@/lib/messenger/list-overlay"
@@ -12,10 +13,19 @@ import { useEffect, useState } from "react"
 
 export function useChatList(filter: ChatListFilter, search: string) {
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as number) : null))
+	const overlayListKey = accountId === null ? "chat-list:anonymous" : `chat-list:${accountId}`
 
 	const query = useQuery({
-		queryKey: chatKeys.list(filter, search),
-		queryFn: () => chatApi.list(filter, search),
+		queryKey: chatKeys.list(filter, search, accountId),
+		enabled: accountId !== null,
+		queryFn: () =>
+			fetchForChatListSession(
+				accountId,
+				() => useAuthStore.getState().user?.pkid ?? null,
+				() => chatApi.list(filter, search),
+			),
+		retry: (failureCount, error) =>
+			!(error instanceof StaleChatListSessionError) && failureCount < 3,
 		staleTime: 30_000,
 		// Field-toggle and list-membership mutations (pin/mute/archive/
 		// block) register an overlay against the single "chat-list" bucket
@@ -27,7 +37,7 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		// fetch, which is exactly when overlays need to reconcile.
 		select: (data) => ({
 			...data,
-			users: projectWithOverlays<ChatListItem>("chat-list", data.users),
+			users: projectWithOverlays<ChatListItem>(overlayListKey, data.users),
 		}),
 	})
 
