@@ -136,11 +136,11 @@ class E2eeRuntime {
 	 * `installIdentity`/`pinTrustedKey` if a caller wants to confirm memory
 	 * matches what's persisted.
 	 */
-	async activate(accountId: Pkid, isStillCurrent: () => boolean = () => true): Promise<void> {
+	async activate(accountId: Pkid, isStillCurrent: () => boolean = () => true): Promise<boolean> {
 		// Callers that are themselves asynchronous may become stale between
 		// checking auth state and reaching this method. Do not let such a
 		// caller supersede the runtime's current activation.
-		if (!isStillCurrent()) return
+		if (!isStillCurrent()) return false
 
 		this.abortPendingIdentityInstalls()
 		const generation = ++this.generation
@@ -153,7 +153,7 @@ class E2eeRuntime {
 			warnActivateFailure(err)
 		}
 
-		if (generation !== this.generation || !isStillCurrent()) return // superseded, logged out, or stale account
+		if (generation !== this.generation || !isStillCurrent()) return false // superseded, logged out, or stale account
 
 		if (this.activeAccountId !== accountId) this.sessionGeneration++
 		this.activeAccountId = accountId
@@ -161,6 +161,7 @@ class E2eeRuntime {
 		this.trustedKeys = new Map(
 			Array.from(trusted, ([recipientId, key]) => [recipientId, key.publicKey]),
 		)
+		return true
 	}
 
 	/** Wipes IN-MEMORY state only. Never touches IndexedDB. Safe to call
