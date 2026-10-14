@@ -204,7 +204,7 @@ describe("reload-style rehydration", () => {
 describe("activate — storage failure degrades gracefully", () => {
 	it("still activates the account (identity: null) instead of rejecting, when getIdentity throws", async () => {
 		vi.spyOn(identityStore, "getIdentity").mockRejectedValueOnce(new Error("boom"))
-		await expect(e2eeRuntime.activate(accountA)).resolves.toBeUndefined()
+		await expect(e2eeRuntime.activate(accountA)).resolves.toBe(true)
 
 		const state = e2eeRuntime.getState()
 		expect(state).not.toBeNull()
@@ -217,7 +217,7 @@ describe("activate — storage failure degrades gracefully", () => {
 		await saveIdentity(accountA, keypair(1))
 		vi.spyOn(trustStore, "listTrustedKeys").mockRejectedValueOnce(new Error("boom"))
 
-		await expect(e2eeRuntime.activate(accountA)).resolves.toBeUndefined()
+		await expect(e2eeRuntime.activate(accountA)).resolves.toBe(true)
 		const state = e2eeRuntime.getState()
 		// Promise.all rejects as a whole on either failure, so a trust-store
 		// failure also means the identity that WAS loadable is not applied
