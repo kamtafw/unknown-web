@@ -14,7 +14,7 @@ import { useEffect, useState } from "react"
 export function useChatList(filter: ChatListFilter, search: string) {
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 	const sessionGeneration = useAuthStore((s) => s.sessionGeneration)
-	const overlayListKey = accountId === null ? "chat-list:anonymous" : `chat-list:${accountId}`
+	const overlayListKey = `chat-list:${accountId ?? "anonymous"}:${sessionGeneration}`
 
 	const query = useQuery({
 		queryKey: chatKeys.list(filter, search, accountId, sessionGeneration),
