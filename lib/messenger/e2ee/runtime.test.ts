@@ -239,7 +239,7 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
 
 		slow.resolve(keypair(1)) // let the stale A activation finish late
-		await slowActivate
+		await expect(slowActivate).resolves.toBe(false)
 
 		// B must still be active — the late A result must have been discarded.
 		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
@@ -255,7 +255,7 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 		expect(e2eeRuntime.getState()).toBeNull()
 
 		slow.resolve(keypair(1))
-		await slowActivate
+		await expect(slowActivate).resolves.toBe(false)
 
 		expect(e2eeRuntime.getState()).toBeNull() // must still be cleared
 	})
