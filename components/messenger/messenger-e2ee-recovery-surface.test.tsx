@@ -57,7 +57,7 @@ describe("MessengerE2eeRecoverySurface", () => {
 	it("checks for a backup when no identity exists", async () => {
 		render(<MessengerE2eeRecoverySurface />)
 		await waitFor(() => expect(backupApi.getKeyBackup).toHaveBeenCalledTimes(1))
-		expect(screen.getByLabelText("Six-digit recovery PIN")).toBeInTheDocument()
+		expect(await screen.findByLabelText("Six-digit recovery PIN")).toBeInTheDocument()
 	})
 
 	it("shows mobile-enrollment guidance when no backup is available", async () => {
@@ -69,16 +69,48 @@ describe("MessengerE2eeRecoverySurface", () => {
 		expect(screen.queryByLabelText("Six-digit recovery PIN")).not.toBeInTheDocument()
 	})
 
-	it("shows unsupported guidance without a PIN prompt", async () => {
+	it("shows original-device replacement instructions for an unsupported backup", async () => {
 		vi.mocked(backupApi.getKeyBackup).mockResolvedValue({
 			status: "unsupported",
 			reason: "different format",
 		})
 		render(<MessengerE2eeRecoverySurface />)
 		expect(
-			await screen.findByText(/This backup was created with an older security format/i),
+			await screen.findByText(/Update the backup on your original device/i),
 		).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: /Check for updated backup/i })).toBeInTheDocument()
+		expect(screen.getByText(/Do not delete the old backup/i)).toBeInTheDocument()
 		expect(screen.queryByLabelText("Six-digit recovery PIN")).not.toBeInTheDocument()
+	})
+
+	it("preserves unsupported-backup guidance when checking for an update fails", async () => {
+		const user = userEvent.setup()
+		vi.mocked(backupApi.getKeyBackup)
+			.mockResolvedValueOnce({ status: "unsupported", reason: "legacy format" })
+			.mockResolvedValueOnce({ status: "api-error" })
+		render(<MessengerE2eeRecoverySurface />)
+
+		await user.click(await screen.findByRole("button", { name: /Check for updated backup/i }))
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			/current recovery options are unchanged/i,
+		)
+		expect(screen.getByText(/Update the backup on your original device/i)).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: /Check for updated backup/i })).toBeInTheDocument()
+		expect(backupApi.getKeyBackup).toHaveBeenCalledTimes(2)
+	})
+
+	it("keeps a recovery entry point when the dialog is dismissed", async () => {
+		const user = userEvent.setup()
+		render(<MessengerE2eeRecoverySurface />)
+
+		await screen.findByLabelText("Six-digit recovery PIN")
+		await user.click(screen.getByRole("button", { name: /^Not now$/i }))
+
+		const resumeButton = await screen.findByRole("button", { name: /Resume recovery/i })
+		expect(screen.getByText(/Secure messaging is unavailable on this device/i)).toBeInTheDocument()
+		await user.click(resumeButton)
+		expect(await screen.findByLabelText("Six-digit recovery PIN")).toBeInTheDocument()
 	})
 
 	it("clears the PIN after a failed attempt", async () => {
