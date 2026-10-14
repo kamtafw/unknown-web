@@ -3,11 +3,14 @@
 import { extractMessage } from "@/lib/api-error"
 import { chatApi, FavoriteItem, isFavoriteUserTarget } from "@/lib/messenger/api"
 import { clearListOverlay, projectWithOverlays, setListOverlay } from "@/lib/messenger/list-overlay"
+import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { toast } from "@/lib/toast"
+import { useAuthStore } from "@/stores/auth-store"
 import type { ChatListItem, Pkid, Uuid } from "@/types/messenger"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 const OVERLAY_KEY = "favorites"
 
@@ -28,6 +31,8 @@ function toChatListItem(favorite: FavoriteItem): ChatListItem | null {
 		unread_count: t.unread_count,
 		last_message_preview: t.last_message_preview,
 		last_message_time: t.last_message_time,
+		last_message_type: t.last_message_type,
+		last_message_id: t.last_message_id,
 		is_pinned: false,
 		is_blocked: false,
 		has_blocked_me: false,
@@ -36,18 +41,46 @@ function toChatListItem(favorite: FavoriteItem): ChatListItem | null {
 }
 
 export function useFavorites() {
-	return useQuery({
+	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
+	const query = useQuery({
 		queryKey: chatKeys.favorites(),
 		queryFn: () => chatApi.listFavorites(),
 		staleTime: 30_000,
 		select: (favorites) => {
 			const items = favorites.map(toChatListItem).filter((x): x is ChatListItem => x !== null)
-			// Same confirmed lag as mobile documents for this exact endpoint
-			// (see lib/messenger/list-overlay.ts) — reconciled here the same
-			// way useChatList reconciles pin/mute/archive/block overlays.
 			return projectWithOverlays<ChatListItem>(OVERLAY_KEY, items)
 		},
 	})
+	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
+
+	useEffect(() => {
+		if (!accountId || !query.data?.length) {
+			setPreviewOverrides(null)
+			return
+		}
+		let cancelled = false
+		void Promise.all(query.data.map(async (user) => {
+			const preview = await resolveLocalChatPreview(accountId as Pkid, user.pkid as Pkid, user.last_message_preview, user.last_message_time, user.last_message_type, user.last_message_id)
+			return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
+		})).then((entries) => {
+			if (!cancelled) setPreviewOverrides({ accountId, values: new Map(entries) })
+		}).catch(() => {
+			if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
+		})
+		return () => { cancelled = true }
+	}, [accountId, query.data])
+
+	return {
+		...query,
+		data: query.data?.map((user) => {
+			const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
+			const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
+			return {
+				...user,
+				last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null), user.last_message_type),
+			}
+		}),
+	}
 }
 
 export function useFavoriteActions() {

@@ -3,10 +3,14 @@
 import { useChatListActions } from "@/hooks/messenger/use-chat-list-actions"
 import { extractMessage } from "@/lib/api-error"
 import { chatKeys } from "@/lib/messenger/query-keys"
+import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
+import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
+import { useAuthStore } from "@/stores/auth-store"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
 import type { ArchiveEntry, ArchiveTarget, Pkid, Uuid } from "@/types/messenger"
 import { useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
 import { ArchiveRestore } from "lucide-react"
 import Link from "next/link"
 import { Avatar } from "radix-ui"
@@ -26,10 +30,10 @@ interface ArchiveRowProps {
 }
 
 /**
- * No `last_message_type` on this contract (confirmed absent from the
- * sample payload for both variants), so — unlike ChatListItem/
- * GroupListItem rows — this can't show a media/voice/etc. preview icon
- * without inventing a field. Plain-text preview only.
+ * The current archive response may omit `last_message_type` and `last_message_id`;
+ * both are optional until the backend contract proposal is reviewed. User rows
+ * use a safe E2EE fallback when metadata is absent. Group preview behavior stays
+ * unchanged because group E2EE is outside the current protocol.
  *
  * Unarchive is user-only: chatApi.unarchive only ever takes a userPkid,
  * no confirmed group equivalent exists. Group rows get an inert button
@@ -43,7 +47,27 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 	const isUser = target.chat_type === "user"
 	const name = resolveArchiveTargetName(target)
 	const href = isUser ? `/messenger/${target.id}` : `/messenger/groups/${target.id}`
+	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
+	const [userPreview, setUserPreview] = useState<{ accountId: number; targetId: string; lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string } | null>(null)
 
+	useEffect(() => {
+		if (target.chat_type !== "user" || !accountId) {
+			setUserPreview(null)
+			return
+		}
+		let cancelled = false
+		void resolveLocalChatPreview(accountId as Pkid, target.pkid as Pkid, target.last_message_preview, target.last_message_time, target.last_message_type, target.last_message_id)
+			.then((preview) => { if (!cancelled) setUserPreview({ accountId, targetId: target.id, lastMessageTime: target.last_message_time, lastMessageId: target.last_message_id, preview }) })
+			.catch(() => { if (!cancelled) setUserPreview(null) })
+		return () => { cancelled = true }
+	}, [accountId, target])
+	const resolvedUserPreview = userPreview?.accountId === accountId && userPreview.targetId === target.id && userPreview.lastMessageTime === target.last_message_time && userPreview.lastMessageId === target.last_message_id
+		? userPreview.preview
+		: resolveEncryptedPreviewFallback(
+			Boolean(target.last_message_preview || target.last_message_time || target.last_message_type || target.last_message_id != null),
+			target.last_message_type,
+		) ?? "Preview unavailable"
+	const previewText = isUser ? resolvedUserPreview : target.last_message_preview || "No messages yet"
 	const handleUnarchive = async (e: React.MouseEvent) => {
 		e.preventDefault()
 		e.stopPropagation()
@@ -98,7 +122,7 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 				</div>
 				<div className="flex items-center justify-between gap-2 mt-0.5">
 					<span className="text-sm text-muted-foreground truncate">
-						{target.last_message_preview || "No messages yet"}
+						{previewText}
 					</span>
 					{target.unread_count > 0 && (
 						<span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-semibold flex items-center justify-center">

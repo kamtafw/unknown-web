@@ -481,3 +481,5 @@ Clear mutable temporary key and plaintext buffers where possible. PIN strings ar
 - A future protocol uses a new message version while retaining the v1 identity key and read-only v1 decryptor for supported history; old ciphertext is never rewritten in place.
 
 Do not extend web beyond restore-only backup access without a new explicit product and security decision.
+
+ 
