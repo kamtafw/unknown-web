@@ -261,6 +261,26 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 	})
 })
 
+describe("session token", () => {
+	it("remains stable across same-account storage refreshes but changes on account switch and clear", async () => {
+		await e2eeRuntime.activate(accountA)
+		const firstToken = e2eeRuntime.getSessionToken()
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(true)
+
+		await e2eeRuntime.activate(accountA)
+		expect(e2eeRuntime.getSessionToken()).toBe(firstToken)
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(true)
+
+		await e2eeRuntime.activate(accountB)
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(false)
+		const secondToken = e2eeRuntime.getSessionToken()
+		expect(e2eeRuntime.isCurrentSession(accountB, secondToken)).toBe(true)
+
+		e2eeRuntime.clear()
+		expect(e2eeRuntime.isCurrentSession(accountB, secondToken)).toBe(false)
+	})
+})
+
 describe("installRecoveredIdentity", () => {
 	it("rejects a recovery install whose generation token is stale", async () => {
 		await e2eeRuntime.activate(accountA)
