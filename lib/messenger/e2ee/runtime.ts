@@ -126,7 +126,12 @@ class E2eeRuntime {
 	 * `installIdentity`/`pinTrustedKey` if a caller wants to confirm memory
 	 * matches what's persisted.
 	 */
-	async activate(accountId: Pkid): Promise<void> {
+	async activate(accountId: Pkid, isStillCurrent: () => boolean = () => true): Promise<void> {
+		// Callers that are themselves asynchronous may become stale between
+		// checking auth state and reaching this method. Do not let such a
+		// caller supersede the runtime's current activation.
+		if (!isStillCurrent()) return
+
 		this.abortPendingIdentityInstalls()
 		const generation = ++this.generation
 
@@ -138,7 +143,7 @@ class E2eeRuntime {
 			warnActivateFailure(err)
 		}
 
-		if (generation !== this.generation) return // superseded by a later activate()/clear()
+		if (generation !== this.generation || !isStillCurrent()) return // superseded, logged out, or stale account
 
 		this.activeAccountId = accountId
 		this.activeIdentity = identity
