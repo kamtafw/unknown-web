@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 
 export function useChatList(filter: ChatListFilter, search: string) {
-	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as number) : null))
+	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 	const overlayListKey = accountId === null ? "chat-list:anonymous" : `chat-list:${accountId}`
 
 	const query = useQuery({
