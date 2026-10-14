@@ -10,6 +10,7 @@
 		"ciphertext",
 		"cooldown",
 		"hashtagged",
+		"keypair",
 		"misrouted",
 		"nacl",
 		"normalise",
@@ -25,8 +26,10 @@
 		"reposted",
 		"reposts",
 		"Reshare",
+		"secretbox",
 		"Totp",
 		"unsub",
-		"unwired"
+		"unwired",
+		"xsalsa"
 	]
 }
