@@ -1,9 +1,11 @@
 "use client"
 
 import { chatApi } from "@/lib/messenger/api"
-import { fetchForChatListSession, StaleChatListSessionError } from "@/lib/messenger/chat-list-session"
+import {
+	fetchForChatListSession,
+	StaleChatListSessionError,
+} from "@/lib/messenger/chat-list-session"
 import { resolveLocalChatPreview } from "@/lib/messenger/e2ee/local-preview"
-import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { projectWithOverlays } from "@/lib/messenger/list-overlay"
 import { resolveEncryptedPreviewFallback } from "@/lib/messenger/preview"
 import { chatKeys } from "@/lib/messenger/query-keys"
@@ -45,9 +47,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		}),
 	})
 
-<<<<<<< HEAD
-	const [previewOverrides, setPreviewOverrides] = useState<{ accountId: number; values: Map<number, { lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }> } | null>(null)
-=======
 	const [previewOverrides, setPreviewOverrides] = useState<{
 		accountId: number
 		values: Map<
@@ -55,7 +54,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 			{ lastMessageTime: string | null; lastMessageId: number | null | undefined; preview: string }
 		>
 	} | null>(null)
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 	useEffect(() => {
 		if (!accountId || !query.data?.users.length) {
@@ -67,9 +65,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 
 		void Promise.all(
 			query.data.users
-<<<<<<< HEAD
-				.filter((user) => user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null)
-=======
 				.filter(
 					(user) =>
 						user.last_message_preview ||
@@ -77,7 +72,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						user.last_message_type ||
 						user.last_message_id != null,
 				)
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 				.map(async (user) => {
 					const preview = await resolveLocalChatPreview(
 						accountId as Pkid,
@@ -88,18 +82,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						user.last_message_id,
 					)
 
-<<<<<<< HEAD
-					return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
-				}),
-		).then((entries) => {
-			if (cancelled || useAuthStore.getState().sessionGeneration !== sessionGeneration) return
-			setPreviewOverrides({ accountId, values: new Map(entries) })
-		}).catch(() => {
-			if (!cancelled && useAuthStore.getState().sessionGeneration === sessionGeneration) {
-				setPreviewOverrides({ accountId, values: new Map() })
-			}
-		})
-=======
 					return [
 						user.pkid,
 						{
@@ -111,13 +93,14 @@ export function useChatList(filter: ChatListFilter, search: string) {
 				}),
 		)
 			.then((entries) => {
-				if (cancelled) return
+				if (cancelled || useAuthStore.getState().sessionGeneration !== sessionGeneration) return
 				setPreviewOverrides({ accountId, values: new Map(entries) })
 			})
 			.catch(() => {
-				if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
+				if (!cancelled && useAuthStore.getState().sessionGeneration === sessionGeneration) {
+					setPreviewOverrides({ accountId, values: new Map() })
+				}
 			})
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 		return () => {
 			cancelled = true
@@ -128,13 +111,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 		? {
 				...query.data,
 				users: query.data.users.map((user) => {
-<<<<<<< HEAD
-					const cached = previewOverrides?.accountId === accountId ? previewOverrides.values.get(user.pkid) : undefined
-					const localPreview = cached?.lastMessageTime === user.last_message_time && cached.lastMessageId === user.last_message_id ? cached.preview : undefined
-					return {
-						...user,
-						last_message_preview: localPreview ?? resolveEncryptedPreviewFallback(Boolean(user.last_message_preview || user.last_message_time || user.last_message_type || user.last_message_id != null), user.last_message_type),
-=======
 					const cached =
 						previewOverrides?.accountId === accountId
 							? previewOverrides.values.get(user.pkid)
@@ -157,7 +133,6 @@ export function useChatList(filter: ChatListFilter, search: string) {
 								),
 								user.last_message_type,
 							),
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					}
 				}),
 			}

@@ -22,9 +22,11 @@ export async function fetchForChatListSession<T>(
 ): Promise<T> {
 	const isCurrent = () => {
 		const current = getCurrentSession()
-		return current.accountId !== null &&
+		return (
+			current.accountId !== null &&
 			current.accountId === session.accountId &&
 			current.generation === session.generation
+		)
 	}
 
 	if (!isCurrent()) throw new StaleChatListSessionError()

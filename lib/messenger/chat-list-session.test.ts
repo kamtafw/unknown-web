@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { fetchForChatListSession, StaleChatListSessionError, type ChatListSession } from "./chat-list-session"
+import {
+	fetchForChatListSession,
+	StaleChatListSessionError,
+	type ChatListSession,
+} from "./chat-list-session"
 
 describe("fetchForChatListSession", () => {
 	it("rejects an in-flight account A list response after logout and account B login", async () => {
@@ -45,16 +49,26 @@ describe("fetchForChatListSession", () => {
 	it("does not start a request if the captured session is already stale", async () => {
 		let calls = 0
 		await expect(
-			fetchForChatListSession({ accountId: 101, generation: 1 }, () => ({ accountId: 202, generation: 2 }), async () => {
-				calls++
-				return "must not resolve"
-			}),
+			fetchForChatListSession(
+				{ accountId: 101, generation: 1 },
+				() => ({ accountId: 202, generation: 2 }),
+				async () => {
+					calls++
+					return "must not resolve"
+				},
+			),
 		).rejects.toBeInstanceOf(StaleChatListSessionError)
 		expect(calls).toBe(0)
 	})
 
 	it("returns results when the account session remains unchanged", async () => {
 		const session = { accountId: 101, generation: 1 }
-		await expect(fetchForChatListSession(session, () => session, async () => "account A")).resolves.toBe("account A")
+		await expect(
+			fetchForChatListSession(
+				session,
+				() => session,
+				async () => "account A",
+			),
+		).resolves.toBe("account A")
 	})
 })

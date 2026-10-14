@@ -54,8 +54,13 @@ describe("account-scoped local encrypted message copies", () => {
 		expect(row).toBeDefined()
 		expect(row).not.toHaveProperty("plaintext")
 		expect(row.ciphertext).toBeInstanceOf(Uint8Array)
-		expect(new TextDecoder().decode(row.ciphertext as Uint8Array)).not.toContain("A private message body")
-		await expect(getLocalMessageCopy(accountA, 1)).resolves.toMatchObject({ accountId: accountA, plaintext: "A private message body" })
+		expect(new TextDecoder().decode(row.ciphertext as Uint8Array)).not.toContain(
+			"A private message body",
+		)
+		await expect(getLocalMessageCopy(accountA, 1)).resolves.toMatchObject({
+			accountId: accountA,
+			plaintext: "A private message body",
+		})
 		await expect(getLocalMessageCopy(accountB, 1)).resolves.toBeNull()
 	})
 
@@ -65,11 +70,17 @@ describe("account-scoped local encrypted message copies", () => {
 		await saveCopy(accountA, 10, "Account A copy")
 		await saveCopy(accountB, 10, "Account B copy")
 
-		await expect(getLatestLocalMessageCopy(accountA, peerA)).resolves.toMatchObject({ plaintext: "Account A copy" })
-		await expect(getLatestLocalMessageCopy(accountB, peerA)).resolves.toMatchObject({ plaintext: "Account B copy" })
+		await expect(getLatestLocalMessageCopy(accountA, peerA)).resolves.toMatchObject({
+			plaintext: "Account A copy",
+		})
+		await expect(getLatestLocalMessageCopy(accountB, peerA)).resolves.toMatchObject({
+			plaintext: "Account B copy",
+		})
 
 		await removeLocalMessageCopies(accountA)
 		await expect(getLatestLocalMessageCopy(accountA, peerA)).resolves.toBeNull()
-		await expect(getLatestLocalMessageCopy(accountB, peerA)).resolves.toMatchObject({ plaintext: "Account B copy" })
+		await expect(getLatestLocalMessageCopy(accountB, peerA)).resolves.toMatchObject({
+			plaintext: "Account B copy",
+		})
 	})
 })

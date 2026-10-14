@@ -12,7 +12,8 @@ describe("account-scoped chat-list overlays", () => {
 	it("does not project account A's optimistic mutation into account B's list", () => {
 		setListOverlay<typeof row>("chat-list:101:1", {
 			key: "pin:peer-1",
-			apply: (items) => items.map((item) => item.id === "peer-1" ? { ...item, is_pinned: true } : item),
+			apply: (items) =>
+				items.map((item) => (item.id === "peer-1" ? { ...item, is_pinned: true } : item)),
 			isSettled: () => false,
 		})
 

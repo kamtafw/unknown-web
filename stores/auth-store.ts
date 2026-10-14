@@ -78,7 +78,13 @@ export const useAuthStore = create<AuthStore>()(
 					photoVersions: { ...state.photoVersions, [type]: Date.now() },
 				})),
 			clearPendingAuth: () => set({ pendingAuth: null }),
-			logout: () => set((state) => ({ user: null, isAuthenticated: false, pendingAuth: null, sessionGeneration: state.sessionGeneration + 1 })),
+			logout: () =>
+				set((state) => ({
+					user: null,
+					isAuthenticated: false,
+					pendingAuth: null,
+					sessionGeneration: state.sessionGeneration + 1,
+				})),
 		}),
 		{
 			name: "auth-store",

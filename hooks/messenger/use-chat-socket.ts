@@ -2,7 +2,6 @@
 
 import { chatApi } from "@/lib/messenger/api"
 import { saveLocalMessageCopy } from "@/lib/messenger/e2ee"
-import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import {
 	classifyDirectMessageEnvelope,
 	E2EE_FAILURE_CONTENT,
@@ -12,7 +11,6 @@ import {
 import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { chatKeys } from "@/lib/messenger/query-keys"
-import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
 import { useAuthStore } from "@/stores/auth-store"
@@ -92,17 +90,6 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
 			if (currentAccountId === null) return
-<<<<<<< HEAD
-			queryClient.setQueryData<HistoryData>(chatKeys.history(senderUuid, currentAccountId), (old) => {
-				if (!old) return old // no cache for this conversation yet — list refetch covers preview
-				const pages = old.pages.map((page, i) =>
-					i === old.pages.length - 1
-						? { ...page, results: dedupeAppend(page.results, message) }
-						: page,
-				)
-				return { ...old, pages }
-			})
-=======
 			queryClient.setQueryData<HistoryData>(
 				chatKeys.history(senderUuid, currentAccountId),
 				(old) => {
@@ -115,14 +102,16 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					return { ...old, pages }
 				},
 			)
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 		}
 
 		/** Returns whether it actually found and patched a cached row. */
 		const bumpListPreview = (message: Message, isOpen: boolean): boolean => {
 			let found = false
 			queryClient.setQueriesData<ChatListData>(
-				{ queryKey: chatKeys.lists(), predicate: (query) => query.queryKey[3] === currentAccountId },
+				{
+					queryKey: chatKeys.lists(),
+					predicate: (query) => query.queryKey[3] === currentAccountId,
+				},
 				(old) => {
 					if (!old) return old
 					const idx = old.users.findIndex((u) => u.id === message.sender.id)
@@ -142,22 +131,16 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
 					const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
 					return { ...old, users: [...pinned, updated, ...rest] }
-				})
+				},
+			)
 			return found
 		}
 
 		const unsubReceive = messengerSocket.on<Message>(
 			CHAT_SOCKET_EVENTS.RECEIVE,
 			async (rawMessage) => {
-<<<<<<< HEAD
-				if (
-					currentAccountId === null ||
-					useAuthStore.getState().user?.pkid !== currentAccountId
-				) return
-=======
 				if (currentAccountId === null || useAuthStore.getState().user?.pkid !== currentAccountId)
 					return
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (e2eeRuntime.getActiveAccountId() !== currentAccountId) {
 					// Runtime activation may still be in flight on first load.
@@ -189,12 +172,8 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				if (
 					useAuthStore.getState().user?.pkid !== currentAccountId ||
 					!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
-<<<<<<< HEAD
-				) return
-=======
 				)
 					return
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 
 				if (
 					currentAccountId !== null &&
@@ -221,12 +200,8 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						if (
 							useAuthStore.getState().user?.pkid !== currentAccountId ||
 							!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
-<<<<<<< HEAD
-						) return
-=======
 						)
 							return
->>>>>>> 843d8dae80065628be944cc7076945906d94641a
 					}
 				}
 

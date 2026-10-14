@@ -1,5 +1,7 @@
 "use client"
 
+import { useCallback, useEffect, useRef, useState } from "react"
+
 import {
 	Dialog,
 	DialogContent,
@@ -8,13 +10,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog"
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { backupApi } from "@/lib/messenger/api"
 import { e2eeRuntime, recoverIdentityFromBackup } from "@/lib/messenger/e2ee"
 import type { ValidatedBackupV1 } from "@/lib/messenger/e2ee/backup-validation"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Pkid } from "@/types/messenger"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { unstable_OneTimePasswordField as OneTimePasswordField } from "radix-ui"
+
+const PIN_LENGTH = 6
 
 type RestorePhase =
 	| "checking"
@@ -155,7 +158,12 @@ export function MessengerE2eeRecoverySurface() {
 
 		if (!accountId || !backup || phase === "recovering" || isChecking) return
 
-		const normalizedPin = pin.replace(/\D/g, "").slice(0, 6)
+		// Read the PIN from the form itself rather than `pin` state: auto-submit can
+		// fire before the state update from the final digit has been rendered.
+		const submittedPin = new FormData(event.currentTarget).get("pin")
+		const normalizedPin = String(submittedPin ?? "")
+			.replace(/\D/g, "")
+			.slice(0, 6)
 
 		if (!/^[0-9]{6}$/.test(normalizedPin)) {
 			setPin("")
@@ -280,28 +288,34 @@ export function MessengerE2eeRecoverySurface() {
 
 						{isPinEntry && (
 							<form id="e2ee-recovery-form" onSubmit={handleSubmit} className="mt-7 space-y-5">
-								<div className="flex justify-center">
-									<InputOTP
-										maxLength={6}
-										value={pin}
-										onChange={handlePinChange}
-										disabled={phase === "recovering" || isChecking}
-										inputMode="numeric"
-										autoComplete="one-time-code"
-										aria-label="Six-digit recovery PIN"
-									>
-										<InputOTPGroup>
-											<InputOTPSlot index={0} />
-											<InputOTPSlot index={1} />
-											<InputOTPSlot index={2} />
-										</InputOTPGroup>
-										<InputOTPGroup>
-											<InputOTPSlot index={3} />
-											<InputOTPSlot index={4} />
-											<InputOTPSlot index={5} />
-										</InputOTPGroup>
-									</InputOTP>
-								</div>
+								<OneTimePasswordField.Root
+									name="pin"
+									validationType="numeric"
+									autoComplete="one-time-code"
+									autoSubmit
+									value={pin}
+									onValueChange={handlePinChange}
+									disabled={phase === "recovering" || isChecking}
+									className="flex w-full justify-center gap-1.5 sm:gap-2"
+									aria-label="Six-digit recovery PIN"
+								>
+									{Array.from({ length: PIN_LENGTH }).map((_, i) => (
+										<OneTimePasswordField.Input
+											key={i}
+											className="
+												flex-1 min-w-0 max-w-12
+												h-11 sm:h-12
+												text-center text-base sm:text-lg font-semibold
+												bg-muted text-foreground rounded-xl
+												border-2 border-transparent
+												focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary
+												caret-primary transition-all duration-150
+												disabled:cursor-not-allowed disabled:opacity-50
+											"
+										/>
+									))}
+									<OneTimePasswordField.HiddenInput />
+								</OneTimePasswordField.Root>
 
 								<div className="min-h-5 text-center">
 									{phase === "wrong-pin" && (
