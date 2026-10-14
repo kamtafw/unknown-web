@@ -83,6 +83,16 @@ describe("resolveLocalChatPreview", () => {
 		).resolves.toBe("Voice message")
 	})
 
+	it("uses a safe fallback when message type is present but preview and timestamp are blank", async () => {
+		getLatestMock.mockResolvedValue(null)
+		await expect(resolveLocalChatPreview(accountId, peerId, "", null, "text")).resolves.toBe(
+			"Encrypted message",
+		)
+		await expect(resolveLocalChatPreview(accountId, peerId, null, null, "image")).resolves.toBe(
+			"Image",
+		)
+	})
+
 	it("returns no-message empty state when there is no preview or latest-message timestamp", async () => {
 		getLatestMock.mockResolvedValue(null)
 		await expect(resolveLocalChatPreview(accountId, peerId, null, null, null)).resolves.toBe("")

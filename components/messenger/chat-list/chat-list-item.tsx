@@ -1,6 +1,6 @@
 "use client"
 
-import { resolvePreviewFallbackLabel, resolvePreviewIcon } from "@/lib/messenger/preview"
+import { resolveChatListDisplayPreview, resolvePreviewIcon } from "@/lib/messenger/preview"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { getDisplayName, getInitials } from "@/lib/messenger/user-display"
 import { toast } from "@/lib/toast"
@@ -64,9 +64,10 @@ export function ChatListItem({
 	const name = getDisplayName(chat)
 	const PreviewIcon = resolvePreviewIcon(chat.last_message_type)
 	const Icon = PreviewIcon ? PREVIEW_ICONS[PreviewIcon] : null
-	const previewText =
-		chat.last_message_preview ||
-		(chat.last_message_type ? resolvePreviewFallbackLabel(chat.last_message_type) : "")
+	const previewText = resolveChatListDisplayPreview(
+		chat.last_message_preview,
+		chat.last_message_type,
+	)
 
 	const handleMarkedRead = async () => {
 		try {

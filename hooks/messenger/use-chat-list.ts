@@ -49,7 +49,13 @@ export function useChatList(filter: ChatListFilter, search: string) {
 
 		void Promise.all(
 			query.data.users
-				.filter((user) => user.last_message_preview || user.last_message_time)
+				.filter(
+					(user) =>
+						user.last_message_preview ||
+						user.last_message_time ||
+						user.last_message_type ||
+						user.last_message_id != null,
+				)
 				.map(async (user) => {
 					const preview = await resolveLocalChatPreview(
 						accountId as Pkid,
@@ -101,7 +107,12 @@ export function useChatList(filter: ChatListFilter, search: string) {
 						last_message_preview:
 							localPreview ??
 							resolveEncryptedPreviewFallback(
-								Boolean(user.last_message_preview || user.last_message_time),
+								Boolean(
+									user.last_message_preview ||
+									user.last_message_time ||
+									user.last_message_type ||
+									user.last_message_id != null,
+								),
 								user.last_message_type,
 							),
 					}

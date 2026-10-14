@@ -94,9 +94,14 @@ export function ArchiveRow({ entry }: ArchiveRowProps) {
 		userPreview.lastMessageId === target.last_message_id
 			? userPreview.preview
 			: (resolveEncryptedPreviewFallback(
-					Boolean(target.last_message_preview || target.last_message_time),
+					Boolean(
+						target.last_message_preview ||
+						target.last_message_time ||
+						target.last_message_type ||
+						target.last_message_id != null,
+					),
 					target.last_message_type,
-				) ?? "")
+				) ?? "Preview unavailable")
 	const previewText = isUser
 		? resolvedUserPreview
 		: target.last_message_preview || "No messages yet"
