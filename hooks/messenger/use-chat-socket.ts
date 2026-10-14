@@ -135,10 +135,6 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				// shape (e.g. a flat `senderId` instead of `sender.id`), silently
 				// trusting `message.sender.id` would break both
 				const message = rawMessage
-				if (process.env.NODE_ENV !== "production") {
-					console.info("[messenger] chat:receive payload", rawMessage)
-				}
-
 				const normalized =
 					currentAccountId !== null
 						? await normalizeDirectMessage({
@@ -181,7 +177,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					if (process.env.NODE_ENV !== "production") {
 						console.warn(
 							"[messenger] chat:receive arrived without a usable sender.id — ",
-							+"see the console.debug above and check MESSENGER.md's open items.",
+							+"check MESSENGER.md's open items.",
 						)
 					}
 					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
