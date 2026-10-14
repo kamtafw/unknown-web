@@ -8,6 +8,7 @@ import {
 	getMessageEnvelopeHash,
 	normalizeDirectMessage,
 } from "@/lib/messenger/e2ee/direct-message"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
@@ -88,15 +89,19 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		const typingTimers = typingTimersRef.current
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
-			queryClient.setQueryData<HistoryData>(chatKeys.history(senderUuid), (old) => {
-				if (!old) return old // no cache for this conversation yet — list refetch covers preview
-				const pages = old.pages.map((page, i) =>
-					i === old.pages.length - 1
-						? { ...page, results: dedupeAppend(page.results, message) }
-						: page,
-				)
-				return { ...old, pages }
-			})
+			if (currentAccountId === null) return
+			queryClient.setQueryData<HistoryData>(
+				chatKeys.history(senderUuid, currentAccountId),
+				(old) => {
+					if (!old) return old // no cache for this conversation yet — list refetch covers preview
+					const pages = old.pages.map((page, i) =>
+						i === old.pages.length - 1
+							? { ...page, results: dedupeAppend(page.results, message) }
+							: page,
+					)
+					return { ...old, pages }
+				},
+			)
 		}
 
 		/** Returns whether it actually found and patched a cached row. */
@@ -127,13 +132,28 @@ export function useChatSocket(activeUuid: Uuid | null) {
 
 		const unsubReceive = messengerSocket.on<Message>(
 			CHAT_SOCKET_EVENTS.RECEIVE,
-			async (message) => {
+			async (rawMessage) => {
+				if (currentAccountId === null || useAuthStore.getState().user?.pkid !== currentAccountId)
+					return
+
+				if (e2eeRuntime.getActiveAccountId() !== currentAccountId) {
+					// Runtime activation may still be in flight on first load.
+					// Drop this event and reconcile from authenticated HTTP history.
+					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					if (activeUuidRef.current) {
+						queryClient.invalidateQueries({ queryKey: chatKeys.history(activeUuidRef.current) })
+					}
+					return
+				}
+				const sessionToken = e2eeRuntime.getSessionToken()
+
 				// Defensive normalization: the guide only describes this event as
 				// a table entry, not an exact JSON schema, and it's never been
 				// verified against a real payload from this environment. If the
 				// real event nests sender differently than the REST `Message`
 				// shape (e.g. a flat `senderId` instead of `sender.id`), silently
 				// trusting `message.sender.id` would break both
+				const message = rawMessage
 				const normalized =
 					currentAccountId !== null
 						? await normalizeDirectMessage({
@@ -142,6 +162,12 @@ export function useChatSocket(activeUuid: Uuid | null) {
 								message: message as never,
 							})
 						: message
+
+				if (
+					useAuthStore.getState().user?.pkid !== currentAccountId ||
+					!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+				)
+					return
 
 				if (
 					currentAccountId !== null &&
@@ -165,6 +191,11 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						} catch {
 							// Local preview persistence must not prevent realtime delivery.
 						}
+						if (
+							useAuthStore.getState().user?.pkid !== currentAccountId ||
+							!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+						)
+							return
 					}
 				}
 
@@ -175,7 +206,8 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				if (!normalized?.sender?.id) {
 					if (process.env.NODE_ENV !== "production") {
 						console.warn(
-							"[messenger] chat:receive arrived without a usable sender.id — check MESSENGER.md's open items.",
+							"[messenger] chat:receive arrived without a usable sender.id — ",
+							+"check MESSENGER.md's open items.",
 						)
 					}
 					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
