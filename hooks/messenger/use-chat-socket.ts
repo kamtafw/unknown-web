@@ -2,6 +2,7 @@
 
 import { chatApi } from "@/lib/messenger/api"
 import { saveLocalMessageCopy } from "@/lib/messenger/e2ee"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
 import {
 	classifyDirectMessageEnvelope,
 	E2EE_FAILURE_CONTENT,
@@ -134,6 +135,17 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					useAuthStore.getState().user?.pkid !== currentAccountId
 				) return
 
+				if (e2eeRuntime.getActiveAccountId() !== currentAccountId) {
+					// Runtime activation may still be in flight on first load.
+					// Drop this event and reconcile from authenticated HTTP history.
+					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					if (activeUuidRef.current) {
+						queryClient.invalidateQueries({ queryKey: chatKeys.history(activeUuidRef.current) })
+					}
+					return
+				}
+				const sessionToken = e2eeRuntime.getSessionToken()
+
 				// Defensive normalization: the guide only describes this event as
 				// a table entry, not an exact JSON schema, and it's never been
 				// verified against a real payload from this environment. If the
@@ -150,7 +162,10 @@ export function useChatSocket(activeUuid: Uuid | null) {
 							})
 						: message
 
-				if (useAuthStore.getState().user?.pkid !== currentAccountId) return
+				if (
+					useAuthStore.getState().user?.pkid !== currentAccountId ||
+					!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+				) return
 
 				if (
 					currentAccountId !== null &&
@@ -174,7 +189,10 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						} catch {
 							// Local preview persistence must not prevent realtime delivery.
 						}
-						if (useAuthStore.getState().user?.pkid !== currentAccountId) return
+						if (
+							useAuthStore.getState().user?.pkid !== currentAccountId ||
+							!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+						) return
 					}
 				}
 
