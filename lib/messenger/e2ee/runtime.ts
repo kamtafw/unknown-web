@@ -76,6 +76,8 @@ class E2eeRuntime {
 	 * superseded by a newer `activate()` (account switched again) or a
 	 * `clear()` (logout) can never clobber state that came after it. */
 	private generation = 0
+	/** Changes only when the active account session changes, not on every storage refresh. */
+	private sessionGeneration = 0
 	private pendingIdentityInstallControllers = new Set<AbortController>()
 
 	/** Cancels guarded recovery writes before a newer account/session can take
@@ -105,6 +107,14 @@ class E2eeRuntime {
 	 * same runtime activation that existed when the attempt began. */
 	getGenerationToken(): number {
 		return this.generation
+	}
+
+	getSessionToken(): number {
+		return this.sessionGeneration
+	}
+
+	isCurrentSession(accountId: Pkid, sessionToken: number): boolean {
+		return this.activeAccountId === accountId && this.sessionGeneration === sessionToken
 	}
 
 	isCurrentAccount(accountId: Pkid, generationToken: number): boolean {
@@ -145,6 +155,7 @@ class E2eeRuntime {
 
 		if (generation !== this.generation || !isStillCurrent()) return // superseded, logged out, or stale account
 
+		if (this.activeAccountId !== accountId) this.sessionGeneration++
 		this.activeAccountId = accountId
 		this.activeIdentity = identity
 		this.trustedKeys = new Map(
@@ -158,6 +169,7 @@ class E2eeRuntime {
 	clear(): void {
 		this.abortPendingIdentityInstalls()
 		this.generation++
+		this.sessionGeneration++
 		this.activeAccountId = null
 		this.activeIdentity = null
 		this.trustedKeys = new Map()
