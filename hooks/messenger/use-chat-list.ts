@@ -70,16 +70,18 @@ export function useChatList(filter: ChatListFilter, search: string) {
 					return [user.pkid, { lastMessageTime: user.last_message_time, lastMessageId: user.last_message_id, preview }] as const
 				}),
 		).then((entries) => {
-			if (cancelled) return
+			if (cancelled || useAuthStore.getState().sessionGeneration !== sessionGeneration) return
 			setPreviewOverrides({ accountId, values: new Map(entries) })
 		}).catch(() => {
-			if (!cancelled) setPreviewOverrides({ accountId, values: new Map() })
+			if (!cancelled && useAuthStore.getState().sessionGeneration === sessionGeneration) {
+				setPreviewOverrides({ accountId, values: new Map() })
+			}
 		})
 
 		return () => {
 			cancelled = true
 		}
-	}, [accountId, query.data?.users])
+	}, [accountId, sessionGeneration, query.data?.users])
 
 	const data = query.data
 		? {
