@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { CalendarDays, Compass, Plus, Settings2, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +13,7 @@ const items = [
 
 export function EventsSidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   return (
     <aside className="hidden md:flex w-64 lg:w-72 shrink-0 flex-col rounded-2xl border border-border bg-card overflow-hidden mb-5">
@@ -31,9 +32,11 @@ export function EventsSidebar() {
       <nav aria-label="Events navigation" className="flex-1 space-y-1 p-3">
         {items.map(({ label, href, icon: Icon, exact }) => {
           const baseHref = href.split("?")[0]
-          const active = exact
-            ? pathname === baseHref
-            : pathname === baseHref || pathname.startsWith(`${baseHref}/`)
+          const active = href.includes("?view=mine")
+            ? pathname === "/events" && searchParams.get("view") === "mine"
+            : exact
+              ? pathname === baseHref && searchParams.get("view") !== "mine"
+              : pathname === baseHref || pathname.startsWith(`${baseHref}/`)
 
           return (
             <Link
