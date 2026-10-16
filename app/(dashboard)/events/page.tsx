@@ -1,16 +1,22 @@
 "use client"
 
-import { useState } from "react"
-import { CalendarDays, ChevronDown, Compass, MapPin, Plus, Search } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { CalendarDays, Compass, MapPin, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 type EventTab = "discover" | "mine"
 
 export default function EventsPage() {
-	const [activeTab, setActiveTab] = useState<EventTab>("discover")
+	const searchParams = useSearchParams()
+	const [activeTab, setActiveTab] = useState<EventTab>(searchParams.get("view") === "mine" ? "mine" : "discover")
 	const [search, setSearch] = useState("")
-	const [locationState, setLocationState] = useState<"idle" | "requesting" | "denied">("idle")
+	const [locationState, setLocationState] = useState<"idle" | "requesting" | "denied" | "captured">("idle")
+
+	useEffect(() => {
+		setActiveTab(searchParams.get("view") === "mine" ? "mine" : "discover")
+	}, [searchParams])
 
 	const requestLocation = () => {
 		if (!navigator.geolocation) {
@@ -20,7 +26,7 @@ export default function EventsPage() {
 
 		setLocationState("requesting")
 		navigator.geolocation.getCurrentPosition(
-			() => setLocationState("idle"),
+			() => setLocationState("captured"),
 			() => setLocationState("denied"),
 			{ enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
 		)
@@ -94,8 +100,11 @@ export default function EventsPage() {
 						<div className="mt-5 flex flex-col items-center gap-3">
 							<Button onClick={requestLocation} disabled={locationState === "requesting"} className="rounded-full">
 								<MapPin size={16} />
-								{locationState === "requesting" ? "Checking location…" : "Use my location"}
+								{locationState === "requesting" ? "Getting location…" : locationState === "captured" ? "Location captured" : "Use my location"}
 							</Button>
+							{locationState === "captured" && (
+								<p role="status" className="max-w-md text-sm text-muted-foreground">Your coordinates were captured. Nearby event results will appear here when the Events API integration is connected.</p>
+							)}
 							{locationState === "denied" && (
 								<p role="status" className="max-w-md text-sm text-destructive">
 									Location access wasn&apos;t available. Enable it in your browser settings and try again. We won&apos;t show a global event list as a fallback.
