@@ -103,7 +103,7 @@ export default function EventsPage() {
 								{locationState === "requesting" ? "Getting location…" : locationState === "captured" ? "Location captured" : "Use my location"}
 							</Button>
 							{locationState === "captured" && (
-								<p role="status" className="max-w-md text-sm text-muted-foreground">Your coordinates were captured. Nearby event results will appear here when the Events API integration is connected.</p>
+								<p role="status" className="max-w-md text-sm text-muted-foreground">Location access is working. Nearby event results will appear here when the Events API integration is connected.</p>
 							)}
 							{locationState === "denied" && (
 								<p role="status" className="max-w-md text-sm text-destructive">
