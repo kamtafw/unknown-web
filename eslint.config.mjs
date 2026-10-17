@@ -15,6 +15,7 @@ const eslintConfig = [
 	{
 		files: [
 			"app/(auth)/social-callback/page.tsx",
+			"app/(dashboard)/events/page.tsx",
 			"hooks/use-otp-cooldown.ts",
 			"hooks/use-read-aloud.ts",
 			"hooks/messenger/use-favorites.ts",
