@@ -1,146 +1,112 @@
 "use client"
 
-import { formatDistance, formatEventSchedule } from "@/lib/events/format"
-import { cn, getInitials } from "@/lib/utils"
-import type { EventCard as EventCardData, EventRsvpStatus } from "@/types/events/api"
-import { CalendarDays, Lock, MapPin, Radio } from "lucide-react"
+import { formatListDate } from "@/lib/events/format"
+import type { EventCard as EventCardData } from "@/types/events/api"
+import { CalendarDays, Clock, MapPin } from "lucide-react"
 import Image from "next/image"
 
-const RSVP_LABEL: Record<EventRsvpStatus, string> = {
-	going: "Going",
-	interested: "Interested",
-	not_going: "Not going",
-}
+/** cover ratio taken from the design export (352 × 132) */
+const COVER = "relative aspect-[352/132] overflow-hidden rounded-xl bg-muted"
 
-function Chip({ children, className }: { children: React.ReactNode; className?: string }) {
+/**
+ * Solid padlock as drawn in the design (slate shackle, orange body, white keyhole).
+ * The design's icon file was not exported, so this is a redraw from the screenshot;
+ * the colours are sampled from it and are fixed on purpose: the badge sits on a
+ * photo, so it must not change with the theme.
+ */
+function LockGlyph() {
 	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium",
-				className,
-			)}
-		>
-			{children}
-		</span>
+		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+			<path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#33395B" strokeWidth="2.2" strokeLinecap="round" />
+			<rect x="4.5" y="10" width="15" height="11.5" rx="3.5" fill="#FD8650" />
+			<circle cx="12" cy="14.6" r="1.6" fill="#fff" />
+			<rect x="11.3" y="15" width="1.4" height="3.2" rx="0.7" fill="#fff" />
+		</svg>
 	)
 }
 
 /**
- * Discovery / My Events card. Renders only whitelisted summary fields; nothing here
- * is evidence of access to the event's room or resources (details arrive in Pass 2,
- * which is why the card is not a link yet).
+ * Event list item, image-first and borderless as in the design: cover with a lock
+ * chip for passcode events, title, address, then either "LIVE NOW!" or the date/time.
  *
- * Cover images use `unoptimized` because the event media host has not been verified
- * against next.config's allowed image hosts.
+ * Deliberately NOT shown (not in the design, or not safe to show yet): distance,
+ * hashtags, host, privacy/RSVP chips, and the attendee avatar stack. The stack
+ * needs a backend contract: the list payload's `guests` includes offline guests,
+ * so it is neither read nor represented in `EventCardData` (docs/events/EVENTS.md, EV-011).
+ *
+ * Not a link yet: opening an event is Pass 2. Cover images use `unoptimized`
+ * because the media host has not been verified against next.config's allowed hosts.
  */
 export function EventCard({ event }: { event: EventCardData }) {
-	const schedule = formatEventSchedule(event)
-	const distance = formatDistance(event.distanceKm)
-	const host = event.hosts[0]
-	const tags = event.hashtags.slice(0, 3)
+	const when = formatListDate(event)
 
 	return (
-		<article
-			aria-label={event.name}
-			className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card"
-		>
-			<div className="relative aspect-video bg-muted">
+		<article aria-label={event.name} className="flex flex-col">
+			<div className={COVER}>
 				{event.coverImage ? (
 					<Image
 						src={event.coverImage}
 						alt=""
 						fill
 						unoptimized
-						sizes="(min-width: 1280px) 384px, (min-width: 640px) 50vw, 100vw"
+						sizes="(min-width: 1024px) 351px, 100vw"
 						className="object-cover"
 					/>
 				) : (
 					<div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/5 text-primary/60">
-						<CalendarDays size={36} aria-hidden />
+						<CalendarDays size={32} aria-hidden />
 					</div>
 				)}
 
-				<div className="absolute left-3 top-3 flex gap-1.5">
-					{event.isLive && (
-						<Chip className="bg-destructive text-destructive-foreground">
-							<Radio size={11} aria-hidden /> Live
-						</Chip>
-					)}
-				</div>
 				{event.isLocked && (
-					<Chip className="absolute right-3 top-3 bg-background/90 text-foreground backdrop-blur">
-						<Lock size={11} aria-hidden /> Passcode
-					</Chip>
+					<span
+						role="img"
+						aria-label="Passcode required"
+						className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/90 sm:right-6"
+					>
+						<LockGlyph />
+					</span>
 				)}
 			</div>
 
-			<div className="flex flex-1 flex-col gap-2 p-4">
-				<h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-foreground">
-					{event.name}
-				</h3>
+			<h3 className="mt-3 line-clamp-2 text-base font-semibold leading-snug text-foreground">
+				{event.name}
+			</h3>
 
-				{schedule && (
-					<p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-						<CalendarDays size={13} className="shrink-0" aria-hidden />
-						<span>{schedule}</span>
+			<div className="mt-2 flex items-center justify-between gap-3 text-[12px]">
+				{event.address ? (
+					<p className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+						<MapPin
+							size={14}
+							className="shrink-0 fill-primary text-primary [&_circle]:fill-card"
+							aria-hidden
+						/>
+						<span className="truncate">{event.address}</span>
 					</p>
+				) : (
+					<span />
 				)}
 
-				{(event.address || distance) && (
-					<p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-						<MapPin size={13} className="shrink-0" aria-hidden />
-						{event.address && <span className="truncate">{event.address}</span>}
-						{distance && <span className="shrink-0 font-medium text-foreground">{distance}</span>}
+				{event.isLive ? (
+					// the design draws this row's icon in the same blue as the date row; only the text is red
+					<p className="flex shrink-0 items-center gap-1.5 font-semibold uppercase text-destructive">
+						<Clock size={13} className="text-primary" aria-hidden />
+						Live now!
 					</p>
-				)}
-
-				{tags.length > 0 && (
-					<ul className="flex flex-wrap gap-1.5" aria-label="Tags">
-						{tags.map((tag) => (
-							<li key={tag}>
-								<Chip className="bg-accent text-primary">#{tag}</Chip>
-							</li>
-						))}
-					</ul>
-				)}
-
-				<div className="mt-auto flex items-center justify-between gap-2 pt-2">
-					{host ? (
-						<div className="flex min-w-0 items-center gap-2">
-							{host.photo ? (
-								<Image
-									src={host.photo}
-									alt=""
-									width={24}
-									height={24}
-									unoptimized
-									className="size-6 shrink-0 rounded-full object-cover"
-								/>
-							) : (
-								<span
-									aria-hidden
-									className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
-								>
-									{getInitials(host.name)}
-								</span>
-							)}
-							<span className="truncate text-[12px] text-muted-foreground">
-								Hosted by <span className="font-medium text-foreground">{host.name}</span>
+				) : (
+					when && (
+						<time
+							dateTime={event.startDate}
+							className="flex shrink-0 items-center gap-1.5 text-muted-foreground"
+						>
+							<Clock size={13} className="text-primary" aria-hidden />
+							<span>
+								<span className="font-semibold text-foreground">{when.day}</span>
+								{when.time && ` ${when.time}`}
 							</span>
-						</div>
-					) : (
-						<span />
-					)}
-
-					<div className="flex shrink-0 items-center gap-1.5">
-						{event.privacy && event.privacy !== "public" && (
-							<Chip className="bg-muted capitalize text-muted-foreground">{event.privacy}</Chip>
-						)}
-						{event.viewerRsvp && (
-							<Chip className="bg-primary/10 text-primary">{RSVP_LABEL[event.viewerRsvp]}</Chip>
-						)}
-					</div>
-				</div>
+						</time>
+					)
+				)}
 			</div>
 		</article>
 	)
@@ -148,19 +114,12 @@ export function EventCard({ event }: { event: EventCardData }) {
 
 export function EventCardSkeleton() {
 	return (
-		<div
-			aria-hidden
-			className="animate-pulse overflow-hidden rounded-2xl border border-border bg-card"
-		>
-			<div className="aspect-video bg-muted" />
-			<div className="space-y-3 p-4">
-				<div className="h-4 w-4/5 rounded-full bg-muted" />
-				<div className="h-3 w-3/5 rounded-full bg-muted" />
+		<div aria-hidden className="animate-pulse">
+			<div className={COVER} />
+			<div className="mt-3 h-4 w-3/5 rounded-full bg-muted" />
+			<div className="mt-3 flex items-center justify-between gap-3">
 				<div className="h-3 w-2/5 rounded-full bg-muted" />
-				<div className="flex items-center gap-2 pt-2">
-					<div className="size-6 rounded-full bg-muted" />
-					<div className="h-3 w-1/3 rounded-full bg-muted" />
-				</div>
+				<div className="h-3 w-1/4 rounded-full bg-muted" />
 			</div>
 		</div>
 	)

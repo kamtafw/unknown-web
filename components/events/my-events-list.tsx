@@ -3,8 +3,10 @@
 import { useMyEvents } from "@/hooks/events/use-my-events"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { CalendarX2, SearchX, WifiOff } from "lucide-react"
+import type { ReactNode } from "react"
 import { useState } from "react"
-import { EventGrid, EventGridSkeleton, RetryButton, SearchField, StateMessage } from "./event-list"
+import { EventList, EventListSkeleton, RetryButton, StateMessage } from "./event-list"
+import { EventsPane } from "./events-pane"
 
 /**
  * Events the viewer hosts or has a guest record for, at any distance. Needs no location.
@@ -17,9 +19,9 @@ export function MyEventsList() {
 	const term = debouncedSearch.trim()
 	const myEvents = useMyEvents(debouncedSearch)
 
-	let body
+	let body: ReactNode
 	if (myEvents.isInitialLoading) {
-		body = <EventGridSkeleton label={term ? "Searching your events…" : "Loading your events…"} />
+		body = <EventListSkeleton label={term ? "Searching your events…" : "Loading your events…"} />
 	} else if (myEvents.isError) {
 		body = (
 			<StateMessage
@@ -47,7 +49,7 @@ export function MyEventsList() {
 		)
 	} else {
 		body = (
-			<EventGrid
+			<EventList
 				events={myEvents.events}
 				hasNextPage={myEvents.hasNextPage}
 				isFetchingNextPage={myEvents.isFetchingNextPage}
@@ -57,14 +59,11 @@ export function MyEventsList() {
 	}
 
 	return (
-		<section aria-label="My events" className="flex flex-col gap-4">
-			<SearchField
-				value={search}
-				onChange={setSearch}
-				label="Search my events"
-				placeholder="Search my events"
-			/>
+		<EventsPane
+			label="My events"
+			search={{ value: search, onChange: setSearch, label: "Search my events" }}
+		>
 			{body}
-		</section>
+		</EventsPane>
 	)
 }

@@ -52,8 +52,20 @@ describe("MyEventsList", () => {
 		useMyEvents.mockReturnValue(state({ events: [card("a", "Old gig")] }))
 		render(<MyEventsList />)
 		expect(screen.getByText("Old gig")).toBeInTheDocument()
-		expect(screen.getByText("Going")).toBeInTheDocument()
-		expect(screen.getByText("private")).toBeInTheDocument()
+		// RSVP / privacy chips are not in the design
+		expect(screen.queryByText("Going")).not.toBeInTheDocument()
+		expect(screen.queryByText("private")).not.toBeInTheDocument()
+	})
+
+	it("uses the same pane as Events: search, both tabs, and no location row", () => {
+		render(<MyEventsList />)
+		expect(screen.getByRole("searchbox", { name: "Search my events" })).toHaveAttribute(
+			"placeholder",
+			"Search…",
+		)
+		expect(screen.getByRole("link", { name: "My events" })).toBeInTheDocument()
+		expect(screen.getByRole("link", { name: "Events" })).toBeInTheDocument()
+		expect(screen.queryByText("Location")).not.toBeInTheDocument()
 	})
 
 	it("shows loading, then the empty state", () => {

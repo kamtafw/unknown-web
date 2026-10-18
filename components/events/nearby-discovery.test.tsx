@@ -79,12 +79,12 @@ describe("NearbyDiscovery location states", () => {
 		expect(screen.queryByRole("article")).not.toBeInTheDocument()
 	})
 
-	it("explains a blocked permission and offers retry and My Events, with no events", () => {
+	it("explains a blocked permission and offers retry and My events, with no events", () => {
 		useGeolocation.mockReturnValue(failed("denied", "denied"))
 		render(<NearbyDiscovery />)
 		expect(screen.getByText("Location access is blocked")).toBeInTheDocument()
 		expect(screen.getByText(/site settings/i)).toBeInTheDocument()
-		expect(screen.getByRole("link", { name: "Go to My Events" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: "Go to My events" })).toHaveAttribute(
 			"href",
 			"/events/my-events",
 		)
@@ -122,14 +122,17 @@ describe("NearbyDiscovery location states", () => {
 })
 
 describe("NearbyDiscovery results", () => {
-	it("shows the scope label, cards and the address when known", () => {
+	it("shows the location row, cards and the address when known; the 25 km scope is not visible text", () => {
 		useEventAddress.mockReturnValue("Jos North, Plateau")
 		useNearbyEvents.mockReturnValue(
 			nearby({ events: [card("a", "Jazz night"), card("b", "Tech meetup")], totalLoaded: 2 }),
 		)
 		render(<NearbyDiscovery />)
-		expect(screen.getByText(/Within 25 km of/)).toBeInTheDocument()
+		expect(screen.getByText("Location")).toBeInTheDocument()
 		expect(screen.getByText("Jos North, Plateau")).toBeInTheDocument()
+		// scope is available to assistive tech and as a tooltip, not as prominent text
+		expect(screen.getByText("Within 25 km of")).toHaveClass("sr-only")
+		expect(screen.getByTitle("Showing events within 25 km")).toBeInTheDocument()
 		expect(screen.getAllByRole("article")).toHaveLength(2)
 		expect(screen.getByText("Jazz night")).toBeInTheDocument()
 	})
@@ -137,7 +140,7 @@ describe("NearbyDiscovery results", () => {
 	it("falls back to a generic label when the address lookup gave nothing", () => {
 		useNearbyEvents.mockReturnValue(nearby({ events: [card("a", "Jazz night")] }))
 		render(<NearbyDiscovery />)
-		expect(screen.getByText("your current location")).toBeInTheDocument()
+		expect(screen.getByText("Current location")).toBeInTheDocument()
 		expect(screen.getAllByRole("article")).toHaveLength(1)
 	})
 
@@ -171,10 +174,48 @@ describe("NearbyDiscovery results", () => {
 		expect(screen.queryByRole("article")).not.toBeInTheDocument()
 	})
 
-	it("shows the empty state with a way to My Events", () => {
+	it("shows the empty state with a way to My events", () => {
 		render(<NearbyDiscovery />)
 		expect(screen.getByText("No events within 25 km right now")).toBeInTheDocument()
-		expect(screen.getByRole("link", { name: "Go to My Events" })).toBeInTheDocument()
+		expect(screen.getByRole("link", { name: "Go to My events" })).toBeInTheDocument()
+	})
+})
+
+describe("NearbyDiscovery shell", () => {
+	it("renders the shared pane: search with the design placeholder and both Events tabs", () => {
+		render(<NearbyDiscovery />)
+		expect(screen.getByRole("searchbox", { name: "Search nearby events" })).toHaveAttribute(
+			"placeholder",
+			"Search…",
+		)
+		expect(screen.getByRole("link", { name: "Events" })).toHaveAttribute("href", "/events")
+		expect(screen.getByRole("link", { name: "My events" })).toHaveAttribute(
+			"href",
+			"/events/my-events",
+		)
+	})
+
+	it("keeps the pane (tabs, row) but disables search while location is not ready", () => {
+		useGeolocation.mockReturnValue(failed("denied", "denied"))
+		render(<NearbyDiscovery />)
+		expect(screen.getByRole("searchbox", { name: "Search nearby events" })).toBeDisabled()
+		expect(screen.getByRole("link", { name: "My events" })).toBeInTheDocument()
+		expect(screen.getByText("Not available")).toBeInTheDocument()
+		expect(screen.queryByRole("button", { name: "Refresh my location" })).not.toBeInTheDocument()
+	})
+
+	it("shows a subtle finding-location value in the row while locating", () => {
+		useGeolocation.mockReturnValue({ ...failed("locating"), status: "locating" })
+		render(<NearbyDiscovery />)
+		expect(screen.getByText("Finding location…")).toBeInTheDocument()
+	})
+
+	it("renders events as a plain list with no card grid", () => {
+		useNearbyEvents.mockReturnValue(
+			nearby({ events: [card("a", "Jazz night"), card("b", "Tech meetup")] }),
+		)
+		render(<NearbyDiscovery />)
+		expect(screen.getAllByRole("listitem")).toHaveLength(2)
 	})
 })
 

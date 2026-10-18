@@ -40,6 +40,41 @@ export function formatEventSchedule(
 	return `${from} – ${to}`
 }
 
+export interface ListDate {
+	/** emphasised part, e.g. "May 19" (or "May 19 – May 21" for a multi-day event) */
+	day: string
+	/** de-emphasised part, e.g. "10:00 - 20:00"; "" when the event has no start time */
+	time: string
+}
+
+function shortDay(date: Date, now: Date): string {
+	return format(date, date.getFullYear() === now.getFullYear() ? "MMM d" : "MMM d, yyyy")
+}
+
+/**
+ * Date/time as shown in the event list: "**May 19** 10:00 - 20:00".
+ * The design only shows a single-day event; the year (other years) and the
+ * multi-day range are assumptions. As everywhere in Events, the stored date and
+ * time are shown as-is, never shifted through the browser timezone.
+ */
+export function formatListDate(
+	event: Pick<EventCard, "startDate" | "endDate" | "startTime" | "endTime">,
+	now: Date = new Date(),
+): ListDate | null {
+	const start = parseDate(event.startDate)
+	if (!start) return null
+	const end = parseDate(event.endDate)
+	const sameDay = !end || event.endDate === event.startDate
+
+	const { startTime, endTime } = event
+	const time = startTime && endTime && endTime !== startTime ? `${startTime} - ${endTime}` : startTime
+
+	return {
+		day: sameDay ? shortDay(start, now) : `${shortDay(start, now)} – ${shortDay(end, now)}`,
+		time,
+	}
+}
+
 export function formatDistance(km: number | null): string {
 	if (km === null || !Number.isFinite(km)) return ""
 	if (km < 1) return `${Math.max(1, Math.round(km * 1000))} m away`
