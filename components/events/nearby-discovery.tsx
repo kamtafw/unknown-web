@@ -5,23 +5,28 @@ import { useGeolocation } from "@/hooks/events/use-geolocation"
 import { useNearbyEvents } from "@/hooks/events/use-nearby-events"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { NEARBY_RADIUS_KM } from "@/lib/events/constants"
-import { CalendarX2, MapPin, RefreshCw, SearchX, WifiOff } from "lucide-react"
+import { CalendarX2, SearchX, WifiOff } from "lucide-react"
 import Link from "next/link"
+import type { ReactNode } from "react"
 import { useState } from "react"
 import {
-	EventGrid,
-	EventGridSkeleton,
+	EventList,
+	EventListSkeleton,
 	RetryButton,
-	SearchField,
 	StateMessage,
 	secondaryButton,
 } from "./event-list"
+import { EventsPane } from "./events-pane"
+import { LocationRow } from "./location-row"
 import { LocationState } from "./location-state"
 
 /**
  * Nearby-only discovery. The states are deliberately distinct:
  * finding location → location required/unavailable → loading → failed → empty → results.
  * No state ever substitutes a broader list: when location fails, discovery is empty.
+ *
+ * The location row appears here and not on My events: showing it there would mean
+ * requesting browser location on a tab that does not need it (docs/events/EVENTS.md, EV-013).
  */
 export function NearbyDiscovery() {
 	const location = useGeolocation()
@@ -31,26 +36,22 @@ export function NearbyDiscovery() {
 	const address = useEventAddress(location.coordinates)
 	const nearby = useNearbyEvents(location.coordinates, debouncedSearch)
 
-	if (location.status === "locating") {
-		return <EventGridSkeleton label="Finding your location…" />
-	}
+	const searching = debouncedSearch.trim().length > 0
 
-	if (location.status !== "ready") {
-		return (
+	let body: ReactNode
+	if (location.status === "locating") {
+		body = <EventListSkeleton label="Finding your location…" />
+	} else if (location.status !== "ready") {
+		body = (
 			<LocationState
 				status={location.status}
 				permission={location.permission}
 				onRetry={location.refresh}
 			/>
 		)
-	}
-
-	const searching = debouncedSearch.trim().length > 0
-
-	let body
-	if (nearby.isInitialLoading || nearby.isScanning) {
+	} else if (nearby.isInitialLoading || nearby.isScanning) {
 		body = (
-			<EventGridSkeleton
+			<EventListSkeleton
 				label={searching ? "Searching nearby events…" : "Loading nearby events…"}
 			/>
 		)
@@ -91,7 +92,7 @@ export function NearbyDiscovery() {
 				description="Check back soon, or take a look at the events you host or have joined."
 			>
 				<Link href="/events/my-events" className={secondaryButton}>
-					Go to My Events
+					Go to My events
 				</Link>
 			</StateMessage>
 		)
@@ -99,11 +100,11 @@ export function NearbyDiscovery() {
 		body = (
 			<>
 				{searching && nearby.coverage === "partial" && (
-					<p role="status" className="mb-3 text-[12.5px] text-muted-foreground">
+					<p role="status" className="mb-4 text-[12.5px] text-muted-foreground">
 						Showing matches from the nearby events loaded so far.
 					</p>
 				)}
-				<EventGrid
+				<EventList
 					events={nearby.events}
 					hasNextPage={nearby.hasNextPage}
 					isFetchingNextPage={nearby.isFetchingNextPage}
@@ -114,35 +115,20 @@ export function NearbyDiscovery() {
 	}
 
 	return (
-		<section aria-label="Events near you" className="flex flex-col gap-4">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<p className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
-					<MapPin size={14} className="shrink-0 text-primary" aria-hidden />
-					<span className="truncate">
-						Within {NEARBY_RADIUS_KM} km of{" "}
-						<span className="font-medium text-foreground">
-							{address ?? "your current location"}
-						</span>
-					</span>
-					<button
-						type="button"
-						onClick={location.refresh}
-						aria-label="Refresh my location"
-						className="ml-1 shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-					>
-						<RefreshCw size={13} aria-hidden />
-					</button>
-				</p>
-
-				<SearchField
-					value={search}
-					onChange={setSearch}
-					label="Search nearby events"
-					placeholder="Search nearby events"
-				/>
-			</div>
-
+		<EventsPane
+			label="Events near you"
+			location={
+				<LocationRow status={location.status} address={address} onRefresh={location.refresh} />
+			}
+			search={{
+				value: search,
+				onChange: setSearch,
+				label: "Search nearby events",
+				// nothing to search until a location has been resolved
+				disabled: location.status !== "ready",
+			}}
+		>
 			{body}
-		</section>
+		</EventsPane>
 	)
 }

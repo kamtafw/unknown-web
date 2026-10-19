@@ -73,7 +73,7 @@ export function LocationState({
 		>
 			<RetryButton onClick={onRetry} label={copy.retry} />
 			<Link href="/events/my-events" className={secondaryButton}>
-				Go to My Events
+				Go to My events
 			</Link>
 		</StateMessage>
 	)
