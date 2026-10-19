@@ -19,7 +19,7 @@ import { Bell, Event, Marketplace, Message, Social } from "./icons"
 const CATEGORY_ICONS = [
 	{ label: "Social", icon: Social, href: "/home" },
 	{ label: "Messenger", icon: Message, href: "/messenger" },
-	{ label: "Event", icon: Event },
+	{ label: "Event", icon: Event, href: "/events" },
 	{ label: "Marketplace", icon: Marketplace },
 ]
 
