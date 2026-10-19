@@ -1,3 +1,6 @@
+import { useAuthStore } from "@/stores/auth-store"
+import { useEventsLocationStore } from "@/stores/events-location.store"
+import type { FullUser } from "@/types/api"
 import type { EventCard } from "@/types/events/api"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -70,6 +73,8 @@ const nearby = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
 	vi.clearAllMocks()
+	useEventsLocationStore.setState({ last: null })
+	useAuthStore.setState({ user: { pkid: 1 } as FullUser, sessionGeneration: 0 })
 	useGeolocation.mockReturnValue(ready)
 	useNearbyEvents.mockReturnValue(nearby())
 	useEventAddress.mockReturnValue(null)
@@ -251,5 +256,26 @@ describe("NearbyDiscovery search", () => {
 		expect(screen.getByText("No matches in the events loaded so far")).toBeInTheDocument()
 		fireEvent.click(screen.getByRole("button", { name: "Load more events" }))
 		expect(fetchNextPage).toHaveBeenCalledTimes(1)
+	})
+
+	describe("remembered location for My events", () => {
+		it("remembers the resolved place when location is ready", () => {
+			useEventAddress.mockReturnValue("Amuwo, Lagos")
+			render(<NearbyDiscovery />)
+			expect(useEventsLocationStore.getState().last).toEqual({
+				accountId: 1,
+				sessionGeneration: 0,
+				address: "Amuwo, Lagos",
+			})
+		})
+
+		it("clears it when location is blocked, so My events never shows a revoked place", () => {
+			useEventsLocationStore.setState({
+				last: { accountId: 1, sessionGeneration: 0, address: "Old" },
+			})
+			useGeolocation.mockReturnValue(failed("denied", "denied"))
+			render(<NearbyDiscovery />)
+			expect(useEventsLocationStore.getState().last).toBeNull()
+		})
 	})
 })
