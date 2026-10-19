@@ -2,6 +2,7 @@
 
 import { useEventAddress } from "@/hooks/events/use-event-address"
 import { useGeolocation } from "@/hooks/events/use-geolocation"
+import { useRememberLocation } from "@/hooks/events/use-last-location"
 import { useNearbyEvents } from "@/hooks/events/use-nearby-events"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { NEARBY_RADIUS_KM } from "@/lib/events/constants"
@@ -25,8 +26,8 @@ import { LocationState } from "./location-state"
  * finding location → location required/unavailable → loading → failed → empty → results.
  * No state ever substitutes a broader list: when location fails, discovery is empty.
  *
- * The location row appears here and not on My events: showing it there would mean
- * requesting browser location on a tab that does not need it (docs/events/EVENTS.md, EV-013).
+ * The resolved place is also remembered for My events' read-only location row
+ * (docs/events/EVENTS.md, EV-013); that row never requests location itself.
  */
 export function NearbyDiscovery() {
 	const location = useGeolocation()
@@ -34,6 +35,8 @@ export function NearbyDiscovery() {
 	const debouncedSearch = useDebouncedValue(search, 300)
 
 	const address = useEventAddress(location.coordinates)
+	// share the resolved place with My events (display only; cleared whenever location is lost)
+	useRememberLocation(location.status, address)
 	const nearby = useNearbyEvents(location.coordinates, debouncedSearch)
 
 	const searching = debouncedSearch.trim().length > 0
@@ -118,7 +121,12 @@ export function NearbyDiscovery() {
 		<EventsPane
 			label="Events near you"
 			location={
-				<LocationRow status={location.status} address={address} onRefresh={location.refresh} />
+				<LocationRow
+					status={location.status}
+					address={address}
+					onRefresh={location.refresh}
+					scopeKm={NEARBY_RADIUS_KM}
+				/>
 			}
 			search={{
 				value: search,

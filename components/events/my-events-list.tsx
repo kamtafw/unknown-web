@@ -1,5 +1,6 @@
 "use client"
 
+import { useLastLocation } from "@/hooks/events/use-last-location"
 import { useMyEvents } from "@/hooks/events/use-my-events"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { CalendarX2, SearchX, WifiOff } from "lucide-react"
@@ -7,6 +8,17 @@ import type { ReactNode } from "react"
 import { useState } from "react"
 import { EventList, EventListSkeleton, RetryButton, StateMessage } from "./event-list"
 import { EventsPane } from "./events-pane"
+import { LocationRow } from "./location-row"
+
+/**
+ * Read-only location row (design parity). Shows the place Events discovery last resolved, or
+ * a neutral "Not set". It reads shared display state only: it never calls the geolocation
+ * hook, never prompts, and has no refresh, so My events does not depend on location at all.
+ */
+function RememberedLocationRow() {
+	const last = useLastLocation()
+	return <LocationRow status={last ? "ready" : "unset"} address={last?.address ?? null} />
+}
 
 /**
  * Events the viewer hosts or has a guest record for, at any distance. Needs no location.
@@ -61,6 +73,7 @@ export function MyEventsList() {
 	return (
 		<EventsPane
 			label="My events"
+			location={<RememberedLocationRow />}
 			search={{ value: search, onChange: setSearch, label: "Search my events" }}
 		>
 			{body}
