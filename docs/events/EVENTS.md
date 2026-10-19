@@ -1,5 +1,9 @@
 # EVENTS.md — Pass 1 / Phase 1: Discovery and My Events
 
+**Status: Phase 1 complete** (accepted by the project owner after reviewing the rendered output, including
+typography). Branch `feat/events-phase1`, last implementation commit `5bcbdb9`. Next: Pass 2, see
+`docs/events/PHASE-2-HANDOFF.md`.
+
 Scope: nearby discovery (`/events`) and My Events (`/events/my-events`). Details, create/edit,
 RSVP, participation and live sessions are later passes and are **not** implemented.
 
@@ -21,7 +25,7 @@ transport) — never a live-backend check.
 | Page size configurable | `NEXT_PUBLIC_EVENTS_PAGE_SIZE`, default 20, clamped to 1..100 (`lib/events/constants.ts`) |
 
 Files: `types/events/api.ts`; `lib/events/{constants,location,server,normalize,pagination,search,format,query-keys,api}.ts`;
-`app/api/events/{nearby,my-events,my-location}/route.ts`; `hooks/events/*`; `components/events/*`;
+`app/api/events/{nearby,my-events,my-location}/route.ts`; `hooks/events/*` (incl. `use-last-location`); `stores/events-location-store.ts`; `components/events/*`;
 `app/(events)/events/{layout,page,my-events/page}.tsx`; `TopBar` "Event" → `/events` (the only TopBar change).
 Layout pieces: `events-pane` (shared left pane), `events-tabs`, `location-row`, `event-list`, `event-card`, `event-room-placeholder`.
 
@@ -45,8 +49,8 @@ My events tab (room open as host), and a cropped passcode modal. The frames are 
 - A-5 Time shown exactly as stored, 24-hour `HH:MM`, never shifted through the browser timezone. Date is "MMM d" (adds the year for other years; shows "MMM d – MMM d" for multi-day events). The design only shows a single-day event in the current year.
 - A-6 Padlock, pin and clock glyphs are redraws/lucide equivalents: the design's icon assets were not exported (the design uses a dashed "15" clock and a person-pin).
 - A-7 Loading skeleton, empty, error and location-permission states have **no design**; they use the app's established state pattern (rounded icon tile, bold title, muted copy, pill buttons) flattened into the left pane.
+- A-8 Work Sans (the app font) could not be loaded in the sandbox used for visual checks (Google Fonts unreachable), so **I did not compare typography glyph-for-glyph**; sizes/weights follow the design numbers. The project owner later reviewed the real rendering and accepted it.
 - A-9 My events shows the Location row too (as in the design) but it is a **read-only reflection**: it shows the place Events discovery last resolved, or a neutral "Not set" (muted text and pin) when none has been. It has no 25 km text, no tooltip and no refresh, because My events is not distance-limited and never asks the browser for location.
-- A-8 Work Sans (the app font) could not be loaded in the sandbox used for visual checks (Google Fonts unreachable), so **typography was not compared glyph-for-glyph**; sizes/weights follow the design numbers but were checked with a fallback serif.
 
 **Deliberately omitted from cards (not in the designs, or unsafe to show yet):** distance, hashtags, host, privacy and RSVP chips, and the attendee avatar stack (see EV-011).
 
@@ -75,9 +79,31 @@ My events tab (room open as host), and a cropped passcode modal. The frames are 
 
 ## Final decisions (end of Phase 1)
 
-- Two-pane layout approved: right pane is a placeholder; avatar stack omitted; shared TopBar unchanged.
-- EV-013: My events shows a read-only location row fed by discovery (A-9). EV-009: documented with a proposal; nothing changed in navigation.
-- Open for a decision before or during Pass 2: EV-009 (mobile navigation), EV-016 (missing state designs). Needs backend: EV-001, EV-002, EV-004, EV-011.
+Layout and behaviour:
+- Supplied Figma exports are the source of truth; Figma itself was never reachable (EV-006).
+- Two-pane layout (399 px left pane, flat white panels). The right pane is a neutral "No event selected" placeholder; cards are not selectable yet. Hidden below 1024 px (A-1, A-2).
+- Nearby discovery and My events are separate: different routes, hooks, cache roots and BFF routes. Nearby is location-gated; My events needs no location.
+- 25 km radius and `filter=my_events` are pinned in the BFF and cannot come from the browser. No global fallback exists anywhere in the UI or API layer.
+- Caches are keyed by account `pkid` and `sessionGeneration`. Events are normalised through a field whitelist (host contact data, `guests`, links and documents are never kept).
+- Avatar stack omitted until a safe backend contract exists (EV-011). Distance, hashtags, host, privacy and RSVP chips are not shown on cards.
+- Shared `TopBar` styling unchanged; the only edit is the Event icon → `/events` (EV-012).
+- My events location row (EV-013, Option 2): reuses the label discovery resolved, never requests location, shows "Not set" when none (A-9).
+- Mobile navigation (EV-009) is **not** fixed: a scoped proposal is documented, awaiting a decision.
+
+Carry forward into Phase 2:
+- Keep using the BFF → `eventsApi` → hooks pattern, the `eventKeys` factory, and account + session-generation scoping for every new query and mutation.
+- Details responses have two shapes (full vs restricted preview, both HTTP 200). Model them as a discriminated type and never treat missing preview fields as empty data.
+- Passcodes are strings (leading zeros), write-only, never in URLs or persistent caches.
+- Event times carry no timezone (EV-004): display as stored, validate the whole schedule, and establish the deployed timezone before the create form.
+- Do not treat RSVP, guest membership and joining as the same thing.
+- Missing designs: use the app's design language and record assumptions (A-n), as in Phase 1.
+- The My events location label is display-only state; it must never feed a request or a cache key.
+
+## Backend dependencies (open)
+EV-001 (restricted-event over-disclosure), EV-002 (nearby/25 km not server-enforced), EV-004 (timezone semantics), EV-011 (online-attendee count / avatar preview).
+
+## Deferred / open, non-backend
+EV-005, EV-006 (partly), EV-007, EV-008, EV-009 (decision), EV-010, EV-012, EV-014, EV-015, EV-016, EV-017, EV-018.
 
 ## Verification record
 
@@ -104,7 +130,7 @@ Chromium checks (mocked API, mocked geolocation, dev server):
 
 Account/session scoping is covered by tests (query keys; `use-last-location`: another account or session generation sees nothing; discovery clears the store on denial).
 
-Not verified: typography with the real Work Sans font, any Figma frame directly, the live backend, dark mode, a real browser permission prompt, a production-mode run of the duplicate My events request (EV-018), and widths other than 390 / 767 / 768 / 820 / 1440.
+Not verified by me: typography with the real Work Sans font (the sandbox cannot load it; the project owner reported checking rendered typography and accepted it), any Figma frame directly, the live backend, dark mode, a real browser permission prompt, a production-mode run of the duplicate My events request (EV-018), and widths other than 390 / 767 / 768 / 820 / 1440. The Chromium checks used `next dev -p 5000` without `--turbopack` (the `dev` script uses it).
 
 ### Earlier layout-fidelity run
 `tsc` exit 0; lint clean; 42 files / 568 tests; build passed; blocked-location render made zero `/api/events/*` requests; no horizontal overflow at 390, 820, 1440.
