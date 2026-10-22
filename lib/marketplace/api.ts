@@ -26,6 +26,7 @@ import type {
 	SellerAlert,
 	ShipmentDetails,
 	TrackingUpdate,
+	SpecificationSuggestionQuery,
 } from "@/types/marketplace"
 import { isAxiosError } from "axios"
 
@@ -168,6 +169,16 @@ export const marketplaceApi = {
 	product: (id: number) => get<ProductResponse>(`products/${id}`),
 	sellerProduct: (id: number) => get<ProductResponse>(`seller/products/${id}`),
 	categories: () => options<Category>("categories/list"),
+	specificationSuggestions: (
+		params: SpecificationSuggestionQuery,
+		signal?: AbortSignal,
+	) =>
+		apiClient
+			.get<ApiResponse<{ results: string[] }>>(
+				`${root}/products/specification-suggestions`,
+				{ params, signal },
+			)
+			.then((r) => r.data.data.results),
 	deliveries: () => options<DeliveryOption>("delivery-options/list"),
 	create: (payload: ProductPayload) =>
 		apiClient

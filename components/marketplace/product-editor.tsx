@@ -34,6 +34,7 @@ import type {
 	ProductPayload,
 } from "@/types/marketplace"
 import { cn } from "@/lib/utils"
+import { SpecificationInput } from "./specification-input"
 import {
 	EmptyState,
 	ErrorState,
@@ -710,14 +711,17 @@ function EditorForm({
 										key={s.id}
 										className="grid grid-cols-[1fr_1fr_36px] gap-3"
 									>
-										<input
-											aria-label={`Specification ${i + 1} name`}
+										<SpecificationInput
+											label={`Specification ${i + 1} name`}
+											field="name"
+											categoryIds={categoryIds}
+											excluded={specs.filter((row) => row.id !== s.id).map((row) => row.name)}
 											value={s.name}
-											onChange={(e) =>
+											onChange={(name) =>
 												setSpecs((current) =>
 													current.map((row) =>
 														row.id === s.id
-															? { ...row, name: e.target.value }
+															? { ...row, name }
 															: row,
 													),
 												)
@@ -725,14 +729,17 @@ function EditorForm({
 											placeholder="e.g. Weight"
 											className={fieldClass}
 										/>
-										<input
-											aria-label={`Specification ${i + 1} value`}
+										<SpecificationInput
+											label={`Specification ${i + 1} value`}
+											field="value"
+											specificationName={s.name}
+											categoryIds={categoryIds}
 											value={s.value}
-											onChange={(e) =>
+											onChange={(value) =>
 												setSpecs((current) =>
 													current.map((row) =>
 														row.id === s.id
-															? { ...row, value: e.target.value }
+															? { ...row, value }
 															: row,
 													),
 												)
