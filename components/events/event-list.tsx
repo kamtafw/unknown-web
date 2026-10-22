@@ -7,6 +7,7 @@ import type { ReactNode } from "react"
 import { useEffect } from "react"
 import { useInView } from "react-intersection-observer"
 import { EventCard, EventCardSkeleton } from "./event-card"
+import { EventLink } from "./event-link"
 
 /** Loading placeholder shaped like the list; `label` is announced, not shown (the design has no loading text). */
 export function EventListSkeleton({ label }: { label: string }) {
@@ -148,7 +149,9 @@ export function EventList({
 			<ul>
 				{events.map((event) => (
 					<li key={event.id} className="mb-6 border-b border-muted pb-5 last:mb-0 last:border-b-0">
-						<EventCard event={event} />
+						<EventLink eventId={event.id}>
+							<EventCard event={event} />
+						</EventLink>
 					</li>
 				))}
 			</ul>

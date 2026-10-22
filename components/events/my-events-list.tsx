@@ -6,6 +6,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { CalendarX2, SearchX, WifiOff } from "lucide-react"
 import type { ReactNode } from "react"
 import { useState } from "react"
+import { CreateEventButton } from "./create-event-button"
 import { EventList, EventListSkeleton, RetryButton, StateMessage } from "./event-list"
 import { EventsPane } from "./events-pane"
 import { LocationRow } from "./location-row"
@@ -75,6 +76,7 @@ export function MyEventsList() {
 			label="My events"
 			location={<RememberedLocationRow />}
 			search={{ value: search, onChange: setSearch, label: "Search my events" }}
+			floatingAction={<CreateEventButton />}
 		>
 			{body}
 		</EventsPane>

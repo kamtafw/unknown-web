@@ -9,9 +9,52 @@
  */
 
 import type { ApiResponse } from "@/types/api"
-import type { Coordinates, EventsPage } from "@/types/events/api"
+import type {
+	Coordinates,
+	EventDetails,
+	EventRsvpStatus,
+	EventsPage,
+	EventSubmission,
+	RsvpResult,
+} from "@/types/events/api"
 import { apiClient } from "../axios"
-import { normalizeListData, normalizeNearbyData } from "./normalize"
+import { EVENT_UPLOAD_TIMEOUT_MS } from "./constants"
+import {
+	normalizeEventDetails,
+	normalizeListData,
+	normalizeNearbyData,
+	normalizeRsvpResult,
+} from "./normalize"
+
+/** a 2xx response whose body is not an event the app can read */
+export class EventPayloadError extends Error {
+	constructor() {
+		super("The event response could not be read")
+		this.name = "EventPayloadError"
+	}
+}
+
+export interface WriteOptions {
+	/** upload progress 0..1, multipart only */
+	onProgress?: (fraction: number) => void
+	signal?: AbortSignal
+}
+
+const eventPath = (id: string) => `/api/events/${encodeURIComponent(id)}`
+
+function writeConfig(submission: EventSubmission, opts: WriteOptions) {
+	return {
+		signal: opts.signal,
+		// uploads can outlast the 30 s used for JSON calls
+		timeout: submission.kind === "multipart" ? EVENT_UPLOAD_TIMEOUT_MS : undefined,
+		onUploadProgress:
+			submission.kind === "multipart" && opts.onProgress
+				? (e: { loaded: number; total?: number }) => {
+						if (e.total) opts.onProgress?.(Math.min(1, e.loaded / e.total))
+					}
+				: undefined,
+	}
+}
 
 export interface NearbyParams extends Coordinates {
 	page: number
@@ -56,5 +99,57 @@ export const eventsApi = {
 		if (!res.data.success) return null
 		const address = res.data.data?.address
 		return typeof address === "string" && address.trim() ? address.trim() : null
+	},
+
+	/**
+	 * Details for one event: a full event or a restricted preview (both HTTP 200). The
+	 * normaliser decides which; a malformed body throws instead of becoming an empty event.
+	 */
+	getEventDetails: async (eventId: string, signal?: AbortSignal): Promise<EventDetails> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(eventPath(eventId), { signal })
+		const details = normalizeEventDetails(res.data.data)
+		if (!details) throw new EventPayloadError()
+		return details
+	},
+
+	/** resolves to the created event, or null if the 201 body could not be read */
+	createEvent: async (
+		submission: EventSubmission,
+		opts: WriteOptions = {},
+	): Promise<EventDetails | null> => {
+		const res = await apiClient.post<ApiResponse<unknown>>(
+			"/api/events/create",
+			submission.body,
+			writeConfig(submission, opts),
+		)
+		return normalizeEventDetails(res.data.data)
+	},
+
+	updateEvent: async (
+		eventId: string,
+		submission: EventSubmission,
+		opts: WriteOptions = {},
+	): Promise<EventDetails | null> => {
+		const res = await apiClient.patch<ApiResponse<unknown>>(
+			eventPath(eventId),
+			submission.body,
+			writeConfig(submission, opts),
+		)
+		return normalizeEventDetails(res.data.data)
+	},
+
+	/** 204, no body */
+	deleteEvent: async (eventId: string): Promise<void> => {
+		await apiClient.delete(eventPath(eventId))
+	},
+
+	/** RSVP is independent of joining: no guest row, no media access */
+	setRsvp: async (eventId: string, status: EventRsvpStatus): Promise<RsvpResult> => {
+		const res = await apiClient.post<ApiResponse<unknown>>("/api/events/rsvp", {
+			event_id: eventId,
+			status,
+		})
+		// a 201 means it was saved; fall back to what was asked if the body is unreadable
+		return normalizeRsvpResult(res.data.data) ?? { eventId, status }
 	},
 }
