@@ -29,8 +29,13 @@ apiClient.interceptors.response.use(
 			;(error as AxiosError & { _interceptorHandled: boolean })._interceptorHandled = true
 		}
 
-		// timeout (ECONNABORTED / signal abort)
-		if (error.code === "ECONNABORTED" || error.code === "ERR_CANCELLED") {
+		// Superseded queries and unmounted screens cancel requests intentionally.
+		if (axios.isCancel(error) || error.code === "ERR_CANCELED") {
+			markHandled()
+			return Promise.reject(error)
+		}
+
+		if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
 			markHandled()
 			toast.error("Request timed out — please check your connection and try again.", {
 				id: "request-timeout",

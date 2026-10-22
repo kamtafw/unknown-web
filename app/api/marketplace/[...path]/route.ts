@@ -22,6 +22,7 @@ const endpoints: Record<string, RegExp[]> = {
 		/^seller\/payouts\/history$/,
 		/^sellers\/\d+\/details$/,
 		/^products\/list$/,
+		/^products\/specification-suggestions$/,
 		/^products\/\d+$/,
 		/^products\/\d+\/reviews$/,
 		/^categories\/list$/,

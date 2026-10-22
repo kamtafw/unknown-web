@@ -10,6 +10,13 @@ const response = (data: unknown) => ({ data: { success: true, status_code: 200, 
 beforeEach(() => vi.clearAllMocks())
 
 describe("Django marketplace contracts", () => {
+	it("looks up specification names and values with category context and cancellation", async () => {
+		const params = { field: "value" as const, q: "12", name: "Weight", category_ids: "1,2", exclude: '["12 kg"]' }
+		const signal = new AbortController().signal
+		vi.mocked(apiClient.get).mockResolvedValue(response({ results: ["12 kg"] }))
+		expect(await marketplaceApi.specificationSuggestions(params, signal)).toEqual(["12 kg"])
+		expect(apiClient.get).toHaveBeenCalledExactlyOnceWith("/api/marketplace/products/specification-suggestions", { params, signal })
+	})
 	it("resolves identity from the authenticated profile independently of wallet availability", async () => {
 		vi.mocked(apiClient.get).mockResolvedValue(response({ id: 7, business_name: "Store", approval_status: "pending" }))
 		expect(await marketplaceApi.identity()).toEqual({ seller_id: 7, business_name: "Store", approval_status: "pending" })

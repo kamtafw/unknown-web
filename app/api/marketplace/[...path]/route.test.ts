@@ -14,6 +14,19 @@ beforeEach(() => {
 })
 
 describe("seller marketplace proxy", () => {
+	it("forwards specification lookups with their filters and requires authentication", async () => {
+		const path = ["products", "specification-suggestions"]
+		const url = "http://localhost/api/marketplace/products/specification-suggestions?field=value&q=12&name=Weight&category_ids=1%2C2"
+		await GET(new NextRequest(url), { params: Promise.resolve({ path }) })
+		expect(proxyJson).toHaveBeenCalledWith(
+			expect.stringContaining("/marketplaces/products/specification-suggestions?field=value&q=12&name=Weight&category_ids=1%2C2"),
+			expect.objectContaining({ method: "GET", cache: "no-store" }),
+		)
+		vi.mocked(getAccessToken).mockResolvedValue(undefined)
+		vi.mocked(proxyJson).mockClear()
+		expect((await GET(new NextRequest(url), { params: Promise.resolve({ path }) })).status).toBe(401)
+		expect(proxyJson).not.toHaveBeenCalled()
+	})
 	it("requires authentication for seller payout reconciliation", async () => {
 		const path = ["seller", "payouts", "reconcile"]
 		await POST(

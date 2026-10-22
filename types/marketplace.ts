@@ -13,6 +13,14 @@ export interface Category {
 	parent?: number | null
 }
 
+export interface SpecificationSuggestionQuery {
+	field: "name" | "value"
+	q: string
+	name?: string
+	category_ids?: string
+	exclude?: string
+}
+
 export interface SellerAccountFields {
 	country: string
 	sell_scope: "local" | "global"

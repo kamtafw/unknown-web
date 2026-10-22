@@ -181,6 +181,17 @@ async function setup(page: Page) {
 				url.searchParams.get("search") === "missing" ? [] : [current],
 			)
 		else if (path.endsWith("categories/list")) data = paginate(categories)
+		else if (path.endsWith("products/specification-suggestions")) {
+			const query = (url.searchParams.get("q") || "").toLowerCase()
+			const values = url.searchParams.get("field") === "value"
+			const excluded: string[] = JSON.parse(url.searchParams.get("exclude") || "[]")
+			const suggestions = values
+				? ["5000 mAh", "5500 mAh"]
+				: ["Battery life", "Battery capacity", "Weight"]
+			data = { results: suggestions.filter((value) =>
+				value.toLowerCase().includes(query) && !excluded.includes(values ? value : value.toLowerCase()),
+			) }
+		}
 		else if (path.endsWith("delivery-options/list"))
 			data = paginate([
 				{ id: 1, name: "God is Good" },
@@ -400,6 +411,46 @@ test("seller catalogue, details, reviews, and date-filtered tracking", async ({
 	).toBe(true)
 })
 
+test("editor suggests reusable specifications and saves selected names and values", async ({ page }) => {
+	const mobile = test.info().project.use.isMobile
+	if (mobile) await page.setViewportSize({ width: 393, height: 851 })
+	const { reads, writes } = await setup(page)
+	await page.goto("/market-vendor/goods/42/edit")
+	await page.getByRole("button", { name: "Add another specification" }).click()
+	const name = page.getByRole("combobox", { name: "Specification 3 name" })
+	const value = page.getByRole("combobox", { name: "Specification 3 value" })
+	await name.fill("Ba")
+	await expect(page.getByRole("option", { name: "Battery capacity", exact: true })).toBeVisible()
+	await expect(page.getByRole("option", { name: "Battery life", exact: true })).toHaveCount(0)
+	expect(reads.some((url) => {
+		const params = new URL(url, testOrigin()).searchParams
+		return url.includes("specification-suggestions") &&
+			JSON.parse(params.get("exclude") || "[]").includes("battery life")
+	})).toBe(true)
+	await page.screenshot({ path: `/private/tmp/specification-suggestions-${test.info().project.name.replace(/\s/g, "-")}.png` })
+	if (mobile) await page.getByRole("option", { name: "Battery capacity", exact: true }).tap()
+	else {
+		await name.press("ArrowDown")
+		await name.press("Enter")
+	}
+	await expect(name).toHaveValue("Battery capacity")
+	expect(writes).toHaveLength(0)
+	await value.fill("5")
+	const suggestion = page.getByRole("option", { name: "5000 mAh", exact: true })
+	if (mobile) await suggestion.tap()
+	else await suggestion.click()
+	await expect(value).toHaveValue("5000 mAh")
+	expect(reads.some((url) => {
+		const query = new URL(url, testOrigin()).searchParams
+		return url.includes("specification-suggestions") && query.get("name") === "Battery capacity" &&
+			query.get("field") === "value" && query.get("category_ids") === "1"
+	})).toBe(true)
+	await page.getByRole("button", { name: "Save changes", exact: true }).first().click()
+	await expect.poll(() => writes.length).toBe(1)
+	expect(writes[0].body.specifications).toContainEqual({ "Battery capacity": "5000 mAh" })
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
 test("editor validates discounts and sends category, specs, delivery, and image changes", async ({
 	page,
 }) => {
@@ -428,10 +479,10 @@ test("editor validates discounts and sends category, specs, delivery, and image 
 	await page.getByRole("button", { name: "Done", exact: true }).click()
 	await page.getByRole("button", { name: "Add another specification" }).click()
 	await page
-		.getByRole("textbox", { name: "Specification 3 name" })
+		.getByRole("combobox", { name: "Specification 3 name" })
 		.fill("Colour")
 	await page
-		.getByRole("textbox", { name: "Specification 3 value" })
+		.getByRole("combobox", { name: "Specification 3 value" })
 		.fill("White")
 	await page
 		.getByRole("button", { name: "Add another delivery option" })
