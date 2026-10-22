@@ -1,4 +1,98 @@
-# Events — Phase 2 progress checkpoint
+# Events — progress and reconciliation
+
+**Current record: Phase 2 closeout, 2026-10-22** (after E2-RECONCILE-01). Pass 2 is **implemented and closed out for delivery** at checkpoint `a96887b`;
+by the owner's decision, in-depth verification is deferred to QA or a later session. It is **implemented and owner-smoke-tested, not verified against the live backend**.
+**Next pass: Pass 3** (participation, resources, discussions). Pass 3 and Pass 4 are **not started**. Nothing in this file says the Events experience is complete.
+The sections after "Historical record" are the earlier checkpoint reports, kept for history; where they conflict with this section, this section wins.
+
+## A. Repository state (verified 2026-10-22)
+
+| Item | Value |
+| --- | --- |
+| Repo / branch | `kamtafw/unknown-web`, `feat/events-phase1` |
+| HEAD | `a96887b` `feat(events): checkpoint phase 2 implementation` (parent `72cd4e2`; 70 files, +6,541 / −16) |
+| Remote | `origin/feat/events-phase1` was at `a96887b`: in sync (checked 2026-10-22 before the closeout commit). The closeout commit (docs only) comes on top of it; see git log for its SHA |
+| Working tree | clean before the closeout edits; the closeout changes `docs/events/{EVENTS,PROGRESS,PHASE-2-HANDOFF}.md` only |
+| Separate clone | `/home/claude/unknown-web` is at `72cd4e2` (its local `origin` ref is stale) with 24 uncommitted entries from a **parallel Phase 2 attempt (lib and BFF helpers only, no UI)** (files dated 2026-10-20 08:39 to 08:44, e.g. `lib/events/{fields,forward,respond,schedule,uploads,form}.ts`, `app/api/events/mutations.test.ts`). The published branch implements the same ground with different modules (`validation`, `request`, `bff`, `stream`); no relevant work was found to be missing from origin. **Not imported, not modified, not cleaned**; the owner decides whether to keep or archive it. |
+
+## B. Evidence categories (kept separate)
+
+| Category | Result | Who ran it / source |
+| --- | --- | --- |
+| Unit and component tests (Vitest) | 63 files, 834 tests passed | last reported by the previous task (E2-VERIFY-01); **not re-run** in this task, the tree is unchanged since (clean, HEAD = pushed commit) |
+| ESLint | no warnings or errors | same |
+| `tsc --noEmit` | passed | same |
+| Production build (`next build`) | succeeded | **user-reported**, in the owner's environment. It failed in the sandbox only because Google Fonts is unreachable. Not reproduced here |
+| Mocked-backend browser smoke tests | all passed | **user-reported**: details, previews, host/guest views, create/edit, collections, delete, RSVP. No test log, scripts or screenshots are in the repo, so the exact steps and viewports are not recorded |
+| Live-backend verification | **none** | no evidence anywhere in the repo or docs that any call reached the deployed backend |
+| Not tested at all | see section D | |
+
+## C. Status of Pass 2 deliverables
+
+Statuses: VC = Verified complete, IVI = Implemented, verification incomplete, PI = Partially implemented, NI = Not implemented, BL = Blocked.
+"Verified complete" needs live-backend evidence wherever behaviour depends on the backend; none exists, so nothing that depends on the backend reaches VC.
+
+| Pass 2 item | Status | Evidence | Gap |
+| --- | --- | --- | --- |
+| Full details and restricted previews (union, `hosts` marker, whitelist) | IVI | `lib/events/normalize.ts`, `app/api/events/[eventId]/route.ts` GET, `event-details-view.test.tsx`, `routes-write.test.ts` (guests and host contact removed, preview unchanged); smoke (user-reported) | contract from the guide only; no live response seen |
+| Host and guest views | IVI | `event-details-view.tsx`, `event-pane.test.tsx`; smoke (user-reported) | role detection depends on backend fields as documented, unverified live |
+| Create | IVI | `app/api/events/create/route.ts`, `lib/events/{validation,request,form-model}.ts`, `event-form.test.tsx`, `server-write.test.ts`; smoke (user-reported) | no live create; coordinates only from browser location + `my-location` (no place search exists in the guide) |
+| Edit | IVI | `[eventId]/route.ts` PATCH, `request.ts` diffing, `use-event-mutations.test.tsx` | no live PATCH |
+| Scheduling (`HH:MM:SS`, end not before start) | IVI | `validation.test.ts`, `server-write.test.ts` | backend timezone unknown (EV-004) |
+| Privacy and passcodes (4-digit string, locked forces private, never in URL, cache or storage) | IVI | `access-field.tsx`, `routes-write.test.ts` ("passcode … never in the URL"), `cache.test.ts` | form UI is an assumption (A-11) |
+| Cover image, links, documents | IVI | `cover-field.tsx`, `links-field.tsx`, `documents-field.tsx`, `stream.test.ts`, multipart tests in `routes-write.test.ts` | upload limits (5 docs, 10 links, 20 MiB) are provisional; production host unknown (EV-022) |
+| Resource-collection semantics (omit = keep, `[]` = clear, populated = replace) | IVI for links and tags; **PI for documents** | `request.test.ts`, `server-write.test.ts` | clearing `documents` inside multipart relies on an unverified assumption (EV-024); existing document URLs cannot be re-sent |
+| Delete with confirmation | PI | `delete-event-dialog.tsx`, DELETE route tests (204, live refusal, fail-closed) | BFF live guard is a courtesy; the **backend does not refuse a live delete** (EV-025), so the server-side rule is missing. Ending a session is Pass 4 |
+| RSVP and supported states (`set`, `none` or `unknown`, independent of join and guest membership) | IVI | `rsvp-control.tsx`, `use-event-rsvp.test.tsx`, `routes-write.test.ts` | UI is an assumption (A-13); unknown-state rule is derived from the guide |
+| Phase 1 guarantees (25 km, no global fallback, scoped caches) | IVI (regression) | Phase 1 tests still pass inside the 834 | the diff removed Phase 1 lines only in files that Pass 2 had to change (layout now renders `EventsShell`; list items wrapped in `EventLink`) |
+| Pass 2 documentation (`EVENTS.md`: EV-019+, A-10+) | Done at closeout | `EVENTS.md` now defines A-10…A-15 and EV-019…EV-025 and has a "Pass 2: what was built" section | (earlier finding: these IDs were cited in code but undefined) |
+| Pass 3 (guests, join/leave, resources, comments) | NI | no code | |
+| Pass 4 (live: 4A to 4D) | NI | no code | needs a media-provider decision first |
+
+Counts that back the table (test titles inspected in this task, not re-run): `routes-write.test.ts` covers GET/POST/PATCH/DELETE/RSVP including 401s, malformed ids,
+multipart limits and fail-closed delete; `server-write.test.ts` covers the request builders; `stream.test.ts` 4 tests; `event-form.test.tsx` 12, `event-pane.test.tsx` 6, `rsvp-control.test.tsx` 6,
+`delete-event-dialog.test.tsx` 5, `event-details-view.test.tsx` 4, `events-shell.test.tsx` 1; hooks: details 8, mutations 9, RSVP 10.
+The `components/events/form/*` fields have no test files of their own; they are exercised only through `event-form.test.tsx`.
+
+## D. Not tested, or verified only through assumptions
+
+- Any call to the deployed backend (all contracts are "documented, not verified").
+- Multipart behaviour on the real host: body-size ceiling, streaming passthrough (`duplex: "half"`), and the `Content-Length` cap.
+- `documents="[]"` clearing in a multipart update (EV-024).
+- Server-side refusal of deleting a live event (EV-025).
+- Backend timezone for schedules (EV-004); real media host (EV-005).
+- Real browser geolocation prompt for the create form; dark mode; widths other than those the owner smoke-tested (not recorded).
+- Accessibility beyond what Testing Library asserts (no keyboard or screen-reader pass recorded).
+
+## E. Blockers, decisions and assumptions
+
+1. **Hosting is unconfirmed** (no Dockerfile, `vercel.json` or CI; only a comment in `middleware.ts`). Upload limits stay provisional until the owner confirms it.
+2. **Backend gaps to raise:** live delete not refused (EV-025); multipart document clearing undocumented (EV-024).
+3. **Designs:** the Create event frame's text layers were readable in Figma, but screenshots were rate-limited, so the form was built from those layers and the supplied exports. Preview, RSVP, privacy/passcode and delete UI have no design (A-11, A-13, A-14).
+4. **Assumptions:** A-10 to A-15 and the issues EV-019 to EV-025 are now recorded in `EVENTS.md` (status assumed or open; none design- or backend-confirmed).
+5. **Pass 4 prerequisite:** per the guide, web-created sessions get P2P and legacy signalling can be disabled; the provider must be confirmed against browser broadcasting before 4D.
+6. **Schedule:** the six-day delivery target set on 2026-10-21 covers Pass 3 and Pass 4; no estimate has been verified.
+
+## F. Documentation discrepancies found (all corrected at closeout)
+
+1. `EVENTS.md` lacked A-10…A-15 and EV-019…EV-025: added. Existing IDs and history were preserved.
+2. `PHASE-2-HANDOFF.md` gave HEAD `5bcbdb9`, said the docs were uncommitted and that no create/edit design existed: marked as a historical document with a superseding note.
+3. `EVENTS.md` said "Next: Pass 2" and that cards are not selectable (A-1): corrected, with the old text marked as superseded.
+4. Earlier sections of this file said "Nothing here is committed or pushed" and HEAD `72cd4e2`: superseded by section A.
+5. EV-014 and EV-015 in `EVENTS.md` were updated to their Pass 2 status (create button implemented; passcode modal still Pass 3/4).
+
+## G. Next pass
+
+**Pass 3 — Participation, Resources, and Discussions** (per the roadmap). Not started. Before building:
+- Pass 3 starts with repository and contract checks against the guide (guest list, guest management, join/leave, links and documents management, comments), and keeps RSVP, guest membership and joining as separate concepts.
+- Carry-forward items for QA or a later session (not prerequisites): live-backend verification of Pass 2 (EV-024, EV-025, EV-004), the hosting and upload ceiling (EV-022), and a keyboard/screen-reader pass.
+- Pass 4 still needs a media-provider decision (guide: web-created sessions get P2P; legacy signalling can be disabled) before 4D.
+
+---
+
+# Historical record (superseded where it conflicts with the sections above)
+
+## Earlier checkpoint (2026-10-21, pre-commit): Phase 2 progress
 
 Verified: **Wed 2026-10-21**, from the actual working tree. Nothing here is committed or pushed.
 Scope: Pass 2 (event details and core management). Nothing from Pass 3 or Pass 4 has been started.
@@ -45,7 +139,7 @@ selection, hooks, and the components), plus `lib/events/__fixtures__/form.ts`.
 ## 3. Status by area
 
 **Complete (implemented, unit-tested, type-checks):**
-- Types and normalisers: full vs restricted-preview union; RSVP as `set | none | unknown`; whitelist kept (no host contact data, no guests).
+- Types and normalisers: full vs restricted-preview union; RSVP as `set`, `none` or `unknown`; whitelist kept (no host contact data, no guests).
 - Request builders and validation: `HH:MM:SS`, passcode as a 4-digit string, locked forces private, schedule validated whole
   (including the backend's "end time not before start time even on a later day"), coordinate pair, cover/document type and size,
   collection semantics (omit = keep, `[]` = clear, populated = replace all), JSON unless a file is attached.
