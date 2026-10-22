@@ -3,8 +3,11 @@ import {
 	dedupeEvents,
 	flattenPages,
 	normalizeEvent,
+	normalizeEventDetails,
+	normalizeHttpUrl,
 	normalizeListData,
 	normalizeNearbyData,
+	normalizeRsvpResult,
 	normalizeTime,
 } from "./normalize"
 
@@ -201,5 +204,127 @@ describe("dedupe / flatten", () => {
 			]).map((e) => e.id),
 		).toEqual(["a", "b"])
 		expect(flattenPages(undefined)).toEqual([])
+	})
+})
+
+describe("normalizeEventDetails — full", () => {
+	const full = (over: Record<string, unknown> = {}) =>
+		wire({
+			live_session_id: 12,
+			live_session: { id: 12, status: "waiting" },
+			links: [
+				{ link_name: "Site", url: "https://ok.io" },
+				{ link_name: "Bad", url: "javascript:alert(1)" },
+				{ link_name: "Data", url: "data:text/html,x" },
+			],
+			documents: [{ doc_name: "Agenda", doc_file: "events/docs/a.pdf" }, { doc_name: "No file" }],
+			...over,
+		})
+
+	it("is marked by the hosts array and keeps only whitelisted data", () => {
+		const d = normalizeEventDetails(full())
+		expect(d?.kind).toBe("full")
+		if (d?.kind !== "full") return
+		expect(d.hosts).toEqual([{ id: "host-uuid", name: "Ada Obi", username: "ada", photo: null }])
+		expect(d.liveSessionId).toBe(12)
+		expect(d.liveSessionStatus).toBe("waiting")
+		expect(d.coordinates).toEqual({ latitude: 9.92, longitude: 8.89 })
+		expect(d.address).toBe("Jos, Plateau")
+		expect(JSON.stringify(d)).not.toMatch(/ada@example|\+2348000000000|Secret Guest/)
+		expect(d).not.toHaveProperty("guests")
+	})
+
+	it("keeps only http(s) links and resolves document URLs", () => {
+		const d = normalizeEventDetails(full())
+		if (d?.kind !== "full") throw new Error("full expected")
+		expect(d.links).toEqual([{ name: "Site", url: "https://ok.io" }])
+		expect(d.documents).toEqual([
+			{ name: "Agenda", url: "https://appscombo.s3.eu-north-1.amazonaws.com/media/events/docs/a.pdf" },
+		])
+	})
+
+	it("reports a known RSVP, and a known absence of one", () => {
+		const set = normalizeEventDetails(full())
+		const none = normalizeEventDetails(full({ viewer_rsvp_status: null }))
+		if (set?.kind !== "full" || none?.kind !== "full") throw new Error("full expected")
+		expect(set.rsvp).toEqual({ state: "set", status: "going" })
+		expect(none.rsvp).toEqual({ state: "none" })
+	})
+
+	it("treats a missing or unknown session status as unknown, not as ended", () => {
+		const d = normalizeEventDetails(full({ live_session: { id: 12, status: "weird" } }))
+		if (d?.kind !== "full") throw new Error("full expected")
+		expect(d.liveSessionStatus).toBeNull()
+	})
+})
+
+describe("normalizeEventDetails — restricted preview", () => {
+	const preview = (over: Record<string, unknown> = {}) => ({
+		id: "22222222-2222-2222-2222-222222222222",
+		name: "Private launch",
+		start_date: "2026-11-01",
+		end_date: "2026-11-01",
+		start_time: "18:00:00",
+		end_time: "20:00:00",
+		is_locked: true,
+		is_live: false,
+		privacy: "private",
+		cover_image: null,
+		live_session_id: 3,
+		address: "Jos",
+		hashtags: ["launch"],
+		...over,
+	})
+
+	it("is a preview when there is no hosts array, trims seconds and reads the flat fields", () => {
+		const d = normalizeEventDetails(preview())
+		expect(d).toEqual({
+			kind: "preview",
+			id: "22222222-2222-2222-2222-222222222222",
+			name: "Private launch",
+			startDate: "2026-11-01",
+			endDate: "2026-11-01",
+			startTime: "18:00",
+			endTime: "20:00",
+			isLive: false,
+			isLocked: true,
+			privacy: "private",
+			coverImage: null,
+			liveSessionId: 3,
+			address: "Jos",
+			hashtags: ["launch"],
+		})
+	})
+
+	it("has no hosts, resources, session status or RSVP to misread as empty", () => {
+		const d = normalizeEventDetails(preview())
+		for (const key of ["hosts", "links", "documents", "rsvp", "liveSessionStatus", "coordinates"]) {
+			expect(d).not.toHaveProperty(key)
+		}
+	})
+
+	it("falls back to a preview for an unrecognised shape, so it can only lose access", () => {
+		expect(normalizeEventDetails(preview({ hosts: "nope", links: [{ link_name: "x", url: "https://x.io" }] }))?.kind).toBe("preview")
+	})
+
+	it("rejects payloads without an id or name", () => {
+		expect(normalizeEventDetails(null)).toBeNull()
+		expect(normalizeEventDetails({ id: "", name: "x" })).toBeNull()
+		expect(normalizeEventDetails({ id: "x", name: "" })).toBeNull()
+	})
+})
+
+describe("normalizeHttpUrl / normalizeRsvpResult", () => {
+	it("keeps only http and https", () => {
+		expect(normalizeHttpUrl("https://a.io/x")).toBe("https://a.io/x")
+		expect(normalizeHttpUrl("http://a.io")).toBe("http://a.io")
+		for (const bad of ["javascript:alert(1)", "ftp://a.io", "a.io", "", null, 5]) {
+			expect(normalizeHttpUrl(bad)).toBeNull()
+		}
+	})
+	it("reads the rsvp response and rejects unknown statuses", () => {
+		expect(normalizeRsvpResult({ event: "e1", status: "going" })).toEqual({ eventId: "e1", status: "going" })
+		expect(normalizeRsvpResult({ event: "e1", status: "maybe" })).toBeNull()
+		expect(normalizeRsvpResult(null)).toBeNull()
 	})
 })

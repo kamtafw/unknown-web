@@ -35,6 +35,8 @@ const eslintConfig = [
 			"components/messenger/status/status-viewer-panel.tsx",
 			"components/messenger/schedule/schedule-compose-dialog.tsx",
 			"components/messenger/group-conversation/group-conversation-workspace.tsx",
+			// Events (Pass 2): object-URL preview held in state for the chosen cover file
+			"components/events/form/cover-field.tsx",
 		],
 		rules: {
 			"react-hooks/set-state-in-effect": "off",

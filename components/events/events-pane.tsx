@@ -16,10 +16,13 @@ export function EventsPane({
 	label,
 	location,
 	search,
+	floatingAction,
 	children,
 }: {
 	label: string
 	location?: ReactNode
+	/** e.g. the create-event button; positioned over the bottom-right of the pane */
+	floatingAction?: ReactNode
 	search: {
 		value: string
 		onChange: (value: string) => void
@@ -29,7 +32,7 @@ export function EventsPane({
 	children: ReactNode
 }) {
 	return (
-		<section aria-label={label} className="flex min-h-0 flex-1 flex-col">
+		<section aria-label={label} className="relative flex min-h-0 flex-1 flex-col">
 			<div className="flex shrink-0 flex-col gap-4 px-4 pt-5 sm:px-6 sm:pt-6">
 				{location}
 				<SearchField
@@ -42,6 +45,7 @@ export function EventsPane({
 			</div>
 			{/* 26 px from the control to the first image, as measured in the design export */}
 			<div className="mt-[26px] min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">{children}</div>
+			{floatingAction}
 		</section>
 	)
 }
