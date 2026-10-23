@@ -29,7 +29,12 @@
  */
 
 import { type Pkid } from "@/types/messenger"
-import { getIdentity, saveIdentity, type StoredIdentity } from "./identity-store"
+import {
+	getIdentity,
+	installIdentityIfAbsent,
+	saveIdentity,
+	type StoredIdentity,
+} from "./identity-store"
 import { listTrustedKeys, pinIfAbsent, type PinIfAbsentResult } from "./trust-store"
 
 export type E2eeRuntimeErrorCode = "no_active_account"
@@ -71,6 +76,19 @@ class E2eeRuntime {
 	 * superseded by a newer `activate()` (account switched again) or a
 	 * `clear()` (logout) can never clobber state that came after it. */
 	private generation = 0
+	/** Changes only when the active account session changes, not on every storage refresh. */
+	private sessionGeneration = 0
+	private pendingIdentityInstallControllers = new Set<AbortController>()
+
+	/** Cancels guarded recovery writes before a newer account/session can take
+	 * ownership of the runtime. Aborting the associated IndexedDB transaction
+	 * prevents a stale recovery write from committing after logout or switch. */
+	private abortPendingIdentityInstalls(): void {
+		for (const controller of this.pendingIdentityInstallControllers) {
+			controller.abort()
+		}
+		this.pendingIdentityInstallControllers.clear()
+	}
 
 	getState(): E2eeRuntimeState | null {
 		if (this.activeAccountId === null) return null
@@ -83,6 +101,24 @@ class E2eeRuntime {
 
 	getActiveAccountId(): Pkid | null {
 		return this.activeAccountId
+	}
+
+	/** A recovery attempt is valid only for the same active account and the
+	 * same runtime activation that existed when the attempt began. */
+	getGenerationToken(): number {
+		return this.generation
+	}
+
+	getSessionToken(): number {
+		return this.sessionGeneration
+	}
+
+	isCurrentSession(accountId: Pkid, sessionToken: number): boolean {
+		return this.activeAccountId === accountId && this.sessionGeneration === sessionToken
+	}
+
+	isCurrentAccount(accountId: Pkid, generationToken: number): boolean {
+		return this.activeAccountId === accountId && this.generation === generationToken
 	}
 
 	/**
@@ -100,7 +136,13 @@ class E2eeRuntime {
 	 * `installIdentity`/`pinTrustedKey` if a caller wants to confirm memory
 	 * matches what's persisted.
 	 */
-	async activate(accountId: Pkid): Promise<void> {
+	async activate(accountId: Pkid, isStillCurrent: () => boolean = () => true): Promise<boolean> {
+		// Callers that are themselves asynchronous may become stale between
+		// checking auth state and reaching this method. Do not let such a
+		// caller supersede the runtime's current activation.
+		if (!isStillCurrent()) return false
+
+		this.abortPendingIdentityInstalls()
 		const generation = ++this.generation
 
 		let identity: StoredIdentity | null = null
@@ -111,20 +153,24 @@ class E2eeRuntime {
 			warnActivateFailure(err)
 		}
 
-		if (generation !== this.generation) return // superseded by a later activate()/clear()
+		if (generation !== this.generation || !isStillCurrent()) return false // superseded, logged out, or stale account
 
+		if (this.activeAccountId !== accountId) this.sessionGeneration++
 		this.activeAccountId = accountId
 		this.activeIdentity = identity
 		this.trustedKeys = new Map(
 			Array.from(trusted, ([recipientId, key]) => [recipientId, key.publicKey]),
 		)
+		return true
 	}
 
 	/** Wipes IN-MEMORY state only. Never touches IndexedDB. Safe to call
 	 * unconditionally (e.g. on every render of the lifecycle bootstrap's
 	 * cleanup) — a no-op when nothing is active. */
 	clear(): void {
+		this.abortPendingIdentityInstalls()
 		this.generation++
+		this.sessionGeneration++
 		this.activeAccountId = null
 		this.activeIdentity = null
 		this.trustedKeys = new Map()
@@ -143,6 +189,35 @@ class E2eeRuntime {
 		await saveIdentity(accountId, identity)
 		if (this.activeAccountId === accountId) {
 			this.activeIdentity = identity
+		}
+	}
+
+	/**
+	 * Recovery-only install. Unlike the general storage helper above, this
+	 * operation is bound to one runtime generation and is cancelled by clear()
+	 * or any subsequent activate(). Returns false when the attempt is stale.
+	 */
+	async installRecoveredIdentity(
+		accountId: Pkid,
+		identity: StoredIdentity,
+		generationToken: number,
+	): Promise<boolean> {
+		if (!this.isCurrentAccount(accountId, generationToken)) return false
+
+		const controller = new AbortController()
+		this.pendingIdentityInstallControllers.add(controller)
+
+		try {
+			const installed = await installIdentityIfAbsent(accountId, identity, controller.signal)
+			if (!installed || !this.isCurrentAccount(accountId, generationToken)) return false
+
+			this.activeIdentity = identity
+			return true
+		} catch {
+			if (controller.signal.aborted) return false
+			throw new Error("Unable to install recovered identity")
+		} finally {
+			this.pendingIdentityInstallControllers.delete(controller)
 		}
 	}
 

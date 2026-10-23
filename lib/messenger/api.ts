@@ -64,6 +64,8 @@ export interface FavoriteUserTarget {
 	unread_count: number
 	last_message_preview: string
 	last_message_time: string | null
+	last_message_type?: string | null
+	last_message_id?: number | null
 }
 export interface FavoriteGroupTarget {
 	id: number
@@ -355,36 +357,37 @@ export const scheduleApi = {
  * the wire response, which is exactly the mistake this boundary exists to
  * prevent.
  */
-export type BackupFetchResult = BackupClassification | { status: "backup-unavailable" }
+export type BackupFetchResult =
+	BackupClassification | { status: "backup-unavailable" } | { status: "api-error" }
 
 export const backupApi = {
 	getKeyBackup: async (): Promise<BackupFetchResult> => {
 		try {
 			const response = await apiClient.get<ApiResponse<unknown>>("/api/chats/users/key-backup")
-			if (process.env.NODE_ENV !== "production") {
-				const envelope = response?.data
-				console.info("[messenger][e2ee-debug][api] backup fetch", {
-					hasEnvelopeData: !!envelope && typeof envelope === "object" && "data" in envelope,
-					topLevelKeys:
-						envelope && typeof envelope === "object" ? Object.keys(envelope as object) : [],
-					httpStatus: response.status,
-				})
+
+			const envelope: unknown = response.data
+
+			if (
+				typeof envelope !== "object" ||
+				envelope === null ||
+				Array.isArray(envelope) ||
+				!("data" in envelope) ||
+				!("success" in envelope) ||
+				(envelope as Record<string, unknown>).success !== true
+			) {
+				return { status: "api-error" }
 			}
-			const data = response.data.data
+
+			const data = (envelope as Record<string, unknown>).data
+
+			if (typeof data !== "object" || data === null || Array.isArray(data)) {
+				return { status: "api-error" }
+			}
+
 			return classifyBackup(data)
 		} catch (error) {
 			if (isAxiosError(error) && error.response?.status === 404) {
-				if (process.env.NODE_ENV !== "production") {
-					console.info("[messenger][e2ee-debug][api] backup fetch unavailable", {
-						httpStatus: error.response?.status ?? null,
-					})
-				}
 				return { status: "backup-unavailable" }
-			}
-			if (process.env.NODE_ENV !== "production") {
-				console.info("[messenger][e2ee-debug][api] backup fetch failure", {
-					httpStatus: isAxiosError(error) ? (error.response?.status ?? null) : null,
-				})
 			}
 			throw error
 		}

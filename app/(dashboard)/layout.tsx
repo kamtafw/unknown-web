@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardSidebarSwitch } from "@/components/dashboard/dashboard-sidebar-switch"
 import { TopBar } from "@/components/dashboard/top-bar"
 import { DashboardAuthBootstrap } from "@/providers/dashboard-auth-bootstrap"
 import { ReactNode } from "react"
@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 			<TopBar />
 
 			<div className="flex flex-1 min-h-0 gap-5 px-2 sm:px-4 lg:px-6 pt-3 sm:pt-5 overflow-hidden w-full mx-auto">
-				<Sidebar />
+				<DashboardSidebarSwitch />
 				{children}
 			</div>
 		</div>

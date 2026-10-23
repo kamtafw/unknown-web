@@ -14,18 +14,29 @@
  * confirmed contract — not before.
  */
 
-import { ChatListFilter, ScheduleType, Uuid } from "@/types/messenger"
+import { ChatListFilter,Pkid,ScheduleType,Uuid } from "@/types/messenger"
 
 export const chatKeys = {
 	all: ["messenger", "chats"] as const,
 
 	lists: () => [...chatKeys.all, "list"] as const,
-	list: (filter: ChatListFilter, search?: string) =>
-		[...chatKeys.lists(), { filter, search: search ?? "" }] as const,
+	list: (
+		filter: ChatListFilter,
+		search?: string,
+		accountId?: Pkid | null,
+		sessionGeneration?: number,
+	) =>
+		[
+			...chatKeys.lists(),
+			accountId ?? null,
+			sessionGeneration ?? null,
+			{ filter, search: search ?? "" },
+		] as const,
 	unreadCount: () => [...chatKeys.all, "unread-count"] as const,
 
 	histories: () => [...chatKeys.all, "history"] as const,
-	history: (userUuid: Uuid) => [...chatKeys.histories(), userUuid] as const,
+	history: (userUuid: Uuid, accountId?: Pkid) =>
+		[...chatKeys.histories(), userUuid, ...(accountId !== undefined ? [accountId] : [])] as const,
 	pinnedMessages: (userUuid: Uuid) => [...chatKeys.all, "pinned-messages", userUuid] as const,
 
 	archiveList: () => [...chatKeys.all, "archive-list"] as const,

@@ -40,22 +40,62 @@ function extractCursor(url: string | null | undefined): string | undefined {
 	}
 }
 
+class StaleAccountHistoryRequestError extends Error {
+	constructor() {
+		super("Account changed while loading chat history")
+		this.name = "StaleAccountHistoryRequestError"
+	}
+}
+
 export function useChatHistory(userUuid: Uuid | undefined) {
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 	const query = useInfiniteQuery({
-		queryKey: chatKeys.history(userUuid ?? ("" as Uuid)),
+		queryKey: chatKeys.history(userUuid ?? ("" as Uuid), accountId ?? undefined),
 		queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+			if (!accountId || useAuthStore.getState().user?.pkid !== accountId) {
+				throw new StaleAccountHistoryRequestError()
+			}
+
+			// The lifecycle bootstrap normally owns activation. The guarded
+			// fallback covers first-load ordering without allowing an old
+			// history request to reactivate an account after logout/switch.
+			if (e2eeRuntime.getActiveAccountId() !== accountId) {
+				const activated = await e2eeRuntime.activate(
+					accountId,
+					() => useAuthStore.getState().user?.pkid === accountId,
+				)
+				if (!activated) throw new StaleAccountHistoryRequestError()
+			}
+			if (
+				useAuthStore.getState().user?.pkid !== accountId ||
+				e2eeRuntime.getActiveAccountId() !== accountId
+			) {
+				throw new StaleAccountHistoryRequestError()
+			}
+			const sessionToken = e2eeRuntime.getSessionToken()
+
 			const page = await chatApi.history(userUuid as string, pageParam)
+			if (
+				useAuthStore.getState().user?.pkid !== accountId ||
+				!e2eeRuntime.isCurrentSession(accountId, sessionToken)
+			) {
+				throw new StaleAccountHistoryRequestError()
+			}
 
-			if (!accountId) return page
-
-			await e2eeRuntime.activate(accountId)
-
-			return decryptDirectMessageHistoryPage(accountId, page)
+			const decrypted = await decryptDirectMessageHistoryPage(accountId, page)
+			if (
+				useAuthStore.getState().user?.pkid !== accountId ||
+				!e2eeRuntime.isCurrentSession(accountId, sessionToken)
+			) {
+				throw new StaleAccountHistoryRequestError()
+			}
+			return decrypted
 		},
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => extractCursor(lastPage.previous),
 		enabled: !!userUuid && accountId !== null,
+		retry: (failureCount, error) =>
+			!(error instanceof StaleAccountHistoryRequestError) && failureCount < 3,
 		staleTime: 60_000,
 	})
 

@@ -27,6 +27,9 @@ export function OTPVerification({
 }: OTPVerificationProps) {
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
+		// Auto-submit can re-fire if a digit is edited and completed again while a
+		// verification request is in flight.
+		if (isPending) return
 		const raw = Object.fromEntries(new FormData(e.currentTarget))
 		const result = otpSchema.safeParse(raw)
 		if (result.success) onVerify(result.data.otp)
@@ -71,6 +74,7 @@ export function OTPVerification({
 									name="otp"
 									validationType="numeric"
 									autoComplete="one-time-code"
+									autoSubmit
 									className="flex gap-1.5 sm:gap-2.5"
 									aria-label="One-time-password"
 								>

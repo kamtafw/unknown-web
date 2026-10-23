@@ -1,7 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest"
 import { asPkid } from "@/types/messenger"
-import { getIdentity, listIdentityAccountIds, removeIdentity, saveIdentity } from "./identity-store"
+import { describe, expect, it } from "vitest"
+import {
+	getIdentity,
+	installIdentityIfAbsent,
+	listIdentityAccountIds,
+	removeIdentity,
+	saveIdentity,
+} from "./identity-store"
 import { getE2eeDatabase, IDENTITIES_STORE } from "./storage/database"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
 
@@ -47,6 +53,39 @@ describe("getIdentity", () => {
 		await saveIdentity(accountA, { privateKey, publicKey: new Uint8Array(32), updatedAt: 1 })
 		const read = await getIdentity(accountA)
 		expect(Array.from(read!.privateKey)).toEqual(Array.from(privateKey))
+	})
+})
+
+describe("installIdentityIfAbsent", () => {
+	it("allows exactly one of two concurrent installs and never overwrites the winner", async () => {
+		const first = keypair(31)
+		const second = keypair(41)
+
+		const results = await Promise.all([
+			installIdentityIfAbsent(accountA, first),
+			installIdentityIfAbsent(accountA, second),
+		])
+
+		expect(results.filter(Boolean)).toHaveLength(1)
+		const stored = await getIdentity(accountA)
+		expect(stored).not.toBeNull()
+		const matchesFirst =
+			Array.from(stored!.privateKey).every((byte) => byte === 31) &&
+			Array.from(stored!.publicKey).every((byte) => byte === 32)
+		const matchesSecond =
+			Array.from(stored!.privateKey).every((byte) => byte === 41) &&
+			Array.from(stored!.publicKey).every((byte) => byte === 42)
+		expect(matchesFirst || matchesSecond).toBe(true)
+	})
+
+	it("preserves an identity that was installed before recovery tries to install", async () => {
+		const existing = keypair(51)
+		await saveIdentity(accountA, existing)
+
+		expect(await installIdentityIfAbsent(accountA, keypair(61))).toBe(false)
+		const stored = await getIdentity(accountA)
+		expect(Array.from(stored!.privateKey)).toEqual(Array.from(existing.privateKey))
+		expect(Array.from(stored!.publicKey)).toEqual(Array.from(existing.publicKey))
 	})
 })
 

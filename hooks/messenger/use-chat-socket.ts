@@ -8,6 +8,8 @@ import {
 	getMessageEnvelopeHash,
 	normalizeDirectMessage,
 } from "@/lib/messenger/e2ee/direct-message"
+import { e2eeRuntime } from "@/lib/messenger/e2ee/runtime"
+import { invalidateSecondaryChatPreviewLists } from "@/lib/messenger/preview-sync"
 import { chatKeys } from "@/lib/messenger/query-keys"
 import { CHAT_SOCKET_EVENTS } from "@/lib/messenger/socket-events"
 import { messengerSocket } from "@/lib/messenger/socket-manager"
@@ -76,6 +78,7 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		if (!reconnected) return
 
 		queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+		invalidateSecondaryChatPreviewLists(queryClient)
 		queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
 		if (activeUuidRef.current) {
 			queryClient.invalidateQueries({ queryKey: chatKeys.history(activeUuidRef.current) })
@@ -86,46 +89,70 @@ export function useChatSocket(activeUuid: Uuid | null) {
 		const typingTimers = typingTimersRef.current
 		const upsertMessage = (message: Message) => {
 			const senderUuid = message.sender.id
-			queryClient.setQueryData<HistoryData>(chatKeys.history(senderUuid), (old) => {
-				if (!old) return old // no cache for this conversation yet — list refetch covers preview
-				const pages = old.pages.map((page, i) =>
-					i === old.pages.length - 1
-						? { ...page, results: dedupeAppend(page.results, message) }
-						: page,
-				)
-				return { ...old, pages }
-			})
+			if (currentAccountId === null) return
+			queryClient.setQueryData<HistoryData>(
+				chatKeys.history(senderUuid, currentAccountId),
+				(old) => {
+					if (!old) return old // no cache for this conversation yet — list refetch covers preview
+					const pages = old.pages.map((page, i) =>
+						i === old.pages.length - 1
+							? { ...page, results: dedupeAppend(page.results, message) }
+							: page,
+					)
+					return { ...old, pages }
+				},
+			)
 		}
 
 		/** Returns whether it actually found and patched a cached row. */
 		const bumpListPreview = (message: Message, isOpen: boolean): boolean => {
 			let found = false
-			queryClient.setQueriesData<ChatListData>({ queryKey: chatKeys.lists() }, (old) => {
-				if (!old) return old
-				const idx = old.users.findIndex((u) => u.id === message.sender.id)
-				if (idx === -1) return old
-				found = true
-				const existing = old.users[idx]
-				const updated: ChatListItem = {
-					...existing,
-					last_message_preview: message.content || null,
-					last_message_type: message.message_type,
-					last_message_time: message.created_at,
-					unread_count: isOpen ? existing.unread_count : existing.unread_count + 1,
-				}
-				if (updated.is_pinned) {
-					return { ...old, users: old.users.with(idx, updated) }
-				}
-				const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
-				const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
-				return { ...old, users: [...pinned, updated, ...rest] }
-			})
+			queryClient.setQueriesData<ChatListData>(
+				{
+					queryKey: chatKeys.lists(),
+					predicate: (query) => query.queryKey[3] === currentAccountId,
+				},
+				(old) => {
+					if (!old) return old
+					const idx = old.users.findIndex((u) => u.id === message.sender.id)
+					if (idx === -1) return old
+					found = true
+					const existing = old.users[idx]
+					const updated: ChatListItem = {
+						...existing,
+						last_message_preview: message.content || null,
+						last_message_type: message.message_type,
+						last_message_time: message.created_at,
+						unread_count: isOpen ? existing.unread_count : existing.unread_count + 1,
+					}
+					if (updated.is_pinned) {
+						return { ...old, users: old.users.with(idx, updated) }
+					}
+					const pinned = old.users.filter((chat, i) => chat.is_pinned && i !== idx)
+					const rest = old.users.filter((chat, i) => i !== idx && !chat.is_pinned)
+					return { ...old, users: [...pinned, updated, ...rest] }
+				},
+			)
 			return found
 		}
 
 		const unsubReceive = messengerSocket.on<Message>(
 			CHAT_SOCKET_EVENTS.RECEIVE,
 			async (rawMessage) => {
+				if (currentAccountId === null || useAuthStore.getState().user?.pkid !== currentAccountId)
+					return
+
+				if (e2eeRuntime.getActiveAccountId() !== currentAccountId) {
+					// Runtime activation may still be in flight on first load.
+					// Drop this event and reconcile from authenticated HTTP history.
+					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					if (activeUuidRef.current) {
+						queryClient.invalidateQueries({ queryKey: chatKeys.history(activeUuidRef.current) })
+					}
+					return
+				}
+				const sessionToken = e2eeRuntime.getSessionToken()
+
 				// Defensive normalization: the guide only describes this event as
 				// a table entry, not an exact JSON schema, and it's never been
 				// verified against a real payload from this environment. If the
@@ -133,10 +160,6 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				// shape (e.g. a flat `senderId` instead of `sender.id`), silently
 				// trusting `message.sender.id` would break both
 				const message = rawMessage
-				if (process.env.NODE_ENV !== "production") {
-					console.info("[messenger] chat:receive payload", rawMessage)
-				}
-
 				const normalized =
 					currentAccountId !== null
 						? await normalizeDirectMessage({
@@ -145,6 +168,12 @@ export function useChatSocket(activeUuid: Uuid | null) {
 								message: message as never,
 							})
 						: message
+
+				if (
+					useAuthStore.getState().user?.pkid !== currentAccountId ||
+					!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+				)
+					return
 
 				if (
 					currentAccountId !== null &&
@@ -168,6 +197,11 @@ export function useChatSocket(activeUuid: Uuid | null) {
 						} catch {
 							// Local preview persistence must not prevent realtime delivery.
 						}
+						if (
+							useAuthStore.getState().user?.pkid !== currentAccountId ||
+							!e2eeRuntime.isCurrentSession(currentAccountId, sessionToken)
+						)
+							return
 					}
 				}
 
@@ -179,10 +213,11 @@ export function useChatSocket(activeUuid: Uuid | null) {
 					if (process.env.NODE_ENV !== "production") {
 						console.warn(
 							"[messenger] chat:receive arrived without a usable sender.id — ",
-							+"see the console.debug above and check MESSENGER.md's open items.",
+							+"check MESSENGER.md's open items.",
 						)
 					}
 					queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
+					invalidateSecondaryChatPreviewLists(queryClient)
 					queryClient.invalidateQueries({ queryKey: chatKeys.unreadCount() })
 					return
 				}
@@ -190,6 +225,9 @@ export function useChatSocket(activeUuid: Uuid | null) {
 				const isOpen = activeUuidRef.current === normalized.sender.id
 				upsertMessage(normalized)
 				const patchedList = bumpListPreview(normalized, isOpen)
+				// Favorites and Archive are separate query keys, so the main-list
+				// cache patch above cannot keep their previews current.
+				invalidateSecondaryChatPreviewLists(queryClient)
 
 				// BUG FIX (2026-08-15): this condition was inverted
 				// (`if (patchedList)`), which is very likely the main cause of

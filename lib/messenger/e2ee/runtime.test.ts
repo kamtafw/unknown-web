@@ -1,12 +1,12 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from "vitest"
 import { asPkid } from "@/types/messenger"
-import { getIdentity, saveIdentity } from "./identity-store"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import * as identityStore from "./identity-store"
+import { getIdentity, saveIdentity } from "./identity-store"
 import { e2eeRuntime, E2eeRuntimeError } from "./runtime"
 import { setupFreshE2eeDatabase } from "./storage/test-support"
-import { getTrustedKey, listTrustedKeys, saveTrustedKey } from "./trust-store"
 import * as trustStore from "./trust-store"
+import { getTrustedKey, listTrustedKeys, saveTrustedKey } from "./trust-store"
 
 setupFreshE2eeDatabase()
 
@@ -204,7 +204,7 @@ describe("reload-style rehydration", () => {
 describe("activate — storage failure degrades gracefully", () => {
 	it("still activates the account (identity: null) instead of rejecting, when getIdentity throws", async () => {
 		vi.spyOn(identityStore, "getIdentity").mockRejectedValueOnce(new Error("boom"))
-		await expect(e2eeRuntime.activate(accountA)).resolves.toBeUndefined()
+		await expect(e2eeRuntime.activate(accountA)).resolves.toBe(true)
 
 		const state = e2eeRuntime.getState()
 		expect(state).not.toBeNull()
@@ -217,7 +217,7 @@ describe("activate — storage failure degrades gracefully", () => {
 		await saveIdentity(accountA, keypair(1))
 		vi.spyOn(trustStore, "listTrustedKeys").mockRejectedValueOnce(new Error("boom"))
 
-		await expect(e2eeRuntime.activate(accountA)).resolves.toBeUndefined()
+		await expect(e2eeRuntime.activate(accountA)).resolves.toBe(true)
 		const state = e2eeRuntime.getState()
 		// Promise.all rejects as a whole on either failure, so a trust-store
 		// failure also means the identity that WAS loadable is not applied
@@ -239,7 +239,7 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
 
 		slow.resolve(keypair(1)) // let the stale A activation finish late
-		await slowActivate
+		await expect(slowActivate).resolves.toBe(false)
 
 		// B must still be active — the late A result must have been discarded.
 		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
@@ -255,9 +255,69 @@ describe("out-of-order activate() resolution (generation guard)", () => {
 		expect(e2eeRuntime.getState()).toBeNull()
 
 		slow.resolve(keypair(1))
-		await slowActivate
+		await expect(slowActivate).resolves.toBe(false)
 
 		expect(e2eeRuntime.getState()).toBeNull() // must still be cleared
+	})
+})
+
+describe("guarded activate", () => {
+	it("does not supersede the runtime when its caller is already stale", async () => {
+		await e2eeRuntime.activate(accountB)
+		const generation = e2eeRuntime.getGenerationToken()
+		const sessionToken = e2eeRuntime.getSessionToken()
+
+		await e2eeRuntime.activate(accountA, () => false)
+
+		expect(e2eeRuntime.getActiveAccountId()).toBe(accountB)
+		expect(e2eeRuntime.getGenerationToken()).toBe(generation)
+		expect(e2eeRuntime.getSessionToken()).toBe(sessionToken)
+	})
+})
+
+describe("session token", () => {
+	it("remains stable across same-account storage refreshes but changes on account switch and clear", async () => {
+		await e2eeRuntime.activate(accountA)
+		const firstToken = e2eeRuntime.getSessionToken()
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(true)
+
+		await e2eeRuntime.activate(accountA)
+		expect(e2eeRuntime.getSessionToken()).toBe(firstToken)
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(true)
+
+		await e2eeRuntime.activate(accountB)
+		expect(e2eeRuntime.isCurrentSession(accountA, firstToken)).toBe(false)
+		const secondToken = e2eeRuntime.getSessionToken()
+		expect(e2eeRuntime.isCurrentSession(accountB, secondToken)).toBe(true)
+
+		e2eeRuntime.clear()
+		expect(e2eeRuntime.isCurrentSession(accountB, secondToken)).toBe(false)
+	})
+})
+
+describe("installRecoveredIdentity", () => {
+	it("rejects a recovery install whose generation token is stale", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		await e2eeRuntime.activate(accountB)
+
+		await expect(e2eeRuntime.installRecoveredIdentity(accountA, keypair(9), token)).resolves.toBe(
+			false,
+		)
+		expect(e2eeRuntime.getState()!.accountId).toBe(accountB)
+		expect(e2eeRuntime.getState()!.identity).toBeNull()
+	})
+
+	it("cancels recovery installation when logout clears the runtime", async () => {
+		await e2eeRuntime.activate(accountA)
+		const token = e2eeRuntime.getGenerationToken()
+		const install = e2eeRuntime.installRecoveredIdentity(accountA, keypair(10), token)
+
+		e2eeRuntime.clear()
+
+		await expect(install).resolves.toBe(false)
+		expect(e2eeRuntime.getState()).toBeNull()
+		expect(await getIdentity(accountA)).toBeNull()
 	})
 })
 

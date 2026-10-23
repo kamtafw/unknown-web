@@ -2,8 +2,10 @@
 
 import { e2eeRuntime } from "@/lib/messenger/e2ee"
 import { clearDirectMessageOutbox } from "@/lib/messenger/e2ee/direct-message-outbox"
+import { messengerRootKey } from "@/lib/messenger/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import type { Pkid } from "@/types/messenger"
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 
 /**
@@ -44,10 +46,12 @@ import { useEffect } from "react"
  * refetch.
  */
 export function MessengerE2eeBootstrap() {
+	const queryClient = useQueryClient()
 	const accountId = useAuthStore((s) => (s.user ? (s.user.pkid as Pkid) : null))
 
 	useEffect(() => {
 		if (accountId === null) {
+			queryClient.removeQueries({ queryKey: messengerRootKey })
 			e2eeRuntime.clear()
 			clearDirectMessageOutbox()
 			return
@@ -56,10 +60,13 @@ export function MessengerE2eeBootstrap() {
 		void e2eeRuntime.activate(accountId)
 
 		return () => {
+			// Messenger caches can contain decrypted message bodies. Drop them
+			// at every account boundary and when the Messenger layout unmounts.
+			queryClient.removeQueries({ queryKey: messengerRootKey })
 			e2eeRuntime.clear()
 			clearDirectMessageOutbox()
 		}
-	}, [accountId])
+	}, [accountId, queryClient])
 
 	return null
 }

@@ -118,9 +118,16 @@ export function getE2eeDatabase(): Promise<IDBDatabase> {
  * against whatever `indexedDB` currently points to (a fresh fake-indexeddb
  * instance between test files, for example).
  */
-export function resetE2eeDatabaseForTests(): void {
-	if (cachedDatabase) {
-		void cachedDatabase.then((db) => db.close()).catch(() => undefined)
-	}
+export async function resetE2eeDatabaseForTests(): Promise<void> {
+	const connection = cachedDatabase
 	cachedDatabase = null
+
+	if (connection) {
+		try {
+			const db = await connection
+			db.close()
+		} catch {
+			// A failed open leaves no connection to close.
+		}
+	}
 }
