@@ -88,7 +88,7 @@ The `components/events/form/*` fields have no test files of their own; they are 
 - **D-2 (guest addition): blocked.** No existing user-selection mechanism is confirmed suitable (the Messenger lookup is chat-coupled and undocumented for this use); no Events search endpoint is invented. Guest list and remove guest proceed; add guest (P3-08B) waits for an owner/backend decision (EV-027).
 - **Comments:** the backend is authoritative for who may post; the frontend does not infer authorization (EV-026). No length rule and no realtime exist in the contract (EV-030).
 - **Designs:** the Pass 3 frames were seen only as metadata/text layers; none was rendered and inspected (EV-029).
-Startable now: P3-02 to P3-08A. Recommended first task: P3-02, or P3-01 first to record the decisions.
+Startable now: P3-01 first to record the decisions.
 
 **Pass 3 — Participation, Resources, and Discussions** (per the roadmap). Not started. Before building:
 - Pass 3 starts with repository and contract checks against the guide (guest list, guest management, join/leave, links and documents management, comments), and keeps RSVP, guest membership and joining as separate concepts.
