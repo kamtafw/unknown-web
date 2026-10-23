@@ -83,6 +83,13 @@ The `components/events/form/*` fields have no test files of their own; they are 
 
 ## G. Next pass
 
+**Planning status (revised 2026-10-23): Pass 3 is planned, not started.** The complete scope, task plan (P3-01 to P3-10, with P3-08A/B), decisions (D-1 to D-12) and completion checklist are in `docs/events/PHASE-3-HANDOFF.md`; the Pass 3 issues are EV-026 to EV-030 in `EVENTS.md`. No Pass 3 code exists. Decisions made on 2026-10-23 from the documented contract and repo evidence:
+- **D-1 (join/leave): resolved to a blocker.** `join` is live-session admission (needs `is_live`) and `leave` is live-coupled; neither is a genuine event-level membership operation, so both stay out of Pass 3 and belong to Pass 4B. P3-09 is blocked with explicit prerequisites; the roadmap line that lists them under Pass 3 needs the owner's explicit clarification (EV-028).
+- **D-2 (guest addition): blocked.** No existing user-selection mechanism is confirmed suitable (the Messenger lookup is chat-coupled and undocumented for this use); no Events search endpoint is invented. Guest list and remove guest proceed; add guest (P3-08B) waits for an owner/backend decision (EV-027).
+- **Comments:** the backend is authoritative for who may post; the frontend does not infer authorization (EV-026). No length rule and no realtime exist in the contract (EV-030).
+- **Designs:** the Pass 3 frames were seen only as metadata/text layers; none was rendered and inspected (EV-029).
+Startable now: P3-02 to P3-08A. Recommended first task: P3-02, or P3-01 first to record the decisions.
+
 **Pass 3 — Participation, Resources, and Discussions** (per the roadmap). Not started. Before building:
 - Pass 3 starts with repository and contract checks against the guide (guest list, guest management, join/leave, links and documents management, comments), and keeps RSVP, guest membership and joining as separate concepts.
 - Carry-forward items for QA or a later session (not prerequisites): live-backend verification of Pass 2 (EV-024, EV-025, EV-004), the hosting and upload ceiling (EV-022), and a keyboard/screen-reader pass.
