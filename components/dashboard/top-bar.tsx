@@ -20,7 +20,7 @@ const CATEGORY_ICONS = [
 	{ label: "Social", icon: Social, href: "/home" },
 	{ label: "Messenger", icon: Message, href: "/messenger" },
 	{ label: "Events", icon: Event, href: "/events" },
-	{ label: "Marketplace", icon: Marketplace },
+	{ label: "Marketplace", icon: Marketplace, href: "/market-vendor/goods" },
 ]
 
 function LogoutDialog({
@@ -189,13 +189,27 @@ export function TopBar() {
 					{/* Category nav */}
 					<nav className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
 						{CATEGORY_ICONS.map(({ label, icon: Icon, href }) => {
-							const isActive = href ? pathname === href || pathname.startsWith(`${href}/`) : false
+							const isActive =
+								label === "Marketplace"
+									? pathname.startsWith("/market-vendor") || pathname.startsWith("/marketplace")
+									: href
+										? pathname === href || pathname.startsWith(`${href}/`)
+										: false
 
 							return (
 								<button
 									key={label}
 									title={label}
-									onClick={href ? () => router.push(href) : undefined}
+									onClick={
+										href
+											? () =>
+													router.push(
+														label === "Marketplace" && pathname.startsWith("/marketplace")
+															? "/marketplace/homes"
+															: href,
+													)
+											: undefined
+									}
 									className={cn(
 										"relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all duration-150",
 										isActive
