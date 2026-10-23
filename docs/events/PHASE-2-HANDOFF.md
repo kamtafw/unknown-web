@@ -1,7 +1,14 @@
 # Events — Phase 2 handoff
 
+> **Historical document.** Written before Pass 2 started. **Superseded at Pass 2 closeout:** Pass 2 is implemented
+> (checkpoint `a96887b` on `feat/events-phase1`), the Phase 2 documentation was committed, and the Create event design
+> was found in Figma (text layers). What was built, the assumptions (A-10 to A-15), issues (EV-019 to EV-025) and the
+> verification record are now in `docs/events/EVENTS.md` ("Pass 2: what was built") and `docs/events/PROGRESS.md`.
+> The next pass is **Pass 3**. Statements below that say Pass 2 is not started, give HEAD `5bcbdb9`, or say no create/edit design exists are
+> stale; the rest is kept for context and for the guide's contract notes.
+
 For the next Claude session (and any developer picking this up). Phase 1 (Pass 1) is complete and accepted.
-**Nothing from Pass 2 has been implemented.** Read this, then `docs/events/EVENTS.md` (issue log, assumptions A-1..A-9,
+**Nothing from Pass 2 had been implemented when this was written.** Read this, then `docs/events/EVENTS.md` (issue log, assumptions,
 verification record). The backend reference is the Project doc `events-api-web-implementation-guide.md` ("the guide").
 Everything the guide says is **documented, not verified against the deployed backend**. No live-backend call has ever been made from this work.
 

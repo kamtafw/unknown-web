@@ -54,6 +54,21 @@ beforeEach(() => {
 })
 
 describe("MyEventsList", () => {
+	it("offers Create event (design's floating action) even with no events, as a link to ?create=1", () => {
+		const { container } = render(<MyEventsList />)
+		// (the shared next/link test mock drops aria-label, which create-event-button.test covers)
+		expect(container.querySelector('a[href="?create=1"]')).not.toBeNull()
+	})
+
+	it("opens an event in the right pane: each item links to ?event=<id>", () => {
+		useMyEvents.mockReturnValue(state({ events: [card("3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11", "Old gig")] }))
+		render(<MyEventsList />)
+		expect(screen.getByRole("link", { name: /Old gig/ })).toHaveAttribute(
+			"href",
+			expect.stringContaining("event=3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"),
+		)
+	})
+
 	it("needs no location: it renders without any geolocation", () => {
 		useMyEvents.mockReturnValue(state({ events: [card("a", "Old gig")] }))
 		render(<MyEventsList />)

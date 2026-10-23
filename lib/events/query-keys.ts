@@ -11,7 +11,7 @@
  * Infinite queries carry the page as `pageParam`, so `page` is not in the key;
  * the scope (coordinates, radius, limit, search) is.
  *
- * Add details / guests / comments keys in the phase that needs them, not now.
+ * Pass 2 adds details and the viewer's RSVP. Guests / comments keys belong to Pass 3.
  */
 
 import type { Coordinates } from "@/types/events/api"
@@ -56,4 +56,22 @@ export const eventKeys = {
 			sessionGeneration,
 			{ latitude: roundForKey(coords.latitude), longitude: roundForKey(coords.longitude) },
 		] as const,
+
+	detailRoot: () => [...eventKeys.all, "detail"] as const,
+	detail: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.detailRoot(), accountId, sessionGeneration, eventId] as const,
+
+	/** what the viewer last RSVP'd in this session; the only source for a restricted preview */
+	rsvpRoot: () => [...eventKeys.all, "rsvp"] as const,
+	rsvp: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.rsvpRoot(), accountId, sessionGeneration, eventId] as const,
+}
+
+/** do the account + session slots (positions 2 and 3 of every scoped key) match? */
+export function keyBelongsTo(
+	key: readonly unknown[],
+	accountId: number | null,
+	sessionGeneration: number | null,
+): boolean {
+	return accountId !== null && key[2] === accountId && key[3] === sessionGeneration
 }
