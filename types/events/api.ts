@@ -10,7 +10,7 @@
  * so a contract drift degrades to "event skipped" instead of a runtime crash.
  *
  * Pass 2 adds event details (full vs restricted preview), RSVP and the create/edit
- * form model. Guests, comments, join/leave and live types belong to later passes.
+ * form model. Join/leave and live types belong to later passes; Pass 3 adds resource, comment and guest read models.
  */
 
 export type EventPrivacy = "public" | "private" | "friends"
