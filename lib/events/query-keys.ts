@@ -11,7 +11,7 @@
  * Infinite queries carry the page as `pageParam`, so `page` is not in the key;
  * the scope (coordinates, radius, limit, search) is.
  *
- * Pass 2 adds details and the viewer's RSVP. Guests / comments keys belong to Pass 3.
+ * Pass 2 adds details and the viewer's RSVP; Pass 3 adds resources, comments and guests.
  */
 
 import type { Coordinates } from "@/types/events/api"
