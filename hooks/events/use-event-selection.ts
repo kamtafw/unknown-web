@@ -1,13 +1,13 @@
 "use client"
 
-import { type EventSelection, parseSelection, selectionHref } from "@/lib/events/selection"
+import { type EventSelection, type EventTab, parseSelection, selectionHref } from "@/lib/events/selection"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useMemo } from "react"
 
 /**
  * The selected event / create form, kept in the query string so it survives a reload and is
- * deep-linkable, while the left pane (and its tab) stays where it is. Opening an event is a
- * history entry (Back closes it); closing replaces the entry so Back does not reopen it.
+ * deep-linkable. Section tabs are URL state too. Opening an event is a history entry (Back closes
+ * it); closing replaces the entry so Back does not reopen it.
  */
 export function useEventSelection() {
 	const params = useSearchParams()
@@ -30,5 +30,9 @@ export function useEventSelection() {
 		[pathname, params, router],
 	)
 
-	return { selection, hrefFor, go }
+	const setTab = useCallback((tab: EventTab) => {
+		if (selection.mode === "view") go({ mode: "view", eventId: selection.eventId, tab })
+	}, [go, selection])
+
+	return { selection, hrefFor, go, setTab }
 }

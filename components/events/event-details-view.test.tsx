@@ -95,3 +95,32 @@ describe("EventDetailsView", () => {
 		expect(screen.queryByRole("button", { name: /join/i })).not.toBeInTheDocument()
 	})
 })
+
+
+describe("EventDetailsView section navigation", () => {
+	it("renders accessible section tabs for full details and updates selection", () => {
+		const onTabChange = vi.fn()
+		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="comments" onTabChange={onTabChange} />)
+		expect(screen.getByRole("tablist", { name: "Event sections" })).toBeInTheDocument()
+		expect(screen.getByRole("tab", { name: "Comments" })).toHaveAttribute("aria-selected", "true")
+		expect(screen.getByRole("tabpanel", { name: "Comments" })).toHaveTextContent("available in a later step")
+		fireEvent.click(screen.getByRole("tab", { name: "Guests" }))
+		expect(onTabChange).toHaveBeenCalledWith("guests")
+	})
+
+	it("supports arrow navigation and Home/End", () => {
+		const onTabChange = vi.fn()
+		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} onTabChange={onTabChange} />)
+		fireEvent.keyDown(screen.getByRole("tab", { name: "Details" }), { key: "ArrowRight" })
+		expect(onTabChange).toHaveBeenLastCalledWith("comments")
+		fireEvent.keyDown(screen.getByRole("tab", { name: "Details" }), { key: "End" })
+		expect(onTabChange).toHaveBeenLastCalledWith("guests")
+	})
+
+	it("never renders tabs for a restricted preview, even with a section URL value", () => {
+		render(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} tab="guests" />)
+		expect(screen.queryByRole("tablist")).not.toBeInTheDocument()
+		expect(screen.queryByRole("tab")).not.toBeInTheDocument()
+		expect(screen.getByRole("note")).toHaveTextContent(/details are hidden/i)
+	})
+})

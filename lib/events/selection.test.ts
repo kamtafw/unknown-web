@@ -49,3 +49,30 @@ describe("selectionHref", () => {
 		expect(selectionHref("/events", p("create=1"), { mode: "view", eventId: ID })).toBe(`/events?event=${ID}`)
 	})
 })
+
+
+describe("event section selection", () => {
+	it("defaults to details and accepts only known tabs in view mode", () => {
+		expect(parseSelection(p(`event=${ID}`))).toEqual({ mode: "view", eventId: ID, tab: "details" })
+		expect(parseSelection(p(`event=${ID}&tab=comments`))).toEqual({ mode: "view", eventId: ID, tab: "comments" })
+		expect(parseSelection(p(`event=${ID}&tab=resources`))).toEqual({ mode: "view", eventId: ID, tab: "resources" })
+		expect(parseSelection(p(`event=${ID}&tab=guests`))).toEqual({ mode: "view", eventId: ID, tab: "guests" })
+		expect(parseSelection(p(`event=${ID}&tab=unknown`))).toEqual({ mode: "view", eventId: ID, tab: "details" })
+	})
+
+	it("does not carry a tab into create or edit mode", () => {
+		expect(parseSelection(p(`create=1&tab=guests&event=${ID}`))).toEqual({ mode: "create" })
+		expect(parseSelection(p(`event=${ID}&edit=1&tab=guests`))).toEqual({ mode: "edit", eventId: ID })
+		expect(selectionHref("/events", p("x=1&tab=guests"), { mode: "create" })).toBe("/events?x=1&create=1")
+		expect(selectionHref("/events", p("x=1&tab=guests"), { mode: "edit", eventId: ID })).toBe(`/events?x=1&event=${ID}&edit=1`)
+	})
+
+	it("writes a deep-linkable tab while preserving the event and unrelated params", () => {
+		expect(selectionHref("/events", p(`x=1&event=${ID}&tab=resources`), { mode: "view", eventId: ID, tab: "comments" }))
+			.toBe(`/events?x=1&event=${ID}&tab=comments`)
+		expect(selectionHref("/events", p("x=1&tab=guests"), { mode: "view", eventId: ID, tab: "details" }))
+			.toBe(`/events?x=1&event=${ID}`)
+		expect(selectionHref("/events", p("x=1&tab=guests"), { mode: "view", eventId: "other" }))
+			.toBe("/events?x=1&event=other")
+	})
+})

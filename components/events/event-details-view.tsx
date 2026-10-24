@@ -1,6 +1,7 @@
 "use client"
 
 import { formatEventSchedule } from "@/lib/events/format"
+import type { EventTab } from "@/lib/events/selection"
 import type { EventDetails, EventFullDetails, EventHost, EventPrivacy } from "@/types/events/api"
 import { CalendarDays, Clock, EyeOff, Lock, MapPin, Pencil, Radio } from "lucide-react"
 import Image from "next/image"
@@ -78,20 +79,60 @@ export function EventDetailsView({
 	isHost,
 	onEdit,
 	onDeleted,
+	tab = "details",
+	onTabChange = () => {},
 }: {
 	details: EventDetails
 	isHost: boolean
 	onEdit: () => void
 	onDeleted: () => void
+	tab?: EventTab
+	onTabChange?: (tab: EventTab) => void
 }) {
 	const full: EventFullDetails | null = details.kind === "full" ? details : null
 	const schedule = formatEventSchedule(details)
 	const liveBlocked = details.isLive || full?.liveSessionStatus === "live"
+	const activeTab: EventTab = full ? tab : "details"
+	const tabLabels: Record<EventTab, string> = {
+		details: "Details",
+		comments: "Comments",
+		resources: "Links and docs",
+		guests: "Guests",
+	}
+	const tabs: EventTab[] = ["details", "comments", "resources", "guests"]
 
 	return (
 		<article aria-label={details.name} className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8">
 			<Cover src={details.coverImage} />
 
+			{full && (
+				<div role="tablist" aria-label="Event sections" className="flex flex-wrap gap-1 border-b border-border" onKeyDown={(event) => {
+					if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "Home" && event.key !== "End") return
+					event.preventDefault()
+					const currentIndex = tabs.indexOf(activeTab)
+					const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length
+					const nextTab = tabs[nextIndex]
+					document.getElementById(`event-tab-${nextTab}`)?.focus()
+					onTabChange(nextTab)
+				}}>
+					{tabs.map((item) => (
+						<button key={item} id={`event-tab-${item}`} type="button" role="tab"
+							aria-selected={activeTab === item} aria-controls={`event-panel-${item}`}
+							tabIndex={activeTab === item ? 0 : -1} onClick={() => onTabChange(item)}
+							className={`border-b-2 px-3 py-3 text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${activeTab === item ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+							{tabLabels[item]}
+						</button>
+					))}
+				</div>
+			)}
+
+			{full && activeTab !== "details" ? (
+				<section id={`event-panel-${activeTab}`} role="tabpanel" aria-labelledby={`event-tab-${activeTab}`} className="min-h-40 py-4">
+					<h2 className="text-base font-bold text-foreground">{tabLabels[activeTab]}</h2>
+					<p className="mt-2 text-sm text-muted-foreground">This section will be available in a later step.</p>
+				</section>
+			) : (
+			<section id="event-panel-details" role={full ? "tabpanel" : undefined} aria-labelledby={full ? "event-tab-details" : undefined} className="flex flex-col gap-5">
 			<header className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-center gap-2">
 					{details.isLive && (
@@ -187,6 +228,8 @@ export function EventDetailsView({
 			)}
 
 			<RsvpControl eventId={details.id} details={details} />
+			</section>
+			)}
 		</article>
 	)
 }

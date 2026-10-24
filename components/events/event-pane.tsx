@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useEventDetails } from "@/hooks/events/use-event-details"
 import { useEventSelection } from "@/hooks/events/use-event-selection"
 import type { EventFullDetails } from "@/types/events/api"
@@ -61,7 +62,7 @@ function Centered({ children }: { children: ReactNode }) {
 
 /** loading / unavailable / error states shared by the view and edit screens */
 function useEventScreen(eventId: string) {
-	const { go } = useEventSelection()
+	const { selection, go, setTab } = useEventSelection()
 	const loaded = useEventDetails(eventId)
 	const close = () => go({ mode: "none" }, { replace: true })
 
@@ -119,11 +120,17 @@ function useEventScreen(eventId: string) {
 			break
 	}
 
-	return { ...loaded, go, close, blocker }
+	return { ...loaded, selection, go, setTab, close, blocker }
 }
 
 function EventView({ eventId }: { eventId: string }) {
-	const { details, isHost, go, close, blocker } = useEventScreen(eventId)
+	const { details, isHost, selection, go, setTab, close, blocker } = useEventScreen(eventId)
+
+	useEffect(() => {
+		if (details?.kind === "preview" && selection.mode === "view" && selection.tab !== "details") {
+			go({ mode: "view", eventId, tab: "details" }, { replace: true })
+		}
+	}, [details, eventId, go, selection])
 
 	return (
 		<PaneFrame onClose={close}>

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { EventPane } from "./event-pane"
 
 const go = vi.fn()
+const setTab = vi.fn()
 const useEventSelection = vi.fn()
 const useEventDetails = vi.fn()
 vi.mock("@/hooks/events/use-event-selection", () => ({ useEventSelection: () => useEventSelection() }))
@@ -41,7 +42,7 @@ const loaded = (over: Record<string, unknown>) => ({
 
 beforeEach(() => {
 	vi.clearAllMocks()
-	useEventSelection.mockReturnValue({ selection: { mode: "none" }, go })
+	useEventSelection.mockReturnValue({ selection: { mode: "none" }, go, setTab })
 	useEventDetails.mockReturnValue(loaded({}))
 })
 
@@ -52,7 +53,7 @@ describe("EventPane", () => {
 	})
 
 	it("create: shows the create form, and a finished create opens the new event (replacing history)", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "create" }, go })
+		useEventSelection.mockReturnValue({ selection: { mode: "create" }, go, setTab })
 		render(<EventPane />)
 		expect(screen.getByText("form:create")).toBeInTheDocument()
 		fireEvent.click(screen.getByText("finish"))
@@ -62,7 +63,7 @@ describe("EventPane", () => {
 	})
 
 	it("view: loading, then details; the id is passed through to the details hook", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID }, go })
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "details" }, go, setTab })
 		useEventDetails.mockReturnValue(loaded({ status: "loading", details: null }))
 		const { rerender } = render(<EventPane />)
 		expect(screen.getByRole("status")).toHaveTextContent("Loading event")
@@ -80,7 +81,7 @@ describe("EventPane", () => {
 		["unavailable", "This event isn't available"],
 		["error", "We couldn't load this event"],
 	])("view: %s selection shows a recoverable state, never details", (status, title) => {
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: "nope" }, go })
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: "nope", tab: "details" }, go, setTab })
 		useEventDetails.mockReturnValue(loaded({ status, details: null }))
 		render(<EventPane />)
 		expect(screen.getByRole("heading", { name: title })).toBeInTheDocument()
@@ -104,7 +105,7 @@ describe("EventPane", () => {
 	})
 
 	it("edit: a host gets the edit form", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "edit", eventId: ID }, go })
+		useEventSelection.mockReturnValue({ selection: { mode: "edit", eventId: ID }, go, setTab })
 		useEventDetails.mockReturnValue(loaded({ isHost: true }))
 		render(<EventPane />)
 		expect(screen.getByText("form:edit")).toBeInTheDocument()
@@ -121,5 +122,20 @@ describe("EventPane", () => {
 		render(<EventPane />)
 		expect(screen.queryByText("form:edit")).not.toBeInTheDocument()
 		expect(screen.getByRole("heading", { name: "Only hosts can edit this event" })).toBeInTheDocument()
+	})
+})
+
+
+describe("EventPane section state", () => {
+	it("passes URL-selected section state to the details view", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "resources" }, go, setTab })
+		render(<EventPane />)
+		expect(screen.getByText("details:Jazz night")).toBeInTheDocument()
+	})
+	it("strips section state from a restricted preview URL", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go, setTab })
+		useEventDetails.mockReturnValue(loaded({ details: preview }))
+		render(<EventPane />)
+		expect(go).toHaveBeenCalledWith({ mode: "view", eventId: ID, tab: "details" }, { replace: true })
 	})
 })
