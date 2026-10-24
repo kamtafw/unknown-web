@@ -339,8 +339,9 @@ export function normalizeEventResources(raw: unknown): EventResources {
 	return { links: normalizeResourceLinks(data.links), documents: normalizeResourceDocuments(data.documents) }
 }
 function normalizePaginationNext(data: Record<string, unknown>): boolean {
+	if (!("next" in data)) throw new EventPayloadError()
 	const next = data.next
-	if (next !== null && next !== undefined && typeof next !== "string") throw new EventPayloadError()
+	if (next !== null && typeof next !== "string") throw new EventPayloadError()
 	return typeof next === "string" && next.length > 0
 }
 function normalizeComment(raw: unknown): EventComment | null {
