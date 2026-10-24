@@ -1,6 +1,6 @@
 # Events — progress and reconciliation
 
-**Current record: Phase 2 closeout, 2026-10-22** (after E2-RECONCILE-01). Pass 2 is **implemented and closed out for delivery** at checkpoint `a96887b`;
+**Current record: Phase 2 closeout, 2026-10-22; Pass 3 checkpoint in section G** (after E2-RECONCILE-01). Pass 2 is **implemented and closed out for delivery** at checkpoint `a96887b`;
 by the owner's decision, in-depth verification is deferred to QA or a later session. It is **implemented and owner-smoke-tested, not verified against the live backend**.
 **Next pass: Pass 3** (participation, resources, discussions). Pass 3 and Pass 4 are **not started**. Nothing in this file says the Events experience is complete.
 The sections after "Historical record" are the earlier checkpoint reports, kept for history; where they conflict with this section, this section wins.
@@ -82,6 +82,14 @@ The `components/events/form/*` fields have no test files of their own; they are 
 5. EV-014 and EV-015 in `EVENTS.md` were updated to their Pass 2 status (create button implemented; passcode modal still Pass 3/4).
 
 ## G. Next pass
+
+**Planning status (revised 2026-10-23): Pass 3 is planned, not started.** The complete scope, task plan (P3-01 to P3-10, with P3-08A/B), decisions (D-1 to D-12) and completion checklist are in `docs/events/PHASE-3-HANDOFF.md`; the Pass 3 issues are EV-026 to EV-030 in `EVENTS.md`. No Pass 3 code exists. Decisions made on 2026-10-23 from the documented contract and repo evidence:
+
+- **D-1 (join/leave): resolved to a blocker.** `join` is live-session admission (needs `is_live`) and `leave` is live-coupled; neither is a genuine event-level membership operation, so both stay out of Pass 3 and belong to Pass 4B. P3-09 is blocked with explicit prerequisites; the roadmap line that lists them under Pass 3 needs the owner's explicit clarification (EV-028).
+- **D-2 (guest addition): blocked.** No existing user-selection mechanism is confirmed suitable (the Messenger lookup is chat-coupled and undocumented for this use); no Events search endpoint is invented. Guest list and remove guest proceed; add guest (P3-08B) waits for an owner/backend decision (EV-027).
+- **Comments:** the backend is authoritative for who may post; the frontend does not infer authorization (EV-026). No length rule and no realtime exist in the contract (EV-030).
+- **Designs:** the Pass 3 frames were seen only as metadata/text layers; none was rendered and inspected (EV-029).
+  **Pass 3 checkpoint (2026-10-23):** **P3-01 is complete** (documentation only; commit `2880913` on branch `docs/events-p3-01-confirm-defaults`, cut from `main` `7044b18`, which merged `feat/events-phase1` at `745b4c7`; application code unchanged since the Phase 2 checkpoint `a96887b`). It recorded assumptions A-16 to A-22 and a decision table in `EVENTS.md`. **P3-02 is next but not startable yet:** it needs the owner's explicit acceptance of the D-8 and D-11 projections (recorded as A-17 and A-20, status assumed, not owner-accepted) and an explicit authorization. D-1 and D-2 remain open and block only P3-09 and P3-08B. Section A above is the Phase 2 closeout record and is correct as history.
 
 **Pass 3 — Participation, Resources, and Discussions** (per the roadmap). Not started. Before building:
 
