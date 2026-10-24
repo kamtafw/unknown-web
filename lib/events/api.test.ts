@@ -192,3 +192,51 @@ describe("eventsApi.setRsvp", () => {
 		expect(await eventsApi.setRsvp(ID, "interested")).toEqual({ eventId: ID, status: "interested" })
 	})
 })
+
+
+describe("eventsApi Pass 3 read methods", () => {
+	it("loads resources through the BFF and projects only safe fields", async () => {
+		getMock.mockResolvedValue({
+			data: { data: {
+				event: "Event title",
+				links: [{ link_name: "Website", url: "https://example.com", date_added: "01/01/2026" }],
+				documents: [{ doc_name: "Agenda", doc_file: "events/agenda.pdf", size: "2 MB", file_type: "PDF", date_uploaded: "01/10/2026" }],
+			} },
+		})
+		const result = await eventsApi.getEventResources(ID)
+		expect(getMock.mock.calls[0][0]).toBe(`/api/events/${ID}/resources`)
+		expect(result.links).toEqual([{ name: "Website", url: "https://example.com" }])
+		expect(result.documents[0]).toMatchObject({ name: "Agenda", size: "2 MB", fileType: "PDF" })
+		expect(JSON.stringify(result)).not.toContain("date_added")
+	})
+
+	it("requests only the chosen comments page and limit", async () => {
+		getMock.mockResolvedValue({ data: { data: { next: "/next", results: [] } } })
+		expect(await eventsApi.getEventCommentsPage(ID, { page: 2, limit: 10 })).toEqual({
+			comments: [], page: 2, hasNext: true,
+		})
+		expect(getMock.mock.calls[0][0]).toBe(`/api/events/${ID}/comments`)
+		expect(getMock.mock.calls[0][1]?.params).toEqual({ page: 2, limit: 10 })
+	})
+
+	it("requests guests with pagination and projects away RSVP data", async () => {
+		getMock.mockResolvedValue({
+			data: { data: { next: null, results: [{
+				user_id: 9, user_full_name: "Sam Guest", user_username: "sam", user_photo: "profiles/sam.jpg",
+				role: "guest", rsvp_status: "going", joined_at: "private",
+			}] } },
+		})
+		const page = await eventsApi.getEventGuestsPage(ID, { page: 1, limit: 20 })
+		expect(page.guests[0]).toMatchObject({ userId: 9, name: "Sam Guest", username: "sam", role: "guest" })
+		expect(JSON.stringify(page)).not.toContain("rsvp_status")
+		expect(JSON.stringify(page)).not.toContain("private")
+		expect(getMock.mock.calls[0][1]?.params).toEqual({ page: 1, limit: 20 })
+	})
+
+	it("throws EventPayloadError for malformed successful read responses", async () => {
+		getMock.mockResolvedValue({ data: { data: null } })
+		await expect(eventsApi.getEventResources(ID)).rejects.toBeInstanceOf(EventPayloadError)
+		await expect(eventsApi.getEventCommentsPage(ID, { page: 1, limit: 20 })).rejects.toBeInstanceOf(EventPayloadError)
+		await expect(eventsApi.getEventGuestsPage(ID, { page: 1, limit: 20 })).rejects.toBeInstanceOf(EventPayloadError)
+	})
+})
