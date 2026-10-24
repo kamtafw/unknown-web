@@ -1,6 +1,11 @@
 import { resolveMediaUrl } from "@/lib/server-config"
 import type {
 	EventCard,
+	EventComment,
+	EventCommentsPage,
+	EventGuest,
+	EventGuestsPage,
+	EventResources,
 	EventDetails,
 	EventDocument,
 	EventFullDetails,
@@ -22,6 +27,14 @@ import { isValidCoordinates } from "./location"
  * also returns (host email/phone, guests, links, documents) is never copied, so
  * it can never reach a cache, a component or a log.
  */
+
+/** Successful response with a malformed Events payload. */
+export class EventPayloadError extends Error {
+	constructor() {
+		super("The event response could not be read")
+		this.name = "EventPayloadError"
+	}
+}
 
 const PRIVACY = new Set<string>(["public", "private", "friends"])
 const RSVP = new Set<string>(["going", "interested", "not_going"])
@@ -283,4 +296,102 @@ export function normalizeRsvpResult(data: unknown): RsvpResult | null {
 	const status = text(data.status)
 	if (!eventId || !RSVP.has(status)) return null
 	return { eventId, status: status as EventRsvpStatus }
+}
+
+
+/* Pass 3 strict read boundaries. Malformed payloads throw rather than becoming empty lists. */
+function requiredRecord(value: unknown): Record<string, unknown> {
+	if (!isRecord(value)) throw new EventPayloadError()
+	return value
+}
+function requiredArray(value: unknown): unknown[] {
+	if (!Array.isArray(value)) throw new EventPayloadError()
+	return value
+}
+function nullableText(value: unknown): string | null {
+	const result = text(value)
+	return result || null
+}
+function normalizeResourceLinks(value: unknown): EventResources["links"] {
+	return requiredArray(value).flatMap((item) => {
+		if (!isRecord(item)) return []
+		const url = normalizeHttpUrl(item.url)
+		return url ? [{ name: text(item.link_name) || url, url }] : []
+	})
+}
+function normalizeResourceDocuments(value: unknown): EventResources["documents"] {
+	return requiredArray(value).flatMap((item) => {
+		if (!isRecord(item)) return []
+		const url = resolveMediaUrl(text(item.doc_file))
+		if (!url) return []
+		return [{
+			name: text(item.doc_name) || "Document",
+			url,
+			size: nullableText(item.size),
+			fileType: nullableText(item.file_type),
+			dateUploaded: nullableText(item.date_uploaded),
+		}]
+	})
+}
+/** data.event is a title, not an event id. */
+export function normalizeEventResources(raw: unknown): EventResources {
+	const data = requiredRecord(raw)
+	return { links: normalizeResourceLinks(data.links), documents: normalizeResourceDocuments(data.documents) }
+}
+function normalizePaginationNext(data: Record<string, unknown>): boolean {
+	const next = data.next
+	if (next !== null && next !== undefined && typeof next !== "string") throw new EventPayloadError()
+	return typeof next === "string" && next.length > 0
+}
+function normalizeComment(raw: unknown): EventComment | null {
+	if (!isRecord(raw) || !isRecord(raw.user)) return null
+	const id = text(raw.id)
+	const message = typeof raw.message === "string" ? raw.message : null
+	const createdAt = text(raw.created_at)
+	const user = raw.user
+	const role = text(user.role)
+	if (!id || message === null || !createdAt || (role !== "host" && role !== "guest")) return null
+	return {
+		id, message, createdAt,
+		author: {
+			name: text(user.full_name) || text(user.username),
+			username: text(user.username),
+			photo: resolveMediaUrl(text(user.photo)) ?? null,
+			role,
+		},
+	}
+}
+function normalizeGuest(raw: unknown): EventGuest | null {
+	if (!isRecord(raw)) return null
+	const userId = raw.user_id
+	const name = text(raw.user_full_name)
+	const username = text(raw.user_username)
+	const role = text(raw.role)
+	if (!Number.isSafeInteger(userId) || (userId as number) <= 0 || (!name && !username) ||
+		(role !== "host" && role !== "guest")) return null
+	return {
+		userId: userId as number,
+		name: name || username,
+		username,
+		photo: resolveMediaUrl(text(raw.user_photo)) ?? null,
+		role,
+	}
+}
+export function normalizeEventCommentsPage(raw: unknown, page: number): EventCommentsPage {
+	const data = requiredRecord(raw)
+	const results = requiredArray(data.results)
+	return {
+		comments: results.map(normalizeComment).filter((item): item is EventComment => item !== null),
+		page,
+		hasNext: normalizePaginationNext(data),
+	}
+}
+export function normalizeEventGuestsPage(raw: unknown, page: number): EventGuestsPage {
+	const data = requiredRecord(raw)
+	const results = requiredArray(data.results)
+	return {
+		guests: results.map(normalizeGuest).filter((item): item is EventGuest => item !== null),
+		page,
+		hasNext: normalizePaginationNext(data),
+	}
 }
