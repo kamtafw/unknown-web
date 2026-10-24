@@ -1,7 +1,7 @@
 import type { EventCard, EventsPage } from "@/types/events/api"
 import { QueryClient } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
-import { findCachedRsvp } from "./cache"
+import { findCachedRsvp, removeEventSubresourceQueries } from "./cache"
 import { eventKeys, keyBelongsTo } from "./query-keys"
 
 const card = (id: string, viewerRsvp: EventCard["viewerRsvp"]): EventCard => ({
@@ -98,8 +98,7 @@ describe("keyBelongsTo", () => {
 
 
 describe("removeEventSubresourceQueries", () => {
-	it("removes resource, comment and guest caches for the event across sessions only", async () => {
-		const { removeEventSubresourceQueries } = await import("./cache")
+	it("removes resource, comment and guest caches for the event across sessions only", () => {
 		const client = new QueryClient()
 		client.setQueryData(eventKeys.resources(1, 0, "event-a"), { links: [] })
 		client.setQueryData(eventKeys.comments(1, 0, "event-a"), { pages: [] })
