@@ -336,3 +336,81 @@ export function isEventLive(data: unknown): boolean {
 	const session = d.live_session
 	return !!session && typeof session === "object" && (session as Record<string, unknown>).status === "live"
 }
+
+/* -------------------------------------------------------------------------------------------
+ * Pass 3 (P3-02a): minimise the read-side responses at the BFF
+ *
+ * Guests, comments and resources come back with more than the app uses: other people's RSVP and
+ * join dates, comment-author identifiers, the event name, a per-link date that is really the
+ * event's creation date. Like `sanitizeDetailsPayload`, these functions remove them HERE, so they
+ * never reach the browser at all (A-17, A-18, A-20). They keep the backend's own key names, so the
+ * normalisers in `normalize.ts` read the result unchanged.
+ *
+ * Each returns a NEW object (the input is never mutated) or `null` when the body is not the
+ * documented shape (guide §4.12, §4.16, §4.17). The route turns `null` into a controlled 502
+ * instead of forwarding something it cannot vouch for. Only successful bodies go through these;
+ * upstream errors are passed along untouched.
+ * ----------------------------------------------------------------------------------------- */
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+/** a new object holding only the listed keys that are present on `source` */
+function pick(source: unknown, keys: readonly string[]): Record<string, unknown> {
+	const out: Record<string, unknown> = {}
+	if (!isPlainRecord(source)) return out
+	for (const key of keys) if (key in source) out[key] = source[key]
+	return out
+}
+
+const ENVELOPE_KEYS = ["success", "status_code", "message"] as const
+const PAGINATION_KEYS = ["count", "total_pages", "limit", "current", "previous", "next"] as const
+
+const GUEST_KEYS = ["user_id", "user_photo", "user_full_name", "user_username", "role"] as const
+const COMMENT_KEYS = ["id", "message", "created_at"] as const
+const COMMENT_AUTHOR_KEYS = ["photo", "full_name", "username", "role"] as const
+const LINK_KEYS = ["link_name", "url"] as const
+const DOCUMENT_KEYS = ["doc_name", "doc_file", "size", "file_type", "date_uploaded"] as const
+
+function sanitizePaged(
+	json: unknown,
+	row: (item: Record<string, unknown>) => Record<string, unknown>,
+): unknown | null {
+	if (!isPlainRecord(json) || !isPlainRecord(json.data) || !Array.isArray(json.data.results)) return null
+	return {
+		...pick(json, ENVELOPE_KEYS),
+		data: {
+			...pick(json.data, PAGINATION_KEYS),
+			results: json.data.results.filter(isPlainRecord).map(row),
+		},
+	}
+}
+
+/** `GET guests`: keeps the guest's `user_id` (what removal needs), name, username, photo and role */
+export function sanitizeGuestsPayload(json: unknown): unknown | null {
+	return sanitizePaged(json, (item) => pick(item, GUEST_KEYS))
+}
+
+/** `GET comments`: keeps id, message, time and the author's photo, name, username and role */
+export function sanitizeCommentsPayload(json: unknown): unknown | null {
+	return sanitizePaged(json, (item) => {
+		const row = pick(item, COMMENT_KEYS)
+		if (isPlainRecord(item.user)) row.user = pick(item.user, COMMENT_AUTHOR_KEYS)
+		return row
+	})
+}
+
+/** `GET resources`: link name and address; document fields. Drops `data.event` and `date_added` */
+export function sanitizeResourcesPayload(json: unknown): unknown | null {
+	if (!isPlainRecord(json) || !isPlainRecord(json.data)) return null
+	const { links, documents } = json.data
+	if (!Array.isArray(links) || !Array.isArray(documents)) return null
+	return {
+		...pick(json, ENVELOPE_KEYS),
+		data: {
+			links: links.filter(isPlainRecord).map((l) => pick(l, LINK_KEYS)),
+			documents: documents.filter(isPlainRecord).map((d) => pick(d, DOCUMENT_KEYS)),
+		},
+	}
+}
