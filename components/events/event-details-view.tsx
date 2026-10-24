@@ -72,7 +72,9 @@ function HostRow({ host }: { host: EventHost }) {
  * Pass 3); the full shape only carries them so a host can edit them.
  *
  * Joining, guests and comments are later passes, so a live event only gets a "Live now" mark
- * and a note. Host controls are shown by a UUID match and the server stays authoritative.
+ * and a note. Full-access section navigation is URL-backed; section bodies are placeholders until
+ * their read-side tasks are implemented. Host controls are shown by a UUID match and the server
+ * stays authoritative.
  */
 export function EventDetailsView({
 	details,
@@ -111,7 +113,7 @@ export function EventDetailsView({
 					event.preventDefault()
 					const currentIndex = tabs.indexOf(activeTab)
 					const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length
-					const nextTab = tabs[nextIndex]
+					const nextTab = tabs[nextIndex] ?? "details"
 					document.getElementById(`event-tab-${nextTab}`)?.focus()
 					onTabChange(nextTab)
 				}}>

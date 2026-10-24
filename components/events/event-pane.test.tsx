@@ -19,11 +19,12 @@ vi.mock("./event-form", () => ({
 	),
 }))
 vi.mock("./event-details-view", () => ({
-	EventDetailsView: (p: { details: { name: string }; isHost: boolean; onEdit: () => void }) => (
-		<div>
+	EventDetailsView: (p: { details: { name: string }; isHost: boolean; onEdit: () => void; tab?: string; onTabChange?: (tab: "guests") => void }) => (
+		<div role="presentation" data-tab={p.tab}>
 			<p>details:{p.details.name}</p>
 			<p>host:{String(p.isHost)}</p>
 			<button onClick={p.onEdit}>edit</button>
+			<button onClick={() => p.onTabChange?.("guests")}>select guests</button>
 		</div>
 	),
 }))
@@ -131,6 +132,9 @@ describe("EventPane section state", () => {
 		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "resources" }, go, setTab })
 		render(<EventPane />)
 		expect(screen.getByText("details:Jazz night")).toBeInTheDocument()
+		expect(screen.getByRole("presentation")).toHaveAttribute("data-tab", "resources")
+		fireEvent.click(screen.getByRole("button", { name: "select guests" }))
+		expect(setTab).toHaveBeenCalledWith("guests")
 	})
 	it("strips section state from a restricted preview URL", () => {
 		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go, setTab })

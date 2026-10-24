@@ -142,6 +142,8 @@ function EventView({ eventId }: { eventId: string }) {
 						isHost={isHost}
 						onEdit={() => go({ mode: "edit", eventId })}
 						onDeleted={close}
+						tab={selection.mode === "view" ? selection.tab : "details"}
+						onTabChange={setTab}
 					/>
 				))}
 		</PaneFrame>
