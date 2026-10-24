@@ -1,9 +1,11 @@
 # Events — progress and reconciliation
 
-**Current record: Phase 2 closeout, 2026-10-22; Pass 3 checkpoint in section G** (after E2-RECONCILE-01). Pass 2 is **implemented and closed out for delivery** at checkpoint `a96887b`;
-by the owner's decision, in-depth verification is deferred to QA or a later session. It is **implemented and owner-smoke-tested, not verified against the live backend**.
-**Next pass: Pass 3** (participation, resources, discussions). Pass 3 and Pass 4 are **not started**. Nothing in this file says the Events experience is complete.
-The sections after "Historical record" are the earlier checkpoint reports, kept for history; where they conflict with this section, this section wins.
+**Current record: Pass 3 P3-04 implementation checkpoint, 2026-10-24.** P3-01 through P3-03 are complete on
+`feat/events-pass3`; P3-04 adds the resource read UI and keeps it consistent with the existing Phase 2 edit/delete paths.
+Implementation is pushed for owner-local validation; no local test, lint, type-check or build was run through the GitHub integration.
+P3-04 remains pending the owner's local checks and review. P3-05 and subsequent tasks are not started; no merge to
+`feat/events-phase1` has been made. Phase 2 remains implemented and owner-smoke-tested, not verified against the live backend.
+The sections after "Historical record" are earlier checkpoint reports, kept for history; where they conflict with this section, this section wins.
 
 ## A. Repository state (verified 2026-10-22)
 

@@ -139,10 +139,9 @@ function EventView({ eventId, tab }: { eventId: string; tab?: EventTab }) {
 						isHost={isHost}
 						onEdit={() => go({ mode: "edit", eventId })}
 						onDeleted={close}
-						// a restricted preview has no sections: the view ignores `tab` for it
 						tab={tab}
-						// switching sections replaces the history entry, so Back still closes the event
 						onTabChange={(next) => go({ mode: "view", eventId, tab: next }, { replace: true })}
+						
 					/>
 				))}
 		</PaneFrame>

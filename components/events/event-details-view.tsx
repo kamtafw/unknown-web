@@ -9,6 +9,7 @@ import Image from "next/image"
 import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { secondaryButton } from "./event-list"
+import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
 
 const PRIVACY_LABEL: Record<EventPrivacy, string> = {
@@ -45,8 +46,8 @@ const TAB_LABEL: Record<EventTab, string> = {
 }
 
 /**
- * Body of a section that has no content yet. P3-03 builds the navigation only: comments, links
- * and documents, and guests are filled in by later tasks, so nothing is fetched or shown here.
+ * Body of a section that has no content yet (comments and guests; Links and docs has its own
+ * component since P3-04). Later tasks fill these in, so nothing is fetched or shown here.
  */
 function SectionPlaceholder({ tab }: { tab: Exclude<EventTab, "details"> }) {
 	return (
@@ -109,8 +110,8 @@ function HostRow({ host }: { host: EventHost }) {
  * them; this view does not display them.
  *
  * A full event has sections (Details, Comments, Links and docs, Guests), selected by `tab` and
- * held in the URL by the caller (A-16). Only Details has content so far; the others are
- * placeholders that fetch nothing. A restricted preview has no sections and ignores `tab`, so a
+ * held in the URL by the caller (A-16). Details and Links and docs (P3-04, fetched only
+ * while that section is active) have content; Comments and Guests are placeholders that fetch nothing. A restricted preview has no sections and ignores `tab`, so a
  * link with `&tab=` cannot reach one. Joining is a later pass, so a live event only gets a "Live
  * now" mark and a note. Host controls are shown by a UUID match and the server stays authoritative.
  */
@@ -285,7 +286,12 @@ export function EventDetailsView({
 						>
 							{value === "details"
 								? detailsBody
-								: tab === value && <SectionPlaceholder tab={value} />}
+								: tab === value &&
+									(value === "resources" ? (
+										<EventResourcesSection eventId={details.id} isHost={isHost} onEdit={onEdit} />
+									) : (
+										<SectionPlaceholder tab={value} />
+									))}
 						</Tabs.Content>
 					))}
 				</Tabs.Root>

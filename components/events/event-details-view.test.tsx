@@ -3,6 +3,11 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
+vi.mock("./event-resources-section", () => ({
+	EventResourcesSection: (p: { eventId: string; isHost: boolean; onEdit: () => void }) => (
+		<div data-testid="resources-stub" data-event={p.eventId} data-host={String(p.isHost)} />
+	),
+}))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
 	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => (
@@ -275,4 +280,31 @@ describe("EventDetailsView sections (P3-03)", () => {
 			expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
 		},
 	)
+
+	it("the resources section mounts only while Links and docs is active, for a full event", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
+		const stub = screen.getByTestId("resources-stub")
+		expect(stub).toHaveAttribute("data-event", "e1")
+		expect(stub).toHaveAttribute("data-host", "true")
+		expect(screen.queryByText(/isn.t available yet/i)).not.toBeInTheDocument()
+	})
+
+	it("a restricted preview never mounts the resources section, even with tab=resources", () => {
+		render(
+			<EventDetailsView
+				details={preview}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="resources"
+			/>,
+		)
+		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
+	})
 })
