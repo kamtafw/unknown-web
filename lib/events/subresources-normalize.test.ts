@@ -59,6 +59,7 @@ describe("normalizeEventCommentsPage", () => {
 	it("allows empty results and rejects malformed payloads", () => {
 		expect(normalizeEventCommentsPage({ next: null, results: [] }, 1).comments).toEqual([])
 		expect(() => normalizeEventCommentsPage({ results: "bad" }, 1)).toThrow(EventPayloadError)
+		expect(() => normalizeEventCommentsPage({ results: [] }, 1)).toThrow(EventPayloadError)
 	})
 })
 
