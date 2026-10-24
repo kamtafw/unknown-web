@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest"
 import {
 	dedupeEvents,
 	flattenPages,
+	normalizeComment,
+	normalizeCommentsPage,
 	normalizeEvent,
 	normalizeEventDetails,
+	normalizeGuest,
+	normalizeGuestsPage,
 	normalizeHttpUrl,
 	normalizeListData,
 	normalizeNearbyData,
+	normalizeResources,
 	normalizeRsvpResult,
 	normalizeTime,
 } from "./normalize"
@@ -326,5 +331,286 @@ describe("normalizeHttpUrl / normalizeRsvpResult", () => {
 		expect(normalizeRsvpResult({ event: "e1", status: "going" })).toEqual({ eventId: "e1", status: "going" })
 		expect(normalizeRsvpResult({ event: "e1", status: "maybe" })).toBeNull()
 		expect(normalizeRsvpResult(null)).toBeNull()
+	})
+})
+
+/* ------------------------------------------------------------------ Pass 3 (P3-02) */
+
+describe("normalizeResources", () => {
+	const resources = (over: Record<string, unknown> = {}) => ({
+		event: "Jos Tech Meetup",
+		links: [{ link_name: "Agenda", url: "https://example.com/a", date_added: "01/11/2026" }],
+		documents: [
+			{
+				doc_name: "Slides",
+				doc_file: "events/docs/slides.pdf",
+				size: "1.2 MB",
+				file_type: "pdf",
+				date_uploaded: "02/11/2026",
+			},
+		],
+		...over,
+	})
+
+	it("keeps only the whitelisted link and document fields", () => {
+		expect(normalizeResources(resources())).toEqual({
+			links: [{ name: "Agenda", url: "https://example.com/a" }],
+			documents: [
+				{
+					name: "Slides",
+					url: "https://appscombo.s3.eu-north-1.amazonaws.com/media/events/docs/slides.pdf",
+					size: "1.2 MB",
+					fileType: "PDF",
+					uploadedOn: "02/11/2026",
+				},
+			],
+		})
+	})
+
+	it("never exposes date_added, and never reads data.event as an id", () => {
+		const out = JSON.stringify(normalizeResources(resources()))
+		expect(out).not.toContain("date_added")
+		expect(out).not.toContain("01/11/2026")
+		expect(out).not.toContain("Jos Tech Meetup")
+	})
+
+	it("treats empty arrays as an empty, readable result", () => {
+		expect(normalizeResources(resources({ links: [], documents: [] }))).toEqual({
+			links: [],
+			documents: [],
+		})
+	})
+
+	it("returns null (not empty) when the body is not the documented shape", () => {
+		for (const bad of [null, undefined, "x", 5, [], {}, { links: [] }, { documents: [] }, { links: {}, documents: [] }]) {
+			expect(normalizeResources(bad)).toBeNull()
+		}
+	})
+
+	it("drops links that are not http(s) and documents with no usable URL", () => {
+		const out = normalizeResources(
+			resources({
+				links: [
+					{ link_name: "x", url: "javascript:alert(1)" },
+					{ link_name: "y", url: "data:text/html,hi" },
+					{ link_name: "z", url: "ftp://example.com/f" },
+					{ link_name: "", url: "https://ok.example.com/" },
+					"junk",
+					null,
+				],
+				documents: [
+					{ doc_name: "no file", doc_file: "" },
+					{ doc_name: "bad scheme", doc_file: "httpx://evil" },
+					{ doc_name: "ok", doc_file: "https://cdn.example.com/f.txt" },
+					42,
+				],
+			}),
+		)
+		expect(out?.links).toEqual([{ name: "https://ok.example.com/", url: "https://ok.example.com/" }])
+		expect(out?.documents.map((d) => d.name)).toEqual(["ok"])
+	})
+
+	it("omits unusable document metadata instead of showing it", () => {
+		const out = normalizeResources(
+			resources({
+				documents: [
+					{
+						doc_name: "d",
+						doc_file: "https://cdn.example.com/f",
+						size: "x".repeat(200),
+						file_type: "<script>",
+						date_uploaded: "yesterday",
+					},
+					{ doc_name: "e", doc_file: "https://cdn.example.com/g", size: null, file_type: null },
+				],
+			}),
+		)
+		for (const doc of out?.documents ?? []) {
+			expect(doc.size).toBeNull()
+			expect(doc.fileType).toBeNull()
+			expect(doc.uploadedOn).toBeNull()
+		}
+	})
+
+	it("does not carry unknown backend fields", () => {
+		const out = normalizeResources(
+			resources({
+				documents: [{ doc_name: "d", doc_file: "https://cdn.example.com/f", secret: "s", uploaded_by: "u" }],
+			}),
+		)
+		expect(Object.keys(out?.documents[0] ?? {}).sort()).toEqual(
+			["fileType", "name", "size", "uploadedOn", "url"].sort(),
+		)
+	})
+})
+
+describe("normalizeComment", () => {
+	const comment = (over: Record<string, unknown> = {}) => ({
+		id: "c1",
+		message: "See you there",
+		created_at: "2026-11-01T10:00:00Z",
+		user: {
+			pkid: 9,
+			id: "u-uuid",
+			photo: "profiles/a.jpg",
+			full_name: "Ada Obi",
+			username: "ada",
+			role: "host",
+			joined_at: "2026-10-01T10:00:00Z",
+		},
+		...over,
+	})
+
+	it("keeps id, message, createdAt and the minimal author only (A-20)", () => {
+		const out = normalizeComment(comment())
+		expect(out).toEqual({
+			id: "c1",
+			message: "See you there",
+			createdAt: "2026-11-01T10:00:00Z",
+			author: {
+				name: "Ada Obi",
+				username: "ada",
+				photo: "https://appscombo.s3.eu-north-1.amazonaws.com/media/profiles/a.jpg",
+				role: "host",
+			},
+		})
+		const json = JSON.stringify(out)
+		for (const dropped of ["pkid", "u-uuid", "joined_at"]) expect(json).not.toContain(dropped)
+	})
+
+	it("keeps the message text as sent, including markup, without interpreting it", () => {
+		expect(normalizeComment(comment({ message: "<img src=x onerror=alert(1)>\n  hi" }))?.message).toBe(
+			"<img src=x onerror=alert(1)>\n  hi",
+		)
+	})
+
+	it("skips comments with no id or a blank / non-string message", () => {
+		expect(normalizeComment(comment({ id: "" }))).toBeNull()
+		expect(normalizeComment(comment({ id: 5 }))).toBeNull()
+		expect(normalizeComment(comment({ message: "   " }))).toBeNull()
+		expect(normalizeComment(comment({ message: null }))).toBeNull()
+		expect(normalizeComment("x")).toBeNull()
+	})
+
+	it("degrades a missing author and an unparseable time instead of failing", () => {
+		expect(normalizeComment(comment({ user: null }))?.author).toBeNull()
+		expect(normalizeComment(comment({ user: { full_name: "", username: "" } }))?.author).toBeNull()
+		expect(normalizeComment(comment({ created_at: "not a date" }))?.createdAt).toBeNull()
+		expect(normalizeComment(comment({ created_at: undefined }))?.createdAt).toBeNull()
+	})
+
+	it("falls back to the username for the name and ignores an unknown role", () => {
+		const author = normalizeComment(comment({ user: { full_name: "", username: "ada", role: "co_host" } }))?.author
+		expect(author).toMatchObject({ name: "ada", role: null })
+	})
+})
+
+describe("normalizeCommentsPage", () => {
+	it("reads results and takes hasNext from next only", () => {
+		const page = normalizeCommentsPage(
+			{ count: 99, total_pages: 9, next: "http://x/?page=3", results: [{ id: "a", message: "m" }] },
+			2,
+		)
+		expect(page).toEqual({
+			comments: [{ id: "a", message: "m", createdAt: null, author: null }],
+			page: 2,
+			hasNext: true,
+		})
+	})
+
+	it("an empty page with a next link is not the end", () => {
+		expect(normalizeCommentsPage({ next: "http://x/?page=2", results: [] }, 1)).toMatchObject({
+			comments: [],
+			hasNext: true,
+		})
+	})
+
+	it("counts never decide hasNext, and a null next ends the list", () => {
+		expect(normalizeCommentsPage({ count: 500, total_pages: 50, next: null, results: [] }, 1)?.hasNext).toBe(false)
+		expect(normalizeCommentsPage({ next: "", results: [] }, 1)?.hasNext).toBe(false)
+	})
+
+	it("drops unreadable rows but keeps the rest", () => {
+		const page = normalizeCommentsPage({ results: [null, { id: "" }, { id: "ok", message: "m" }] }, 1)
+		expect(page?.comments.map((c) => c.id)).toEqual(["ok"])
+	})
+
+	it("returns null for an unreadable body", () => {
+		for (const bad of [null, undefined, "x", [], {}, { results: {} }, { results: "x" }]) {
+			expect(normalizeCommentsPage(bad, 1)).toBeNull()
+		}
+	})
+})
+
+describe("normalizeGuest", () => {
+	const guest = (over: Record<string, unknown> = {}) => ({
+		user_id: 12,
+		user_photo: "profiles/g.jpg",
+		user_full_name: "Bola Ade",
+		user_username: "bola",
+		role: "guest",
+		rsvp_status: "going",
+		joined_at: "2026-10-30T09:00:00Z",
+		email: "bola@example.com",
+		phone_number: "+2348000000000",
+		...over,
+	})
+
+	it("keeps only userId, name, username, photo and role (A-17)", () => {
+		const out = normalizeGuest(guest())
+		expect(out).toEqual({
+			userId: 12,
+			name: "Bola Ade",
+			username: "bola",
+			photo: "https://appscombo.s3.eu-north-1.amazonaws.com/media/profiles/g.jpg",
+			role: "guest",
+		})
+		const json = JSON.stringify(out)
+		for (const dropped of ["going", "rsvp", "joined_at", "2026-10-30", "bola@example.com", "+2348"]) {
+			expect(json).not.toContain(dropped)
+		}
+	})
+
+	it("recognises the host role and treats an unknown role as the less privileged guest", () => {
+		expect(normalizeGuest(guest({ role: "host" }))?.role).toBe("host")
+		expect(normalizeGuest(guest({ role: "co_host" }))?.role).toBe("guest")
+		expect(normalizeGuest(guest({ role: undefined }))?.role).toBe("guest")
+	})
+
+	it("requires a positive integer user_id (what removal sends)", () => {
+		for (const bad of [0, -1, 1.5, "12", null, undefined, Number.NaN]) {
+			expect(normalizeGuest(guest({ user_id: bad }))).toBeNull()
+		}
+	})
+
+	it("falls back to the username, and skips a row with no name at all", () => {
+		expect(normalizeGuest(guest({ user_full_name: "" }))?.name).toBe("bola")
+		expect(normalizeGuest(guest({ user_full_name: "", user_username: "" }))).toBeNull()
+		expect(normalizeGuest("x")).toBeNull()
+	})
+})
+
+describe("normalizeGuestsPage", () => {
+	it("reads results and takes hasNext from next only", () => {
+		const page = normalizeGuestsPage(
+			{ total_pages: 1, next: null, results: [{ user_id: 1, user_full_name: "A" }, { user_id: 0 }] },
+			1,
+		)
+		expect(page).toEqual({
+			guests: [{ userId: 1, name: "A", username: "", photo: null, role: "guest" }],
+			page: 1,
+			hasNext: false,
+		})
+	})
+
+	it("an empty page with a next link is not the end", () => {
+		expect(normalizeGuestsPage({ next: "http://x/?page=2", results: [] }, 1)?.hasNext).toBe(true)
+	})
+
+	it("returns null for an unreadable body and an empty array for an empty list", () => {
+		expect(normalizeGuestsPage({}, 1)).toBeNull()
+		expect(normalizeGuestsPage({ results: null }, 1)).toBeNull()
+		expect(normalizeGuestsPage(null, 1)).toBeNull()
+		expect(normalizeGuestsPage({ results: [] }, 1)).toEqual({ guests: [], page: 1, hasNext: false })
 	})
 })
