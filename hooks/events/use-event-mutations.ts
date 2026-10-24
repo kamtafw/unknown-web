@@ -1,6 +1,7 @@
 "use client"
 
 import { eventsApi } from "@/lib/events/api"
+import { removeEventSubresourceQueries } from "@/lib/events/cache"
 import { describeEventError } from "@/lib/events/errors"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
@@ -72,6 +73,7 @@ export function useUpdateEvent(eventId: string) {
 			if (updated) client.setQueryData<EventDetails>(key, updated)
 			// an unreadable 200 leaves the cache stale, so ask the server instead of guessing
 			else void client.invalidateQueries({ queryKey: key })
+			void client.invalidateQueries({ queryKey: eventKeys.resources(accountId, sessionGeneration, eventId) })
 			invalidateLists(client)
 		},
 	})
@@ -91,6 +93,7 @@ export function useDeleteEvent(eventId: string) {
 	const forget = () => {
 		client.removeQueries({ queryKey: eventKeys.detail(accountId, sessionGeneration, eventId) })
 		client.removeQueries({ queryKey: eventKeys.rsvp(accountId, sessionGeneration, eventId) })
+		removeEventSubresourceQueries(client, eventId)
 		invalidateLists(client)
 	}
 

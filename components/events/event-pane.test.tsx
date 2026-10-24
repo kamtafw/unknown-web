@@ -6,8 +6,10 @@ const go = vi.fn()
 const setTab = vi.fn()
 const useEventSelection = vi.fn()
 const useEventDetails = vi.fn()
+const useEventResources = vi.fn()
 vi.mock("@/hooks/events/use-event-selection", () => ({ useEventSelection: () => useEventSelection() }))
 vi.mock("@/hooks/events/use-event-details", () => ({ useEventDetails: (id: string) => useEventDetails(id) }))
+vi.mock("@/hooks/events/use-event-resources", () => ({ useEventResources: (id: string, enabled: boolean) => useEventResources(id, enabled) }))
 vi.mock("./event-room-placeholder", () => ({ EventRoomPlaceholder: () => <p>No event selected</p> }))
 vi.mock("./event-form", () => ({
 	EventForm: (p: { mode: string; onDone: (id: string | null) => void; onCancel: () => void }) => (
@@ -45,6 +47,7 @@ beforeEach(() => {
 	vi.clearAllMocks()
 	useEventSelection.mockReturnValue({ selection: { mode: "none" }, go, setTab })
 	useEventDetails.mockReturnValue(loaded({}))
+	useEventResources.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null, refetch: vi.fn() })
 })
 
 describe("EventPane", () => {
@@ -135,6 +138,12 @@ describe("EventPane section state", () => {
 		expect(screen.getByRole("presentation")).toHaveAttribute("data-tab", "resources")
 		fireEvent.click(screen.getByRole("button", { name: "select guests" }))
 		expect(setTab).toHaveBeenCalledWith("guests")
+	})
+	it("never enables resource requests for a restricted preview", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "details" }, go, setTab })
+		useEventDetails.mockReturnValue(loaded({ details: preview }))
+		render(<EventPane />)
+		expect(useEventResources).toHaveBeenCalledWith(ID, false)
 	})
 	it("strips section state from a restricted preview URL", () => {
 		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go, setTab })

@@ -3,9 +3,13 @@
 **Status: Pass 1 complete** (accepted by the project owner after reviewing the rendered output, including
 typography). **Pass 2 implemented and closed out for delivery** at implementation checkpoint `a96887b`
 (branch `feat/events-phase1`). The owner chose to defer in-depth verification to QA or a later session, so
-Pass 2 is "implemented, owner-smoke-tested, not verified against the live backend". **Next: Pass 3**
-(participation, resources, discussions). Pass 3 and Pass 4 have not been started. **Pass 3 is planned, not started:** scope, task order (P3-01 to P3-10), decisions and acceptance criteria are in `docs/events/PHASE-3-HANDOFF.md`. See "Pass 2: what was built"
-below and `docs/events/PROGRESS.md` for the evidence record; `docs/events/PHASE-2-HANDOFF.md` is the (now historical) Pass 2 brief.
+Pass 2 is "implemented, owner-smoke-tested, not verified against the live backend".
+
+**Pass 3 checkpoint (2026-10-24):** P3-01 through P3-03 are complete on the dedicated `feat/events-pass3`
+branch. P3-04 (resource viewing and edit/delete cache consistency) is implemented on that branch; the owner
+must run local validation before it is accepted. P3-05 and later tasks have not started. The full scope,
+task order, decisions and acceptance criteria remain in `docs/events/PHASE-3-HANDOFF.md`. See
+`docs/events/PROGRESS.md` for the evidence record; `docs/events/PHASE-2-HANDOFF.md` is the historical Pass 2 brief.
 
 Pass 1 scope: nearby discovery (`/events`) and My Events (`/events/my-events`).
 Pass 2 scope: see "Pass 2: what was built". Guests, join/leave, links and documents management,

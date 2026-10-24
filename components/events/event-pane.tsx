@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { useEventDetails } from "@/hooks/events/use-event-details"
+import { useEventResources } from "@/hooks/events/use-event-resources"
 import { useEventSelection } from "@/hooks/events/use-event-selection"
 import type { EventFullDetails } from "@/types/events/api"
 import { CalendarX2, ChevronLeft, LinkIcon, ShieldAlert, WifiOff, X } from "lucide-react"
@@ -125,6 +126,7 @@ function useEventScreen(eventId: string) {
 
 function EventView({ eventId }: { eventId: string }) {
 	const { details, isHost, selection, go, setTab, close, blocker } = useEventScreen(eventId)
+	const resourcesQuery = useEventResources(eventId, details?.kind === "full")
 
 	useEffect(() => {
 		if (details?.kind === "preview" && selection.mode === "view" && selection.tab !== "details") {
@@ -144,6 +146,13 @@ function EventView({ eventId }: { eventId: string }) {
 						onDeleted={close}
 						tab={selection.mode === "view" ? selection.tab : "details"}
 						onTabChange={setTab}
+						resourcesState={{
+							data: resourcesQuery.data,
+							isLoading: resourcesQuery.isLoading,
+							isError: resourcesQuery.isError,
+							error: resourcesQuery.error,
+							onRetry: () => void resourcesQuery.refetch(),
+						}}
 					/>
 				))}
 		</PaneFrame>

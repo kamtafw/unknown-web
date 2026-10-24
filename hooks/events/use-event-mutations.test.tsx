@@ -81,7 +81,9 @@ describe("useUpdateEvent", () => {
 		await act(() => result.current.mutateAsync({ submission }))
 		expect(client.getQueryData<EventDetails>(eventKeys.detail(7, 2, ID))?.name).toBe("B")
 		expect(updateEvent).toHaveBeenCalledWith(ID, submission, { onProgress: undefined })
-		expect(spy).toHaveBeenCalledTimes(2)
+		expect(spy).toHaveBeenCalledTimes(3)
+		const keys = spy.mock.calls.map((call) => (call[0] as { queryKey: unknown[] }).queryKey)
+		expect(keys).toContainEqual(eventKeys.resources(7, 2, ID))
 	})
 
 	it("asks the server again when the response body was unreadable", async () => {
@@ -99,20 +101,28 @@ describe("useDeleteEvent", () => {
 		deleteEvent.mockResolvedValue(undefined)
 		client.setQueryData(eventKeys.detail(7, 2, ID), created)
 		client.setQueryData(eventKeys.rsvp(7, 2, ID), "going")
+		client.setQueryData(eventKeys.resources(7, 2, ID), { links: [], documents: [] })
+		client.setQueryData(eventKeys.comments(7, 2, ID), { comments: [], page: 1, hasNext: false })
+		client.setQueryData(eventKeys.guests(7, 2, ID), { guests: [], page: 1, hasNext: false })
 		const spy = vi.spyOn(client, "invalidateQueries")
 		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
 		await act(() => result.current.mutateAsync())
 		expect(client.getQueryData(eventKeys.detail(7, 2, ID))).toBeUndefined()
 		expect(client.getQueryData(eventKeys.rsvp(7, 2, ID))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.resources(7, 2, ID))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.comments(7, 2, ID))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.guests(7, 2, ID))).toBeUndefined()
 		expect(spy).toHaveBeenCalledTimes(2)
 	})
 
 	it("also cleans up when the event is already gone (404)", async () => {
 		deleteEvent.mockRejectedValue(err(404))
 		client.setQueryData(eventKeys.detail(7, 2, ID), created)
+		client.setQueryData(eventKeys.resources(7, 2, ID), { links: [], documents: [] })
 		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
 		await act(async () => { await result.current.mutateAsync().catch(() => {}) })
 		expect(client.getQueryData(eventKeys.detail(7, 2, ID))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.resources(7, 2, ID))).toBeUndefined()
 	})
 
 	it("keeps the event when the delete is refused (live, or not a host)", async () => {

@@ -2,12 +2,13 @@
 
 import { formatEventSchedule } from "@/lib/events/format"
 import type { EventTab } from "@/lib/events/selection"
-import type { EventDetails, EventFullDetails, EventHost, EventPrivacy } from "@/types/events/api"
+import type { EventDetails, EventFullDetails, EventHost, EventPrivacy, EventResources } from "@/types/events/api"
 import { CalendarDays, Clock, EyeOff, Lock, MapPin, Pencil, Radio } from "lucide-react"
 import Image from "next/image"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { secondaryButton } from "./event-list"
 import { RsvpControl } from "./rsvp-control"
+import { EventResourcesSection } from "./event-resources-section"
 
 const PRIVACY_LABEL: Record<EventPrivacy, string> = {
 	public: "Public",
@@ -83,6 +84,7 @@ export function EventDetailsView({
 	onDeleted,
 	tab = "details",
 	onTabChange = () => {},
+	resourcesState,
 }: {
 	details: EventDetails
 	isHost: boolean
@@ -90,6 +92,13 @@ export function EventDetailsView({
 	onDeleted: () => void
 	tab?: EventTab
 	onTabChange?: (tab: EventTab) => void
+	resourcesState?: {
+		data: EventResources | undefined
+		isLoading: boolean
+		isError: boolean
+		error: unknown
+		onRetry: () => void
+	}
 }) {
 	const full: EventFullDetails | null = details.kind === "full" ? details : null
 	const schedule = formatEventSchedule(details)
@@ -130,8 +139,25 @@ export function EventDetailsView({
 
 			{full && activeTab !== "details" ? (
 				<section id={`event-panel-${activeTab}`} role="tabpanel" aria-labelledby={`event-tab-${activeTab}`} className="min-h-40 py-4">
-					<h2 className="text-base font-bold text-foreground">{tabLabels[activeTab]}</h2>
-					<p className="mt-2 text-sm text-muted-foreground">This section will be available in a later step.</p>
+					{activeTab === "resources" && resourcesState ? (
+						<>
+							<h2 className="text-base font-bold text-foreground">{tabLabels[activeTab]}</h2>
+							<EventResourcesSection
+								resources={resourcesState.data}
+								isLoading={resourcesState.isLoading}
+								isError={resourcesState.isError}
+								error={resourcesState.error}
+								isHost={isHost}
+								onEdit={onEdit}
+								onRetry={resourcesState.onRetry}
+							/>
+						</>
+					) : (
+						<>
+							<h2 className="text-base font-bold text-foreground">{tabLabels[activeTab]}</h2>
+							<p className="mt-2 text-sm text-muted-foreground">This section will be available in a later step.</p>
+						</>
+					)}
 				</section>
 			) : (
 			<section id="event-panel-details" role={full ? "tabpanel" : undefined} aria-labelledby={full ? "event-tab-details" : undefined} className="flex flex-col gap-5">
