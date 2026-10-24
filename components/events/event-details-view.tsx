@@ -69,13 +69,13 @@ function HostRow({ host }: { host: EventHost }) {
 /**
  * One event, full or restricted preview. The two are different shapes, not one with blanks: a
  * preview never shows hosts, resources or host controls, and its missing fields are "not
- * disclosed", not "empty". Links and documents are not displayed here at all (viewing them is
- * Pass 3); the full shape only carries them so a host can edit them.
+ * disclosed", not "empty". Links and documents are read through the
+ * permission-gated resources query; the full details fields remain the source for the existing
+ * host edit form.
  *
  * Joining, guests and comments are later passes, so a live event only gets a "Live now" mark
- * and a note. Full-access section navigation is URL-backed; section bodies are placeholders until
- * their read-side tasks are implemented. Host controls are shown by a UUID match and the server
- * stays authoritative.
+ * and a note. Full-access section navigation is URL-backed; comments and guests remain placeholders.
+ * Host controls are shown by a UUID match and the server stays authoritative.
  */
 export function EventDetailsView({
 	details,
