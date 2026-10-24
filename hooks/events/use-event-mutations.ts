@@ -2,6 +2,7 @@
 
 import { eventsApi } from "@/lib/events/api"
 import { describeEventError } from "@/lib/events/errors"
+import { invalidateEventSubResources, removeEventSubResources } from "@/lib/events/cache"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import type { EventDetails, EventSubmission } from "@/types/events/api"
@@ -72,6 +73,8 @@ export function useUpdateEvent(eventId: string) {
 			if (updated) client.setQueryData<EventDetails>(key, updated)
 			// an unreadable 200 leaves the cache stale, so ask the server instead of guessing
 			else void client.invalidateQueries({ queryKey: key })
+			// links and documents are written only through this form, so the section must refetch
+			void invalidateEventSubResources(client, accountId, sessionGeneration, eventId, ["resources"])
 			invalidateLists(client)
 		},
 	})
@@ -91,6 +94,7 @@ export function useDeleteEvent(eventId: string) {
 	const forget = () => {
 		client.removeQueries({ queryKey: eventKeys.detail(accountId, sessionGeneration, eventId) })
 		client.removeQueries({ queryKey: eventKeys.rsvp(accountId, sessionGeneration, eventId) })
+		removeEventSubResources(client, accountId, sessionGeneration, eventId)
 		invalidateLists(client)
 	}
 
