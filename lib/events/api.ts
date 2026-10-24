@@ -12,6 +12,9 @@ import type { ApiResponse } from "@/types/api"
 import type {
 	Coordinates,
 	EventDetails,
+	EventCommentsPage,
+	EventGuestsPage,
+	EventResources,
 	EventRsvpStatus,
 	EventsPage,
 	EventSubmission,
@@ -19,15 +22,17 @@ import type {
 } from "@/types/events/api"
 import { apiClient } from "../axios"
 import { EVENT_UPLOAD_TIMEOUT_MS } from "./constants"
-import { normalizeEventDetails, normalizeListData, normalizeNearbyData, normalizeRsvpResult } from "./normalize"
+import {
+	normalizeEventCommentsPage,
+	normalizeEventDetails,
+	normalizeEventGuestsPage,
+	normalizeEventResources,
+	normalizeListData,
+	normalizeNearbyData,
+	normalizeRsvpResult,
+} from "./normalize"
 
-/** a 2xx response whose body is not an event the app can read */
-export class EventPayloadError extends Error {
-	constructor() {
-		super("The event response could not be read")
-		this.name = "EventPayloadError"
-	}
-}
+export { EventPayloadError } from "./normalize"
 
 export interface WriteOptions {
 	/** upload progress 0..1, multipart only */
@@ -100,6 +105,35 @@ export const eventsApi = {
 	 * Details for one event: a full event or a restricted preview (both HTTP 200). The
 	 * normaliser decides which; a malformed body throws instead of becoming an empty event.
 	 */
+	getEventResources: async (eventId: string, signal?: AbortSignal): Promise<EventResources> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/resources`, { signal })
+		return normalizeEventResources(res.data?.data)
+	},
+
+	getEventCommentsPage: async (
+		eventId: string,
+		params: { page: number; limit: number },
+		signal?: AbortSignal,
+	): Promise<EventCommentsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/comments`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		return normalizeEventCommentsPage(res.data?.data, params.page)
+	},
+
+	getEventGuestsPage: async (
+		eventId: string,
+		params: { page: number; limit: number },
+		signal?: AbortSignal,
+	): Promise<EventGuestsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/guests`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		return normalizeEventGuestsPage(res.data?.data, params.page)
+	},
+
 	getEventDetails: async (eventId: string, signal?: AbortSignal): Promise<EventDetails> => {
 		const res = await apiClient.get<ApiResponse<unknown>>(eventPath(eventId), { signal })
 		const details = normalizeEventDetails(res.data.data)

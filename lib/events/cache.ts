@@ -29,3 +29,28 @@ export function findCachedRsvp(
 	}
 	return null
 }
+
+
+/** Remove every cached sub-resource page for this event across accounts and login sessions. */
+export function removeEventSubresourceQueries(client: QueryClient, eventId: string): void {
+	const roots = new Set(["resources", "comments", "guests"])
+	client.removeQueries({
+		predicate: (query) => {
+			const key = query.queryKey
+			return key[0] === "events" && typeof key[1] === "string" &&
+				roots.has(key[1]) && key[4] === eventId
+		},
+	})
+}
+
+/** Invalidate all cached sub-resource pages for an event without removing loaded data. */
+export function invalidateEventSubresourceQueries(client: QueryClient, eventId: string): Promise<void> {
+	const roots = new Set(["resources", "comments", "guests"])
+	return client.invalidateQueries({
+		predicate: (query) => {
+			const key = query.queryKey
+			return key[0] === "events" && typeof key[1] === "string" &&
+				roots.has(key[1]) && key[4] === eventId
+		},
+	})
+}
