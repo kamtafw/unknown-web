@@ -1,5 +1,5 @@
 /**
- * Centralized Events query-key registry (Phase 1: discovery + My Events only).
+ * Centralized Events query-key registry.
  *
  * Every key that holds user-visible data is scoped by the authenticated
  * account (`pkid`) AND the in-memory `sessionGeneration` from auth-store, the
@@ -10,8 +10,6 @@
  *
  * Infinite queries carry the page as `pageParam`, so `page` is not in the key;
  * the scope (coordinates, radius, limit, search) is.
- *
- * Pass 2 adds details and the viewer's RSVP. Guests / comments keys belong to Pass 3.
  */
 
 import type { Coordinates } from "@/types/events/api"
@@ -65,6 +63,41 @@ export const eventKeys = {
 	rsvpRoot: () => [...eventKeys.all, "rsvp"] as const,
 	rsvp: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
 		[...eventKeys.rsvpRoot(), accountId, sessionGeneration, eventId] as const,
+
+	/** links and documents; no pagination */
+	resourcesRoot: () => [...eventKeys.all, "resources"] as const,
+	resources: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.resourcesRoot(), accountId, sessionGeneration, eventId] as const,
+
+	/** infinite; the page is the `pageParam`, so only the page size is in the key */
+	commentsRoot: () => [...eventKeys.all, "comments"] as const,
+	comments: (
+		accountId: number | null,
+		sessionGeneration: number | null,
+		eventId: string,
+		limit: number,
+	) => [...eventKeys.commentsRoot(), accountId, sessionGeneration, eventId, { limit }] as const,
+
+	/** infinite; the page is the `pageParam` */
+	guestsRoot: () => [...eventKeys.all, "guests"] as const,
+	guests: (
+		accountId: number | null,
+		sessionGeneration: number | null,
+		eventId: string,
+		limit: number,
+	) => [...eventKeys.guestsRoot(), accountId, sessionGeneration, eventId, { limit }] as const,
+}
+
+/** the per-event Pass 3 roots, for cache helpers that act on all of them */
+export const eventSubResourceRoots = [
+	eventKeys.resourcesRoot(),
+	eventKeys.commentsRoot(),
+	eventKeys.guestsRoot(),
+] as const
+
+/** the event id of a per-event key (`[events, root, account, session, eventId, …]`) */
+export function keyEventId(key: readonly unknown[]): string | null {
+	return typeof key[4] === "string" ? key[4] : null
 }
 
 /** do the account + session slots (positions 2 and 3 of every scoped key) match? */
