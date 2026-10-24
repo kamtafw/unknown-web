@@ -95,3 +95,22 @@ describe("keyBelongsTo", () => {
 		expect(keyBelongsTo(eventKeys.detail(null, 0, "e"), null, 0)).toBe(false)
 	})
 })
+
+
+describe("removeEventSubresourceQueries", () => {
+	it("removes resource, comment and guest caches for the event across sessions only", async () => {
+		const { removeEventSubresourceQueries } = await import("./cache")
+		const client = new QueryClient()
+		client.setQueryData(eventKeys.resources(1, 0, "event-a"), { links: [] })
+		client.setQueryData(eventKeys.comments(1, 0, "event-a"), { pages: [] })
+		client.setQueryData(eventKeys.guests(2, 7, "event-a"), { pages: [] })
+		client.setQueryData(eventKeys.guests(1, 0, "event-b"), { pages: [] })
+		client.setQueryData(eventKeys.detail(1, 0, "event-a"), { id: "event-a" })
+		removeEventSubresourceQueries(client, "event-a")
+		expect(client.getQueryData(eventKeys.resources(1, 0, "event-a"))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.comments(1, 0, "event-a"))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.guests(2, 7, "event-a"))).toBeUndefined()
+		expect(client.getQueryData(eventKeys.guests(1, 0, "event-b"))).toEqual({ pages: [] })
+		expect(client.getQueryData(eventKeys.detail(1, 0, "event-a"))).toEqual({ id: "event-a" })
+	})
+})
