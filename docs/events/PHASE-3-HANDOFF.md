@@ -1,6 +1,6 @@
 # Events — Pass 3 handoff (participation, resources, discussions)
 
-**Status: planning only. No Pass 3 code exists.** Written 2026-10-22 on branch `feat/events-phase1` at `8849097`
+**Status (updated 2026-10-24): P3-01, P3-02 and P3-02a are complete; no Pass 3 UI, hook or write route exists yet; P3-03 is next and awaits authorization.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
 (Phase 2 implementation checkpoint `a96887b`; Phase 2 closed for delivery with verification deferred to QA). Those SHAs are the **historical authoring point**; the current Pass 3 starting point is in section 1.1.
 
 **Revision 2026-10-23:** D-1 (join/leave) and D-2 (guest addition) were investigated and resolved to explicit blockers (section 3.2 and section 7); comment authorization, comment length/refresh and Figma evidence labelling were corrected; the premature assumption-ID reference was removed (IDs are now assigned only when written); add-guest and join/leave are now gated tasks (P3-08B, P3-09). Still planning only: no Pass 3 code exists.
@@ -36,7 +36,7 @@ Predecessors: `PHASE-2-HANDOFF.md` (historical), `EVENTS.md` (assumptions A-n, i
 
 **Historical (when this handoff was first written, 2026-10-22):** branch `feat/events-phase1`, HEAD `8849097`, working tree clean [repo]. Phase 1 and Phase 2 commits are present. `a96887b` remains the Phase 2 implementation checkpoint.
 
-**Current Pass 3 starting point (verified 2026-10-23 from Git history):** `feat/events-phase1` advanced to `745b4c7` (adds this handoff, `f2165d0`, and a PROGRESS update) and was merged into `main` as `7044b18`; the application code is unchanged since `a96887b`. P3-01 was committed as `2880913` on branch `docs/events-p3-01-confirm-defaults` (cut from `main` `7044b18`), documentation only. Later documentation-only commits on that branch follow it; read the branch tip with `git log`. No Pass 3 code exists.
+**Current Pass 3 starting point (verified 2026-10-23 from Git history):** `feat/events-phase1` advanced to `745b4c7` (adds this handoff, `f2165d0`, and a PROGRESS update) and was merged into `main` as `7044b18`; the application code is unchanged since `a96887b`. P3-01 was committed as `2880913` on branch `docs/events-p3-01-confirm-defaults` (cut from `main` `7044b18`), documentation only. Later commits follow it on the branch `feat/events-p3-02-read-foundation`: documentation reconciliation `b035663`, P3-02 `2d46430` (read-side data layer) and P3-02a `f137303` (BFF minimisation). Read the branch tip with `git log`. No Pass 3 UI exists.
 
 Phase 2 test state last reported: Vitest 63 files / 834 tests, `tsc`, lint clean [reported]; production build and mocked-browser smoke tests passed [reported]. **Not re-run for this handoff.**
 
@@ -61,7 +61,7 @@ Naming collision to remember: the domain type `EventLink` (`{name,url}`) and the
 
 ### 1.3 What does **not** exist [repo]
 
-No guests, comments, resources, join or leave code of any kind: no BFF routes, API client methods, types, keys, hooks or components. No user-lookup for adding guests inside Events. No `tab` URL state.
+**At the Phase 2 checkpoint (historical):** no guests, comments, resources, join or leave code of any kind. **Since then (P3-02 `2d46430`, corrected by P3-02a `f137303`):** the read-side data layer exists (types, normalisers, keys, `eventsApi` read methods, three GET routes with BFF minimisation, a cache helper). **Still absent:** every hook and component, the `tab` URL state, write routes (remove guest, post comment), any user-lookup for adding guests, and all join/leave code.
 
 ---
 
@@ -291,7 +291,7 @@ Each item states the evidence, the decision or recommended default, its **status
 | **D-11** | Comment/author projection | Author has `pkid,id,photo,full_name,username,role,joined_at` | Keep comment `id`, `message`, `createdAt`; author `name`, `username`, `photo`, `role`. Drop the rest | **Default** | no |
 | **D-12** | Comment length and refresh | Guide §4.15: no explicit maximum for the comment field; create emits no socket event and the socket carries live comments only (§5.3, §6.2); live and event comments are independent stores | **Contract limitations, not web rules.** Length: the only enforced rule is the documented one (nonblank); the web adds **no character limit**, only the generic request-size guard the BFF already uses for JSON bodies (reported as "request too large", never as a comment-length rule); a product limit, if wanted, needs a product/backend decision. Refresh (**assumption**): initial load, refetch after the user's own post, and an explicit user-initiated refresh; no polling; the thread may be stale and the UI never presents it as live | **Resolved** as limitations plus one assumption; recorded in EV-030 | no |
 
-**P3-01 outcome (2026-10-23):** the Defaults D-7 to D-11 and the D-12 refresh policy were recorded in `EVENTS.md` as assumptions A-16 to A-21 (D-7 = A-16, D-8 = A-17, D-9 = A-18, D-10 = A-19, D-11 = A-20, D-12 refresh = A-21), plus A-22 for UI with no design seen; the table above is otherwise unchanged. D-1 stays resolved as a deferral pending the owner's roadmap clarification (EV-028); D-2 stays blocked (EV-027). The status "Default" above is superseded by "Assumed (A-n)" in `EVENTS.md`, not by an owner acceptance.
+**P3-01 outcome (2026-10-23):** the Defaults D-7 to D-11 and the D-12 refresh policy were recorded in `EVENTS.md` as assumptions A-16 to A-21 (D-7 = A-16, D-8 = A-17, D-9 = A-18, D-10 = A-19, D-11 = A-20, D-12 refresh = A-21), plus A-22 for UI with no design seen; the table above is otherwise unchanged. D-1 stays resolved as a deferral pending the owner's roadmap clarification (EV-028); D-2 stays blocked (EV-027). The status "Default" above is superseded in `EVENTS.md`: "Assumed (A-n)" for D-7, D-9, D-10 and the D-12 refresh, and **accepted by the owner on 2026-10-24** for D-8 (A-17) and D-11 (A-20).
 
 ### 7.1 D-2: candidate user-selection mechanisms (evidence)
 
@@ -360,7 +360,7 @@ Tasks use "files" only where the repo establishes them; proposed names are marke
 ### P3-02 — Read-side foundation (no UI)
 - **Objective:** the data layer for resources, comments and guests: types, normalisers, query keys, BFF GET routes, API client methods and an invalidation helper.
 - **Scope:** `types/events/api.ts`; `lib/events/normalize.ts` (new normalisers for resources, a comments page, a guests page with the D-8/D-11 projections; `EventPayloadError` on unreadable bodies; http(s)-only links; `resolveMediaUrl` for documents; pagination `hasNext` from `next`); `lib/events/query-keys.ts` (resources/comments/guests roots, account + session scoped); `lib/events/api.ts`; three GET route handlers (proposed `app/api/events/[eventId]/{resources,comments,guests}/route.ts`) that pin/clamp `page` and `limit` with the existing parsing, validate the id and forward only those; `lib/events/errors.ts` additions only if a case is missing; a small `lib/events/cache.ts` helper that removes/invalidates all sub-resource keys for an event (used by later tasks).
-- **Dependencies:** owner acceptance of D-8 and D-11. **Status after P3-01 (2026-10-23): outstanding.** P3-01 recorded them as working assumptions A-17 and A-20 (status "assumed") in `EVENTS.md`; the owner has not yet explicitly accepted or changed them. P3-02 starts only after that acceptance and an explicit authorization.
+- **Dependencies:** owner acceptance of D-8 and D-11. **Status: met on 2026-10-24.** The owner accepted D-8/A-17 and D-11/A-20 as worded in `EVENTS.md`. P3-02 is complete (`2d46430`) and was corrected by P3-02a (`f137303`): by owner decision the BFF also removes the unapproved fields, so they never reach the browser.
 - **Acceptance:**
   - Each route: 401 without a session and no upstream call; malformed id → the normal 404 envelope without upstream; forwards the bearer token and only `page`/`limit`; passes upstream 403/404 through; a non-JSON upstream body does not crash.
   - Normalisers: resources keep only the whitelisted fields, drop links whose URL is not http(s) and documents with no usable URL, never read `data.event` as an id, never expose `date_added`; comments keep only id, message, createdAt and the projected author; guests keep only the D-8 fields; none retains email/phone or `rsvp_status`; a malformed body throws `EventPayloadError`, an empty array is an empty list.
@@ -537,4 +537,4 @@ Pass 3 is complete only when all are true, or the gap is listed in the final rep
 
 ## 12. Recommended first task
 
-**P3-01 is complete** (commit `2880913`; assumptions A-16 to A-22 and the decision table are in `EVENTS.md`). **P3-02 (read-side foundation)** is next but **not yet startable**: it needs the owner's explicit acceptance of the D-8 and D-11 projections (recorded as A-17 and A-20, status assumed) and an explicit authorization. Nothing it builds waits for D-1 or D-2, and neither blocks P3-02 to P3-08A.
+**P3-01, P3-02 and P3-02a are complete** (`2880913`, `2d46430`, `f137303`). **P3-03 (details pane sections and navigation)** is next and needs the owner's explicit authorization; it fetches nothing. Neither D-1 nor D-2 blocks P3-03 to P3-08A.

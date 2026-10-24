@@ -3,14 +3,16 @@
  *
  * These are the shapes that enter the query cache and the UI. They are produced
  * only by lib/events/normalize.ts, which copies a fixed whitelist of backend
- * fields — host email/phone, guests, links and documents (returned by the backend
- * even for restricted events) are never represented here. See docs/events/EVENTS.md (EV-001).
+ * fields — on an event card, host email/phone, guests, links and documents (returned by the
+ * backend even for restricted events) are never represented. See docs/events/EVENTS.md (EV-001).
  *
  * Wire shapes are deliberately not typed: normalize.ts reads them as `unknown`
  * so a contract drift degrades to "event skipped" instead of a runtime crash.
  *
  * Pass 2 adds event details (full vs restricted preview), RSVP and the create/edit
- * form model. Guests, comments, join/leave and live types belong to later passes.
+ * form model. Pass 3 (P3-02) adds the read-side resources, comments and guests types at the end
+ * of this file, each projected to a minimal field set (A-17, A-18, A-20). Join/leave and live
+ * types belong to later passes.
  */
 
 export type EventPrivacy = "public" | "private" | "friends"
@@ -118,7 +120,8 @@ interface EventDetailsBase {
 /**
  * Full access (host, online guest, or a public unlocked event). Host contact data
  * and guests are never retained. Links/documents are kept only so a host can edit
- * them; viewing them is Pass 3.
+ * them; the Links and docs section reads them from the resources endpoint instead
+ * (`EventResources`, Pass 3).
  */
 export interface EventFullDetails extends EventDetailsBase {
 	kind: "full"

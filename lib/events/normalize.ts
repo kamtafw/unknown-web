@@ -27,8 +27,10 @@ import { isValidCoordinates } from "./location"
 /**
  * Backend → app boundary. This is the ONLY place raw event objects are read,
  * and it copies a fixed whitelist of fields. Restricted-event data the backend
- * also returns (host email/phone, guests, links, documents) is never copied, so
- * it can never reach a cache, a component or a log.
+ * also returns (host email/phone, guests, links, documents) is never copied into an
+ * event card, so it can never reach a cache, a component or a log. The Pass 3 readers at
+ * the end of this file (resources, comments, guests) apply their own whitelists (A-17,
+ * A-18, A-20); the BFF has already minimised those bodies (P3-02a).
  */
 
 const PRIVACY = new Set<string>(["public", "private", "friends"])
