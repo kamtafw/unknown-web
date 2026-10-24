@@ -65,6 +65,16 @@ export const eventKeys = {
 	rsvpRoot: () => [...eventKeys.all, "rsvp"] as const,
 	rsvp: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
 		[...eventKeys.rsvpRoot(), accountId, sessionGeneration, eventId] as const,
+
+	resourcesRoot: () => [...eventKeys.all, "resources"] as const,
+	resources: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.resourcesRoot(), accountId, sessionGeneration, eventId] as const,
+	commentsRoot: () => [...eventKeys.all, "comments"] as const,
+	comments: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.commentsRoot(), accountId, sessionGeneration, eventId] as const,
+	guestsRoot: () => [...eventKeys.all, "guests"] as const,
+	guests: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.guestsRoot(), accountId, sessionGeneration, eventId] as const,
 }
 
 /** do the account + session slots (positions 2 and 3 of every scoped key) match? */

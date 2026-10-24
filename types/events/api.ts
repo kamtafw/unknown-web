@@ -198,3 +198,36 @@ export interface EventFormInitial {
 export type EventSubmission =
 	| { kind: "json"; body: Record<string, unknown> }
 	| { kind: "multipart"; body: FormData }
+
+
+/* Pass 3 read-side projections for event resources, comments and guests. */
+export interface EventResourceLink { name: string; url: string }
+export interface EventResourceDocument {
+	name: string
+	url: string
+	size: string | null
+	fileType: string | null
+	dateUploaded: string | null
+}
+export interface EventResources { links: EventResourceLink[]; documents: EventResourceDocument[] }
+export interface EventCommentAuthor {
+	name: string
+	username: string
+	photo: string | null
+	role: "host" | "guest"
+}
+export interface EventComment {
+	id: string
+	message: string
+	createdAt: string
+	author: EventCommentAuthor
+}
+export interface EventCommentsPage { comments: EventComment[]; page: number; hasNext: boolean }
+export interface EventGuest {
+	userId: number
+	name: string
+	username: string
+	photo: string | null
+	role: "host" | "guest"
+}
+export interface EventGuestsPage { guests: EventGuest[]; page: number; hasNext: boolean }
