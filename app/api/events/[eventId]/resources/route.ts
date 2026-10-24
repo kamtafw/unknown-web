@@ -1,8 +1,7 @@
 import { getAccessToken } from "@/lib/cookies"
-import { eventNotFound, unauthenticated } from "@/lib/events/bff"
-import { isEventId } from "@/lib/events/server"
+import { eventNotFound, fetchSanitizedGet, unauthenticated } from "@/lib/events/bff"
+import { isEventId, sanitizeResourcesPayload } from "@/lib/events/server"
 import { DJANGO_API_URL } from "@/lib/server-config"
-import { proxyJson } from "@/lib/server-fetch"
 import { NextRequest } from "next/server"
 
 type Ctx = { params: Promise<{ eventId: string }> }
@@ -19,8 +18,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 	const { eventId } = await params
 	if (!isEventId(eventId)) return eventNotFound()
 
-	return proxyJson(`${DJANGO_API_URL}/events/${eventId}/resources`, {
-		headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-		cache: "no-store",
-	})
+	return fetchSanitizedGet(
+		`${DJANGO_API_URL}/events/${eventId}/resources`,
+		token,
+		sanitizeResourcesPayload,
+	)
 }

@@ -117,3 +117,28 @@ export async function forwardEventWrite(
 	}
 	return NextResponse.json(result.json, { status: result.status })
 }
+
+/**
+ * Authenticated GET whose successful body is minimised before it reaches the browser (Pass 3
+ * read side). Upstream errors (403, 404, …) pass through with their own status and body. A 2xx
+ * body the sanitiser cannot read as the documented shape, or any other status, is answered with a
+ * controlled 502: nothing unvetted is forwarded.
+ */
+export async function fetchSanitizedGet(
+	url: string,
+	accessToken: string,
+	sanitize: (json: unknown) => unknown | null,
+): Promise<NextResponse> {
+	const result = await fetchOrError(url, {
+		headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+		cache: "no-store",
+	})
+	if (!result.ok) return result.response
+	if (result.status >= 400) return NextResponse.json(result.json, { status: result.status })
+
+	const clean = result.status >= 200 && result.status < 300 ? sanitize(result.json) : null
+	if (clean === null) {
+		return envelope(502, "Upstream returned an unexpected response", "invalid_upstream_response")
+	}
+	return NextResponse.json(clean, { status: result.status })
+}

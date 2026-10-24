@@ -83,7 +83,7 @@ The `components/events/form/*` fields have no test files of their own; they are 
 
 ## G. Next pass
 
-**Planning status (revised 2026-10-23): Pass 3 is planned, not started.** The complete scope, task plan (P3-01 to P3-10, with P3-08A/B), decisions (D-1 to D-12) and completion checklist are in `docs/events/PHASE-3-HANDOFF.md`; the Pass 3 issues are EV-026 to EV-030 in `EVENTS.md`. No Pass 3 code exists. Decisions made on 2026-10-23 from the documented contract and repo evidence:
+**Planning status (revised 2026-10-23; see the 2026-10-24 checkpoint below): Pass 3 was planned, not started.** The complete scope, task plan (P3-01 to P3-10, with P3-08A/B), decisions (D-1 to D-12) and completion checklist are in `docs/events/PHASE-3-HANDOFF.md`; the Pass 3 issues are EV-026 to EV-030 in `EVENTS.md`. No Pass 3 code exists. Decisions made on 2026-10-23 from the documented contract and repo evidence:
 
 - **D-1 (join/leave): resolved to a blocker.** `join` is live-session admission (needs `is_live`) and `leave` is live-coupled; neither is a genuine event-level membership operation, so both stay out of Pass 3 and belong to Pass 4B. P3-09 is blocked with explicit prerequisites; the roadmap line that lists them under Pass 3 needs the owner's explicit clarification (EV-028).
 - **D-2 (guest addition): blocked.** No existing user-selection mechanism is confirmed suitable (the Messenger lookup is chat-coupled and undocumented for this use); no Events search endpoint is invented. Guest list and remove guest proceed; add guest (P3-08B) waits for an owner/backend decision (EV-027).
