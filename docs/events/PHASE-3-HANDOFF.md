@@ -1,6 +1,6 @@
 # Events — Pass 3 handoff (participation, resources, discussions)
 
-**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is owner-accepted; P3-06 (posting a comment, the first Pass 3 write route) is owner-accepted; P3-07 (read-only guest list, `6e2c365`) is owner-accepted; P3-08A (host-only remove guest, branch `feat/events-p3-08a-remove-guest`) is implemented and awaits owner review (guide-derived, not live-verified; "Guest not found" 404 matched on message text). P3-08B (D-2 open), P3-09 and P3-10 are not started. Pass 3 is not complete.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
+**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is owner-accepted; P3-06 (posting a comment, the first Pass 3 write route) is owner-accepted; P3-07 (read-only guest list, `6e2c365`) is owner-accepted; P3-08A (host-only remove guest, `55d94e7`) is owner-accepted. The P3-08B **discovery gate** (2026-10-25, branch `feat/events-p3-08b-discovery-gate`, docs only) found no documented, suitable user-selection mechanism: **D-2 stays blocked and P3-08B is not implemented** (section 7.2). P3-09 and P3-10 are not started. Pass 3 is not complete.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
 (Phase 2 implementation checkpoint `a96887b`; Phase 2 closed for delivery with verification deferred to QA). Those SHAs are the **historical authoring point**; the current Pass 3 starting point is in section 1.1.
 
 **Revision 2026-10-23:** D-1 (join/leave) and D-2 (guest addition) were investigated and resolved to explicit blockers (section 3.2 and section 7); comment authorization, comment length/refresh and Figma evidence labelling were corrected; the premature assumption-ID reference was removed (IDs are now assigned only when written); add-guest and join/leave are now gated tasks (P3-08B, P3-09). Still planning only: no Pass 3 code exists.
@@ -313,6 +313,27 @@ The backend side of `guests/add` checks only that the target user exists and has
 **Can be implemented before that decision:** the guest read layer (P3-02), the guest list (P3-07) and **remove guest** (P3-08A: it needs only the `user_id` already present in the list). **Must wait:** P3-08B (add guest: user picker, the lookup, the `guests/add` route, hook and UI).
 
 **Permission boundary (unchanged by the decision):** add and remove are host-only on the server (403 "Only event hosts can add/remove guests"). The UI offers them only when `isHost` (a hint; hiding is not security), the BFF validates the id and forwards, and the server's 403 is explained, never bypassed.
+
+### 7.2 D-2 discovery gate (P3-08B discovery task, 2026-10-25): outcome B, D-2 stays blocked
+
+Re-inspected the actual repository at `55d94e7` (P3-08A accepted by the owner) and the backend guide; nothing in section 7.1 was assumed. **No code was written**: no add-guest route, API method, hook, picker or UI exists, and none was added.
+
+| Candidate | Route and source | Contract documented? | Suitable for choosing event guests? | What is missing |
+| --- | --- | --- | --- | --- |
+| Messenger lookup | `GET chats/users?page=1&limit=20&search=` via `app/api/chats/users/route.ts` (client `chatApi.searchUsers` in `lib/messenger/api.ts`, hook `hooks/messenger/use-search-users.ts`; consumed by `new-chat-dialog`, `create-group-dialog`, `add-group-members-dialog` and `forward-dialog`) | **No.** The route comment says "confirmed via mobile, not in the guide"; the shape is inferred from `ChatListItem` (`types/messenger/chat.ts`). Nothing in `docs/messenger/` states scope, discoverability or blocking rules | **No.** It is a chat-list view: `unread_count`, `last_message_preview`, `is_pinned`, `is_muted`, `is_blocked`, `has_blocked_me` come with `pkid`, name, username and photo. Page and limit are fixed (first 20 only). Reusing it would couple Events to chat state and to undocumented privacy rules | Who is searchable, how blocked users are treated, whether results beyond the first 20 exist, and written approval to project to `{pkid, name, username, photo}` |
+| Users list | `GET users/list?page=` via `app/api/users/list/route.ts` (`userApi.getUsersList`, `hooks/use-users.ts`) | **No** (typed as `FullUser` in code, no document) | **No.** Returns email, phone, date of birth, country and other profile data; no search term is used; its purpose and authorization are unknown | A search parameter, a minimal projection and a stated purpose |
+| Friend suggestions, followers, followings | `GET users/friend-suggestions` (`app/api/users/friend-suggestions/route.ts`) and the follower and following routes (`hooks/use-users.ts`) | **No** | **No.** Relationship lists with no search. Whether a host may invite people outside their follow graph is a product decision | A product decision on the invitee population |
+| Events guest list | `GET {id}/guests` (guide §4.12) | **Yes** | **No.** It lists only people who are already guests | n/a |
+| Events search for users | none | The guide lists no user-search endpoint for events (section 3 table, "not buildable") | n/a | n/a |
+
+Guide §4.13 (`POST {event_id}/guests/add`) is documented: host only, body `{user_id}` (numeric `pkid`), 201 "Guest added successfully." with empty `data`; 400 missing id or existing guest record (including an offline guest); 404 absent event or target user; 403 "Only event hosts can add guests." It checks only that the target exists and is not already a guest, so **no server rule limits whom a host can add** (no block, friendship or discoverability check). The documented write is therefore ready; the missing piece is a source of `pkid` values.
+
+**Outcome B. D-2 remains Blocked and P3-08B remains gated.** None of the candidates is documented, and none can be approved from repository evidence alone. This is a privacy decision (who may a host add without consent) as much as an engineering one.
+
+**Minimum decision to unblock (owner/backend), any one of:** (a) approve a **named existing mechanism**, with its contract documented in writing (who is discoverable, blocked-user handling, returned fields, pagination or result cap) and approval to project results to `{pkid, name, username, photo}`; if that is `chats/users`, it must also be accepted that the Events picker would depend on a Messenger endpoint; (b) approve a **separate Events-appropriate invitee search** as backend work, documented in the guide; or (c) **defer web guest addition** (hosts add guests from other clients) and record that in `EVENTS.md`, which closes P3-08B as deferred. Until then Pass 3 can proceed with P3-09 (gated on D-1) and P3-10 as their own prerequisites allow.
+
+**Not verified:** nothing here was run against a live backend; the 400/403/404 behaviour of `guests/add` is guide-derived.
+
 
 ### 7.2 Uncertainties and issues
 
