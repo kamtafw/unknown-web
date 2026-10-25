@@ -292,3 +292,20 @@ describe("eventsApi.postEventComment (P3-06)", () => {
 		await expect(eventsApi.postEventComment(ID, "hi")).rejects.toBe(failure)
 	})
 })
+
+describe("eventsApi.removeEventGuest (P3-08A)", () => {
+	it("posts only user_id to the BFF guests/remove route and returns nothing", async () => {
+		postMock.mockResolvedValue({ data: { data: {} } })
+		const result = await eventsApi.removeEventGuest(ID, 42)
+		expect(postMock.mock.calls[0][0]).toBe(`/api/events/${ID}/guests/remove`)
+		expect(postMock.mock.calls[0][1]).toEqual({ user_id: 42 })
+		expect(result).toBeUndefined()
+	})
+
+	it("encodes the event id and lets a rejection through", async () => {
+		const failure = Object.assign(new Error("x"), { response: { status: 403 } })
+		postMock.mockRejectedValue(failure)
+		await expect(eventsApi.removeEventGuest("a/b", 1)).rejects.toBe(failure)
+		expect(postMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/guests/remove")
+	})
+})
