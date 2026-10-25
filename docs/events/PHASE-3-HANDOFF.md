@@ -1,6 +1,6 @@
 # Events — Pass 3 handoff (participation, resources, discussions)
 
-**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is owner-accepted; P3-06 (posting a comment, the first Pass 3 write route) is owner-accepted; P3-07 (read-only guest list, `6e2c365`) is owner-accepted; P3-08A (host-only remove guest, `55d94e7`) is owner-accepted. The P3-08B **discovery gate** (2026-10-25, branch `feat/events-p3-08b-discovery-gate`, docs only) found no documented, suitable user-selection mechanism, and **the owner decided to defer web guest addition: P3-08B is Deferred and is not implemented in this pass; D-2 stays unresolved for any future web guest-add** (sections 7.2 and 7.3). P3-09 and P3-10 are not started. Pass 3 is not complete.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
+**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is owner-accepted; P3-06 (posting a comment, the first Pass 3 write route) is owner-accepted; P3-07 (read-only guest list, `6e2c365`) is owner-accepted; P3-08A (host-only remove guest, `55d94e7`) is owner-accepted. The P3-08B **discovery gate** (2026-10-25, branch `feat/events-p3-08b-discovery-gate`, docs only) found no documented, suitable user-selection mechanism, and **the owner decided to defer web guest addition: P3-08B is Deferred and is not implemented in this pass; D-2 stays unresolved for any future web guest-add** (sections 7.2 and 7.3). **P3-09 (join and leave) is deferred to Pass 4 by owner decision (2026-10-25).** P3-10 (integration and acceptance) is implemented and awaits owner review (section 11.1). Pass 3 is **not** declared complete by this document: add guest and join/leave are deferred, not built.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
 (Phase 2 implementation checkpoint `a96887b`; Phase 2 closed for delivery with verification deferred to QA). Those SHAs are the **historical authoring point**; the current Pass 3 starting point is in section 1.1.
 
 **Revision 2026-10-23:** D-1 (join/leave) and D-2 (guest addition) were investigated and resolved to explicit blockers (section 3.2 and section 7); comment authorization, comment length/refresh and Figma evidence labelling were corrected; the premature assumption-ID reference was removed (IDs are now assigned only when written); add-guest and join/leave are now gated tasks (P3-08B, P3-09). Still planning only: no Pass 3 code exists.
@@ -175,7 +175,8 @@ Consequence (derived from the guide, **not verified live**): used outside a live
 - **Leave is not a Pass 3 operation** for the same reason (live-coupled, and capable of stranding a guest).
 - The genuine event-level membership operations the backend supports are the **guest list, host remove and host add**; those are Pass 3 (add gated on D-2).
 - Join, leave, passcode entry and session admission stay in **Pass 4B**.
-- The roadmap text lists "joining and leaving" under Pass 3. Reassigning them is a roadmap clarification that needs the owner's explicit instruction (EV-028), so P3-09 is kept as a **blocked** task with prerequisites rather than silently dropped.
+- The roadmap text lists "joining and leaving" under Pass 3. Reassigning them is a roadmap clarification that needs the owner's explicit instruction (EV-028), so P3-09 was kept as a **blocked** task with prerequisites rather than silently dropped.
+- **Owner decision (2026-10-25): P3-09 is deferred to Pass 4, to be handled alongside the WebSockets work.** This is the deferral of D-1 option (A) (the plan above named Pass 4B for admission; the owner placed it in Pass 4 with the realtime work). Nothing was built. The original scope, rationale and prerequisites above and in section 9 are kept unchanged for whoever takes it up: if Pass 4 reopens it, the prerequisites of P3-09 (a documented contract for who may call it, its non-live preconditions, and its effect on online state and live participation) are re-checked first.
 
 Smallest decision or backend change to unblock P3-09 (owner chooses one): **(A, default)** confirm the deferral to Pass 4B, no backend change; **(B)** the backend provides and documents an event-level, non-live way for a guest to be online (or to come back online after leaving), a capability to be named by the backend owner, not an endpoint invented here; **(C)** accept a leave-only Pass 3 task knowingly, with the stranding risk above (not recommended).
 
@@ -278,7 +279,7 @@ Each item states the evidence, the decision or recommended default, its **status
 
 | ID | Question | Evidence | Decision / default | Status | Blocks |
 | --- | --- | --- | --- | --- | --- |
-| **D-1** | Join/leave: Pass 3 membership or Pass 4B admission? | Section 3.2 [guide]: `join` needs `is_live`; `leave` is live-coupled and can strand a guest outside a live session; no non-live self-service membership exists | **Neither is a Pass 3 operation.** Pass 3 = guest list, host remove, host add (gated). Join, leave, passcode entry and session admission stay in Pass 4B | **Resolved**, with a roadmap clarification pending the owner's explicit instruction (EV-028) | P3-09 (blocked, see its prerequisites) |
+| **D-1** | Join/leave: Pass 3 membership or Pass 4B admission? | Section 3.2 [guide]: `join` needs `is_live`; `leave` is live-coupled and can strand a guest outside a live session; no non-live self-service membership exists | **Neither is a Pass 3 operation.** Pass 3 = guest list, host remove, host add (gated). Join, leave, passcode entry and session admission stay in Pass 4B | **Resolved.** Owner decision 2026-10-25: P3-09 (join and leave) is **Deferred to Pass 4** and will be handled alongside the WebSockets work; it is not implemented in Pass 3 and is **not** marked implemented or complete. (EV-028 closed) | P3-09 (Deferred to Pass 4) |
 | **D-2** | Where does a host find a user to add as a guest? | Section 7.1 [repo]: no candidate mechanism is documented or fit for this use | **No suitable mechanism confirmed.** Guest addition is a product/backend dependency. Owner decision 2026-10-25: web guest addition is **deferred** (section 7.3); the question stays open for any future implementation | **Unresolved; P3-08B Deferred** (owner decision) | P3-08B only |
 | **D-3** | Who can post event comments? | Create needs an **online guest row**; host status alone is insufficient (guide §4.15); the web has no reliable membership or online signal (EV-026) | **The backend is authoritative.** The frontend neither pre-checks nor infers comment authorization (not from host status, the guest list or online status), shows the composer to any full-access viewer, sends every submission, and handles rejection (404 "has not joined", 403, 400) while keeping the typed text | **Resolved** | no |
 | **D-4** | Replies, reactions, edit, delete for event comments? | Not in the contract | **Not built** | **Resolved** | no |
@@ -469,7 +470,8 @@ Tasks use "files" only where the repo establishes them; proposed names are marke
 - **Stop:** if any prerequisite fails, stop immediately and report which one (this is the expected outcome while D-2 is open). Otherwise stop when add works.
 - **Report:** common template plus the exact request/response of the approved source as used.
 
-### P3-09 — Event-level membership transitions (join / leave) — **BLOCKED; do not start**
+### P3-09 — Event-level membership transitions (join / leave) — **DEFERRED TO PASS 4 by owner decision (2026-10-25); do not start in Pass 3**
+- **Status:** not implemented and not complete. Deferred to be handled alongside the WebSockets work in Pass 4. The scope and prerequisites below are the original plan and stay as the record.
 - **Objective:** deliver only those event-level membership operations the **confirmed** contract genuinely supports, without live-session admission.
 - **Why blocked:** section 3.2. `join` is live-only admission; `leave` is live-coupled and can strand a guest outside a live session. There is no documented non-live self-service membership operation.
 - **Dependencies (prerequisites; all must hold, the session verifies each and stops if one fails):**
@@ -490,6 +492,7 @@ Tasks use "files" only where the repo establishes them; proposed names are marke
 - **Acceptance:** the section 11 checklist is satisfied, or each gap is listed as carried forward with its reason.
 - **Verification:** `npx vitest run` (full), `npx tsc --noEmit`, `npx next lint`, `npx next build` (**the sandbox cannot fetch Google Fonts, so a build there fails before compiling; if so, record "build not run here" and ask the owner to run it, as in Phase 2**), mocked-backend browser checks. Live-backend verification is **not** required and must not be claimed.
 - **Stop:** after the completion report. No Pass 4 work.
+- **Status (2026-10-25): implemented as a documentation and test-only task on branch `feat/events-p3-10-integration`; awaiting owner review.** See section 11.1 for the acceptance record.
 - **Report:** the final completion report described in section 11.
 
 ---
@@ -560,6 +563,44 @@ Pass 3 is complete only when all are true, or the gap is listed in the final rep
 **Final report must contain:** the checklist above with evidence per line; tests and checks run (separated: unit/component, tsc/lint, build, mocked browser, **live backend: not verified unless real evidence exists**); open issues and decisions; the QA list.
 
 **What may be carried forward transparently:** live-backend verification (every contract here is [guide]); production hosting/upload ceiling (EV-022); backend gaps (EV-001, EV-002, EV-025, EV-026); design fidelity gaps (EV-029); add guest and join/leave **only with a recorded owner decision**. **What may not:** unverified claims reported as verified, a missing state for a shipped feature, a restricted preview making sub-resource requests, or a task built on an unsupported assumption.
+
+### 11.1 P3-10 acceptance record (2026-10-25, branch `feat/events-p3-10-integration`, cut from `fe3d4d5`; awaiting owner review, not merged)
+
+Scope actually delivered: one new test file (`hooks/events/invalidation-matrix.integration.test.tsx`, 16 tests over the real mutation hooks and a mocked `eventsApi`), a mocked-backend browser walk-through (run for this task, not committed), grep checks, and this reconciliation. **No application code changed.** A mutation check confirmed the new test fails when the remove-guest hook stops invalidating comments.
+
+Status of the section 11 checklist (evidence is mocked or guide-derived; **nothing was verified against a live backend**):
+
+| Criterion | Status | Evidence |
+| --- | --- | --- |
+| Guest list (hosts and guests, search over loaded pages, pagination) | Met (mocked) | P3-07 tests; browser walk-through steps 4, 6, 7 |
+| Host remove guest with comment-deletion warning | Met (mocked) | P3-08A tests; walk-through: dialog text, cancel sends nothing, one POST on confirm, guest and their comment gone after refetch |
+| Add guest | **Deferred, owner decision** (D-2 unresolved) | Section 7.3; no `guests/add` code exists (grep) |
+| Join and leave | **Deferred to Pass 4, owner decision** (D-1, section 3.2) | No `join`, `leave`, socket or live code in Events code (grep, below) |
+| Links and documents | Met (mocked) | P3-04 tests; walk-through: metadata, `rel="noopener noreferrer"`, `&tab=resources` in the URL |
+| Comments read and post, composer not gated by inference | Met (mocked) | P3-05/P3-06 tests; walk-through: newest first, post then refetch shows the comment and clears the box |
+| Pane navigation deep-linkable; preview cannot reach restricted sections | Met (mocked) | P3-03 tests; walk-through: preview with `tab=guests` shows no tabs |
+| No sub-resource request for a restricted preview | Met | Component integration test and browser: the mock backend saw only `GET .../details` for the preview event |
+| Host-only controls only for hosts; server 403/404 handled | Met (mocked) | Walk-through: non-host sees no Remove; hook and dialog tests cover 403 and 404 |
+| D-8/D-11 whitelists, host contact data and details `guests` stripped | Met (mocked) | `lib/events/normalize.test.ts`, route tests |
+| No passcode handled by Pass 3 code | Met | Grep: passcode appears only in the Phase 2 form, validation and request builder; none in Pass 3 hooks, sections or routes |
+| Loading, empty, error with Retry, access-denied states | Met (mocked) | Per-task component tests; walk-through covered the 403 guest-list message |
+| Phase 2 create/edit/delete/RSVP unchanged; edits refresh resources; delete clears sub-resource caches | Met in unit tests; **not walked in a browser** | `use-event-mutations.test.tsx`, `use-event-rsvp.test.tsx`, new matrix test |
+| Phase 1 discovery and My events unchanged (25 km, no fallback, `filter=my_events`) | Met (mocked) | Existing tests; walk-through: nearby sent `radius_km=25`; every list call carried `filter=my_events`; no unfiltered list or search call |
+| Invalidation matrix covered by tests | Met | New matrix test (update, delete, delete 404, refused delete, post comment, rejected comment, remove guest, already-removed, failed removal, RSVP; other event, account and login session untouched). Add guest and join/leave rows are not applicable |
+| Targeted tests per task and full suite pass | Met | Full `npx vitest run`: 80 files, 1267 tests passed |
+| `tsc` and lint clean; build result recorded | `tsc --noEmit` exit 0; ESLint on the new test exit 0; **build not verified** (see below) | |
+| Mocked-backend browser walk-through recorded | Done, with limits | Below |
+| `EVENTS.md` and `PROGRESS.md` reconciled | Done | This task |
+| No Pass 4 code | Met | Grep of `app/api/events`, `hooks/events`, `components/events`, `lib/events`, `types/events` for `guests/add`, `/join`, `/leave`, `live-session`, `live:`, `socket`, `livekit`, `mic-request`, `co-host`: only comments and the Phase 2 `liveSessionId`/`liveSessionStatus` display fields match |
+
+**Browser walk-through (who and what):** run by Claude in this session with Playwright and the preinstalled Chromium against `next dev` (port 4100) with `DJANGO_API_URL` pointed at a small **mock Django written for this check** (guide-shaped responses, stateful guests and comments; not committed). Auth was a fabricated unexpired token cookie. 21 checks, all passed on the final run, covering: nearby list (25 km), host opening a full event, Links and docs, Comments read and post, Guests list, search, Remove (cancel and confirm, comment cascade), a restricted preview making no sub-resource request, a non-host guest seeing no Remove, a 403 guest list, and My events carrying `filter=my_events`. Two earlier runs failed only because of harness timing and a state-dependent assertion; they were fixed in the harness, not in the app. **Not covered:** event create, edit, delete and RSVP; a production build; mobile or responsive layout; pixel fidelity to Figma (EV-029); the Messenger and other unrelated screens (the mock returns empty data for their calls); any real backend behaviour.
+
+**Issues found (logged, not fixed; none breaks a checklist criterion):**
+1. The matrix row "Delete event / 404 on any section" is implemented for delete (and delete 404) only. A 404 on a single section (comments, guests or resources) shows that section's local "not available" message and keeps its cache; it does not remove the event's sub-resource caches. Low impact; carried forward.
+2. The "Guarantees" table says add and remove guest should invalidate `myEventsRoot()`, while the matrix row (and the implementation, test and P3-08A acceptance) invalidate `guests` and `comments` only. A host removing another person does not change the host's My events, so the matrix row governs; the guarantees wording is stale and is noted here instead of rewritten.
+3. `npx next lint` reports pre-existing findings in five files untouched by Pass 3 (`use-event-details.test.tsx`, `use-my-events.test.tsx`, `use-nearby-events.test.tsx`: `react/display-name`; `use-form-location.ts`: set-state in effect; `use-geolocation.ts`: ref in effect cleanup). They are identical with and without this task's file. Deferred.
+4. `prettier --check` fails everywhere because the repository has no Prettier config (reported earlier).
+5. `next build` fails in this sandbox only on the Google Fonts fetch (`Work Sans`), before compiling, so **the production build is not verified here and must be run by the owner.**
 
 ---
 
