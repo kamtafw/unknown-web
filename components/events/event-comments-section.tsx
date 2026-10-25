@@ -6,6 +6,7 @@ import type { EventComment } from "@/types/events/api"
 import { formatDistanceToNowStrict } from "date-fns"
 import { Loader2, Lock, MessageSquare, RefreshCw, ShieldAlert, WifiOff } from "lucide-react"
 import { Avatar } from "radix-ui"
+import { EventCommentComposer } from "./event-comment-composer"
 import { RetryButton, StateMessage, secondaryButton } from "./event-list"
 
 /** "5 minutes ago"; under a minute (or a clock slightly ahead of ours) is "just now" */
@@ -123,7 +124,7 @@ function failureMessage(kind: EventErrorKind, phase: "initial" | "next-page" | "
 }
 
 /**
- * The "Comments" section of a full event: a read-only thread (no composer, replies or reactions).
+ * The "Comments" section of a full event: the thread (read side) and a composer. There are no replies, reactions, edits or deletes.
  * Messages and names are text, never HTML. Order is the backend's (newest first); further pages are
  * appended and de-duplicated by id. The thread is not live: it is as fresh as the last load or an
  * explicit Refresh. Mounted only for a full event's active section.
@@ -188,6 +189,8 @@ export function EventCommentsSection({ eventId }: { eventId: string }) {
 					{isRefreshing ? "Refreshing…" : "Refresh"}
 				</button>
 			</div>
+
+			<EventCommentComposer eventId={eventId} />
 
 			{failure && (
 				<div

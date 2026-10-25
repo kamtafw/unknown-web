@@ -204,3 +204,14 @@ export function validateEventForm(values: EventFormValues, ctx: FormContext): Fo
 
 	return errors
 }
+
+/**
+ * An event comment as it is sent: trimmed, and null when nothing is left (blank or whitespace
+ * only, or not a string). Nonblank is the only documented rule. There is deliberately NO maximum
+ * length: the backend sets none (EV-030, D-12), so the web must not invent one.
+ */
+export function normalizeCommentMessage(raw: unknown): string | null {
+	if (typeof raw !== "string") return null
+	const trimmed = raw.trim()
+	return trimmed ? trimmed : null
+}

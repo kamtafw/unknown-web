@@ -6,6 +6,7 @@ import {
 	isValidDateString,
 	isValidPasscode,
 	isValidTimeString,
+	normalizeCommentMessage,
 	normalizeHashtags,
 	toApiTime,
 	validateCoverFile,
@@ -196,5 +197,22 @@ describe("validateEventForm", () => {
 		const errors = validateEventForm(validValues({ documents: { mode: "replace", items } }), create)
 		expect(errors["documents.0.name"]).toBeTruthy()
 		expect(errors["documents.1.file"]).toBeTruthy()
+	})
+})
+
+describe("normalizeCommentMessage (P3-06)", () => {
+	it("trims and keeps the inner text as written", () => {
+		expect(normalizeCommentMessage("  hello \n world  ")).toBe("hello \n world")
+	})
+	it.each(["", "   ", "\n\t \r\n", "\u00a0", null, undefined, 3, {}, []])(
+		"is null for blank or non-string %j",
+		(value) => {
+			expect(normalizeCommentMessage(value)).toBeNull()
+		},
+	)
+	it("has no maximum length", () => {
+		const long = "a".repeat(250_000)
+		expect(normalizeCommentMessage(long)).toBe(long)
+		expect(normalizeCommentMessage(` ${long} `)).toBe(long)
 	})
 })

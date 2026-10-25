@@ -34,7 +34,7 @@ export function flattenCommentPages(pages: EventCommentsPage[] | undefined): Eve
 }
 
 /**
- * Comments of one FULL event, read-only (P3-05). An infinite query driven by the backend's `next`
+ * Comments of one FULL event, read side (posting is `usePostEventComment`). An infinite query driven by the backend's `next`
  * link (`hasNext`): an empty page with a `next` still offers another page. Cache entries are
  * scoped by account, login session, event and page size like every other Events query. The
  * caller mounts this only for a full event's active Comments section, so a restricted preview,

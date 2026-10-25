@@ -289,3 +289,19 @@ describe("eventsApi Pass 3 read methods", () => {
 		expect(getMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/resources")
 	})
 })
+
+describe("eventsApi.postEventComment (P3-06)", () => {
+	it("posts only the trimmed message to the BFF comments route and returns nothing", async () => {
+		postMock.mockResolvedValue({ data: { data: { message: "hi" } } })
+		const result = await eventsApi.postEventComment(ID, "  hi  ")
+		expect(postMock.mock.calls[0][0]).toBe(`/api/events/${ID}/comments`)
+		expect(postMock.mock.calls[0][1]).toEqual({ message: "hi" })
+		expect(result).toBeUndefined()
+	})
+
+	it("lets a rejection through for the caller to describe", async () => {
+		const failure = Object.assign(new Error("x"), { response: { status: 404 } })
+		postMock.mockRejectedValue(failure)
+		await expect(eventsApi.postEventComment(ID, "hi")).rejects.toBe(failure)
+	})
+})

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest"
 import { normalizeCommentsPage, normalizeGuestsPage, normalizeResources } from "./normalize"
 import {
 	buildAddressBody,
+	buildCommentBody,
 	buildMyEventsRequest,
 	buildNearbyQuery,
 	parsePageParams,
+	sanitizeCommentCreatePayload,
 	sanitizeCommentsPayload,
 	sanitizeGuestsPayload,
 	sanitizeResourcesPayload,
@@ -474,5 +476,47 @@ describe("sanitisers stay compatible with the application normalisers", () => {
 		expect(normalizeResources(data(sanitizeResourcesPayload(raw)))).toEqual(
 			normalizeResources(raw.data),
 		)
+	})
+})
+
+describe("buildCommentBody / sanitizeCommentCreatePayload (P3-06)", () => {
+	it("keeps only the trimmed message", () => {
+		expect(buildCommentBody({ message: " hi ", user: 1, event: "x" })).toEqual({
+			ok: true,
+			value: { message: "hi" },
+		})
+	})
+	it("rejects blank, whitespace-only and non-object input", () => {
+		for (const input of [
+			{ message: "" },
+			{ message: "  " },
+			{},
+			null,
+			[],
+			"text",
+			{ message: 1 },
+		]) {
+			expect(buildCommentBody(input)).toMatchObject({ ok: false, code: "invalid_comment" })
+		}
+	})
+	it("applies no length limit", () => {
+		const long = "z".repeat(50_000)
+		expect(buildCommentBody({ message: long })).toEqual({ ok: true, value: { message: long } })
+	})
+	it("sanitises a 201 to the envelope and data.message only", () => {
+		expect(
+			sanitizeCommentCreatePayload({
+				success: true,
+				status_code: 201,
+				message: null,
+				extra: 1,
+				data: { message: "a", id: "c" },
+			}),
+		).toEqual({ success: true, status_code: 201, message: null, data: { message: "a" } })
+	})
+	it("treats anything else as unreadable", () => {
+		for (const input of [null, {}, { data: null }, { data: {} }, { data: { message: 3 } }, []]) {
+			expect(sanitizeCommentCreatePayload(input)).toBeNull()
+		}
 	})
 })
