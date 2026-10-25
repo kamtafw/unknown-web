@@ -91,10 +91,32 @@ export function invalidateEventSubResources(
 }
 
 /**
- * After the viewer posts a comment: keep only page 1 of this event's cached thread (later pages
- * shift once a newer comment exists, so they are dropped and re-loaded on demand) and refetch it.
- * The new comment then appears through the normal read path, newest first; nothing is inserted
- * by hand. Only this account's and login session's entries for this event are touched.
+ * Keep only page 1 of this event's cached thread or list for the named sections (comments and/or
+ * guests) and refetch it. Later pages shift, or stop existing, once something was posted or
+ * removed, so they are dropped and re-loaded on demand instead of refetched by page number (which
+ * could 404 on a page that no longer exists). Only this account's and login session's entries for
+ * this event are touched; nothing is inserted or removed by hand.
+ */
+export function refreshFromFirstPage(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+	parts: readonly EventSubResource[],
+): Promise<void> {
+	if (accountId === null) return Promise.resolve()
+	const predicate = subResourcePredicate(accountId, sessionGeneration, eventId, parts)
+	client.setQueriesData<InfiniteData<unknown>>({ predicate }, (old) =>
+		old && old.pages.length > 1
+			? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
+			: old,
+	)
+	return client.invalidateQueries({ predicate })
+}
+
+/**
+ * After the viewer posts a comment (P3-06): refetch page 1 of this event's thread. The new comment
+ * then appears through the normal read path, newest first.
  */
 export function refreshCommentsFromFirstPage(
 	client: QueryClient,
@@ -102,12 +124,5 @@ export function refreshCommentsFromFirstPage(
 	sessionGeneration: number | null,
 	eventId: string,
 ): Promise<void> {
-	if (accountId === null) return Promise.resolve()
-	const predicate = subResourcePredicate(accountId, sessionGeneration, eventId, ["comments"])
-	client.setQueriesData<InfiniteData<unknown>>({ predicate }, (old) =>
-		old && old.pages.length > 1
-			? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
-			: old,
-	)
-	return client.invalidateQueries({ predicate })
+	return refreshFromFirstPage(client, accountId, sessionGeneration, eventId, ["comments"])
 }

@@ -204,6 +204,19 @@ export const eventsApi = {
 		await apiClient.post(`${eventPath(eventId)}/comments`, { message: message.trim() }, { signal })
 	},
 
+	/**
+	 * Removes a guest record (host only; the backend decides). `userId` is the guest's numeric
+	 * `pkid`. Success is a 200 with no data. The backend also deletes that guest's comments in this
+	 * event. This does not disconnect the guest from live media.
+	 */
+	removeEventGuest: async (
+		eventId: string,
+		userId: number,
+		signal?: AbortSignal,
+	): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/guests/remove`, { user_id: userId }, { signal })
+	},
+
 	/** one page of event guests, newest first. The backend answers 403 to anyone without a guest record */
 	getEventGuestsPage: async (
 		params: EventPageParams,

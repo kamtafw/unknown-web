@@ -6,6 +6,7 @@ import { Loader2, Lock, Search, ShieldAlert, Users, WifiOff } from "lucide-react
 import { Avatar } from "radix-ui"
 import { useId, useMemo, useState } from "react"
 import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RemoveGuestDialog } from "./remove-guest-dialog"
 
 /** the contextual 403 text; the backend's own wording is never shown */
 export const GUEST_LIST_FORBIDDEN = "Only the host and guests can see the guest list."
@@ -19,7 +20,15 @@ function filterGuests(guests: EventGuest[], term: string): EventGuest[] {
 	)
 }
 
-function GuestRow({ guest }: { guest: EventGuest }) {
+function GuestRow({
+	guest,
+	eventId,
+	canRemove,
+}: {
+	guest: EventGuest
+	eventId: string
+	canRemove: boolean
+}) {
 	const initial = guest.name.trim().charAt(0).toUpperCase() || "?"
 	return (
 		<li className="flex items-center gap-3">
@@ -46,6 +55,7 @@ function GuestRow({ guest }: { guest: EventGuest }) {
 					</span>
 				)}
 			</span>
+			{canRemove && <RemoveGuestDialog eventId={eventId} guest={guest} />}
 		</li>
 	)
 }
@@ -68,10 +78,17 @@ function Skeleton() {
  * `@username`, a `Host` badge for role `host` and an avatar with an initial fallback. RSVP
  * status, join date, contact details and online status are neither fetched into view nor shown
  * (A-17). "Search guest" filters only the rows loaded so far; it never makes a request, and while
- * more pages exist that is said plainly and Load more stays available. There are no add or remove
- * controls (later tasks). Mounted only for a full event's active section.
+ * more pages exist that is said plainly and Load more stays available. A host also sees a Remove
+ * action per row (P3-08A; `isHost` only shows it, the server decides). There is no add control
+ * (later task). Mounted only for a full event's active section.
  */
-export function EventGuestsSection({ eventId }: { eventId: string }) {
+export function EventGuestsSection({
+	eventId,
+	isHost = false,
+}: {
+	eventId: string
+	isHost?: boolean
+}) {
 	const {
 		guests,
 		hasLoaded,
@@ -188,7 +205,7 @@ export function EventGuestsSection({ eventId }: { eventId: string }) {
 			{visible.length > 0 ? (
 				<ul aria-label="Event guests" className="flex flex-col gap-3.5">
 					{visible.map((guest) => (
-						<GuestRow key={guest.userId} guest={guest} />
+						<GuestRow key={guest.userId} guest={guest} eventId={eventId} canRemove={isHost} />
 					))}
 				</ul>
 			) : (
