@@ -1,6 +1,6 @@
 # Events — Pass 3 handoff (participation, resources, discussions)
 
-**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is implemented and awaits owner review; no Pass 3 write route exists; P3-06 is next and awaits authorization. Pass 3 is not complete.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
+**Status (updated 2026-10-24): P3-01 to P3-04 (with P3-02a) are complete and P3-04 is owner-accepted; P3-05 (read-only comments) is owner-accepted; P3-06 (posting a comment, the first Pass 3 write route) is implemented and awaits owner review; P3-07 is next and awaits authorization. Pass 3 is not complete.** The sections below are the original plan, written 2026-10-22 on branch `feat/events-phase1` at `8849097`
 (Phase 2 implementation checkpoint `a96887b`; Phase 2 closed for delivery with verification deferred to QA). Those SHAs are the **historical authoring point**; the current Pass 3 starting point is in section 1.1.
 
 **Revision 2026-10-23:** D-1 (join/leave) and D-2 (guest addition) were investigated and resolved to explicit blockers (section 3.2 and section 7); comment authorization, comment length/refresh and Figma evidence labelling were corrected; the premature assumption-ID reference was removed (IDs are now assigned only when written); add-guest and join/leave are now gated tasks (P3-08B, P3-09). Still planning only: no Pass 3 code exists.
