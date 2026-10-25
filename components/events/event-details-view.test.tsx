@@ -3,6 +3,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
+vi.mock("./event-guests-section", () => ({
+	EventGuestsSection: (p: { eventId: string }) => <div data-testid="guests-stub" data-event={p.eventId} />,
+}))
 vi.mock("./event-comments-section", () => ({
 	EventCommentsSection: (p: { eventId: string }) => <div data-testid="comments-stub" data-event={p.eventId} />,
 }))
@@ -130,12 +133,17 @@ describe("EventDetailsView sections (P3-03)", () => {
 		}
 	})
 
-	it("Guests (not built yet) shows a placeholder and the inactive sections show nothing", () => {
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="guests" />)
-		expect(screen.getAllByText(/isn.t available yet/i)).toHaveLength(1)
-		expect(panelFor(screen.getByRole("tab", { name: "Guests" }))).toHaveTextContent("Guests")
+	it("the guests section mounts only while Guests is active, for a full event; inactive panels are empty", () => {
+		const { rerender } = render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
+		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="guests" />)
+		expect(screen.getByTestId("guests-stub")).toHaveAttribute("data-event", "e1")
+		expect(panelFor(screen.getByRole("tab", { name: "Guests" }))).toContainElement(screen.getByTestId("guests-stub"))
 		expect(panelFor(screen.getByRole("tab", { name: "Comments" }))).toBeEmptyDOMElement()
 		expect(panelFor(screen.getByRole("tab", { name: "Links and docs" }))).toBeEmptyDOMElement()
+		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="comments" />)
+		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
+		expect(screen.getByTestId("comments-stub")).toBeInTheDocument()
 	})
 
 	it("the comments section mounts only while Comments is active, for a full event", () => {
@@ -143,14 +151,13 @@ describe("EventDetailsView sections (P3-03)", () => {
 		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
 		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="comments" />)
 		expect(screen.getByTestId("comments-stub")).toHaveAttribute("data-event", "e1")
-		expect(screen.queryByText(/isn.t available yet/i)).not.toBeInTheDocument()
 		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
 		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
 		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
 		expect(screen.getByTestId("resources-stub")).toBeInTheDocument()
 	})
 
-	it("section placeholders show no resources, guests or comments, even for a host", () => {
+	it("the Links and docs section shows nothing from the event's own link and document lists (it reads the resources endpoint)", () => {
 		render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
 		expect(screen.queryByText("Secret agenda")).not.toBeInTheDocument()
 		expect(screen.queryByText("Secret.pdf")).not.toBeInTheDocument()
@@ -211,8 +218,8 @@ describe("EventDetailsView sections (P3-03)", () => {
 			expect(screen.queryByRole("tablist")).not.toBeInTheDocument()
 			expect(screen.queryByRole("tab")).not.toBeInTheDocument()
 			expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument()
-			expect(screen.queryByText(/isn.t available yet/i)).not.toBeInTheDocument()
 			expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
+			expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
 			expect(screen.getByRole("note")).toHaveTextContent(/details are hidden/i)
 			expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
 		},
@@ -225,7 +232,6 @@ describe("EventDetailsView sections (P3-03)", () => {
 		const stub = screen.getByTestId("resources-stub")
 		expect(stub).toHaveAttribute("data-event", "e1")
 		expect(stub).toHaveAttribute("data-host", "true")
-		expect(screen.queryByText(/isn.t available yet/i)).not.toBeInTheDocument()
 	})
 
 	it("a restricted preview never mounts the resources section, even with tab=resources", () => {

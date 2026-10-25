@@ -10,6 +10,7 @@ import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { secondaryButton } from "./event-list"
 import { EventCommentsSection } from "./event-comments-section"
+import { EventGuestsSection } from "./event-guests-section"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
 
@@ -38,19 +39,6 @@ const TAB_LABEL: Record<EventTab, string> = {
 	comments: "Comments",
 	resources: "Links and docs",
 	guests: "Guests",
-}
-
-/**
- * Body of a section that has no content yet (guests; Links and docs and Comments have their own
- * components since P3-04 and P3-05). Later tasks fill these in, so nothing is fetched or shown here.
- */
-function SectionPlaceholder({ tab }: { tab: Exclude<EventTab, "details"> }) {
-	return (
-		<div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-border px-4 py-10 text-center">
-			<p className="text-[13px] font-semibold text-foreground">{TAB_LABEL[tab]}</p>
-			<p className="text-[12.5px] text-muted-foreground">This section isn&apos;t available yet.</p>
-		</div>
-	)
 }
 
 function Cover({ src }: { src: string | null }) {
@@ -96,9 +84,9 @@ function HostRow({ host }: { host: EventHost }) {
  * them; this view does not display them.
  *
  * A full event has sections (Details, Comments, Links and docs, Guests), selected by `tab` and
- * held in the URL by the caller (A-16). Details, Links and docs (P3-04) and Comments (P3-05,
- * read-only) have content, fetched only while that section is active; Guests is a placeholder that
- * fetches nothing. A restricted preview has no sections and ignores `tab`, so a
+ * held in the URL by the caller (A-16). Details, Links and docs (P3-04), Comments (P3-05, P3-06)
+ * and Guests (P3-07, read-only) each have their own content, fetched only while that section is
+ * active. A restricted preview has no sections and ignores `tab`, so a
  * link with `&tab=` cannot reach one. Joining is a later pass, so a live event only gets a "Live
  * now" mark and a note. Host controls are shown by a UUID match and the server stays authoritative.
  */
@@ -270,7 +258,7 @@ export function EventDetailsView({
 									) : value === "comments" ? (
 										<EventCommentsSection eventId={details.id} />
 									) : (
-										<SectionPlaceholder tab={value} />
+										<EventGuestsSection eventId={details.id} />
 									))}
 						</Tabs.Content>
 					))}
