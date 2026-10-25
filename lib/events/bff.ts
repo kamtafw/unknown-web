@@ -123,10 +123,68 @@ export async function fetchSanitizedGet(
 	accessToken: string,
 	sanitize: (json: unknown) => unknown | null,
 ): Promise<NextResponse> {
-	const result = await fetchOrError(url, {
-		headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-		cache: "no-store",
-	})
+	return fetchSanitized(
+		url,
+		{ headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }, cache: "no-store" },
+		sanitize,
+	)
+}
+
+/**
+ * Authenticated JSON POST with the same response rules as `fetchSanitizedGet`. The caller has
+ * already validated and allow-listed `body`; it is serialised here and never logged.
+ */
+export async function fetchSanitizedPost(
+	url: string,
+	accessToken: string,
+	body: unknown,
+	sanitize: (json: unknown) => unknown | null,
+): Promise<NextResponse> {
+	return fetchSanitized(
+		url,
+		{
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
+			body: JSON.stringify(body),
+			cache: "no-store",
+		},
+		sanitize,
+	)
+}
+
+/**
+ * Reads a small JSON request body under the generic JSON size guard (the one create/update use).
+ * Too large is a request-size error (413 `request_too_large`), never a content rule; not JSON is a
+ * 400 and a non-JSON content type a 415. Nothing about the content is logged.
+ */
+export async function readJsonBody(
+	req: NextRequest,
+): Promise<{ ok: true; value: unknown } | { ok: false; response: NextResponse }> {
+	const contentType = req.headers.get("content-type") ?? ""
+	if (!/^application\/json/i.test(contentType)) {
+		return { ok: false, response: envelope(415, "Unsupported content type", "unsupported_media_type") }
+	}
+	const raw = await req.text()
+	if (raw.length > MAX_JSON_BYTES) {
+		return { ok: false, response: envelope(413, "The request is too large", "request_too_large") }
+	}
+	try {
+		return { ok: true, value: JSON.parse(raw) }
+	} catch {
+		return { ok: false, response: envelope(400, "Invalid request body", "invalid_request") }
+	}
+}
+
+async function fetchSanitized(
+	url: string,
+	init: Parameters<typeof fetchJson>[1],
+	sanitize: (json: unknown) => unknown | null,
+): Promise<NextResponse> {
+	const result = await fetchOrError(url, init)
 	if (!result.ok) return result.response
 	if (result.status >= 400) return NextResponse.json(result.json, { status: result.status })
 

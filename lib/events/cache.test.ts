@@ -1,7 +1,12 @@
 import type { EventCard, EventsPage } from "@/types/events/api"
 import { QueryClient } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
-import { findCachedRsvp, invalidateEventSubResources, removeEventSubResources } from "./cache"
+import {
+	findCachedRsvp,
+	invalidateEventSubResources,
+	refreshCommentsFromFirstPage,
+	removeEventSubResources,
+} from "./cache"
 import { eventKeys, keyBelongsTo } from "./query-keys"
 
 const card = (id: string, viewerRsvp: EventCard["viewerRsvp"]): EventCard => ({
@@ -161,5 +166,53 @@ describe("event sub-resource cache helpers", () => {
 		for (const key of [eventKeys.resources(1, 0, A), eventKeys.comments(1, 0, A, 20), eventKeys.guests(1, 0, A, 20)]) {
 			expect(client.getQueryState(key)?.isInvalidated).toBe(true)
 		}
+	})
+})
+
+describe("refreshCommentsFromFirstPage (P3-06)", () => {
+	const E = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
+	const OTHER = "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22"
+	const thread = () => ({
+		pages: [
+			{ page: 1, hasNext: true, comments: [] },
+			{ page: 2, hasNext: false, comments: [] },
+		],
+		pageParams: [1, 2],
+	})
+
+	it("keeps only page 1 of this event's thread and marks it stale", async () => {
+		const client = new QueryClient()
+		client.setQueryData(eventKeys.comments(7, 2, E, 20), thread())
+		await refreshCommentsFromFirstPage(client, 7, 2, E)
+		const data = client.getQueryData<ReturnType<typeof thread>>(eventKeys.comments(7, 2, E, 20))
+		expect(data?.pages).toHaveLength(1)
+		expect(data?.pageParams).toEqual([1])
+		expect(client.getQueryState(eventKeys.comments(7, 2, E, 20))?.isInvalidated).toBe(true)
+	})
+
+	it("leaves other events, accounts, sessions and sections alone", async () => {
+		const client = new QueryClient()
+		const keys = [
+			eventKeys.comments(7, 2, OTHER, 20),
+			eventKeys.comments(8, 2, E, 20),
+			eventKeys.comments(7, 1, E, 20),
+		]
+		for (const key of keys) client.setQueryData(key, thread())
+		client.setQueryData(eventKeys.resources(7, 2, E), { links: [], documents: [] })
+		client.setQueryData(eventKeys.guests(7, 2, E, 20), thread())
+		await refreshCommentsFromFirstPage(client, 7, 2, E)
+		for (const key of keys) {
+			expect(client.getQueryData<ReturnType<typeof thread>>(key)?.pages).toHaveLength(2)
+			expect(client.getQueryState(key)?.isInvalidated).toBe(false)
+		}
+		expect(client.getQueryState(eventKeys.resources(7, 2, E))?.isInvalidated).toBe(false)
+		expect(client.getQueryState(eventKeys.guests(7, 2, E, 20))?.isInvalidated).toBe(false)
+	})
+
+	it("does nothing without an account", async () => {
+		const client = new QueryClient()
+		client.setQueryData(eventKeys.comments(7, 2, E, 20), thread())
+		await refreshCommentsFromFirstPage(client, null, 2, E)
+		expect(client.getQueryData<ReturnType<typeof thread>>(eventKeys.comments(7, 2, E, 20))?.pages).toHaveLength(2)
 	})
 })

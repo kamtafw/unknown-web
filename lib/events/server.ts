@@ -29,6 +29,7 @@ import { normalizeHttpUrl } from "./normalize"
 import {
 	isValidDateString,
 	isValidPasscode,
+	normalizeCommentMessage,
 	isValidTimeString,
 	normalizeHashtags,
 	validateSchedule,
@@ -143,6 +144,18 @@ export function buildRsvpBody(
 			status: record.status as "going" | "interested" | "not_going",
 		},
 	}
+}
+
+/**
+ * `POST comments`: only `message` is read and forwarded, trimmed; anything else the client sent is
+ * dropped. Blank, whitespace-only or non-string is rejected here, before any upstream request.
+ * No length limit is applied (EV-030).
+ */
+export function buildCommentBody(body: unknown): Built<{ message: string }> {
+	const record = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+	const message = normalizeCommentMessage(record.message)
+	if (message === null) return { ok: false, message: "A comment cannot be blank", code: "invalid_comment" }
+	return { ok: true, value: { message } }
 }
 
 const bad = (message: string, code = "invalid_event"): { ok: false; message: string; code: string } => ({
@@ -413,4 +426,13 @@ export function sanitizeResourcesPayload(json: unknown): unknown | null {
 			documents: documents.filter(isPlainRecord).map((d) => pick(d, DOCUMENT_KEYS)),
 		},
 	}
+}
+
+/**
+ * `POST comments` success: the documented 201 carries only `data.message` (no id, author or
+ * time). Anything else is unreadable (null) and the route answers 502 instead of a false success.
+ */
+export function sanitizeCommentCreatePayload(json: unknown): unknown | null {
+	if (!isPlainRecord(json) || !isPlainRecord(json.data) || typeof json.data.message !== "string") return null
+	return { ...pick(json, ENVELOPE_KEYS), data: { message: json.data.message } }
 }

@@ -89,3 +89,25 @@ export function invalidateEventSubResources(
 		predicate: subResourcePredicate(accountId, sessionGeneration, eventId, parts),
 	})
 }
+
+/**
+ * After the viewer posts a comment: keep only page 1 of this event's cached thread (later pages
+ * shift once a newer comment exists, so they are dropped and re-loaded on demand) and refetch it.
+ * The new comment then appears through the normal read path, newest first; nothing is inserted
+ * by hand. Only this account's and login session's entries for this event are touched.
+ */
+export function refreshCommentsFromFirstPage(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+): Promise<void> {
+	if (accountId === null) return Promise.resolve()
+	const predicate = subResourcePredicate(accountId, sessionGeneration, eventId, ["comments"])
+	client.setQueriesData<InfiniteData<unknown>>({ predicate }, (old) =>
+		old && old.pages.length > 1
+			? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
+			: old,
+	)
+	return client.invalidateQueries({ predicate })
+}
