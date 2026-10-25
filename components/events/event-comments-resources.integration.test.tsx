@@ -11,10 +11,13 @@ import { EventDetailsView } from "./event-details-view"
 const getEventCommentsPage = vi.fn()
 const getEventResources = vi.fn()
 const postEventComment = vi.fn()
+const getEventGuestsPage = vi.fn()
 vi.mock("@/lib/events/api", () => ({
 	eventsApi: {
 		getEventCommentsPage: (...a: unknown[]) => getEventCommentsPage(...a),
 		getEventResources: (...a: unknown[]) => getEventResources(...a),
+		postEventComment: (...a: unknown[]) => postEventComment(...a),
+		getEventGuestsPage: (...a: unknown[]) => getEventGuestsPage(...a),
 	},
 }))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
@@ -48,6 +51,13 @@ const full: EventFullDetails = {
 }
 const preview: EventPreviewDetails = { ...base, kind: "preview" }
 const noop = () => {}
+const gu = (userId: number, name: string, username: string, role: "host" | "guest" = "guest") => ({
+	userId,
+	name,
+	username,
+	photo: null,
+	role,
+})
 
 let client: QueryClient
 const renderView = (
@@ -77,6 +87,11 @@ beforeEach(() => {
 		],
 	})
 	postEventComment.mockResolvedValue(undefined)
+	getEventGuestsPage.mockResolvedValue({
+		page: 1,
+		hasNext: false,
+		guests: [gu(1, "Ada Obi", "ada", "host")],
+	})
 	getEventResources.mockResolvedValue({
 		links: [{ name: "Agenda", url: "https://example.com/a" }],
 		documents: [],
@@ -106,8 +121,8 @@ describe("Comments and Links and docs inside the details pane", () => {
 		expect(getEventResources).not.toHaveBeenCalled()
 	})
 
-	it("Details and Guests never request comments or resources", async () => {
-		for (const tab of ["details", "guests"] as const) {
+	it("Details never requests comments or resources", async () => {
+		for (const tab of ["details"] as const) {
 			const { unmount } = renderView(full, tab)
 			unmount()
 		}
@@ -242,5 +257,123 @@ describe("Posting a comment inside the Comments section (P3-06)", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Load more" }))
 		expect(await screen.findByText("older")).toBeInTheDocument()
 		expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument()
+	})
+})
+
+describe("Guests inside the details pane (P3-07)", () => {
+	it("the Guests tab on a full event fetches this event's guests through the real hook and renders them", async () => {
+		renderView(full, "guests")
+		expect(await screen.findByText("Ada Obi")).toBeInTheDocument()
+		expect(screen.getByText("Host")).toBeInTheDocument()
+		expect(screen.getByText("@ada")).toBeInTheDocument()
+		expect(getEventGuestsPage).toHaveBeenCalledTimes(1)
+		expect(getEventGuestsPage.mock.calls[0][0]).toMatchObject({ eventId: ID, page: 1 })
+		expect(getEventCommentsPage).not.toHaveBeenCalled()
+		expect(getEventResources).not.toHaveBeenCalled()
+		expect(
+			client.getQueryCache().findAll({ queryKey: [...eventKeys.guestsRoot(), 7, 1, ID] }),
+		).toHaveLength(1)
+	})
+
+	it("a restricted preview with tab=guests makes no request and shows no guest list", async () => {
+		renderView(preview, "guests")
+		await new Promise((r) => setTimeout(r, 20))
+		expect(getEventGuestsPage).not.toHaveBeenCalled()
+		expect(screen.queryByRole("searchbox")).not.toBeInTheDocument()
+		expect(screen.queryByRole("tab")).not.toBeInTheDocument()
+	})
+
+	it("other tabs never request guests", async () => {
+		for (const tab of ["details", "comments", "resources"] as const) {
+			const { unmount } = renderView(full, tab)
+			unmount()
+		}
+		await new Promise((r) => setTimeout(r, 20))
+		expect(getEventGuestsPage).not.toHaveBeenCalled()
+	})
+
+	it("switching away from Guests does not request guests again", async () => {
+		const view = renderView(full, "guests")
+		await screen.findByText("Ada Obi")
+		const rerenderWith = (tab: "comments" | "resources" | "details") =>
+			view.rerender(
+				<QueryClientProvider client={client}>
+					<EventDetailsView
+						details={full}
+						isHost={false}
+						onEdit={noop}
+						onDeleted={noop}
+						tab={tab}
+					/>
+				</QueryClientProvider>,
+			)
+		rerenderWith("comments")
+		await screen.findByText("hello there")
+		rerenderWith("resources")
+		await screen.findByRole("link", { name: /Agenda/ })
+		rerenderWith("details")
+		await new Promise((r) => setTimeout(r, 20))
+		expect(getEventGuestsPage).toHaveBeenCalledTimes(1)
+	})
+
+	it("search covers loaded guests, Load more keeps working during a search and new rows join the filter", async () => {
+		getEventGuestsPage.mockImplementation(async ({ page }: { page: number }) =>
+			page === 1
+				? {
+						page: 1,
+						hasNext: true,
+						guests: [gu(1, "Ada Obi", "ada", "host"), gu(2, "Bola Ade", "bolaa")],
+					}
+				: {
+						page: 2,
+						hasNext: false,
+						guests: [gu(3, "Chidi Eze", "ceze"), gu(4, "Adaeze N", "adaeze")],
+					},
+		)
+		renderView(full, "guests")
+		await screen.findByText("Bola Ade")
+		fireEvent.change(screen.getByRole("searchbox", { name: "Search guest" }), {
+			target: { value: "ada" },
+		})
+		expect(screen.getByRole("status")).toHaveTextContent(/searching loaded guests/i)
+		expect(screen.getAllByRole("listitem")).toHaveLength(1)
+		expect(getEventGuestsPage).toHaveBeenCalledTimes(1) // searching made no request
+
+		fireEvent.click(screen.getByRole("button", { name: "Load more" }))
+		await screen.findByText("Adaeze N")
+		expect(getEventGuestsPage.mock.calls[1][0]).toMatchObject({ eventId: ID, page: 2 })
+		expect(screen.getAllByRole("listitem")).toHaveLength(2) // Ada Obi, Adaeze N (Chidi filtered out)
+		expect(screen.queryByText("Chidi Eze")).not.toBeInTheDocument()
+		expect(screen.queryByText(/searching loaded guests/i)).not.toBeInTheDocument()
+
+		fireEvent.change(screen.getByRole("searchbox", { name: "Search guest" }), {
+			target: { value: "" },
+		})
+		expect(screen.getAllByRole("listitem")).toHaveLength(4)
+	})
+
+	it("a guests 403 inside the pane shows the contextual message, not an error or a login prompt", async () => {
+		getEventGuestsPage.mockRejectedValue(
+			Object.assign(new Error("x"), {
+				response: {
+					status: 403,
+					data: { message: "You do not have permission to view this event's guests." },
+				},
+			}),
+		)
+		renderView(full, "guests")
+		expect(
+			await screen.findByText("Only the host and guests can see the guest list."),
+		).toBeInTheDocument()
+		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+		expect(screen.queryByText(/sign in|session has expired/i)).not.toBeInTheDocument()
+	})
+
+	it("Comments and Links and docs still work next to Guests", async () => {
+		const { unmount } = renderView(full, "comments")
+		expect(await screen.findByText("hello there")).toBeInTheDocument()
+		unmount()
+		renderView(full, "resources")
+		expect(await screen.findByRole("link", { name: /Agenda/ })).toBeInTheDocument()
 	})
 })
