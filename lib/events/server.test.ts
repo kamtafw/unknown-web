@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { normalizeCommentsPage, normalizeGuestsPage, normalizeResources } from "./normalize"
+import {
+	normalizeCommentsPage,
+	normalizeGuestsPage,
+	normalizeLiveSession,
+	normalizeResources,
+} from "./normalize"
 import {
 	buildAddressBody,
 	buildCommentBody,
@@ -9,6 +14,7 @@ import {
 	sanitizeCommentCreatePayload,
 	sanitizeCommentsPayload,
 	sanitizeGuestsPayload,
+	sanitizeLiveSessionPayload,
 	sanitizeResourcesPayload,
 } from "./server"
 
@@ -518,5 +524,85 @@ describe("buildCommentBody / sanitizeCommentCreatePayload (P3-06)", () => {
 		for (const input of [null, {}, { data: null }, { data: {} }, { data: { message: 3 } }, []]) {
 			expect(sanitizeCommentCreatePayload(input)).toBeNull()
 		}
+	})
+})
+
+describe("sanitizeLiveSessionPayload (P4-01)", () => {
+	const wire = () => ({
+		success: true,
+		status_code: 200,
+		message: null,
+		extra: "dropped",
+		data: {
+			event_id: "e1",
+			ignored: true,
+			live_session: {
+				id: 5,
+				title: "T",
+				status: "waiting",
+				host: { pkid: 1 },
+				participants: [{ id: 1 }],
+				invite_code: "x",
+				media: { provider: "livekit", status: "ready", room: "r", permissions: {} },
+			},
+			socket: { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 5, x: 1 }, token: "t" },
+		},
+	})
+
+	it("keeps the whitelisted fields and nothing else, without mutating the input", () => {
+		const input = wire()
+		const before = JSON.stringify(input)
+		const out = sanitizeLiveSessionPayload(input) as {
+			extra?: unknown
+			data: Record<string, unknown>
+		}
+		expect(JSON.stringify(input)).toBe(before)
+		expect(out.extra).toBeUndefined()
+		expect(out.data).toEqual({
+			event_id: "e1",
+			live_session: {
+				id: 5,
+				title: "T",
+				status: "waiting",
+				media: { provider: "livekit", status: "ready" },
+			},
+			socket: { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 5 } },
+		})
+	})
+
+	it("normalises an absent socket to null and tolerates a missing media object", () => {
+		const input = wire()
+		delete (input.data as Record<string, unknown>).socket
+		delete (input.data.live_session as Record<string, unknown>).media
+		const out = sanitizeLiveSessionPayload(input) as {
+			data: { socket: unknown; live_session: { media?: unknown } }
+		}
+		expect(out.data.socket).toBeNull()
+		expect(out.data.live_session.media).toBeUndefined()
+	})
+
+	it("is null (unreadable) unless data holds a live_session object", () => {
+		for (const bad of [
+			null,
+			[],
+			"x",
+			{},
+			{ data: null },
+			{ data: [] },
+			{ data: {} },
+			{ data: { live_session: null } },
+			{ data: { live_session: [] } },
+		]) {
+			expect(sanitizeLiveSessionPayload(bad)).toBeNull()
+		}
+	})
+
+	it("its output reads cleanly through the client normaliser", () => {
+		const out = sanitizeLiveSessionPayload(wire()) as { data: unknown }
+		expect(normalizeLiveSession(out.data)).toMatchObject({
+			eventId: "e1",
+			session: { id: 5, status: "waiting", mediaProvider: "livekit", mediaStatus: "ready" },
+			socket: { namespace: "/live", joinEvent: "live:join", sessionId: 5 },
+		})
 	})
 })

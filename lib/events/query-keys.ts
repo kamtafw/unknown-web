@@ -86,6 +86,11 @@ export const eventKeys = {
 		eventId: string,
 		limit: number,
 	) => [...eventKeys.guestsRoot(), accountId, sessionGeneration, eventId, { limit }] as const,
+
+	/** the event-specific live-session read (P4-01); one object, no pagination */
+	liveSessionRoot: () => [...eventKeys.all, "live-session"] as const,
+	liveSession: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
+		[...eventKeys.liveSessionRoot(), accountId, sessionGeneration, eventId] as const,
 }
 
 /** the per-event Pass 3 roots, for cache helpers that act on all of them */

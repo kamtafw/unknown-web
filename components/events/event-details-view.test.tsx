@@ -18,6 +18,11 @@ vi.mock("./event-resources-section", () => ({
 		<div data-testid="resources-stub" data-event={p.eventId} data-host={String(p.isHost)} />
 	),
 }))
+vi.mock("./event-live-session-status", () => ({
+	EventLiveSessionStatus: (p: { details: { id: string; kind: string } }) => (
+		<div data-testid="live-status-stub" data-event={p.details.id} data-kind={p.details.kind} />
+	),
+}))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
 	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => (
@@ -84,6 +89,28 @@ describe("EventDetailsView", () => {
 		// even if a caller wrongly passed isHost, a preview never offers edit or delete
 		expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
 		expect(screen.queryByTestId("delete")).not.toBeInTheDocument()
+	})
+
+	it("P4-01: a full event shows the live-session status line; a restricted preview does not mount it", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.getByTestId("live-status-stub")).toHaveAttribute("data-kind", "full")
+		rerender(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} />)
+		expect(screen.queryByTestId("live-status-stub")).not.toBeInTheDocument()
+	})
+
+	it("P4-01: the live-session status stays mounted on the other sections (Details stays mounted)", () => {
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
+		expect(screen.getByTestId("live-status-stub")).toBeInTheDocument()
 	})
 
 	it("both shapes offer RSVP", () => {

@@ -10,6 +10,7 @@ import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
+import { EventLiveSessionStatus } from "./event-live-session-status"
 import { secondaryButton } from "./event-list"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
@@ -167,6 +168,8 @@ export function EventDetailsView({
 					This event is live. Joining live events isn&apos;t available in the web app yet.
 				</p>
 			)}
+
+			{full && <EventLiveSessionStatus details={full} />}
 
 			{full ? (
 				full.hosts.length > 0 && (

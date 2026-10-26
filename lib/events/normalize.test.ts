@@ -10,6 +10,7 @@ import {
 	normalizeGuestsPage,
 	normalizeHttpUrl,
 	normalizeListData,
+	normalizeLiveSession,
 	normalizeNearbyData,
 	normalizeResources,
 	normalizeRsvpResult,
@@ -654,5 +655,136 @@ describe("normalizeGuestsPage", () => {
 		expect(normalizeGuestsPage({ results: null }, 1)).toBeNull()
 		expect(normalizeGuestsPage(null, 1)).toBeNull()
 		expect(normalizeGuestsPage({ results: [] }, 1)).toEqual({ guests: [], page: 1, hasNext: false })
+	})
+})
+
+describe("normalizeLiveSession (P4-01)", () => {
+	const E = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
+	const data = (over: Record<string, unknown> = {}, session: Record<string, unknown> = {}) => ({
+		event_id: E,
+		live_session: {
+			id: 55,
+			title: " Jazz night ",
+			status: "live",
+			session_type: "private",
+			participant_count: 3,
+			started_at: "2026-11-01T18:00:00Z",
+			ended_at: null,
+			is_joined: true,
+			current_user_role: "listener",
+			media: { provider: "livekit", status: "ready" },
+			...session,
+		},
+		socket: { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 55 } },
+		...over,
+	})
+
+	it("reads the full documented shape", () => {
+		expect(normalizeLiveSession(data())).toEqual({
+			eventId: E,
+			session: {
+				id: 55,
+				title: "Jazz night",
+				status: "live",
+				sessionType: "private",
+				participantCount: 3,
+				startedAt: "2026-11-01T18:00:00Z",
+				endedAt: null,
+				mediaProvider: "livekit",
+				mediaStatus: "ready",
+				currentUserRole: "listener",
+				isJoined: true,
+			},
+			socket: { namespace: "/live", joinEvent: "live:join", sessionId: 55 },
+		})
+	})
+
+	it("accepts every documented status, and rejects an unknown or missing one", () => {
+		for (const status of ["waiting", "live", "ended", "cancelled"]) {
+			expect(normalizeLiveSession(data({}, { status }))?.session.status).toBe(status)
+		}
+		expect(normalizeLiveSession(data({}, { status: "paused" }))).toBeNull()
+		expect(normalizeLiveSession(data({}, { status: undefined }))).toBeNull()
+	})
+
+	it("is null (never an invented session) without an event id, a positive integer session id or a session", () => {
+		expect(normalizeLiveSession(data({ event_id: "" }))).toBeNull()
+		expect(normalizeLiveSession(data({}, { id: "55" }))).toBeNull()
+		expect(normalizeLiveSession(data({}, { id: 0 }))).toBeNull()
+		expect(normalizeLiveSession(data({}, { id: 5.5 }))).toBeNull()
+		for (const bad of [null, undefined, [], "x", {}, { event_id: E }, data({ live_session: null })]) {
+			expect(normalizeLiveSession(bad)).toBeNull()
+		}
+	})
+
+	it("reads the provider and media status from the flat summary shape too", () => {
+		const flat = data({}, { media: undefined, media_provider: "p2p", media_status: "legacy" })
+		expect(normalizeLiveSession(flat)?.session).toMatchObject({
+			mediaProvider: "p2p",
+			mediaStatus: "legacy",
+		})
+	})
+
+	it("turns unknown enum values and bad counts into null instead of guessing", () => {
+		const out = normalizeLiveSession(
+			data(
+				{},
+				{
+					session_type: "secret",
+					media: { provider: "zoom", status: "great" },
+					current_user_role: "admin",
+					participant_count: -1,
+					is_joined: "yes",
+				},
+			),
+		)
+		expect(out?.session).toMatchObject({
+			sessionType: null,
+			mediaProvider: null,
+			mediaStatus: null,
+			currentUserRole: null,
+			participantCount: null,
+			isJoined: false,
+		})
+	})
+
+	it("keeps a null or absent socket as null (a legacy event)", () => {
+		expect(normalizeLiveSession(data({ socket: null }))?.socket).toBeNull()
+		const { socket: _socket, ...noSocket } = data()
+		void _socket
+		expect(normalizeLiveSession(noSocket)?.socket).toBeNull()
+	})
+
+	it("trusts the socket descriptor only when it is exactly the documented one for this session", () => {
+		const base = { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 55 } }
+		for (const bad of [
+			{ ...base, namespace: "/chat" },
+			{ ...base, join_event: "join" },
+			{ ...base, join_payload: { sessionId: 56 } },
+			{ ...base, join_payload: { sessionId: "55" } },
+			{ ...base, join_payload: null },
+			"/live",
+			[],
+		]) {
+			expect(normalizeLiveSession(data({ socket: bad }))?.socket).toBeNull()
+		}
+	})
+
+	it("never copies the host, participants, invite code, media room or tokens", () => {
+		const out = normalizeLiveSession(
+			data(
+				{ socket: { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 55 }, token: "T", server_url: "wss://x" } },
+				{
+					host: { username: "hosty" },
+					participants: [{ user: { username: "other" } }],
+					invite_code: "CODE",
+					media: { provider: "p2p", status: "legacy", room: "ROOM", permissions: { room_admin: true } },
+				},
+			),
+		)
+		const text = JSON.stringify(out)
+		for (const gone of ["hosty", "other", "CODE", "ROOM", "room_admin", "wss://x", '"T"']) {
+			expect(text).not.toContain(gone)
+		}
 	})
 })
