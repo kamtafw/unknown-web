@@ -2,6 +2,7 @@
 
 import { useEventDetails } from "@/hooks/events/use-event-details"
 import { useEventSelection } from "@/hooks/events/use-event-selection"
+import type { EventTab } from "@/lib/events/selection"
 import type { EventFullDetails } from "@/types/events/api"
 import { CalendarX2, ChevronLeft, LinkIcon, ShieldAlert, WifiOff, X } from "lucide-react"
 import type { ReactNode } from "react"
@@ -122,7 +123,7 @@ function useEventScreen(eventId: string) {
 	return { ...loaded, go, close, blocker }
 }
 
-function EventView({ eventId }: { eventId: string }) {
+function EventView({ eventId, tab }: { eventId: string; tab?: EventTab }) {
 	const { details, isHost, go, close, blocker } = useEventScreen(eventId)
 
 	return (
@@ -135,6 +136,10 @@ function EventView({ eventId }: { eventId: string }) {
 						isHost={isHost}
 						onEdit={() => go({ mode: "edit", eventId })}
 						onDeleted={close}
+						// a restricted preview has no sections: the view ignores `tab` for it
+						tab={tab}
+						// switching sections replaces the history entry, so Back still closes the event
+						onTabChange={(next) => go({ mode: "view", eventId, tab: next }, { replace: true })}
 					/>
 				))}
 		</PaneFrame>
@@ -190,7 +195,7 @@ export function EventPane() {
 				</PaneFrame>
 			)
 		case "view":
-			return <EventView key={selection.eventId} eventId={selection.eventId} />
+			return <EventView key={selection.eventId} eventId={selection.eventId} tab={selection.tab} />
 		case "edit":
 			return <EventEdit key={selection.eventId} eventId={selection.eventId} />
 	}

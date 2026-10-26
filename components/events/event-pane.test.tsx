@@ -18,11 +18,19 @@ vi.mock("./event-form", () => ({
 	),
 }))
 vi.mock("./event-details-view", () => ({
-	EventDetailsView: (p: { details: { name: string }; isHost: boolean; onEdit: () => void }) => (
+	EventDetailsView: (p: {
+		details: { name: string }
+		isHost: boolean
+		onEdit: () => void
+		tab?: string
+		onTabChange?: (tab: string) => void
+	}) => (
 		<div>
 			<p>details:{p.details.name}</p>
 			<p>host:{String(p.isHost)}</p>
+			<p>tab:{String(p.tab)}</p>
 			<button onClick={p.onEdit}>edit</button>
+			<button onClick={() => p.onTabChange?.("guests")}>pick guests</button>
 		</div>
 	),
 }))
@@ -121,5 +129,38 @@ describe("EventPane", () => {
 		render(<EventPane />)
 		expect(screen.queryByText("form:edit")).not.toBeInTheDocument()
 		expect(screen.getByRole("heading", { name: "Only hosts can edit this event" })).toBeInTheDocument()
+	})
+
+	it("view: passes the selected section to the details view (none = Details)", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID }, go })
+		const { rerender } = render(<EventPane />)
+		expect(screen.getByText("tab:undefined")).toBeInTheDocument()
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "comments" }, go })
+		rerender(<EventPane />)
+		expect(screen.getByText("tab:comments")).toBeInTheDocument()
+	})
+
+	it("view: choosing a section keeps the event, replaces history (Back still closes the event)", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "comments" }, go })
+		render(<EventPane />)
+		fireEvent.click(screen.getByText("pick guests"))
+		expect(go).toHaveBeenCalledWith({ mode: "view", eventId: ID, tab: "guests" }, { replace: true })
+	})
+
+	it("view: a section chosen for one event does not follow the user to another", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go })
+		const { rerender } = render(<EventPane />)
+		expect(screen.getByText("tab:guests")).toBeInTheDocument()
+		// the new selection comes from a link built without a tab, so the pane starts on Details
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: "other-id" }, go })
+		rerender(<EventPane />)
+		expect(screen.getByText("tab:undefined")).toBeInTheDocument()
+	})
+
+	it("view: a restricted preview is still passed through; the details view ignores the section", () => {
+		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go })
+		useEventDetails.mockReturnValue(loaded({ details: preview }))
+		render(<EventPane />)
+		expect(screen.getByText("details:Jazz night")).toBeInTheDocument()
 	})
 })
