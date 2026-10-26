@@ -1,12 +1,21 @@
 import { getAccessToken } from "@/lib/cookies"
-import { envelope, eventNotFound, fetchOrError, forwardEventWrite, unauthenticated } from "@/lib/events/bff"
+import {
+	envelope,
+	eventNotFound,
+	fetchOrError,
+	forwardEventWrite,
+	unauthenticated,
+} from "@/lib/events/bff"
 import { isEventId, isEventLive, sanitizeDetailsPayload } from "@/lib/events/server"
 import { DJANGO_API_URL } from "@/lib/server-config"
 import { NextRequest, NextResponse } from "next/server"
 
 type Ctx = { params: Promise<{ eventId: string }> }
 
-const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}`, Accept: "application/json" })
+const authHeaders = (token: string) => ({
+	Authorization: `Bearer ${token}`,
+	Accept: "application/json",
+})
 
 /**
  * Event details. Either a full event or a restricted preview, both HTTP 200 upstream; the shape
@@ -68,7 +77,11 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 
 	const data = (current.json as { data?: unknown } | null)?.data
 	if (!data || typeof data !== "object") {
-		return envelope(502, "We couldn't check the event's state, so it wasn't deleted.", "state_unverified")
+		return envelope(
+			502,
+			"We couldn't check the event's state, so it wasn't deleted.",
+			"state_unverified",
+		)
 	}
 	if (isEventLive(data)) {
 		return envelope(

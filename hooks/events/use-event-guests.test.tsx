@@ -29,7 +29,9 @@ const page = (n: number, ids: number[], hasNext: boolean): EventGuestsPage => ({
 const err = (status: number) => Object.assign(new Error("x"), { response: { status, data: {} } })
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 
 beforeEach(() => {
 	getEventGuestsPage.mockReset()
@@ -63,7 +65,9 @@ describe("useEventGuests", () => {
 	})
 
 	it("fetches the next page only because `next` says so, and appends in order", async () => {
-		getEventGuestsPage.mockResolvedValueOnce(page(1, [3, 2], true)).mockResolvedValueOnce(page(2, [1], false))
+		getEventGuestsPage
+			.mockResolvedValueOnce(page(1, [3, 2], true))
+			.mockResolvedValueOnce(page(2, [1], false))
 		const { result } = renderHook(() => useEventGuests(ID), { wrapper })
 		await waitFor(() => expect(result.current.hasNextPage).toBe(true))
 		await act(() => result.current.fetchNextPage())
@@ -73,7 +77,13 @@ describe("useEventGuests", () => {
 	})
 
 	it("makes no further request when `next` is null, whatever the page size", async () => {
-		getEventGuestsPage.mockResolvedValue(page(1, Array.from({ length: 20 }, (_, i) => i + 1), false))
+		getEventGuestsPage.mockResolvedValue(
+			page(
+				1,
+				Array.from({ length: 20 }, (_, i) => i + 1),
+				false,
+			),
+		)
 		const { result } = renderHook(() => useEventGuests(ID, 20), { wrapper })
 		await waitFor(() => expect(result.current.hasLoaded).toBe(true))
 		expect(result.current.hasNextPage).toBe(false)
@@ -100,16 +110,19 @@ describe("useEventGuests", () => {
 		[403, "forbidden"],
 		[404, "not_found"],
 		[500, "server"],
-	])("an initial %i is %s, never an empty list, and a refusal is not retried", async (status, kind) => {
-		getEventGuestsPage.mockRejectedValue(err(status))
-		const { result } = renderHook(() => useEventGuests(ID), { wrapper })
-		await waitFor(() => expect(result.current.error).toBe(kind))
-		expect(result.current.phase).toBe("initial")
-		expect(result.current.hasLoaded).toBe(false)
-		expect(result.current.guests).toEqual([])
-		expect(result.current.isInitialLoading).toBe(false)
-		if (status < 500) expect(getEventGuestsPage).toHaveBeenCalledTimes(1)
-	})
+	])(
+		"an initial %i is %s, never an empty list, and a refusal is not retried",
+		async (status, kind) => {
+			getEventGuestsPage.mockRejectedValue(err(status))
+			const { result } = renderHook(() => useEventGuests(ID), { wrapper })
+			await waitFor(() => expect(result.current.error).toBe(kind))
+			expect(result.current.phase).toBe("initial")
+			expect(result.current.hasLoaded).toBe(false)
+			expect(result.current.guests).toEqual([])
+			expect(result.current.isInitialLoading).toBe(false)
+			if (status < 500) expect(getEventGuestsPage).toHaveBeenCalledTimes(1)
+		},
+	)
 
 	it("a network failure is reported as network", async () => {
 		getEventGuestsPage.mockRejectedValue(new Error("offline"))
@@ -118,7 +131,10 @@ describe("useEventGuests", () => {
 	})
 
 	it("an initial failure can be retried with refetch", async () => {
-		getEventGuestsPage.mockRejectedValueOnce(err(500)).mockRejectedValueOnce(err(500)).mockResolvedValue(page(1, [1], false))
+		getEventGuestsPage
+			.mockRejectedValueOnce(err(500))
+			.mockRejectedValueOnce(err(500))
+			.mockResolvedValue(page(1, [1], false))
 		const { result } = renderHook(() => useEventGuests(ID), { wrapper })
 		await waitFor(() => expect(result.current.error).toBe("server"))
 		await act(() => result.current.refetch())
@@ -127,7 +143,10 @@ describe("useEventGuests", () => {
 	})
 
 	it("a failed later page keeps the loaded guests and can be retried", async () => {
-		getEventGuestsPage.mockResolvedValueOnce(page(1, [2], true)).mockRejectedValueOnce(err(500)).mockRejectedValueOnce(err(500))
+		getEventGuestsPage
+			.mockResolvedValueOnce(page(1, [2], true))
+			.mockRejectedValueOnce(err(500))
+			.mockRejectedValueOnce(err(500))
 		const { result } = renderHook(() => useEventGuests(ID), { wrapper })
 		await waitFor(() => expect(result.current.hasNextPage).toBe(true))
 		await act(() => result.current.fetchNextPage())
@@ -157,11 +176,16 @@ describe("useEventGuests", () => {
 		expect(client.getQueryData(eventKeys.guests(7, 3, ID, 20))).toBeDefined()
 		expect(client.getQueryData(eventKeys.guests(8, 3, ID, 20))).toBeUndefined()
 		expect(client.getQueryData(eventKeys.guests(7, 2, ID, 20))).toBeUndefined()
-		expect(client.getQueryData(eventKeys.guests(7, 3, "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22", 20))).toBeUndefined()
+		expect(
+			client.getQueryData(eventKeys.guests(7, 3, "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22", 20)),
+		).toBeUndefined()
 	})
 
 	it("does not show another account's cached guests", async () => {
-		client.setQueryData(eventKeys.guests(8, 3, ID, 20), { pages: [page(1, [99], false)], pageParams: [1] })
+		client.setQueryData(eventKeys.guests(8, 3, ID, 20), {
+			pages: [page(1, [99], false)],
+			pageParams: [1],
+		})
 		getEventGuestsPage.mockResolvedValue(page(1, [1], false))
 		const { result } = renderHook(() => useEventGuests(ID, 20), { wrapper })
 		expect(result.current.guests).toEqual([])

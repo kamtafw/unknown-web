@@ -1,11 +1,7 @@
 import type { EventFormInitial } from "@/types/events/api"
 import { describe, expect, it } from "vitest"
 import { fakeFile, validValues } from "./__fixtures__/form"
-import {
-	DOCUMENT_MAX_BYTES,
-	MAX_DOCUMENTS,
-	MAX_TOTAL_UPLOAD_BYTES,
-} from "./constants"
+import { DOCUMENT_MAX_BYTES, MAX_DOCUMENTS, MAX_TOTAL_UPLOAD_BYTES } from "./constants"
 import {
 	isValidDateString,
 	isValidPasscode,
@@ -59,7 +55,12 @@ describe("dates and times", () => {
 })
 
 describe("validateSchedule", () => {
-	const ok = { startDate: "2026-11-01", startTime: "18:00", endDate: "2026-11-01", endTime: "20:00" }
+	const ok = {
+		startDate: "2026-11-01",
+		startTime: "18:00",
+		endDate: "2026-11-01",
+		endTime: "20:00",
+	}
 	it("accepts a valid schedule, including equal start and end", () => {
 		expect(validateSchedule(ok)).toEqual({})
 		expect(validateSchedule({ ...ok, endTime: "18:00" })).toEqual({})
@@ -96,9 +97,15 @@ describe("files", () => {
 		expect(validateCoverFile(fakeFile("a.gif", "image/gif", 10))).toMatch(/JPEG or PNG/)
 	})
 	it("decides documents by MIME type and size, not by extension", () => {
-		expect(validateDocumentFile(fakeFile("a.pdf", "application/pdf", DOCUMENT_MAX_BYTES))).toBeNull()
-		expect(validateDocumentFile(fakeFile("a.pdf", "application/pdf", DOCUMENT_MAX_BYTES + 1))).toMatch(/10 MB/)
-		expect(validateDocumentFile(fakeFile("a.pdf", "application/x-msdownload", 10))).toMatch(/supported/)
+		expect(
+			validateDocumentFile(fakeFile("a.pdf", "application/pdf", DOCUMENT_MAX_BYTES)),
+		).toBeNull()
+		expect(
+			validateDocumentFile(fakeFile("a.pdf", "application/pdf", DOCUMENT_MAX_BYTES + 1)),
+		).toMatch(/10 MB/)
+		expect(validateDocumentFile(fakeFile("a.pdf", "application/x-msdownload", 10))).toMatch(
+			/supported/,
+		)
 		expect(validateDocumentFile(fakeFile("a.exe", "application/pdf", 10))).toBeNull()
 	})
 })
@@ -115,22 +122,32 @@ describe("validateEventForm", () => {
 	})
 	it("requires a location on create, but not on edit", () => {
 		expect(validateEventForm(validValues({ coordinates: null }), create).coordinates).toBeTruthy()
-		expect(validateEventForm(validValues({ coordinates: null }), { mode: "edit", initial })).toEqual({})
+		expect(
+			validateEventForm(validValues({ coordinates: null }), { mode: "edit", initial }),
+		).toEqual({})
 	})
 	it("accepts zero coordinates", () => {
-		expect(validateEventForm(validValues({ coordinates: { latitude: 0, longitude: 0 } }), create)).toEqual({})
+		expect(
+			validateEventForm(validValues({ coordinates: { latitude: 0, longitude: 0 } }), create),
+		).toEqual({})
 	})
 	it("requires a passcode when creating a locked event", () => {
 		expect(validateEventForm(validValues({ isLocked: true }), create).passcode).toBeTruthy()
 		expect(validateEventForm(validValues({ isLocked: true, passcode: "0042" }), create)).toEqual({})
-		expect(validateEventForm(validValues({ isLocked: true, passcode: "42" }), create).passcode).toBeTruthy()
+		expect(
+			validateEventForm(validValues({ isLocked: true, passcode: "42" }), create).passcode,
+		).toBeTruthy()
 	})
 	it("requires a new passcode when locking an unlocked event, but not when it is already locked", () => {
 		const lock = validValues({ isLocked: true })
 		expect(validateEventForm(lock, { mode: "edit", initial }).passcode).toBeTruthy()
-		expect(validateEventForm(lock, { mode: "edit", initial: { ...initial, isLocked: true } })).toEqual({})
+		expect(
+			validateEventForm(lock, { mode: "edit", initial: { ...initial, isLocked: true } }),
+		).toEqual({})
 		const bad = validValues({ isLocked: true, passcode: "12" })
-		expect(validateEventForm(bad, { mode: "edit", initial: { ...initial, isLocked: true } }).passcode).toBeTruthy()
+		expect(
+			validateEventForm(bad, { mode: "edit", initial: { ...initial, isLocked: true } }).passcode,
+		).toBeTruthy()
 	})
 	it("ignores the passcode entirely when the event is not locked", () => {
 		expect(validateEventForm(validValues({ passcode: "xx" }), create)).toEqual({})
@@ -151,16 +168,32 @@ describe("validateEventForm", () => {
 		expect(errors["links.4.url"]).toBeUndefined()
 	})
 	it("caps documents by count and combined size", () => {
-		const pdf = (n: number, size = 1000) => ({ name: `d${n}`, file: fakeFile(`d${n}.pdf`, "application/pdf", size) })
+		const pdf = (n: number, size = 1000) => ({
+			name: `d${n}`,
+			file: fakeFile(`d${n}.pdf`, "application/pdf", size),
+		})
 		const many = Array.from({ length: MAX_DOCUMENTS + 1 }, (_, i) => pdf(i))
-		expect(validateEventForm(validValues({ documents: { mode: "replace", items: many } }), create).documents).toBeTruthy()
+		expect(
+			validateEventForm(validValues({ documents: { mode: "replace", items: many } }), create)
+				.documents,
+		).toBeTruthy()
 
-		const big = [pdf(1, DOCUMENT_MAX_BYTES), pdf(2, DOCUMENT_MAX_BYTES), pdf(3, DOCUMENT_MAX_BYTES), pdf(4, DOCUMENT_MAX_BYTES)]
+		const big = [
+			pdf(1, DOCUMENT_MAX_BYTES),
+			pdf(2, DOCUMENT_MAX_BYTES),
+			pdf(3, DOCUMENT_MAX_BYTES),
+			pdf(4, DOCUMENT_MAX_BYTES),
+		]
 		expect(big.reduce((n, d) => n + d.file.size, 0)).toBeGreaterThan(MAX_TOTAL_UPLOAD_BYTES)
-		expect(validateEventForm(validValues({ documents: { mode: "replace", items: big } }), create).upload).toBeTruthy()
+		expect(
+			validateEventForm(validValues({ documents: { mode: "replace", items: big } }), create).upload,
+		).toBeTruthy()
 	})
 	it("flags each bad document row", () => {
-		const items = [{ name: "", file: fakeFile("a.pdf", "application/pdf", 10) }, { name: "x", file: fakeFile("a.exe", "application/x-msdownload", 10) }]
+		const items = [
+			{ name: "", file: fakeFile("a.pdf", "application/pdf", 10) },
+			{ name: "x", file: fakeFile("a.exe", "application/x-msdownload", 10) },
+		]
 		const errors = validateEventForm(validValues({ documents: { mode: "replace", items } }), create)
 		expect(errors["documents.0.name"]).toBeTruthy()
 		expect(errors["documents.1.file"]).toBeTruthy()
@@ -171,9 +204,12 @@ describe("normalizeCommentMessage (P3-06)", () => {
 	it("trims and keeps the inner text as written", () => {
 		expect(normalizeCommentMessage("  hello \n world  ")).toBe("hello \n world")
 	})
-	it.each(["", "   ", "\n\t \r\n", "\u00a0", null, undefined, 3, {}, []])("is null for blank or non-string %j", (value) => {
-		expect(normalizeCommentMessage(value)).toBeNull()
-	})
+	it.each(["", "   ", "\n\t \r\n", "\u00a0", null, undefined, 3, {}, []])(
+		"is null for blank or non-string %j",
+		(value) => {
+			expect(normalizeCommentMessage(value)).toBeNull()
+		},
+	)
 	it("has no maximum length", () => {
 		const long = "a".repeat(250_000)
 		expect(normalizeCommentMessage(long)).toBe(long)

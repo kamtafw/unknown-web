@@ -15,7 +15,9 @@ function relativeTime(createdAt: string | null): { label: string; iso: string } 
 	const date = new Date(createdAt)
 	if (Number.isNaN(date.getTime())) return null
 	const label =
-		Date.now() - date.getTime() < 60_000 ? "just now" : formatDistanceToNowStrict(date, { addSuffix: true })
+		Date.now() - date.getTime() < 60_000
+			? "just now"
+			: formatDistanceToNowStrict(date, { addSuffix: true })
 	return { label, iso: date.toISOString() }
 }
 
@@ -28,7 +30,9 @@ function CommentItem({ comment }: { comment: EventComment }) {
 	return (
 		<li className="flex gap-3">
 			<Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[13px] font-semibold text-primary">
-				{author?.photo && <Avatar.Image src={author.photo} alt="" className="size-full object-cover" />}
+				{author?.photo && (
+					<Avatar.Image src={author.photo} alt="" className="size-full object-cover" />
+				)}
 				<Avatar.Fallback aria-hidden>{initial}</Avatar.Fallback>
 			</Avatar.Root>
 			<div className="min-w-0 flex-1">
@@ -56,7 +60,11 @@ function CommentItem({ comment }: { comment: EventComment }) {
 
 function Skeleton() {
 	return (
-		<div aria-busy="true" aria-label="Loading comments" className="flex animate-pulse flex-col gap-4">
+		<div
+			aria-busy="true"
+			aria-label="Loading comments"
+			className="flex animate-pulse flex-col gap-4"
+		>
 			{[0, 1, 2].map((i) => (
 				<div key={i} className="flex gap-3">
 					<div className="size-9 shrink-0 rounded-full bg-muted" />
@@ -78,8 +86,14 @@ function Skeleton() {
 function failureMessage(kind: EventErrorKind, phase: "initial" | "next-page" | "refresh") {
 	if (kind === "forbidden") {
 		return phase === "initial"
-			? { title: "You can't view these comments", description: "You don't have access to this event's comments." }
-			: { title: "You may no longer have access", description: "Showing the comments loaded earlier." }
+			? {
+					title: "You can't view these comments",
+					description: "You don't have access to this event's comments.",
+				}
+			: {
+					title: "You may no longer have access",
+					description: "Showing the comments loaded earlier.",
+				}
 	}
 	if (kind === "not_found") {
 		return phase === "initial"
@@ -89,20 +103,28 @@ function failureMessage(kind: EventErrorKind, phase: "initial" | "next-page" | "
 				}
 			: phase === "next-page"
 				? { title: "No more comments could be loaded", description: "Refresh to see the latest." }
-				: { title: "Couldn't refresh comments", description: "Showing the comments loaded earlier." }
+				: {
+						title: "Couldn't refresh comments",
+						description: "Showing the comments loaded earlier.",
+					}
 	}
 	if (kind === "unauthorized") {
-		return { title: "Your session has expired", description: "Sign in again to see these comments." }
+		return {
+			title: "Your session has expired",
+			description: "Sign in again to see these comments.",
+		}
 	}
 	return {
 		title: phase === "initial" ? "Couldn't load comments" : "Couldn't update comments",
-		description: phase === "initial" ? "Check your connection and try again." : "Showing the comments loaded earlier.",
+		description:
+			phase === "initial"
+				? "Check your connection and try again."
+				: "Showing the comments loaded earlier.",
 	}
 }
 
 /**
- * The "Comments" section of a full event: the thread (read side, P3-05) and a composer (P3-06).
- * There are no replies, reactions, edits or deletes.
+ * The "Comments" section of a full event: the thread (read side) and a composer. There are no replies, reactions, edits or deletes.
  * Messages and names are text, never HTML. Order is the backend's (newest first); further pages are
  * appended and de-duplicated by id. The thread is not live: it is as fresh as the last load or an
  * explicit Refresh. Mounted only for a full event's active section.
@@ -171,7 +193,10 @@ export function EventCommentsSection({ eventId }: { eventId: string }) {
 			<EventCommentComposer eventId={eventId} />
 
 			{failure && (
-				<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px]">
+				<div
+					role="alert"
+					className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px]"
+				>
 					<p className="font-semibold text-foreground">{failure.title}</p>
 					<p className="text-muted-foreground">{failure.description}</p>
 				</div>

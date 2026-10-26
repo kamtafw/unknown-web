@@ -3,11 +3,7 @@
  * state (and what an edit is compared against) is unit-testable.
  */
 
-import type {
-	EventFormInitial,
-	EventFormValues,
-	EventFullDetails,
-} from "@/types/events/api"
+import type { EventFormInitial, EventFormValues, EventFullDetails } from "@/types/events/api"
 
 /** a new event: nothing is pre-filled for the schedule or the location (no silent defaults) */
 export function emptyFormValues(): EventFormValues {

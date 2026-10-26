@@ -33,7 +33,9 @@ describe("LocationRow", () => {
 	})
 
 	it("says what is happening instead of a place when there is no location", () => {
-		const { rerender } = render(<LocationRow status="locating" address={null} onRefresh={vi.fn()} />)
+		const { rerender } = render(
+			<LocationRow status="locating" address={null} onRefresh={vi.fn()} />,
+		)
 		expect(screen.getByText("Finding location…")).toBeInTheDocument()
 		rerender(<LocationRow status="denied" address="stale" onRefresh={vi.fn()} />)
 		// a stale address must never be shown without a current location

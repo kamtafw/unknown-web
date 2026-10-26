@@ -16,12 +16,17 @@ const OTHER = "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22"
 const err = (status: number, message?: string) =>
 	Object.assign(new Error("x"), { response: { status, data: message ? { message } : {} } })
 const twoPages = (key: string) => ({
-	pages: [{ page: 1, hasNext: true, [key]: [] }, { page: 2, hasNext: false, [key]: [] }],
+	pages: [
+		{ page: 1, hasNext: true, [key]: [] },
+		{ page: 2, hasNext: false, [key]: [] },
+	],
 	pageParams: [1, 2],
 })
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 const seed = () => {
 	const keys = {
 		guests: eventKeys.guests(7, 3, ID, 20),
@@ -116,20 +121,23 @@ describe("useRemoveEventGuest", () => {
 		[401, undefined, "unauthorized"],
 		[400, "user id required", "validation"],
 		[500, undefined, "server"],
-	])("a %i (%s) resolves false, reports %s and leaves the caches alone", async (status, message, kind) => {
-		removeEventGuest.mockRejectedValue(err(status, message))
-		const keys = seed()
-		const { result } = renderHook(() => useRemoveEventGuest(ID), { wrapper })
-		let out: unknown = true
-		await act(async () => {
-			out = await result.current.remove(42)
-		})
-		expect(out).toBe(false)
-		await waitFor(() => expect(result.current.error).toBe(kind))
-		expect(client.getQueryState(keys.guests)?.isInvalidated).toBe(false)
-		expect(client.getQueryState(keys.comments)?.isInvalidated).toBe(false)
-		expect((client.getQueryData(keys.guests) as { pages: unknown[] }).pages).toHaveLength(2)
-	})
+	])(
+		"a %i (%s) resolves false, reports %s and leaves the caches alone",
+		async (status, message, kind) => {
+			removeEventGuest.mockRejectedValue(err(status, message))
+			const keys = seed()
+			const { result } = renderHook(() => useRemoveEventGuest(ID), { wrapper })
+			let out: unknown = true
+			await act(async () => {
+				out = await result.current.remove(42)
+			})
+			expect(out).toBe(false)
+			await waitFor(() => expect(result.current.error).toBe(kind))
+			expect(client.getQueryState(keys.guests)?.isInvalidated).toBe(false)
+			expect(client.getQueryState(keys.comments)?.isInvalidated).toBe(false)
+			expect((client.getQueryData(keys.guests) as { pages: unknown[] }).pages).toHaveLength(2)
+		},
+	)
 
 	it("reports a network failure and can retry", async () => {
 		removeEventGuest.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(undefined)

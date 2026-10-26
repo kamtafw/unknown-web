@@ -14,9 +14,17 @@ vi.mock("@/hooks/events/use-remove-event-guest", () => ({
 }))
 const useRemove = vi.fn()
 const toastSuccess = vi.fn()
-vi.mock("@/lib/toast", () => ({ toast: { success: (m: string) => toastSuccess(m), error: vi.fn(), info: vi.fn() } }))
+vi.mock("@/lib/toast", () => ({
+	toast: { success: (m: string) => toastSuccess(m), error: vi.fn(), info: vi.fn() },
+}))
 
-const guest: EventGuest = { userId: 42, name: "Bola Ade", username: "bolaa", photo: null, role: "guest" }
+const guest: EventGuest = {
+	userId: 42,
+	name: "Bola Ade",
+	username: "bolaa",
+	photo: null,
+	role: "guest",
+}
 const open = () => fireEvent.click(screen.getByRole("button", { name: "Remove Bola Ade" }))
 
 beforeEach(() => {

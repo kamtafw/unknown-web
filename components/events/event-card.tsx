@@ -17,7 +17,12 @@ const COVER = "relative aspect-[352/132] overflow-hidden rounded-xl bg-muted"
 function LockGlyph() {
 	return (
 		<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-			<path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#33395B" strokeWidth="2.2" strokeLinecap="round" />
+			<path
+				d="M8 10.5V8a4 4 0 0 1 8 0v2.5"
+				stroke="#33395B"
+				strokeWidth="2.2"
+				strokeLinecap="round"
+			/>
 			<rect x="4.5" y="10" width="15" height="11.5" rx="3.5" fill="#FD8650" />
 			<circle cx="12" cy="14.6" r="1.6" fill="#fff" />
 			<rect x="11.3" y="15" width="1.4" height="3.2" rx="0.7" fill="#fff" />

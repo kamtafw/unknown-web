@@ -57,7 +57,11 @@ export function RemoveGuestDialog({ eventId, guest }: { eventId: string; guest: 
 		const result = await remove(guest.userId)
 		if (result === false) return
 		setOpen(false)
-		toast.success(result === "already_removed" ? `${guest.name} was already removed.` : `${guest.name} was removed.`)
+		toast.success(
+			result === "already_removed"
+				? `${guest.name} was already removed.`
+				: `${guest.name} was removed.`,
+		)
 	}
 
 	return (
@@ -75,30 +79,30 @@ export function RemoveGuestDialog({ eventId, guest }: { eventId: string; guest: 
 				<AlertDialogHeader>
 					<AlertDialogTitle>Remove {guest.name}?</AlertDialogTitle>
 					<AlertDialogDescription>
-						This removes {guest.name} from the event guest list and also deletes their comments in this event.
-						This can&apos;t be undone.
+						This removes {guest.name} from the event guest list and also deletes their comments in
+						this event. This can&apos;t be undone.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
-					{error && (
-						<p role="alert" className="text-[12.5px] font-medium text-destructive">
-							{removeGuestErrorText(error)}
-						</p>
-					)}
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isPending} className={secondaryButton}>
-							Keep guest
-						</AlertDialogCancel>
-						<button
-							type="button"
-							onClick={() => void confirm()}
-							disabled={isPending}
-							className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive px-4 text-[13px] font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-60"
-						>
-							{isPending && <Loader2 size={13} aria-hidden className="animate-spin" />}
-							{isPending ? "Removing…" : error ? "Try again" : "Remove guest"}
-						</button>
-					</AlertDialogFooter>
-				</AlertDialogContent>
+				{error && (
+					<p role="alert" className="text-[12.5px] font-medium text-destructive">
+						{removeGuestErrorText(error)}
+					</p>
+				)}
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={isPending} className={secondaryButton}>
+						Keep guest
+					</AlertDialogCancel>
+					<button
+						type="button"
+						onClick={() => void confirm()}
+						disabled={isPending}
+						className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive px-4 text-[13px] font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-60"
+					>
+						{isPending && <Loader2 size={13} aria-hidden className="animate-spin" />}
+						{isPending ? "Removing…" : error ? "Try again" : "Remove guest"}
+					</button>
+				</AlertDialogFooter>
+			</AlertDialogContent>
 		</AlertDialog>
 	)
 }

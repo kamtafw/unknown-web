@@ -10,7 +10,10 @@ function installGeolocation() {
 	requests = []
 	Object.defineProperty(navigator, "geolocation", {
 		configurable: true,
-		value: { getCurrentPosition: (success: Success, failure: Failure) => requests.push({ success, failure }) },
+		value: {
+			getCurrentPosition: (success: Success, failure: Failure) =>
+				requests.push({ success, failure }),
+		},
 	})
 }
 const at = (latitude: number, longitude: number) => ({ coords: { latitude, longitude } })
@@ -31,14 +34,20 @@ describe("useFormLocation", () => {
 		expect(result.current.status).toBe("locating")
 		expect(requests).toHaveLength(1)
 		act(() => requests[0].success(at(9.9, 8.9)))
-		expect(result.current).toMatchObject({ status: "ready", coordinates: { latitude: 9.9, longitude: 8.9 } })
+		expect(result.current).toMatchObject({
+			status: "ready",
+			coordinates: { latitude: 9.9, longitude: 8.9 },
+		})
 	})
 
 	it("accepts zero as a valid coordinate", () => {
 		const { result } = renderHook(() => useFormLocation())
 		act(() => result.current.request())
 		act(() => requests[0].success(at(0, 0)))
-		expect(result.current).toMatchObject({ status: "ready", coordinates: { latitude: 0, longitude: 0 } })
+		expect(result.current).toMatchObject({
+			status: "ready",
+			coordinates: { latitude: 0, longitude: 0 },
+		})
 	})
 
 	it.each([

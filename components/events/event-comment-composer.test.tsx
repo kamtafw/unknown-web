@@ -34,14 +34,17 @@ describe("EventCommentComposer", () => {
 		expect(box().tagName).toBe("TEXTAREA")
 	})
 
-	it.each(["", "   ", "\n \t\n"])("rejects %j before submitting and keeps what was typed", (value) => {
-		render(<EventCommentComposer eventId="e1" />)
-		type(value)
-		submit()
-		expect(post).not.toHaveBeenCalled()
-		expect(screen.getByRole("alert")).toHaveTextContent(/write a comment before posting/i)
-		expect(box().value).toBe(value)
-	})
+	it.each(["", "   ", "\n \t\n"])(
+		"rejects %j before submitting and keeps what was typed",
+		(value) => {
+			render(<EventCommentComposer eventId="e1" />)
+			type(value)
+			submit()
+			expect(post).not.toHaveBeenCalled()
+			expect(screen.getByRole("alert")).toHaveTextContent(/write a comment before posting/i)
+			expect(box().value).toBe(value)
+		},
+	)
 
 	it("hands the text to the hook (which trims) and clears only after success", async () => {
 		render(<EventCommentComposer eventId="e1" />)
@@ -103,7 +106,9 @@ describe("EventCommentComposer", () => {
 	it("404 does not say the event is missing; 403 does not mention the live session or logging in", () => {
 		usePostEventComment.mockReturnValue(hook({ error: "not_found" }))
 		const { rerender } = render(<EventCommentComposer eventId="e1" />)
-		expect(screen.getByRole("alert")).not.toHaveTextContent(/event isn.t available|deleted|not found/i)
+		expect(screen.getByRole("alert")).not.toHaveTextContent(
+			/event isn.t available|deleted|not found/i,
+		)
 		usePostEventComment.mockReturnValue(hook({ error: "forbidden" }))
 		rerender(<EventCommentComposer eventId="e1" />)
 		const alert = screen.getByRole("alert")
@@ -125,7 +130,9 @@ describe("EventCommentComposer", () => {
 		expect(box().value).toBe(long)
 		submit()
 		expect(post).toHaveBeenCalledWith(long)
-		expect(screen.queryByText(/\d+\s*\/\s*\d+|characters? (left|remaining)/i)).not.toBeInTheDocument()
+		expect(
+			screen.queryByText(/\d+\s*\/\s*\d+|characters? (left|remaining)/i),
+		).not.toBeInTheDocument()
 	})
 
 	it("offers only the textarea and Post comment: no attachments, emoji or other controls", () => {

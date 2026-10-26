@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import type { EventCard } from "@/types/events/api"
+import { describe, expect, it } from "vitest"
 import { filterNearbyEvents, normalizeQuery } from "./search"
 
 const ev = (over: Partial<EventCard>): EventCard => ({

@@ -20,17 +20,29 @@ function filterGuests(guests: EventGuest[], term: string): EventGuest[] {
 	)
 }
 
-function GuestRow({ guest, eventId, canRemove }: { guest: EventGuest; eventId: string; canRemove: boolean }) {
+function GuestRow({
+	guest,
+	eventId,
+	canRemove,
+}: {
+	guest: EventGuest
+	eventId: string
+	canRemove: boolean
+}) {
 	const initial = guest.name.trim().charAt(0).toUpperCase() || "?"
 	return (
 		<li className="flex items-center gap-3">
 			<Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[13px] font-semibold text-primary">
-				{guest.photo && <Avatar.Image src={guest.photo} alt="" className="size-full object-cover" />}
+				{guest.photo && (
+					<Avatar.Image src={guest.photo} alt="" className="size-full object-cover" />
+				)}
 				<Avatar.Fallback aria-hidden>{initial}</Avatar.Fallback>
 			</Avatar.Root>
 			<span className="min-w-0 flex-1">
 				<span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-					<span className="break-words text-[13px] font-semibold text-foreground">{guest.name}</span>
+					<span className="break-words text-[13px] font-semibold text-foreground">
+						{guest.name}
+					</span>
 					{guest.role === "host" && (
 						<span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
 							Host
@@ -38,7 +50,9 @@ function GuestRow({ guest, eventId, canRemove }: { guest: EventGuest; eventId: s
 					)}
 				</span>
 				{guest.username && guest.username !== guest.name && (
-					<span className="block break-all text-[12px] text-muted-foreground">@{guest.username}</span>
+					<span className="block break-all text-[12px] text-muted-foreground">
+						@{guest.username}
+					</span>
 				)}
 			</span>
 			{canRemove && <RemoveGuestDialog eventId={eventId} guest={guest} />}
@@ -64,11 +78,28 @@ function Skeleton() {
  * `@username`, a `Host` badge for role `host` and an avatar with an initial fallback. RSVP
  * status, join date, contact details and online status are neither fetched into view nor shown
  * (A-17). "Search guest" filters only the rows loaded so far; it never makes a request, and while
- * more pages exist that is said plainly and Load more stays available. A host also sees a Remove action per row (P3-08A; `isHost` only shows it, the server decides). There is no add control (later task). Mounted only for a full event's active section.
+ * more pages exist that is said plainly and Load more stays available. A host also sees a Remove
+ * action per row (P3-08A; `isHost` only shows it, the server decides). There is no add control
+ * (later task). Mounted only for a full event's active section.
  */
-export function EventGuestsSection({ eventId, isHost = false }: { eventId: string; isHost?: boolean }) {
-	const { guests, hasLoaded, isInitialLoading, error, phase, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-		useEventGuests(eventId)
+export function EventGuestsSection({
+	eventId,
+	isHost = false,
+}: {
+	eventId: string
+	isHost?: boolean
+}) {
+	const {
+		guests,
+		hasLoaded,
+		isInitialLoading,
+		error,
+		phase,
+		hasNextPage,
+		isFetchingNextPage,
+		fetchNextPage,
+		refetch,
+	} = useEventGuests(eventId)
 	const [term, setTerm] = useState("")
 	const searchId = useId()
 	const searching = term.trim() !== ""
@@ -139,7 +170,11 @@ export function EventGuestsSection({ eventId, isHost = false }: { eventId: strin
 				<label htmlFor={searchId} className="sr-only">
 					Search guest
 				</label>
-				<Search size={14} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+				<Search
+					size={14}
+					aria-hidden
+					className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-primary"
+				/>
 				<input
 					id={searchId}
 					type="search"
@@ -158,7 +193,10 @@ export function EventGuestsSection({ eventId, isHost = false }: { eventId: strin
 			)}
 
 			{failure && (
-				<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px]">
+				<div
+					role="alert"
+					className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[12.5px]"
+				>
 					<p className="font-semibold text-foreground">{failure.title}</p>
 					<p className="text-muted-foreground">{failure.description}</p>
 				</div>

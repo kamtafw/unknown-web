@@ -1,5 +1,5 @@
-import { format } from "date-fns"
 import type { EventCard } from "@/types/events/api"
+import { format } from "date-fns"
 
 /** parse `YYYY-MM-DD` as a local calendar date (no timezone shift) */
 function parseDate(value: string): Date | null {
@@ -67,7 +67,8 @@ export function formatListDate(
 	const sameDay = !end || event.endDate === event.startDate
 
 	const { startTime, endTime } = event
-	const time = startTime && endTime && endTime !== startTime ? `${startTime} - ${endTime}` : startTime
+	const time =
+		startTime && endTime && endTime !== startTime ? `${startTime} - ${endTime}` : startTime
 
 	return {
 		day: sameDay ? shortDay(start, now) : `${shortDay(start, now)} – ${shortDay(end, now)}`,

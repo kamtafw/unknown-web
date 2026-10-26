@@ -18,7 +18,7 @@ const page = (n: number, events: EventCard[], hasNext = true): EventsPage => ({
 describe("trailingEmptyPages", () => {
 	it("is 0 for no pages or a non-empty last page", () => {
 		expect(trailingEmptyPages(undefined)).toBe(0)
-		expect(trailingEmptyPages([page(1, [])] .concat(page(2, [ev])))).toBe(0)
+		expect(trailingEmptyPages([page(1, [])].concat(page(2, [ev])))).toBe(0)
 	})
 
 	it("counts only the empty pages at the end", () => {

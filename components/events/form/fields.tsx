@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar,Clock } from "lucide-react"
 import type { ReactNode } from "react"
 
 /** text input look shared with the Events search field (white, 1 px border, blue focus) */
@@ -10,7 +10,10 @@ export const INPUT =
 
 export const SECTION_TITLE = "text-[14px] font-bold text-foreground"
 
-export function describedBy(id: string, opts: { hint?: string; error?: string }): string | undefined {
+export function describedBy(
+	id: string,
+	opts: { hint?: string; error?: string },
+): string | undefined {
 	const ids = [opts.error ? `${id}-error` : null, opts.hint ? `${id}-hint` : null].filter(Boolean)
 	return ids.length ? ids.join(" ") : undefined
 }

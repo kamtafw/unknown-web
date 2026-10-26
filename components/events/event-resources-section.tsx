@@ -7,7 +7,15 @@ import { FileText, Link2, LinkIcon, Lock, Pencil, ShieldAlert, WifiOff } from "l
 import { RetryButton, StateMessage, secondaryButton } from "./event-list"
 
 /** opens in a new tab; the address is re-checked here so only http(s) can ever become an href */
-function ExternalLink({ url, className, children }: { url: string; className: string; children: React.ReactNode }) {
+function ExternalLink({
+	url,
+	className,
+	children,
+}: {
+	url: string
+	className: string
+	children: React.ReactNode
+}) {
 	const href = normalizeHttpUrl(url)
 	if (!href) return <div className={className}>{children}</div>
 	return (
@@ -26,7 +34,11 @@ function documentMeta(doc: EventResourceDocument): string {
 
 function Skeleton() {
 	return (
-		<div aria-busy="true" aria-label="Loading links and documents" className="flex animate-pulse flex-col gap-3">
+		<div
+			aria-busy="true"
+			aria-label="Loading links and documents"
+			className="flex animate-pulse flex-col gap-3"
+		>
 			{[0, 1, 2].map((i) => (
 				<div key={i} className="h-14 rounded-xl bg-muted" />
 			))}
@@ -106,7 +118,9 @@ export function EventResourcesSection({
 			<StateMessage
 				icon={<LinkIcon size={22} aria-hidden />}
 				title="No links or documents yet"
-				description={isHost ? "Add links or documents by editing this event." : "The host hasn't added any."}
+				description={
+					isHost ? "Add links or documents by editing this event." : "The host hasn't added any."
+				}
 			>
 				{isHost && (
 					<button type="button" onClick={onEdit} className={secondaryButton}>
@@ -131,7 +145,9 @@ export function EventResourcesSection({
 								<ExternalLink url={link.url} className={ROW}>
 									<Link2 size={16} aria-hidden className="shrink-0 text-primary" />
 									<span className="flex min-w-0 flex-col">
-										<span className="break-words text-[13px] font-semibold text-foreground">{link.name}</span>
+										<span className="break-words text-[13px] font-semibold text-foreground">
+											{link.name}
+										</span>
 										<span className="break-all text-[12px] text-muted-foreground">{link.url}</span>
 									</span>
 								</ExternalLink>
@@ -154,7 +170,9 @@ export function EventResourcesSection({
 									<ExternalLink url={doc.url} className={ROW}>
 										<FileText size={16} aria-hidden className="shrink-0 text-primary" />
 										<span className="flex min-w-0 flex-col">
-											<span className="break-words text-[13px] font-semibold text-foreground">{doc.name}</span>
+											<span className="break-words text-[13px] font-semibold text-foreground">
+												{doc.name}
+											</span>
 											{meta && <span className="text-[12px] text-muted-foreground">{meta}</span>}
 										</span>
 									</ExternalLink>

@@ -49,7 +49,9 @@ export function usePostEventComment(eventId: string) {
 		}
 	}
 
-	const error: EventErrorKind | null = mutation.isError ? describeEventError(mutation.error).kind : null
+	const error: EventErrorKind | null = mutation.isError
+		? describeEventError(mutation.error).kind
+		: null
 
 	return { post, isPending: mutation.isPending, error, clearError: reset }
 }

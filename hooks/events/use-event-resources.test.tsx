@@ -16,7 +16,9 @@ const data = { links: [{ name: "Agenda", url: "https://example.com/a" }], docume
 const err = (status: number) => Object.assign(new Error("x"), { response: { status, data: {} } })
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 
 beforeEach(() => {
 	getEventResources.mockReset()
@@ -45,7 +47,10 @@ describe("useEventResources", () => {
 	})
 
 	it("does not reuse another account's cached resources", async () => {
-		client.setQueryData(eventKeys.resources(8, 3, ID), { links: [{ name: "X", url: "https://x.test" }], documents: [] })
+		client.setQueryData(eventKeys.resources(8, 3, ID), {
+			links: [{ name: "X", url: "https://x.test" }],
+			documents: [],
+		})
 		getEventResources.mockResolvedValue(data)
 		const { result } = renderHook(() => useEventResources(ID), { wrapper })
 		expect(result.current.resources).toBeNull()
@@ -87,7 +92,10 @@ describe("useEventResources", () => {
 
 	it("refetch recovers after a failure", async () => {
 		// the hook retries a transient failure once, so the first attempt and its retry both fail
-		getEventResources.mockRejectedValueOnce(err(500)).mockRejectedValueOnce(err(500)).mockResolvedValue(data)
+		getEventResources
+			.mockRejectedValueOnce(err(500))
+			.mockRejectedValueOnce(err(500))
+			.mockResolvedValue(data)
 		const { result } = renderHook(() => useEventResources(ID), { wrapper })
 		await waitFor(() => expect(result.current.errorKind).toBe("server"))
 		await result.current.refetch()

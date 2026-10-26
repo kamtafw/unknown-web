@@ -1,7 +1,7 @@
 "use client"
 
-import { Switch } from "@/components/ui/switch"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Switch } from "@/components/ui/switch"
 import { PASSCODE_LENGTH } from "@/lib/events/constants"
 import type { EventPrivacy } from "@/types/events/api"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
@@ -13,7 +13,8 @@ const PRIVACY: { value: EventPrivacy; label: string; description: string }[] = [
 	{
 		value: "friends",
 		label: "Friends",
-		description: "People who aren't admitted see limited details. Friend-only access isn't enforced yet.",
+		description:
+			"People who aren't admitted see limited details. Friend-only access isn't enforced yet.",
 	},
 	{
 		value: "private",
@@ -88,7 +89,11 @@ export function AccessField({
 					>
 						<InputOTPGroup className="gap-2">
 							{Array.from({ length: PASSCODE_LENGTH }, (_, i) => (
-								<InputOTPSlot key={i} index={i} className="size-11 rounded-xl border border-border bg-card" />
+								<InputOTPSlot
+									key={i}
+									index={i}
+									className="size-11 rounded-xl border border-border bg-card"
+								/>
 							))}
 						</InputOTPGroup>
 					</InputOTP>
@@ -96,9 +101,14 @@ export function AccessField({
 				</div>
 			) : (
 				<fieldset className="flex flex-col gap-2">
-					<legend className="mb-1 text-[13px] font-semibold text-foreground">Who can see this event</legend>
+					<legend className="mb-1 text-[13px] font-semibold text-foreground">
+						Who can see this event
+					</legend>
 					{PRIVACY.map((opt) => (
-						<label key={opt.value} className="flex items-start gap-2.5 rounded-xl border border-border px-3 py-2.5 has-[:checked]:border-primary">
+						<label
+							key={opt.value}
+							className="flex items-start gap-2.5 rounded-xl border border-border px-3 py-2.5 has-[:checked]:border-primary"
+						>
 							<input
 								type="radio"
 								name={`${id}-privacy`}
@@ -109,7 +119,9 @@ export function AccessField({
 							/>
 							<span className="min-w-0">
 								<span className="block text-[13px] font-semibold text-foreground">{opt.label}</span>
-								<span className="block text-[12px] leading-relaxed text-muted-foreground">{opt.description}</span>
+								<span className="block text-[12px] leading-relaxed text-muted-foreground">
+									{opt.description}
+								</span>
 							</span>
 						</label>
 					))}

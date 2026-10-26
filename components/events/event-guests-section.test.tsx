@@ -89,7 +89,9 @@ describe("EventGuestsSection", () => {
 
 	it("avatar falls back to the initial; a missing or repeated username shows no @", () => {
 		useEventGuests.mockReturnValue(
-			state({ guests: [g(1, { name: "ada obi", username: "" }), g(2, { name: "sam", username: "sam" })] }),
+			state({
+				guests: [g(1, { name: "ada obi", username: "" }), g(2, { name: "sam", username: "sam" })],
+			}),
 		)
 		renderSection()
 		const items = screen.getAllByRole("listitem")
@@ -99,7 +101,9 @@ describe("EventGuestsSection", () => {
 	})
 
 	it("renders names as text, never as HTML", () => {
-		useEventGuests.mockReturnValue(state({ guests: [g(1, { name: "<img src=x onerror=alert(1)>", username: "<b>x</b>" })] }))
+		useEventGuests.mockReturnValue(
+			state({ guests: [g(1, { name: "<img src=x onerror=alert(1)>", username: "<b>x</b>" })] }),
+		)
 		const { container } = renderSection()
 		expect(container.querySelector("img")).toBeNull()
 		expect(container.querySelector("b")).toBeNull()
@@ -156,7 +160,10 @@ describe("EventGuestsSection", () => {
 		type("ob")
 		expect(names()).toHaveLength(1)
 		useEventGuests.mockReturnValue(
-			state({ guests: [...roster(), g(4, { name: "Obi Nze", username: "obin" })], hasNextPage: false }),
+			state({
+				guests: [...roster(), g(4, { name: "Obi Nze", username: "obin" })],
+				hasNextPage: false,
+			}),
 		)
 		rerender(<EventGuestsSection eventId="e1" />)
 		expect(names()).toHaveLength(2)
@@ -176,7 +183,9 @@ describe("EventGuestsSection", () => {
 	})
 
 	it("Load more shows a pending state and cannot be clicked twice", () => {
-		useEventGuests.mockReturnValue(state({ guests: roster(), hasNextPage: true, isFetchingNextPage: true }))
+		useEventGuests.mockReturnValue(
+			state({ guests: roster(), hasNextPage: true, isFetchingNextPage: true }),
+		)
 		renderSection()
 		const pending = screen.getByRole("button", { name: "Loading…" })
 		expect(pending).toBeDisabled()
@@ -185,7 +194,9 @@ describe("EventGuestsSection", () => {
 	})
 
 	it("initial 403 shows the contextual message: not an error, no retry, no sign-in prompt, no raw text", () => {
-		useEventGuests.mockReturnValue(state({ hasLoaded: false, error: "forbidden", phase: "initial" }))
+		useEventGuests.mockReturnValue(
+			state({ hasLoaded: false, error: "forbidden", phase: "initial" }),
+		)
 		renderSection()
 		expect(screen.getByText("Only the host and guests can see the guest list.")).toBeInTheDocument()
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
@@ -195,25 +206,32 @@ describe("EventGuestsSection", () => {
 	})
 
 	it("initial 404 is 'guest list isn't available', not an empty list and not a login prompt", () => {
-		useEventGuests.mockReturnValue(state({ hasLoaded: false, error: "not_found", phase: "initial" }))
+		useEventGuests.mockReturnValue(
+			state({ hasLoaded: false, error: "not_found", phase: "initial" }),
+		)
 		renderSection()
 		expect(screen.getByRole("alert")).toHaveTextContent(/guest list isn.t available/i)
 		expect(screen.queryByText("No guests yet")).not.toBeInTheDocument()
 	})
 
 	it("initial 401 says the session expired", () => {
-		useEventGuests.mockReturnValue(state({ hasLoaded: false, error: "unauthorized", phase: "initial" }))
+		useEventGuests.mockReturnValue(
+			state({ hasLoaded: false, error: "unauthorized", phase: "initial" }),
+		)
 		renderSection()
 		expect(screen.getByRole("alert")).toHaveTextContent(/session has expired/i)
 	})
 
-	it.each(["server", "network", "unknown"])("an initial %s failure offers Retry and is never an empty list", (error) => {
-		useEventGuests.mockReturnValue(state({ hasLoaded: false, error, phase: "initial" }))
-		renderSection()
-		expect(screen.queryByText("No guests yet")).not.toBeInTheDocument()
-		fireEvent.click(screen.getByRole("button", { name: /try again/i }))
-		expect(refetch).toHaveBeenCalledTimes(1)
-	})
+	it.each(["server", "network", "unknown"])(
+		"an initial %s failure offers Retry and is never an empty list",
+		(error) => {
+			useEventGuests.mockReturnValue(state({ hasLoaded: false, error, phase: "initial" }))
+			renderSection()
+			expect(screen.queryByText("No guests yet")).not.toBeInTheDocument()
+			fireEvent.click(screen.getByRole("button", { name: /try again/i }))
+			expect(refetch).toHaveBeenCalledTimes(1)
+		},
+	)
 
 	it("a failed next page keeps the loaded guests, explains, and Load more becomes Try again", () => {
 		useEventGuests.mockReturnValue(
@@ -227,14 +245,25 @@ describe("EventGuestsSection", () => {
 	})
 
 	it("a 403 on a later page keeps the guests and uses the same contextual wording", () => {
-		useEventGuests.mockReturnValue(state({ guests: roster(), error: "forbidden", phase: "next-page" }))
+		useEventGuests.mockReturnValue(
+			state({ guests: roster(), error: "forbidden", phase: "next-page" }),
+		)
 		renderSection()
 		expect(names()).toHaveLength(3)
-		expect(screen.getByRole("alert")).toHaveTextContent("Only the host and guests can see the guest list.")
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			"Only the host and guests can see the guest list.",
+		)
 	})
 
 	it("shows no RSVP, join date, contact or online status, even if the data carried such fields", () => {
-		const leaky = { ...g(1), rsvp_status: "going", joined_at: "2026-10-30", email: "a@b.c", phone: "0800", is_online: true }
+		const leaky = {
+			...g(1),
+			rsvp_status: "going",
+			joined_at: "2026-10-30",
+			email: "a@b.c",
+			phone: "0800",
+			is_online: true,
+		}
 		useEventGuests.mockReturnValue(state({ guests: [leaky as EventGuest] }))
 		const { container } = renderSection()
 		expect(container.textContent).not.toMatch(/going|2026-10-30|a@b\.c|0800|online|rsvp/i)

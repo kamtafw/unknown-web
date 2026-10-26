@@ -5,11 +5,7 @@ import { findCachedRsvp } from "@/lib/events/cache"
 import { describeEventError, type EventRequestError } from "@/lib/events/errors"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type {
-	EventDetails,
-	EventRsvpStatus,
-	RsvpKnowledge,
-} from "@/types/events/api"
+import type { EventDetails, EventRsvpStatus, RsvpKnowledge } from "@/types/events/api"
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 /**
@@ -58,7 +54,9 @@ export function useEventRsvp(eventId: string, details: EventDetails | null) {
 		},
 	})
 
-	const error: EventRequestError | null = mutation.isError ? describeEventError(mutation.error) : null
+	const error: EventRequestError | null = mutation.isError
+		? describeEventError(mutation.error)
+		: null
 
 	return {
 		rsvp,

@@ -1,5 +1,5 @@
 /**
- * Centralized Events query-key registry (Phase 1: discovery + My Events only).
+ * Centralized Events query-key registry.
  *
  * Every key that holds user-visible data is scoped by the authenticated
  * account (`pkid`) AND the in-memory `sessionGeneration` from auth-store, the
@@ -10,9 +10,6 @@
  *
  * Infinite queries carry the page as `pageParam`, so `page` is not in the key;
  * the scope (coordinates, radius, limit, search) is.
- *
- * Pass 2 adds details and the viewer's RSVP. Pass 3 (P3-02) adds the per-event sub-resources:
- * resources, comments and guests. They follow the same layout, with the event id in slot 4.
  */
 
 import type { Coordinates } from "@/types/events/api"

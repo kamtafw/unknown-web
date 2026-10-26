@@ -26,8 +26,7 @@ export const unauthenticated = () =>
 export const eventNotFound = () => envelope(404, "Event not found.", "not_found")
 
 type FetchOutcome =
-	| { ok: true; status: number; json: unknown }
-	| { ok: false; response: NextResponse }
+	{ ok: true; status: number; json: unknown } | { ok: false; response: NextResponse }
 
 /** like `proxyJson`, but hands the parsed body back so the route can inspect or transform it */
 export async function fetchOrError(
@@ -41,13 +40,19 @@ export async function fetchOrError(
 		if (error instanceof UpstreamError) {
 			return {
 				ok: false,
-				response: NextResponse.json({ success: false, message: error.message }, { status: error.status }),
+				response: NextResponse.json(
+					{ success: false, message: error.message },
+					{ status: error.status },
+				),
 			}
 		}
 		console.error(`[events bff] unexpected error calling ${url}`, error)
 		return {
 			ok: false,
-			response: NextResponse.json({ success: false, message: "Unexpected server error" }, { status: 500 }),
+			response: NextResponse.json(
+				{ success: false, message: "Unexpected server error" },
+				{ status: 500 },
+			),
 		}
 	}
 }
@@ -80,7 +85,8 @@ export async function forwardEventWrite(
 		init = { body: limited.stream, duplex: "half", timeoutMs: EVENT_UPLOAD_TIMEOUT_MS }
 	} else if (/^application\/json/i.test(contentType)) {
 		const raw = await req.text()
-		if (raw.length > MAX_JSON_BYTES) return envelope(413, "The request is too large", "request_too_large")
+		if (raw.length > MAX_JSON_BYTES)
+			return envelope(413, "The request is too large", "request_too_large")
 
 		let parsed: unknown
 		try {
@@ -125,7 +131,10 @@ export async function fetchSanitizedGet(
 ): Promise<NextResponse> {
 	return fetchSanitized(
 		url,
-		{ headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }, cache: "no-store" },
+		{
+			headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+			cache: "no-store",
+		},
 		sanitize,
 	)
 }
@@ -166,7 +175,10 @@ export async function readJsonBody(
 ): Promise<{ ok: true; value: unknown } | { ok: false; response: NextResponse }> {
 	const contentType = req.headers.get("content-type") ?? ""
 	if (!/^application\/json/i.test(contentType)) {
-		return { ok: false, response: envelope(415, "Unsupported content type", "unsupported_media_type") }
+		return {
+			ok: false,
+			response: envelope(415, "Unsupported content type", "unsupported_media_type"),
+		}
 	}
 	const raw = await req.text()
 	if (raw.length > MAX_JSON_BYTES) {

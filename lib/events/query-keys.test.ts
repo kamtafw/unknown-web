@@ -16,9 +16,7 @@ describe("nearby keys", () => {
 	})
 	it("isolate different locations, radii and page sizes", () => {
 		const base = eventKeys.nearby(1, 0, coords, 25, 20)
-		expect(base).not.toEqual(
-			eventKeys.nearby(1, 0, { latitude: 10.5, longitude: 8.8921 }, 25, 20),
-		)
+		expect(base).not.toEqual(eventKeys.nearby(1, 0, { latitude: 10.5, longitude: 8.8921 }, 25, 20))
 		expect(base).not.toEqual(eventKeys.nearby(1, 0, coords, 5, 20))
 		expect(base).not.toEqual(eventKeys.nearby(1, 0, coords, 25, 50))
 	})

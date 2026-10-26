@@ -36,7 +36,10 @@ describe("describeEventError", () => {
 
 	it("prefers a non-field error as the message", () => {
 		const e = describeEventError(
-			err(400, { message: "Request failed.", errors: { non_field_errors: { message: "Start time cannot be after end time." } } }),
+			err(400, {
+				message: "Request failed.",
+				errors: { non_field_errors: { message: "Start time cannot be after end time." } },
+			}),
 		)
 		expect(e.message).toBe("Start time cannot be after end time.")
 		expect(e.fieldErrors).toEqual({})
@@ -44,7 +47,10 @@ describe("describeEventError", () => {
 
 	it("keeps a 403 as a permission problem and never as an expired login", () => {
 		const e = describeEventError(
-			err(403, { message: "Only an event host can perform this action.", code: "authentication_error" }),
+			err(403, {
+				message: "Only an event host can perform this action.",
+				code: "authentication_error",
+			}),
 		)
 		expect(e.kind).toBe("forbidden")
 		expect(e.message).toBe("Only an event host can perform this action.")
@@ -59,7 +65,12 @@ describe("describeEventError", () => {
 	})
 
 	it("recognises the BFF's live-event refusal", () => {
-		const e = describeEventError(err(409, { code: "event_live", message: "This event is live. End the live session before deleting it." }))
+		const e = describeEventError(
+			err(409, {
+				code: "event_live",
+				message: "This event is live. End the live session before deleting it.",
+			}),
+		)
 		expect(e.kind).toBe("live")
 		expect(e.message).toContain("live")
 	})

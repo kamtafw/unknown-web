@@ -22,7 +22,13 @@ import type {
 	EventSubmission,
 } from "@/types/events/api"
 import { formatCoordinateParam } from "./location"
-import { type FormErrors, isBlankLink, normalizeHashtags, toApiTime, validateEventForm } from "./validation"
+import {
+	type FormErrors,
+	isBlankLink,
+	normalizeHashtags,
+	toApiTime,
+	validateEventForm,
+} from "./validation"
 
 export type BuildResult<T> = { ok: true; value: T } | { ok: false; errors: FormErrors }
 

@@ -5,9 +5,15 @@ import { EventPane } from "./event-pane"
 const go = vi.fn()
 const useEventSelection = vi.fn()
 const useEventDetails = vi.fn()
-vi.mock("@/hooks/events/use-event-selection", () => ({ useEventSelection: () => useEventSelection() }))
-vi.mock("@/hooks/events/use-event-details", () => ({ useEventDetails: (id: string) => useEventDetails(id) }))
-vi.mock("./event-room-placeholder", () => ({ EventRoomPlaceholder: () => <p>No event selected</p> }))
+vi.mock("@/hooks/events/use-event-selection", () => ({
+	useEventSelection: () => useEventSelection(),
+}))
+vi.mock("@/hooks/events/use-event-details", () => ({
+	useEventDetails: (id: string) => useEventDetails(id),
+}))
+vi.mock("./event-room-placeholder", () => ({
+	EventRoomPlaceholder: () => <p>No event selected</p>,
+}))
 vi.mock("./event-form", () => ({
 	EventForm: (p: { mode: string; onDone: (id: string | null) => void; onCancel: () => void }) => (
 		<div>
@@ -123,32 +129,46 @@ describe("EventPane", () => {
 	it.each([
 		["a non-host", { details: full, isHost: false }],
 		["a restricted preview", { details: preview, isHost: false }],
-	])("edit: %s never gets the form (the server stays authoritative, this is only the UI)", (_n, over) => {
-		useEventSelection.mockReturnValue({ selection: { mode: "edit", eventId: ID }, go })
-		useEventDetails.mockReturnValue(loaded(over))
-		render(<EventPane />)
-		expect(screen.queryByText("form:edit")).not.toBeInTheDocument()
-		expect(screen.getByRole("heading", { name: "Only hosts can edit this event" })).toBeInTheDocument()
-	})
+	])(
+		"edit: %s never gets the form (the server stays authoritative, this is only the UI)",
+		(_n, over) => {
+			useEventSelection.mockReturnValue({ selection: { mode: "edit", eventId: ID }, go })
+			useEventDetails.mockReturnValue(loaded(over))
+			render(<EventPane />)
+			expect(screen.queryByText("form:edit")).not.toBeInTheDocument()
+			expect(
+				screen.getByRole("heading", { name: "Only hosts can edit this event" }),
+			).toBeInTheDocument()
+		},
+	)
 
 	it("view: passes the selected section to the details view (none = Details)", () => {
 		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID }, go })
 		const { rerender } = render(<EventPane />)
 		expect(screen.getByText("tab:undefined")).toBeInTheDocument()
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "comments" }, go })
+		useEventSelection.mockReturnValue({
+			selection: { mode: "view", eventId: ID, tab: "comments" },
+			go,
+		})
 		rerender(<EventPane />)
 		expect(screen.getByText("tab:comments")).toBeInTheDocument()
 	})
 
 	it("view: choosing a section keeps the event, replaces history (Back still closes the event)", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "comments" }, go })
+		useEventSelection.mockReturnValue({
+			selection: { mode: "view", eventId: ID, tab: "comments" },
+			go,
+		})
 		render(<EventPane />)
 		fireEvent.click(screen.getByText("pick guests"))
 		expect(go).toHaveBeenCalledWith({ mode: "view", eventId: ID, tab: "guests" }, { replace: true })
 	})
 
 	it("view: a section chosen for one event does not follow the user to another", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go })
+		useEventSelection.mockReturnValue({
+			selection: { mode: "view", eventId: ID, tab: "guests" },
+			go,
+		})
 		const { rerender } = render(<EventPane />)
 		expect(screen.getByText("tab:guests")).toBeInTheDocument()
 		// the new selection comes from a link built without a tab, so the pane starts on Details
@@ -158,7 +178,10 @@ describe("EventPane", () => {
 	})
 
 	it("view: a restricted preview is still passed through; the details view ignores the section", () => {
-		useEventSelection.mockReturnValue({ selection: { mode: "view", eventId: ID, tab: "guests" }, go })
+		useEventSelection.mockReturnValue({
+			selection: { mode: "view", eventId: ID, tab: "guests" },
+			go,
+		})
 		useEventDetails.mockReturnValue(loaded({ details: preview }))
 		render(<EventPane />)
 		expect(screen.getByText("details:Jazz night")).toBeInTheDocument()

@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuthStore } from "@/stores/auth-store"
-import { useEventsLocationStore } from "@/stores/events-location-store"
+import { useEventsLocationStore } from "@/stores/events-location.store"
 import type { LocationStatus } from "@/types/events/api"
 import { useEffect } from "react"
 

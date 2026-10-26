@@ -20,14 +20,33 @@ vi.mock("@/lib/events/api", () => ({
 
 const ID = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
 const created: EventDetails = {
-	kind: "full", id: ID, name: "A", startDate: "2026-11-01", endDate: "2026-11-01", startTime: "", endTime: "",
-	isLive: false, isLocked: false, privacy: "public", coverImage: null, liveSessionId: null, address: null, hashtags: [],
-	coordinates: null, hosts: [], liveSessionStatus: null, links: [], documents: [], rsvp: { state: "none" },
+	kind: "full",
+	id: ID,
+	name: "A",
+	startDate: "2026-11-01",
+	endDate: "2026-11-01",
+	startTime: "",
+	endTime: "",
+	isLive: false,
+	isLocked: false,
+	privacy: "public",
+	coverImage: null,
+	liveSessionId: null,
+	address: null,
+	hashtags: [],
+	coordinates: null,
+	hosts: [],
+	liveSessionStatus: null,
+	links: [],
+	documents: [],
+	rsvp: { state: "none" },
 }
 const submission: EventSubmission = { kind: "json", body: { name: "A", passcode: "0042" } }
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 const err = (status: number) => Object.assign(new Error("x"), { response: { status, data: {} } })
 
 beforeEach(() => {
@@ -67,7 +86,9 @@ describe("useCreateEvent", () => {
 		createEvent.mockRejectedValue(err(400))
 		const spy = vi.spyOn(client, "invalidateQueries")
 		const { result } = renderHook(() => useCreateEvent(), { wrapper })
-		await act(async () => { await result.current.mutateAsync({ submission }).catch(() => {}) })
+		await act(async () => {
+			await result.current.mutateAsync({ submission }).catch(() => {})
+		})
 		expect(spy).not.toHaveBeenCalled()
 	})
 })
@@ -167,7 +188,9 @@ describe("useDeleteEvent", () => {
 		deleteEvent.mockRejectedValue(err(404))
 		client.setQueryData(eventKeys.detail(7, 2, ID), created)
 		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
-		await act(async () => { await result.current.mutateAsync().catch(() => {}) })
+		await act(async () => {
+			await result.current.mutateAsync().catch(() => {})
+		})
 		expect(client.getQueryData(eventKeys.detail(7, 2, ID))).toBeUndefined()
 	})
 
@@ -176,7 +199,9 @@ describe("useDeleteEvent", () => {
 		for (const status of [409, 403]) {
 			deleteEvent.mockRejectedValueOnce(err(status))
 			const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
-			await act(async () => { await result.current.mutateAsync().catch(() => {}) })
+			await act(async () => {
+				await result.current.mutateAsync().catch(() => {})
+			})
 		}
 		expect(client.getQueryData(eventKeys.detail(7, 2, ID))).toEqual(created)
 	})

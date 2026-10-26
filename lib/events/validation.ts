@@ -103,14 +103,16 @@ export function validateSchedule(v: {
 }
 
 export function validateCoverFile(file: File): string | null {
-	if (!(COVER_MIME_TYPES as readonly string[]).includes(file.type)) return "The cover must be a JPEG or PNG image."
+	if (!(COVER_MIME_TYPES as readonly string[]).includes(file.type))
+		return "The cover must be a JPEG or PNG image."
 	if (file.size > COVER_MAX_BYTES) return "The cover must be 2 MB or smaller."
 	return null
 }
 
 export function validateDocumentFile(file: File): string | null {
 	// the type must be on the backend's list; a file extension alone does not decide acceptance
-	if (!(DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type)) return "This file type isn't supported."
+	if (!(DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type))
+		return "This file type isn't supported."
 	if (file.size > DOCUMENT_MAX_BYTES) return "Each document must be 10 MB or smaller."
 	return null
 }
@@ -167,7 +169,10 @@ export function validateEventForm(values: EventFormValues, ctx: FormContext): Fo
 	if (ctx.mode === "create") {
 		if (!values.coordinates) errors.coordinates = "Set the event location."
 	}
-	if (values.coordinates && !isValidCoordinates(values.coordinates.latitude, values.coordinates.longitude)) {
+	if (
+		values.coordinates &&
+		!isValidCoordinates(values.coordinates.latitude, values.coordinates.longitude)
+	) {
 		errors.coordinates = "The location isn't valid. Try again."
 	}
 
@@ -180,7 +185,8 @@ export function validateEventForm(values: EventFormValues, ctx: FormContext): Fo
 
 	if (values.documents.mode === "replace") {
 		const items = values.documents.items
-		if (items.length > MAX_DOCUMENTS) errors.documents = `Upload at most ${MAX_DOCUMENTS} documents.`
+		if (items.length > MAX_DOCUMENTS)
+			errors.documents = `Upload at most ${MAX_DOCUMENTS} documents.`
 		items.forEach((item, i) => {
 			const label = item.name.trim()
 			if (!label) errors[`documents.${i}.name`] = "Name this document."

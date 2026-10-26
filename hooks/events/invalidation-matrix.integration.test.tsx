@@ -10,9 +10,9 @@ import { act, renderHook } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useDeleteEvent, useUpdateEvent } from "./use-event-mutations"
+import { useEventRsvp } from "./use-event-rsvp"
 import { usePostEventComment } from "./use-post-event-comment"
 import { useRemoveEventGuest } from "./use-remove-event-guest"
-import { useEventRsvp } from "./use-event-rsvp"
 
 const updateEvent = vi.fn()
 const deleteEvent = vi.fn()
@@ -34,19 +34,41 @@ vi.mock("@/lib/events/api", () => ({
 const ID = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
 const OTHER = "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22"
 const details = (id: string): EventDetails => ({
-	kind: "full", id, name: "A", startDate: "2026-11-01", endDate: "2026-11-01", startTime: "", endTime: "",
-	isLive: false, isLocked: false, privacy: "public", coverImage: null, liveSessionId: null, address: null, hashtags: [],
-	coordinates: null, hosts: [], liveSessionStatus: null, links: [], documents: [], rsvp: { state: "none" },
+	kind: "full",
+	id,
+	name: "A",
+	startDate: "2026-11-01",
+	endDate: "2026-11-01",
+	startTime: "",
+	endTime: "",
+	isLive: false,
+	isLocked: false,
+	privacy: "public",
+	coverImage: null,
+	liveSessionId: null,
+	address: null,
+	hashtags: [],
+	coordinates: null,
+	hosts: [],
+	liveSessionStatus: null,
+	links: [],
+	documents: [],
+	rsvp: { state: "none" },
 })
 const submission: EventSubmission = { kind: "json", body: { name: "A" } }
 const err = (status: number) => Object.assign(new Error("x"), { response: { status, data: {} } })
 const twoPages = (k: string) => ({
-	pages: [{ page: 1, hasNext: true, [k]: [] }, { page: 2, hasNext: false, [k]: [] }],
+	pages: [
+		{ page: 1, hasNext: true, [k]: [] },
+		{ page: 2, hasNext: false, [k]: [] },
+	],
 	pageParams: [1, 2],
 })
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 
 /** every entry the matrix talks about, for this event (mine) and for entries that must never be touched */
 function seed() {
@@ -92,20 +114,35 @@ function seed() {
 type Keys = ReturnType<typeof seed>
 const untouched = (k: Keys) =>
 	[
-		k.otherEventResources, k.otherEventComments, k.otherEventGuests, k.otherEventDetail,
-		k.otherAccountResources, k.otherAccountComments, k.otherAccountGuests,
-		k.otherSessionResources, k.otherSessionComments, k.otherSessionGuests,
+		k.otherEventResources,
+		k.otherEventComments,
+		k.otherEventGuests,
+		k.otherEventDetail,
+		k.otherAccountResources,
+		k.otherAccountComments,
+		k.otherAccountGuests,
+		k.otherSessionResources,
+		k.otherSessionComments,
+		k.otherSessionGuests,
 	] as const
 const stale = (key: readonly unknown[]) => client.getQueryState(key)?.isInvalidated === true
 const present = (key: readonly unknown[]) => client.getQueryData(key) !== undefined
-const pagesIn = (key: readonly unknown[]) => (client.getQueryData(key) as { pages: unknown[] }).pages.length
+const pagesIn = (key: readonly unknown[]) =>
+	(client.getQueryData(key) as { pages: unknown[] }).pages.length
 
 function expectOthersUntouched(k: Keys) {
 	for (const key of untouched(k)) {
 		expect(present(key)).toBe(true)
 		expect(stale(key)).toBe(false)
 	}
-	for (const key of [k.otherEventComments, k.otherEventGuests, k.otherAccountComments, k.otherAccountGuests, k.otherSessionComments, k.otherSessionGuests]) {
+	for (const key of [
+		k.otherEventComments,
+		k.otherEventGuests,
+		k.otherAccountComments,
+		k.otherAccountGuests,
+		k.otherSessionComments,
+		k.otherSessionGuests,
+	]) {
 		expect(pagesIn(key)).toBe(2)
 	}
 }
@@ -152,16 +189,20 @@ describe("cache invalidation matrix (handoff section 6)", () => {
 	it.each([
 		["succeeds", () => deleteEvent.mockResolvedValue(undefined)],
 		["is a 404 (already gone)", () => deleteEvent.mockRejectedValue(err(404))],
-	])("delete event that %s: details, RSVP, resources, comments and guests are removed; lists refresh", async (_n, arrange) => {
-		arrange()
-		const k = seed()
-		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
-		await act(() => result.current.mutateAsync().catch(() => undefined))
-		for (const key of [k.detail, k.rsvp, k.resources, k.comments, k.guests]) expect(present(key)).toBe(false)
-		expect(stale(k.nearby)).toBe(true)
-		expect(stale(k.myEvents)).toBe(true)
-		expectOthersUntouched(k)
-	})
+	])(
+		"delete event that %s: details, RSVP, resources, comments and guests are removed; lists refresh",
+		async (_n, arrange) => {
+			arrange()
+			const k = seed()
+			const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
+			await act(() => result.current.mutateAsync().catch(() => undefined))
+			for (const key of [k.detail, k.rsvp, k.resources, k.comments, k.guests])
+				expect(present(key)).toBe(false)
+			expect(stale(k.nearby)).toBe(true)
+			expect(stale(k.myEvents)).toBe(true)
+			expectOthersUntouched(k)
+		},
+	)
 
 	it.each([[409], [403], [500]])("a refused delete (%i) keeps everything", async (status) => {
 		deleteEvent.mockRejectedValue(err(status))
@@ -180,7 +221,8 @@ describe("cache invalidation matrix (handoff section 6)", () => {
 		})
 		expect(stale(k.comments)).toBe(true)
 		expect(pagesIn(k.comments)).toBe(1)
-		for (const key of [k.guests, k.resources, k.detail, k.rsvp, k.nearby, k.myEvents]) expect(stale(key)).toBe(false)
+		for (const key of [k.guests, k.resources, k.detail, k.rsvp, k.nearby, k.myEvents])
+			expect(stale(key)).toBe(false)
 		expect(pagesIn(k.guests)).toBe(2)
 		expectOthersUntouched(k)
 	})
@@ -197,23 +239,33 @@ describe("cache invalidation matrix (handoff section 6)", () => {
 
 	it.each([
 		["removed", () => removeEventGuest.mockResolvedValue(undefined)],
-		["already removed (Guest not found)", () => removeEventGuest.mockRejectedValue(
-			Object.assign(new Error("x"), { response: { status: 404, data: { message: "Guest not found in this event." } } }),
-		)],
-	])("remove guest (%s): guests and comments refresh from page 1; details, resources, RSVP and lists untouched", async (_n, arrange) => {
-		arrange()
-		const k = seed()
-		const { result } = renderHook(() => useRemoveEventGuest(ID), { wrapper })
-		await act(async () => {
-			await result.current.remove(42)
-		})
-		for (const key of [k.guests, k.comments]) {
-			expect(stale(key)).toBe(true)
-			expect(pagesIn(key)).toBe(1)
-		}
-		for (const key of [k.detail, k.resources, k.rsvp, k.nearby, k.myEvents]) expect(stale(key)).toBe(false)
-		expectOthersUntouched(k)
-	})
+		[
+			"already removed (Guest not found)",
+			() =>
+				removeEventGuest.mockRejectedValue(
+					Object.assign(new Error("x"), {
+						response: { status: 404, data: { message: "Guest not found in this event." } },
+					}),
+				),
+		],
+	])(
+		"remove guest (%s): guests and comments refresh from page 1; details, resources, RSVP and lists untouched",
+		async (_n, arrange) => {
+			arrange()
+			const k = seed()
+			const { result } = renderHook(() => useRemoveEventGuest(ID), { wrapper })
+			await act(async () => {
+				await result.current.remove(42)
+			})
+			for (const key of [k.guests, k.comments]) {
+				expect(stale(key)).toBe(true)
+				expect(pagesIn(key)).toBe(1)
+			}
+			for (const key of [k.detail, k.resources, k.rsvp, k.nearby, k.myEvents])
+				expect(stale(key)).toBe(false)
+			expectOthersUntouched(k)
+		},
+	)
 
 	it.each([[403], [401], [500]])("a failed guest removal (%i) touches nothing", async (status) => {
 		removeEventGuest.mockRejectedValue(err(status))
@@ -243,7 +295,8 @@ describe("cache invalidation matrix (handoff section 6)", () => {
 			result.current.setRsvp("interested")
 		})
 		await vi.waitFor(() => expect(client.getQueryData(k.rsvp)).toBe("interested"))
-		for (const key of [k.resources, k.comments, k.guests, k.nearby, k.myEvents]) expect(stale(key)).toBe(false)
+		for (const key of [k.resources, k.comments, k.guests, k.nearby, k.myEvents])
+			expect(stale(key)).toBe(false)
 		expect(pagesIn(k.comments)).toBe(2)
 		expect(pagesIn(k.guests)).toBe(2)
 		expectOthersUntouched(k)

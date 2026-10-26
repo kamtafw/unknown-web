@@ -23,4 +23,3 @@ export const validValues = (over: Partial<EventFormValues> = {}): EventFormValue
 	documents: { mode: "keep" },
 	...over,
 })
-

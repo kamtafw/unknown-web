@@ -4,7 +4,7 @@ import { MAX_HASHTAG_LENGTH, MAX_HASHTAGS } from "@/lib/events/constants"
 import { normalizeHashtag, normalizeHashtags } from "@/lib/events/validation"
 import { X } from "lucide-react"
 import { useId, useState } from "react"
-import { FieldMessages, INPUT, describedBy } from "./fields"
+import { describedBy, FieldMessages, INPUT } from "./fields"
 
 /**
  * Tags, normalised the way the backend stores them (trimmed, lower-cased, no leading #, no

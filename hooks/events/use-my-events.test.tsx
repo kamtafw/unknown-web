@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import type { EventCard, EventsPage } from "@/types/events/api"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
-import type { ReactNode } from "react"
+import { createElement, type ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useMyEvents } from "./use-my-events"
 
@@ -41,9 +41,9 @@ const page = (n: number, ids: string[], hasNext: boolean): EventsPage => ({
 
 function wrapper() {
 	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-	return ({ children }: { children: ReactNode }) => (
-		<QueryClientProvider client={client}>{children}</QueryClientProvider>
-	)
+	return function Wrapper({ children }: { children: ReactNode }) {
+		return createElement(QueryClientProvider, { client }, children)
+	}
 }
 
 beforeEach(() => {

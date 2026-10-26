@@ -53,7 +53,9 @@ export function LocationRow({
 					size={18}
 					className={cn(
 						"shrink-0 [&_circle]:fill-card",
-						unset ? "fill-muted-foreground/40 text-muted-foreground/40" : "fill-primary text-primary",
+						unset
+							? "fill-muted-foreground/40 text-muted-foreground/40"
+							: "fill-primary text-primary",
 					)}
 					aria-hidden
 				/>

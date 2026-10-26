@@ -1,7 +1,7 @@
 // @vitest-environment node
+import { MAX_EVENT_REQUEST_BYTES } from "@/lib/events/constants"
 import { NextRequest } from "next/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { MAX_EVENT_REQUEST_BYTES } from "@/lib/events/constants"
 
 const getAccessToken = vi.fn()
 const proxyJson = vi.fn()
@@ -21,8 +21,8 @@ vi.mock("@/lib/server-fetch", () => ({
 }))
 
 import { UpstreamError } from "@/lib/server-fetch"
-import { POST as postCreate } from "./create/route"
 import { DELETE as deleteEvent, GET as getDetails, PATCH as patchEvent } from "./[eventId]/route"
+import { POST as postCreate } from "./create/route"
 import { POST as postRsvp } from "./rsvp/route"
 
 const ID = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
@@ -46,7 +46,10 @@ const createBody = {
 	longitude: 8.89,
 }
 
-const ok = (data: unknown, status = 200) => ({ status, json: { success: true, status_code: status, data } })
+const ok = (data: unknown, status = 200) => ({
+	status,
+	json: { success: true, status_code: status, data },
+})
 
 beforeEach(() => {
 	vi.clearAllMocks()
@@ -150,7 +153,11 @@ describe("POST /api/events/create", () => {
 
 	it("rejects other content types", async () => {
 		const res = await postCreate(
-			req("/api/events/create", { method: "POST", headers: { "content-type": "text/plain" }, body: "x" }),
+			req("/api/events/create", {
+				method: "POST",
+				headers: { "content-type": "text/plain" },
+				body: "x",
+			}),
 		)
 		expect(res.status).toBe(415)
 	})
@@ -158,11 +165,16 @@ describe("POST /api/events/create", () => {
 	describe("multipart", () => {
 		const CT = "multipart/form-data; boundary=----abc"
 		const multipart = (body: BodyInit, headers: Record<string, string> = {}) =>
-			req("/api/events/create", { method: "POST", headers: { "content-type": CT, ...headers }, body })
+			req("/api/events/create", {
+				method: "POST",
+				headers: { "content-type": CT, ...headers },
+				body,
+			})
 
 		it("streams the body with its boundary, declared length, a longer timeout and half duplex", async () => {
 			fetchJson.mockResolvedValue(ok({ id: ID }, 201))
-			const payload = "------abc\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\nA\r\n------abc--\r\n"
+			const payload =
+				'------abc\r\nContent-Disposition: form-data; name="name"\r\n\r\nA\r\n------abc--\r\n'
 			const res = await postCreate(multipart(payload, { "content-length": String(payload.length) }))
 			expect(res.status).toBe(201)
 			const [, init] = fetchJson.mock.calls[0]
@@ -175,7 +187,9 @@ describe("POST /api/events/create", () => {
 		})
 
 		it("refuses a declared length over the cap before reading anything", async () => {
-			const res = await postCreate(multipart("x", { "content-length": String(MAX_EVENT_REQUEST_BYTES + 1) }))
+			const res = await postCreate(
+				multipart("x", { "content-length": String(MAX_EVENT_REQUEST_BYTES + 1) }),
+			)
 			expect(res.status).toBe(413)
 			expect((await res.json()).code).toBe("upload_too_large")
 			expect(fetchJson).not.toHaveBeenCalled()
@@ -192,15 +206,17 @@ describe("POST /api/events/create", () => {
 		})
 
 		it("stops a body that exceeds the cap without a declared length and answers 413", async () => {
-			fetchJson.mockImplementation(async (_url: string, init: { body: ReadableStream<Uint8Array> }) => {
-				const reader = init.body.getReader()
-				try {
-					for (;;) if ((await reader.read()).done) break
-				} catch {
-					throw new UpstreamError("Service temporarily unavailable", 502)
-				}
-				return ok({}, 201)
-			})
+			fetchJson.mockImplementation(
+				async (_url: string, init: { body: ReadableStream<Uint8Array> }) => {
+					const reader = init.body.getReader()
+					try {
+						for (;;) if ((await reader.read()).done) break
+					} catch {
+						throw new UpstreamError("Service temporarily unavailable", 502)
+					}
+					return ok({}, 201)
+				},
+			)
 			const chunk = new Uint8Array(1024 * 1024)
 			let sent = 0
 			const stream = new ReadableStream<Uint8Array>({
@@ -249,21 +265,32 @@ describe("PATCH /api/events/[eventId]", () => {
 
 	it("keeps an empty collection as an explicit clear", async () => {
 		await patchEvent(json({ links: [], hashtags: [], documents: [] }, "PATCH"), ctx())
-		expect(JSON.parse(fetchJson.mock.calls[0][1].body)).toEqual({ links: [], hashtags: [], documents: [] })
+		expect(JSON.parse(fetchJson.mock.calls[0][1].body)).toEqual({
+			links: [],
+			hashtags: [],
+			documents: [],
+		})
 	})
 
 	it("passes the backend's 403 through", async () => {
-		fetchJson.mockResolvedValue({ status: 403, json: { success: false, message: "Only an event host can perform this action." } })
+		fetchJson.mockResolvedValue({
+			status: 403,
+			json: { success: false, message: "Only an event host can perform this action." },
+		})
 		expect((await patchEvent(json({ name: "B" }, "PATCH"), ctx())).status).toBe(403)
 	})
 })
 
 describe("DELETE /api/events/[eventId]", () => {
-	const detailsThenDelete = (details: unknown, deleteResult: unknown = { status: 204, json: { success: true, data: null } }) =>
+	const detailsThenDelete = (
+		details: unknown,
+		deleteResult: unknown = { status: 204, json: { success: true, data: null } },
+	) =>
 		fetchJson.mockImplementation(async (url: string) =>
 			url.endsWith("/details") ? details : deleteResult,
 		)
-	const calls = () => fetchJson.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${new URL(url).pathname}`)
+	const calls = () =>
+		fetchJson.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${new URL(url).pathname}`)
 
 	it("returns 401 without a session", async () => {
 		getAccessToken.mockResolvedValue(undefined)
@@ -272,12 +299,16 @@ describe("DELETE /api/events/[eventId]", () => {
 	})
 
 	it("rejects a malformed id without calling upstream", async () => {
-		expect((await deleteEvent(req("/api/events/x", { method: "DELETE" }), ctx("nope"))).status).toBe(404)
+		expect(
+			(await deleteEvent(req("/api/events/x", { method: "DELETE" }), ctx("nope"))).status,
+		).toBe(404)
 		expect(fetchJson).not.toHaveBeenCalled()
 	})
 
 	it("checks the event first, then deletes, and answers 204 with no body", async () => {
-		detailsThenDelete(ok({ id: ID, name: "A", is_live: false, live_session: { status: "waiting" } }))
+		detailsThenDelete(
+			ok({ id: ID, name: "A", is_live: false, live_session: { status: "waiting" } }),
+		)
 		const res = await deleteEvent(req("/api/events/x", { method: "DELETE" }), ctx())
 		expect(res.status).toBe(204)
 		expect(await res.text()).toBe("")

@@ -66,7 +66,9 @@ export function useRemoveEventGuest(eventId: string) {
 		}
 	}
 
-	const error: EventErrorKind | null = mutation.isError ? describeEventError(mutation.error).kind : null
+	const error: EventErrorKind | null = mutation.isError
+		? describeEventError(mutation.error).kind
+		: null
 
 	return { remove, isPending: mutation.isPending, error, clearError: reset }
 }

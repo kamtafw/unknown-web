@@ -10,11 +10,18 @@ vi.mock("@/hooks/events/use-event-resources", () => ({
 
 const refetch = vi.fn()
 const state = (over: Partial<ReturnType<typeof base>> = {}) => ({ ...base(), ...over })
-const base = () => ({ resources: null as EventResources | null, errorKind: null as string | null, isLoading: false, isRefetching: false, refetch })
+const base = () => ({
+	resources: null as EventResources | null,
+	errorKind: null as string | null,
+	isLoading: false,
+	isRefetching: false,
+	refetch,
+})
 const loaded = (r: EventResources) => state({ resources: r })
 
 const onEdit = vi.fn()
-const renderSection = (isHost = false) => render(<EventResourcesSection eventId="e1" isHost={isHost} onEdit={onEdit} />)
+const renderSection = (isHost = false) =>
+	render(<EventResourcesSection eventId="e1" isHost={isHost} onEdit={onEdit} />)
 
 beforeEach(() => {
 	vi.clearAllMocks()
@@ -30,7 +37,10 @@ describe("EventResourcesSection", () => {
 	it("shows a loading skeleton", () => {
 		useEventResources.mockReturnValue(state({ isLoading: true }))
 		renderSection()
-		expect(screen.getByLabelText("Loading links and documents")).toHaveAttribute("aria-busy", "true")
+		expect(screen.getByLabelText("Loading links and documents")).toHaveAttribute(
+			"aria-busy",
+			"true",
+		)
 	})
 
 	it("renders links and documents in separate lists with safe external anchors", () => {
@@ -38,8 +48,20 @@ describe("EventResourcesSection", () => {
 			loaded({
 				links: [{ name: "Agenda", url: "https://example.com/agenda" }],
 				documents: [
-					{ name: "Brochure", url: "https://cdn.example.com/b.pdf", size: "1.2 MB", fileType: "PDF", uploadedOn: "01/11/2026" },
-					{ name: "Plain", url: "https://cdn.example.com/p", size: null, fileType: null, uploadedOn: null },
+					{
+						name: "Brochure",
+						url: "https://cdn.example.com/b.pdf",
+						size: "1.2 MB",
+						fileType: "PDF",
+						uploadedOn: "01/11/2026",
+					},
+					{
+						name: "Plain",
+						url: "https://cdn.example.com/p",
+						size: null,
+						fileType: null,
+						uploadedOn: null,
+					},
 				],
 			}),
 		)
@@ -63,20 +85,30 @@ describe("EventResourcesSection", () => {
 
 	it("omits the Links heading when there are only documents, and the reverse", () => {
 		useEventResources.mockReturnValue(
-			loaded({ links: [], documents: [{ name: "D", url: "https://x.test/d", size: null, fileType: null, uploadedOn: null }] }),
+			loaded({
+				links: [],
+				documents: [
+					{ name: "D", url: "https://x.test/d", size: null, fileType: null, uploadedOn: null },
+				],
+			}),
 		)
 		const { unmount } = renderSection()
 		expect(screen.queryByRole("region", { name: "Links" })).not.toBeInTheDocument()
 		expect(screen.getByRole("region", { name: "Documents" })).toBeInTheDocument()
 		unmount()
-		useEventResources.mockReturnValue(loaded({ links: [{ name: "L", url: "https://x.test/l" }], documents: [] }))
+		useEventResources.mockReturnValue(
+			loaded({ links: [{ name: "L", url: "https://x.test/l" }], documents: [] }),
+		)
 		renderSection()
 		expect(screen.queryByRole("region", { name: "Documents" })).not.toBeInTheDocument()
 	})
 
 	it("renders names as text, never as HTML", () => {
 		useEventResources.mockReturnValue(
-			loaded({ links: [{ name: "<img src=x onerror=alert(1)><b>hi</b>", url: "https://example.com/" }], documents: [] }),
+			loaded({
+				links: [{ name: "<img src=x onerror=alert(1)><b>hi</b>", url: "https://example.com/" }],
+				documents: [],
+			}),
 		)
 		const { container } = renderSection()
 		expect(container.querySelector("img")).toBeNull()
@@ -84,20 +116,24 @@ describe("EventResourcesSection", () => {
 		expect(screen.getByText("<img src=x onerror=alert(1)><b>hi</b>")).toBeInTheDocument()
 	})
 
-	it.each(["javascript:alert(1)", "data:text/html,<script>1</script>", "vbscript:x", "//evil.test", "/relative", "not a url"])(
-		"never makes %s navigable",
-		(url) => {
-			useEventResources.mockReturnValue(
-				loaded({
-					links: [{ name: "Bad", url }],
-					documents: [{ name: "BadDoc", url, size: null, fileType: null, uploadedOn: null }],
-				}),
-			)
-			const { container } = renderSection()
-			expect(container.querySelector("a")).toBeNull()
-			expect(screen.getByText("Bad")).toBeInTheDocument()
-		},
-	)
+	it.each([
+		"javascript:alert(1)",
+		"data:text/html,<script>1</script>",
+		"vbscript:x",
+		"//evil.test",
+		"/relative",
+		"not a url",
+	])("never makes %s navigable", (url) => {
+		useEventResources.mockReturnValue(
+			loaded({
+				links: [{ name: "Bad", url }],
+				documents: [{ name: "BadDoc", url, size: null, fileType: null, uploadedOn: null }],
+			}),
+		)
+		const { container } = renderSection()
+		expect(container.querySelector("a")).toBeNull()
+		expect(screen.getByText("Bad")).toBeInTheDocument()
+	})
 
 	it("empty: guests see a plain message with no edit shortcut", () => {
 		useEventResources.mockReturnValue(loaded({ links: [], documents: [] }))
@@ -114,7 +150,9 @@ describe("EventResourcesSection", () => {
 	})
 
 	it("a host sees no edit shortcut when there are resources", () => {
-		useEventResources.mockReturnValue(loaded({ links: [{ name: "L", url: "https://x.test/l" }], documents: [] }))
+		useEventResources.mockReturnValue(
+			loaded({ links: [{ name: "L", url: "https://x.test/l" }], documents: [] }),
+		)
 		renderSection(true)
 		expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument()
 	})
@@ -122,7 +160,9 @@ describe("EventResourcesSection", () => {
 	it("403 is a permission message in the section's own words, with no retry and no live-session text", () => {
 		useEventResources.mockReturnValue(state({ errorKind: "forbidden" }))
 		renderSection()
-		expect(screen.getByRole("alert")).toHaveTextContent(/don.t have access to this event.s resources/i)
+		expect(screen.getByRole("alert")).toHaveTextContent(
+			/don.t have access to this event.s resources/i,
+		)
 		expect(screen.queryByRole("button")).not.toBeInTheDocument()
 		expect(screen.queryByText(/join this event/i)).not.toBeInTheDocument()
 		expect(screen.queryByText(/session has expired/i)).not.toBeInTheDocument()
@@ -143,10 +183,13 @@ describe("EventResourcesSection", () => {
 		expect(screen.getByRole("alert")).toHaveTextContent(/session has expired/i)
 	})
 
-	it.each(["server", "network", "unknown"])("a %s failure offers Retry, which refetches", (kind) => {
-		useEventResources.mockReturnValue(state({ errorKind: kind }))
-		renderSection()
-		fireEvent.click(screen.getByRole("button", { name: /try again/i }))
-		expect(refetch).toHaveBeenCalledTimes(1)
-	})
+	it.each(["server", "network", "unknown"])(
+		"a %s failure offers Retry, which refetches",
+		(kind) => {
+			useEventResources.mockReturnValue(state({ errorKind: kind }))
+			renderSection()
+			fireEvent.click(screen.getByRole("button", { name: /try again/i }))
+			expect(refetch).toHaveBeenCalledTimes(1)
+		},
+	)
 })

@@ -18,5 +18,9 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 	const { eventId } = await params
 	if (!isEventId(eventId)) return eventNotFound()
 
-	return fetchSanitizedGet(`${DJANGO_API_URL}/events/${eventId}/resources`, token, sanitizeResourcesPayload)
+	return fetchSanitizedGet(
+		`${DJANGO_API_URL}/events/${eventId}/resources`,
+		token,
+		sanitizeResourcesPayload,
+	)
 }

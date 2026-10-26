@@ -18,10 +18,19 @@ vi.mock("@/hooks/events/use-event-address", () => ({ useEventAddress: () => "Jos
 const toastSuccess = vi.fn()
 const toastInfo = vi.fn()
 vi.mock("@/lib/toast", () => ({
-	toast: { success: (m: string) => toastSuccess(m), info: (m: string) => toastInfo(m), error: vi.fn() },
+	toast: {
+		success: (m: string) => toastSuccess(m),
+		info: (m: string) => toastInfo(m),
+		error: vi.fn(),
+	},
 }))
 
-const ready = { status: "ready", coordinates: { latitude: 9.92, longitude: 8.89 }, request: vi.fn(), reset: vi.fn() }
+const ready = {
+	status: "ready",
+	coordinates: { latitude: 9.92, longitude: 8.89 },
+	request: vi.fn(),
+	reset: vi.fn(),
+}
 const idle = { status: "idle", coordinates: null, request: vi.fn(), reset: vi.fn() }
 const onDone = vi.fn()
 const onCancel = vi.fn()
@@ -153,7 +162,10 @@ describe("EventForm — create", () => {
 
 	it("keeps everything typed after a backend rejection and shows its message", async () => {
 		createAsync.mockRejectedValue({
-			response: { status: 400, data: { message: "Start date cannot be after end date.", errors: null } },
+			response: {
+				status: 400,
+				data: { message: "Start date cannot be after end date.", errors: null },
+			},
 		})
 		render(<EventForm mode="create" onDone={onDone} onCancel={onCancel} />)
 		fillSchedule()
@@ -178,7 +190,9 @@ describe("EventForm — edit", () => {
 		render(<EventForm mode="edit" details={existing} onDone={onDone} onCancel={onCancel} />)
 		expect(screen.getByLabelText("Event name")).toHaveValue("Jazz night")
 		expect(screen.getByText("Amuwo, Lagos")).toBeInTheDocument()
-		expect(screen.getByRole("button", { name: "Update to my current location" })).toBeInTheDocument()
+		expect(
+			screen.getByRole("button", { name: "Update to my current location" }),
+		).toBeInTheDocument()
 	})
 
 	it("says so instead of sending an empty update", () => {

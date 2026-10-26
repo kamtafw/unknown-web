@@ -1,5 +1,5 @@
 import { useAuthStore } from "@/stores/auth-store"
-import { useEventsLocationStore } from "@/stores/events-location-store"
+import { useEventsLocationStore } from "@/stores/events-location.store"
 import type { FullUser } from "@/types/api"
 import type { LocationStatus } from "@/types/events/api"
 import { act, renderHook } from "@testing-library/react"

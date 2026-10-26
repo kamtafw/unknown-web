@@ -13,7 +13,9 @@ import { secondaryButton } from "../event-list"
 import { FieldMessages, INPUT, SECTION_TITLE } from "./fields"
 
 function sizeLabel(bytes: number): string {
-	return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
+	return bytes >= 1024 * 1024
+		? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+		: `${Math.max(1, Math.round(bytes / 1024))} KB`
 }
 
 /** a sensible display name from the file name ("Menu.pdf" → "Menu") */
@@ -74,7 +76,11 @@ export function DocumentsField({
 					) : (
 						<p className="text-[12.5px] text-muted-foreground">This event has no documents.</p>
 					)}
-					<div role="radiogroup" aria-label="What to do with documents" className="flex flex-col gap-1.5">
+					<div
+						role="radiogroup"
+						aria-label="What to do with documents"
+						className="flex flex-col gap-1.5"
+					>
 						{MODES.map((opt) => (
 							<label key={opt.mode} className="flex items-center gap-2 text-[13px] text-foreground">
 								<input
@@ -82,7 +88,11 @@ export function DocumentsField({
 									name={`${id}-mode`}
 									checked={value.mode === opt.mode}
 									onChange={() =>
-										onChange(opt.mode === "replace" ? { mode: "replace", items } : ({ mode: opt.mode } as DocumentsChange))
+										onChange(
+											opt.mode === "replace"
+												? { mode: "replace", items }
+												: ({ mode: opt.mode } as DocumentsChange),
+										)
 									}
 									className="size-4 accent-[var(--primary)]"
 								/>
@@ -91,7 +101,10 @@ export function DocumentsField({
 						))}
 					</div>
 					{value.mode !== "keep" && (
-						<p role="note" className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+						<p
+							role="note"
+							className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
+						>
 							{value.mode === "replace"
 								? "Saving replaces every current document with the files you add below. Current files can't be kept one by one."
 								: "Saving removes every current document."}
@@ -107,7 +120,9 @@ export function DocumentsField({
 						const fileError = errors[`documents.${i}.file`]
 						return (
 							<fieldset key={i} className="flex flex-col gap-2 rounded-xl border border-border p-3">
-								<legend className="px-1 text-[12px] font-semibold text-muted-foreground">Document {i + 1}</legend>
+								<legend className="px-1 text-[12px] font-semibold text-muted-foreground">
+									Document {i + 1}
+								</legend>
 								<input
 									aria-label={`Document ${i + 1} name`}
 									type="text"
@@ -117,10 +132,18 @@ export function DocumentsField({
 									className={INPUT}
 									aria-invalid={nameError ? true : undefined}
 									aria-describedby={nameError ? `${id}-${i}-name-error` : undefined}
-									onChange={(e) => setItems(items.map((it, idx) => (idx === i ? { ...it, name: e.target.value } : it)))}
+									onChange={(e) =>
+										setItems(
+											items.map((it, idx) => (idx === i ? { ...it, name: e.target.value } : it)),
+										)
+									}
 								/>
 								{nameError && (
-									<p id={`${id}-${i}-name-error`} role="alert" className="text-[12px] font-medium text-destructive">
+									<p
+										id={`${id}-${i}-name-error`}
+										role="alert"
+										className="text-[12px] font-medium text-destructive"
+									>
 										{nameError}
 									</p>
 								)}
@@ -136,7 +159,11 @@ export function DocumentsField({
 									</p>
 								)}
 								<div>
-									<button type="button" className={secondaryButton} onClick={() => setItems(items.filter((_, idx) => idx !== i))}>
+									<button
+										type="button"
+										className={secondaryButton}
+										onClick={() => setItems(items.filter((_, idx) => idx !== i))}
+									>
 										<Trash2 size={13} aria-hidden />
 										Remove document {i + 1}
 									</button>

@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { EventGuestsSection } from "./event-guests-section"
 
 const useEventGuests = vi.fn()
-vi.mock("@/hooks/events/use-event-guests", () => ({ useEventGuests: (...a: unknown[]) => useEventGuests(...a) }))
+vi.mock("@/hooks/events/use-event-guests", () => ({
+	useEventGuests: (...a: unknown[]) => useEventGuests(...a),
+}))
 const remove = vi.fn()
 vi.mock("@/hooks/events/use-remove-event-guest", () => ({
 	useRemoveEventGuest: () => ({ remove, clearError: vi.fn(), isPending: false, error: null }),
@@ -62,7 +64,9 @@ describe("EventGuestsSection host Remove action (P3-08A)", () => {
 
 	it("search keeps working and Remove targets the filtered row", () => {
 		render(<EventGuestsSection eventId="e1" isHost />)
-		fireEvent.change(screen.getByRole("searchbox", { name: "Search guest" }), { target: { value: "chidi" } })
+		fireEvent.change(screen.getByRole("searchbox", { name: "Search guest" }), {
+			target: { value: "chidi" },
+		})
 		expect(screen.getAllByRole("button", { name: /^Remove / })).toHaveLength(1)
 		expect(screen.getByRole("button", { name: "Remove Chidi Eze" })).toBeInTheDocument()
 	})

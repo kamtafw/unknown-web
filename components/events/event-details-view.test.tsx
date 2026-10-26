@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
 vi.mock("./event-guests-section", () => ({
-	EventGuestsSection: (p: { eventId: string }) => <div data-testid="guests-stub" data-event={p.eventId} />,
+	EventGuestsSection: (p: { eventId: string }) => (
+		<div data-testid="guests-stub" data-event={p.eventId} />
+	),
 }))
 vi.mock("./event-comments-section", () => ({
-	EventCommentsSection: (p: { eventId: string }) => <div data-testid="comments-stub" data-event={p.eventId} />,
+	EventCommentsSection: (p: { eventId: string }) => (
+		<div data-testid="comments-stub" data-event={p.eventId} />
+	),
 }))
 vi.mock("./event-resources-section", () => ({
 	EventResourcesSection: (p: { eventId: string; isHost: boolean; onEdit: () => void }) => (
@@ -16,7 +20,9 @@ vi.mock("./event-resources-section", () => ({
 }))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
-	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => <div data-testid="delete" data-live-blocked={String(liveBlocked)} />,
+	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => (
+		<div data-testid="delete" data-live-blocked={String(liveBlocked)} />
+	),
 }))
 
 const full: EventFullDetails = {
@@ -81,14 +87,18 @@ describe("EventDetailsView", () => {
 	})
 
 	it("both shapes offer RSVP", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
 		rerender(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} />)
 		expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
 	})
 
 	it("host controls only for a host of a full event", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
 		const onEdit = vi.fn()
 		rerender(<EventDetailsView details={full} isHost onEdit={onEdit} onDeleted={noop} />)
@@ -101,7 +111,9 @@ describe("EventDetailsView", () => {
 		["the event is live", { isLive: true }],
 		["its session is live", { liveSessionStatus: "live" as const }],
 	])("blocks delete when %s, and offers no join control", (_n, over) => {
-		render(<EventDetailsView details={{ ...full, ...over }} isHost onEdit={noop} onDeleted={noop} />)
+		render(
+			<EventDetailsView details={{ ...full, ...over }} isHost onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.getByTestId("delete")).toHaveAttribute("data-live-blocked", "true")
 		expect(screen.queryByRole("button", { name: /join/i })).not.toBeInTheDocument()
 	})
@@ -109,7 +121,8 @@ describe("EventDetailsView", () => {
 
 describe("EventDetailsView sections (P3-03)", () => {
 	const names = ["Details", "Comments", "Links and docs", "Guests"]
-	const panelFor = (tab: HTMLElement) => document.getElementById(tab.getAttribute("aria-controls") ?? "")
+	const panelFor = (tab: HTMLElement) =>
+		document.getElementById(tab.getAttribute("aria-controls") ?? "")
 
 	it("a full event has an accessible tab list with the four sections, on Details by default", () => {
 		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
@@ -123,7 +136,15 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("every tab controls a real panel, labelled by that tab; only the active one is shown", () => {
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="guests" />)
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
 		for (const tab of screen.getAllByRole("tab")) {
 			const panel = panelFor(tab)
 			expect(panel).not.toBeNull()
@@ -134,31 +155,59 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("the guests section mounts only while Guests is active, for a full event; inactive panels are empty", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
-		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="guests" />)
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
 		expect(screen.getByTestId("guests-stub")).toHaveAttribute("data-event", "e1")
-		expect(panelFor(screen.getByRole("tab", { name: "Guests" }))).toContainElement(screen.getByTestId("guests-stub"))
+		expect(panelFor(screen.getByRole("tab", { name: "Guests" }))).toContainElement(
+			screen.getByTestId("guests-stub"),
+		)
 		expect(panelFor(screen.getByRole("tab", { name: "Comments" }))).toBeEmptyDOMElement()
 		expect(panelFor(screen.getByRole("tab", { name: "Links and docs" }))).toBeEmptyDOMElement()
-		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="comments" />)
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
 		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
 		expect(screen.getByTestId("comments-stub")).toBeInTheDocument()
 	})
 
 	it("the comments section mounts only while Comments is active, for a full event", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
-		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="comments" />)
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="comments" />,
+		)
 		expect(screen.getByTestId("comments-stub")).toHaveAttribute("data-event", "e1")
 		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
-		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
 		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
 		expect(screen.getByTestId("resources-stub")).toBeInTheDocument()
 	})
 
 	it("the Links and docs section shows nothing from the event's own link and document lists (it reads the resources endpoint)", () => {
-		render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
+		render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
 		expect(screen.queryByText("Secret agenda")).not.toBeInTheDocument()
 		expect(screen.queryByText("Secret.pdf")).not.toBeInTheDocument()
 		expect(screen.queryByText("https://example.com/agenda")).not.toBeInTheDocument()
@@ -166,7 +215,15 @@ describe("EventDetailsView sections (P3-03)", () => {
 
 	it("choosing a tab reports it; choosing the current tab does not re-report", () => {
 		const onTabChange = vi.fn()
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} onTabChange={onTabChange} />)
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				onTabChange={onTabChange}
+			/>,
+		)
 		fireEvent.mouseDown(screen.getByRole("tab", { name: "Links and docs" }), { button: 0 })
 		expect(onTabChange).toHaveBeenCalledWith("resources")
 		onTabChange.mockClear()
@@ -176,7 +233,15 @@ describe("EventDetailsView sections (P3-03)", () => {
 
 	it("arrow keys move between tabs (keyboard operable)", async () => {
 		const onTabChange = vi.fn()
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} onTabChange={onTabChange} />)
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				onTabChange={onTabChange}
+			/>,
+		)
 		const details = screen.getByRole("tab", { name: "Details" })
 		details.focus()
 		fireEvent.keyDown(details, { key: "ArrowRight" })
@@ -185,7 +250,15 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("roving focus: once a tab is focused, only it is in the tab order", async () => {
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="comments" />)
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
 		const comments = screen.getByRole("tab", { name: "Comments" })
 		act(() => comments.focus())
 		await waitFor(() => expect(comments).toHaveAttribute("tabindex", "0"))
@@ -195,9 +268,19 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("switching sections keeps the Details content mounted (RSVP state survives)", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
 		const rsvp = screen.getByLabelText("rsvp-stub")
-		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} tab="comments" />)
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
 		expect(screen.getByLabelText("rsvp-stub", { selector: "section" })).toBe(rsvp)
 		expect(rsvp.closest("[role=tabpanel]")).toHaveAttribute("hidden")
 		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
@@ -214,7 +297,15 @@ describe("EventDetailsView sections (P3-03)", () => {
 	it.each(["comments", "resources", "guests"] as const)(
 		"a restricted preview has no sections and cannot reach %s by tab",
 		(tab) => {
-			render(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} tab={tab} />)
+			render(
+				<EventDetailsView
+					details={preview}
+					isHost={false}
+					onEdit={noop}
+					onDeleted={noop}
+					tab={tab}
+				/>,
+			)
 			expect(screen.queryByRole("tablist")).not.toBeInTheDocument()
 			expect(screen.queryByRole("tab")).not.toBeInTheDocument()
 			expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument()
@@ -226,16 +317,28 @@ describe("EventDetailsView sections (P3-03)", () => {
 	)
 
 	it("the resources section mounts only while Links and docs is active, for a full event", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />)
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
+		)
 		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
-		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
 		const stub = screen.getByTestId("resources-stub")
 		expect(stub).toHaveAttribute("data-event", "e1")
 		expect(stub).toHaveAttribute("data-host", "true")
 	})
 
 	it("a restricted preview never mounts the resources section, even with tab=resources", () => {
-		render(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} tab="resources" />)
+		render(
+			<EventDetailsView
+				details={preview}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="resources"
+			/>,
+		)
 		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
 	})
 })

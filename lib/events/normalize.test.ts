@@ -244,7 +244,10 @@ describe("normalizeEventDetails — full", () => {
 		if (d?.kind !== "full") throw new Error("full expected")
 		expect(d.links).toEqual([{ name: "Site", url: "https://ok.io" }])
 		expect(d.documents).toEqual([
-			{ name: "Agenda", url: "https://appscombo.s3.eu-north-1.amazonaws.com/media/events/docs/a.pdf" },
+			{
+				name: "Agenda",
+				url: "https://appscombo.s3.eu-north-1.amazonaws.com/media/events/docs/a.pdf",
+			},
 		])
 	})
 
@@ -309,7 +312,11 @@ describe("normalizeEventDetails — restricted preview", () => {
 	})
 
 	it("falls back to a preview for an unrecognised shape, so it can only lose access", () => {
-		expect(normalizeEventDetails(preview({ hosts: "nope", links: [{ link_name: "x", url: "https://x.io" }] }))?.kind).toBe("preview")
+		expect(
+			normalizeEventDetails(
+				preview({ hosts: "nope", links: [{ link_name: "x", url: "https://x.io" }] }),
+			)?.kind,
+		).toBe("preview")
 	})
 
 	it("rejects payloads without an id or name", () => {
@@ -328,7 +335,10 @@ describe("normalizeHttpUrl / normalizeRsvpResult", () => {
 		}
 	})
 	it("reads the rsvp response and rejects unknown statuses", () => {
-		expect(normalizeRsvpResult({ event: "e1", status: "going" })).toEqual({ eventId: "e1", status: "going" })
+		expect(normalizeRsvpResult({ event: "e1", status: "going" })).toEqual({
+			eventId: "e1",
+			status: "going",
+		})
 		expect(normalizeRsvpResult({ event: "e1", status: "maybe" })).toBeNull()
 		expect(normalizeRsvpResult(null)).toBeNull()
 	})
@@ -382,7 +392,17 @@ describe("normalizeResources", () => {
 	})
 
 	it("returns null (not empty) when the body is not the documented shape", () => {
-		for (const bad of [null, undefined, "x", 5, [], {}, { links: [] }, { documents: [] }, { links: {}, documents: [] }]) {
+		for (const bad of [
+			null,
+			undefined,
+			"x",
+			5,
+			[],
+			{},
+			{ links: [] },
+			{ documents: [] },
+			{ links: {}, documents: [] },
+		]) {
 			expect(normalizeResources(bad)).toBeNull()
 		}
 	})
@@ -406,7 +426,9 @@ describe("normalizeResources", () => {
 				],
 			}),
 		)
-		expect(out?.links).toEqual([{ name: "https://ok.example.com/", url: "https://ok.example.com/" }])
+		expect(out?.links).toEqual([
+			{ name: "https://ok.example.com/", url: "https://ok.example.com/" },
+		])
 		expect(out?.documents.map((d) => d.name)).toEqual(["ok"])
 	})
 
@@ -435,7 +457,9 @@ describe("normalizeResources", () => {
 	it("does not carry unknown backend fields", () => {
 		const out = normalizeResources(
 			resources({
-				documents: [{ doc_name: "d", doc_file: "https://cdn.example.com/f", secret: "s", uploaded_by: "u" }],
+				documents: [
+					{ doc_name: "d", doc_file: "https://cdn.example.com/f", secret: "s", uploaded_by: "u" },
+				],
 			}),
 		)
 		expect(Object.keys(out?.documents[0] ?? {}).sort()).toEqual(
@@ -479,9 +503,9 @@ describe("normalizeComment", () => {
 	})
 
 	it("keeps the message text as sent, including markup, without interpreting it", () => {
-		expect(normalizeComment(comment({ message: "<img src=x onerror=alert(1)>\n  hi" }))?.message).toBe(
-			"<img src=x onerror=alert(1)>\n  hi",
-		)
+		expect(
+			normalizeComment(comment({ message: "<img src=x onerror=alert(1)>\n  hi" }))?.message,
+		).toBe("<img src=x onerror=alert(1)>\n  hi")
 	})
 
 	it("skips comments with no id or a blank / non-string message", () => {
@@ -500,7 +524,9 @@ describe("normalizeComment", () => {
 	})
 
 	it("falls back to the username for the name and ignores an unknown role", () => {
-		const author = normalizeComment(comment({ user: { full_name: "", username: "ada", role: "co_host" } }))?.author
+		const author = normalizeComment(
+			comment({ user: { full_name: "", username: "ada", role: "co_host" } }),
+		)?.author
 		expect(author).toMatchObject({ name: "ada", role: null })
 	})
 })
@@ -526,12 +552,17 @@ describe("normalizeCommentsPage", () => {
 	})
 
 	it("counts never decide hasNext, and a null next ends the list", () => {
-		expect(normalizeCommentsPage({ count: 500, total_pages: 50, next: null, results: [] }, 1)?.hasNext).toBe(false)
+		expect(
+			normalizeCommentsPage({ count: 500, total_pages: 50, next: null, results: [] }, 1)?.hasNext,
+		).toBe(false)
 		expect(normalizeCommentsPage({ next: "", results: [] }, 1)?.hasNext).toBe(false)
 	})
 
 	it("drops unreadable rows but keeps the rest", () => {
-		const page = normalizeCommentsPage({ results: [null, { id: "" }, { id: "ok", message: "m" }] }, 1)
+		const page = normalizeCommentsPage(
+			{ results: [null, { id: "" }, { id: "ok", message: "m" }] },
+			1,
+		)
 		expect(page?.comments.map((c) => c.id)).toEqual(["ok"])
 	})
 
@@ -566,7 +597,14 @@ describe("normalizeGuest", () => {
 			role: "guest",
 		})
 		const json = JSON.stringify(out)
-		for (const dropped of ["going", "rsvp", "joined_at", "2026-10-30", "bola@example.com", "+2348"]) {
+		for (const dropped of [
+			"going",
+			"rsvp",
+			"joined_at",
+			"2026-10-30",
+			"bola@example.com",
+			"+2348",
+		]) {
 			expect(json).not.toContain(dropped)
 		}
 	})
@@ -593,7 +631,11 @@ describe("normalizeGuest", () => {
 describe("normalizeGuestsPage", () => {
 	it("reads results and takes hasNext from next only", () => {
 		const page = normalizeGuestsPage(
-			{ total_pages: 1, next: null, results: [{ user_id: 1, user_full_name: "A" }, { user_id: 0 }] },
+			{
+				total_pages: 1,
+				next: null,
+				results: [{ user_id: 1, user_full_name: "A" }, { user_id: 0 }],
+			},
 			1,
 		)
 		expect(page).toEqual({

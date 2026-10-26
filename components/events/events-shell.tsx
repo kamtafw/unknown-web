@@ -43,7 +43,13 @@ function SelectionAwareFrame({ children }: { children: ReactNode }) {
  */
 export function EventsShell({ children }: { children: ReactNode }) {
 	return (
-		<Suspense fallback={<Frame open={false} pane={<EventRoomPlaceholder />}>{children}</Frame>}>
+		<Suspense
+			fallback={
+				<Frame open={false} pane={<EventRoomPlaceholder />}>
+					{children}
+				</Frame>
+			}
+		>
 			<SelectionAwareFrame>{children}</SelectionAwareFrame>
 		</Suspense>
 	)

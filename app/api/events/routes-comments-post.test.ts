@@ -12,7 +12,10 @@ import { GET as getComments, POST as postComment } from "./[eventId]/comments/ro
 
 const ID = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
 const ctx = (eventId: string = ID) => ({ params: Promise.resolve({ eventId }) })
-const post = (body: unknown, headers: Record<string, string> = { "content-type": "application/json" }) =>
+const post = (
+	body: unknown,
+	headers: Record<string, string> = { "content-type": "application/json" },
+) =>
 	new NextRequest(`http://localhost/api/events/${ID}/comments`, {
 		method: "POST",
 		headers,
@@ -25,8 +28,14 @@ const reply = (body: unknown, status = 201) =>
 		status,
 		headers: { "content-type": "application/json" },
 	})
-const created = (message = "hi") => ({ success: true, status_code: 201, message: null, data: { message } })
-const sentInit = () => fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
+const created = (message = "hi") => ({
+	success: true,
+	status_code: 201,
+	message: null,
+	data: { message },
+})
+const sentInit = () =>
+	fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
 const sentBody = () => JSON.parse(String(sentInit().body))
 
 let logs: ReturnType<typeof vi.spyOn>[]
@@ -49,7 +58,10 @@ afterEach(() => {
 
 describe("POST /api/events/[eventId]/comments", () => {
 	it("forwards only the trimmed message to comments/create with the bearer token", async () => {
-		const res = await postComment(post({ message: "  hello there  ", user: 1, event: "x", is_host: true }), ctx())
+		const res = await postComment(
+			post({ message: "  hello there  ", user: 1, event: "x", is_host: true }),
+			ctx(),
+		)
 		expect(res.status).toBe(201)
 		expect(fetchMock).toHaveBeenCalledTimes(1)
 		const url = new URL(String(fetchMock.mock.calls[0][0]))
@@ -62,11 +74,19 @@ describe("POST /api/events/[eventId]/comments", () => {
 
 	it("returns the documented 201 envelope with only data.message", async () => {
 		fetchMock.mockImplementation(async () =>
-			reply({ ...created("ok"), data: { message: "ok", id: "c9", user: { pkid: 1, email: "a@b.c" } } }),
+			reply({
+				...created("ok"),
+				data: { message: "ok", id: "c9", user: { pkid: 1, email: "a@b.c" } },
+			}),
 		)
 		const res = await postComment(post({ message: "ok" }), ctx())
 		expect(res.status).toBe(201)
-		expect(await res.json()).toEqual({ success: true, status_code: 201, message: null, data: { message: "ok" } })
+		expect(await res.json()).toEqual({
+			success: true,
+			status_code: 201,
+			message: null,
+			data: { message: "ok" },
+		})
 	})
 
 	it.each(["", "   ", "\n\t  \n", null, 42, undefined, ["a"], { a: 1 }])(
@@ -79,11 +99,14 @@ describe("POST /api/events/[eventId]/comments", () => {
 		},
 	)
 
-	it.each([null, [], "text", 5])("rejects the body %j with 400 and no upstream request", async (body) => {
-		const res = await postComment(post(JSON.stringify(body)), ctx())
-		expect(res.status).toBe(400)
-		expect(fetchMock).not.toHaveBeenCalled()
-	})
+	it.each([null, [], "text", 5])(
+		"rejects the body %j with 400 and no upstream request",
+		async (body) => {
+			const res = await postComment(post(JSON.stringify(body)), ctx())
+			expect(res.status).toBe(400)
+			expect(fetchMock).not.toHaveBeenCalled()
+		},
+	)
 
 	it("rejects unparseable JSON with 400 and no upstream request", async () => {
 		const res = await postComment(post("{not json"), ctx())
@@ -130,12 +153,36 @@ describe("POST /api/events/[eventId]/comments", () => {
 	})
 
 	it.each([
-		[400, { success: false, status_code: 400, message: "Comment cannot be blank.", code: "request_error" }],
-		[401, { success: false, status_code: 401, message: "Invalid token", code: "authentication_error" }],
-		[403, { success: false, status_code: 403, message: "Join this event before accessing its live session.", code: "authentication_error" }],
+		[
+			400,
+			{
+				success: false,
+				status_code: 400,
+				message: "Comment cannot be blank.",
+				code: "request_error",
+			},
+		],
+		[
+			401,
+			{ success: false, status_code: 401, message: "Invalid token", code: "authentication_error" },
+		],
+		[
+			403,
+			{
+				success: false,
+				status_code: 403,
+				message: "Join this event before accessing its live session.",
+				code: "authentication_error",
+			},
+		],
 		[
 			404,
-			{ success: false, status_code: 404, message: "The user has not joined this event. Only users that have joined can comment.", code: "request_error" },
+			{
+				success: false,
+				status_code: 404,
+				message: "The user has not joined this event. Only users that have joined can comment.",
+				code: "request_error",
+			},
 		],
 	])("passes an upstream %i through with its own status and body", async (status, body) => {
 		fetchMock.mockImplementation(async () => reply(body, status))
@@ -146,7 +193,10 @@ describe("POST /api/events/[eventId]/comments", () => {
 
 	it.each([
 		["a 2xx body without data.message", reply({ success: true, status_code: 201, data: {} })],
-		["a 2xx body with a non-string message", reply({ success: true, status_code: 201, data: { message: 5 } })],
+		[
+			"a 2xx body with a non-string message",
+			reply({ success: true, status_code: 201, data: { message: 5 } }),
+		],
 		["a 2xx body with no data", reply({ success: true })],
 		["a 204", new Response(null, { status: 204 })],
 	])("answers 502, never success, for %s", async (_name, response) => {
@@ -182,9 +232,28 @@ describe("POST /api/events/[eventId]/comments", () => {
 
 	it("leaves the GET contract alone (the same route still serves a page)", async () => {
 		fetchMock.mockImplementation(async () =>
-			reply({ success: true, status_code: 200, message: "ok", data: { count: 0, total_pages: 1, limit: 10, current: 1, previous: null, next: null, results: [] } }, 200),
+			reply(
+				{
+					success: true,
+					status_code: 200,
+					message: "ok",
+					data: {
+						count: 0,
+						total_pages: 1,
+						limit: 10,
+						current: 1,
+						previous: null,
+						next: null,
+						results: [],
+					},
+				},
+				200,
+			),
 		)
-		const res = await getComments(new NextRequest(`http://localhost/api/events/${ID}/comments?page=2&limit=5`), ctx())
+		const res = await getComments(
+			new NextRequest(`http://localhost/api/events/${ID}/comments?page=2&limit=5`),
+			ctx(),
+		)
 		expect(res.status).toBe(200)
 		const url = new URL(String(fetchMock.mock.calls[0][0]))
 		expect(url.pathname.endsWith(`/events/${ID}/comments`)).toBe(true)

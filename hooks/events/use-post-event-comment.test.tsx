@@ -22,7 +22,9 @@ const err = (status: number) => Object.assign(new Error("x"), { response: { stat
 const comment = (id: string) => ({ id, message: `m-${id}`, createdAt: null, author: null })
 
 let client: QueryClient
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+const wrapper = ({ children }: { children: ReactNode }) => (
+	<QueryClientProvider client={client}>{children}</QueryClientProvider>
+)
 
 beforeEach(() => {
 	vi.clearAllMocks()
@@ -60,20 +62,29 @@ describe("usePostEventComment", () => {
 		[404, "not_found"],
 		[413, "too_large"],
 		[500, "server"],
-	])("a %i resolves false (never a false success), reports %s and does not touch the thread", async (status, kind) => {
-		const key = eventKeys.comments(7, 3, ID, 20)
-		client.setQueryData(key, { pages: [{ page: 1, hasNext: true, comments: [] }, { page: 2, hasNext: false, comments: [] }], pageParams: [1, 2] })
-		postEventComment.mockRejectedValue(err(status))
-		const { result } = renderHook(() => usePostEventComment(ID), { wrapper })
-		let ok = true
-		await act(async () => {
-			ok = await result.current.post("hi")
-		})
-		expect(ok).toBe(false)
-		await waitFor(() => expect(result.current.error).toBe(kind))
-		expect(client.getQueryState(key)?.isInvalidated).toBe(false)
-		expect((client.getQueryData(key) as { pages: unknown[] }).pages).toHaveLength(2)
-	})
+	])(
+		"a %i resolves false (never a false success), reports %s and does not touch the thread",
+		async (status, kind) => {
+			const key = eventKeys.comments(7, 3, ID, 20)
+			client.setQueryData(key, {
+				pages: [
+					{ page: 1, hasNext: true, comments: [] },
+					{ page: 2, hasNext: false, comments: [] },
+				],
+				pageParams: [1, 2],
+			})
+			postEventComment.mockRejectedValue(err(status))
+			const { result } = renderHook(() => usePostEventComment(ID), { wrapper })
+			let ok = true
+			await act(async () => {
+				ok = await result.current.post("hi")
+			})
+			expect(ok).toBe(false)
+			await waitFor(() => expect(result.current.error).toBe(kind))
+			expect(client.getQueryState(key)?.isInvalidated).toBe(false)
+			expect((client.getQueryData(key) as { pages: unknown[] }).pages).toHaveLength(2)
+		},
+	)
 
 	it("a network failure is reported as network", async () => {
 		postEventComment.mockRejectedValue(new Error("offline"))
@@ -120,10 +131,15 @@ describe("usePostEventComment", () => {
 				? { page: 1, hasNext: true, comments: [comment("c2"), comment("c1")] }
 				: { page: 2, hasNext: false, comments: [comment("c0")] },
 		)
-		const both = renderHook(() => ({ read: useEventComments(ID, 20), write: usePostEventComment(ID) }), { wrapper })
+		const both = renderHook(
+			() => ({ read: useEventComments(ID, 20), write: usePostEventComment(ID) }),
+			{ wrapper },
+		)
 		await waitFor(() => expect(both.result.current.read.hasNextPage).toBe(true))
 		await act(() => both.result.current.read.fetchNextPage())
-		await waitFor(() => expect(both.result.current.read.comments.map((c) => c.id)).toEqual(["c2", "c1", "c0"]))
+		await waitFor(() =>
+			expect(both.result.current.read.comments.map((c) => c.id)).toEqual(["c2", "c1", "c0"]),
+		)
 		getEventCommentsPage.mockClear()
 
 		// the server now has a newer comment; the post response itself carries none
@@ -136,7 +152,9 @@ describe("usePostEventComment", () => {
 		await act(async () => {
 			await both.result.current.write.post("new one")
 		})
-		await waitFor(() => expect(both.result.current.read.comments.map((c) => c.id)).toEqual(["c3", "c2"]))
+		await waitFor(() =>
+			expect(both.result.current.read.comments.map((c) => c.id)).toEqual(["c3", "c2"]),
+		)
 		// only page 1 was requested again, and the older page was dropped (re-loaded on demand)
 		expect(getEventCommentsPage).toHaveBeenCalledTimes(1)
 		expect(getEventCommentsPage.mock.calls[0][0]).toEqual({ eventId: ID, page: 1, limit: 20 })
@@ -147,8 +165,14 @@ describe("usePostEventComment", () => {
 		getEventCommentsPage.mockResolvedValue({ page: 1, hasNext: false, comments: [comment("a")] })
 		const other = renderHook(() => useEventComments(OTHER, 20), { wrapper })
 		await waitFor(() => expect(other.result.current.hasLoaded).toBe(true))
-		client.setQueryData(eventKeys.comments(8, 3, ID, 20), { pages: [{ page: 1, hasNext: false, comments: [] }], pageParams: [1] })
-		client.setQueryData(eventKeys.comments(7, 2, ID, 20), { pages: [{ page: 1, hasNext: false, comments: [] }], pageParams: [1] })
+		client.setQueryData(eventKeys.comments(8, 3, ID, 20), {
+			pages: [{ page: 1, hasNext: false, comments: [] }],
+			pageParams: [1],
+		})
+		client.setQueryData(eventKeys.comments(7, 2, ID, 20), {
+			pages: [{ page: 1, hasNext: false, comments: [] }],
+			pageParams: [1],
+		})
 		getEventCommentsPage.mockClear()
 		postEventComment.mockResolvedValue(undefined)
 		const { result } = renderHook(() => usePostEventComment(ID), { wrapper })
@@ -163,7 +187,10 @@ describe("usePostEventComment", () => {
 
 	it("does not treat the response as a comment: nothing is inserted into the cache", async () => {
 		const key = eventKeys.comments(7, 3, ID, 20)
-		const before = { pages: [{ page: 1, hasNext: false, comments: [comment("a")] }], pageParams: [1] }
+		const before = {
+			pages: [{ page: 1, hasNext: false, comments: [comment("a")] }],
+			pageParams: [1],
+		}
 		client.setQueryData(key, before)
 		postEventComment.mockResolvedValue({ message: "hi", id: "fake" })
 		const { result } = renderHook(() => usePostEventComment(ID), { wrapper })

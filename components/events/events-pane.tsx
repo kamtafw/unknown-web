@@ -1,8 +1,8 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { EventsTabs } from "./events-tabs"
 import { SearchField } from "./event-list"
+import { EventsTabs } from "./events-tabs"
 
 /**
  * Left pane shared by Events and My events: optional location row, one search field,
@@ -15,13 +15,12 @@ import { SearchField } from "./event-list"
 export function EventsPane({
 	label,
 	location,
-	search,
 	floatingAction,
+	search,
 	children,
 }: {
 	label: string
 	location?: ReactNode
-	/** e.g. the create-event button; positioned over the bottom-right of the pane */
 	floatingAction?: ReactNode
 	search: {
 		value: string
@@ -44,7 +43,7 @@ export function EventsPane({
 				<EventsTabs />
 			</div>
 			{/* 26 px from the control to the first image, as measured in the design export */}
-			<div className="mt-[26px] min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">{children}</div>
+			<div className="mt-6.5 min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">{children}</div>
 			{floatingAction}
 		</section>
 	)

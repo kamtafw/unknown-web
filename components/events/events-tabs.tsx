@@ -11,7 +11,9 @@ const TABS = [
 
 function isActive(pathname: string, href: string) {
 	// "/events" must not also match "/events/my-events"
-	return href === "/events" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+	return href === "/events"
+		? pathname === href
+		: pathname === href || pathname.startsWith(`${href}/`)
 }
 
 /**

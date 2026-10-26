@@ -24,7 +24,8 @@ const reply = (body: unknown, status = 200) =>
 		headers: { "content-type": "application/json" },
 	})
 const sentUrl = () => new URL(String(fetchMock.mock.calls[0][0]))
-const sentInit = () => fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
+const sentInit = () =>
+	fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
 
 /* what the backend documents (guide §4.12, §4.16, §4.17), plus the fields the BFF must remove */
 const guestsBody = () => ({
@@ -88,15 +89,39 @@ const resourcesBody = () => ({
 		event: "Jos Tech Meetup",
 		links: [{ link_name: "Agenda", url: "https://example.com/a", date_added: "01/11/2026" }],
 		documents: [
-			{ doc_name: "Slides", doc_file: "d/s.pdf", size: "1 MB", file_type: "PDF", date_uploaded: "02/11/2026" },
+			{
+				doc_name: "Slides",
+				doc_file: "d/s.pdf",
+				size: "1 MB",
+				file_type: "PDF",
+				date_uploaded: "02/11/2026",
+			},
 		],
 	},
 })
 
 const routes = [
-	{ name: "resources", get: getResources, paged: false, body: resourcesBody, banned: ["Jos Tech Meetup", "date_added", "01/11/2026"] },
-	{ name: "comments", get: getComments, paged: true, body: commentsBody, banned: ["pkid", "user-uuid", "joined_at", "2026-10-01"] },
-	{ name: "guests", get: getGuests, paged: true, body: guestsBody, banned: ["rsvp_status", "going", "joined_at", "2026-10-30"] },
+	{
+		name: "resources",
+		get: getResources,
+		paged: false,
+		body: resourcesBody,
+		banned: ["Jos Tech Meetup", "date_added", "01/11/2026"],
+	},
+	{
+		name: "comments",
+		get: getComments,
+		paged: true,
+		body: commentsBody,
+		banned: ["pkid", "user-uuid", "joined_at", "2026-10-01"],
+	},
+	{
+		name: "guests",
+		get: getGuests,
+		paged: true,
+		body: guestsBody,
+		banned: ["rsvp_status", "going", "joined_at", "2026-10-30"],
+	},
 ] as const
 
 beforeEach(() => {
@@ -155,7 +180,13 @@ for (const { name, get, body, banned } of routes) {
 
 		it("passes upstream 403 and 404 through with their own status and body", async () => {
 			for (const status of [403, 404]) {
-				const upstream = { success: false, status_code: status, message: "denied", code: "x", errors: null }
+				const upstream = {
+					success: false,
+					status_code: status,
+					message: "denied",
+					code: "x",
+					errors: null,
+				}
 				fetchMock.mockImplementation(async () => reply(upstream, status))
 				const res = await call()
 				expect(res.status).toBe(status)
@@ -164,7 +195,13 @@ for (const { name, get, body, banned } of routes) {
 		})
 
 		it("answers 502 when a successful body is not the documented shape (fail closed)", async () => {
-			for (const bad of [{ success: true, data: null }, { success: true, data: {} }, { success: true }, [], "text-as-json"]) {
+			for (const bad of [
+				{ success: true, data: null },
+				{ success: true, data: {} },
+				{ success: true },
+				[],
+				"text-as-json",
+			]) {
 				fetchMock.mockImplementation(async () => reply(JSON.stringify(bad)))
 				const res = await call()
 				expect(res.status).toBe(502)
@@ -180,7 +217,9 @@ for (const { name, get, body, banned } of routes) {
 		})
 
 		it("answers 502 for a non-JSON upstream body (real fetchJson)", async () => {
-			fetchMock.mockImplementation(async () => new Response("<html>bad gateway</html>", { status: 200 }))
+			fetchMock.mockImplementation(
+				async () => new Response("<html>bad gateway</html>", { status: 200 }),
+			)
 			const res = await call()
 			expect(res.status).toBe(502)
 			const text = await res.text()
@@ -236,10 +275,31 @@ for (const { name, get, body } of routes.filter((r) => r.paged)) {
 
 		it("keeps the pagination fields, including a next link on an empty page", async () => {
 			fetchMock.mockImplementation(async () =>
-				reply({ success: true, status_code: 200, message: null, data: { count: 40, total_pages: 4, limit: 10, current: 2, previous: "p", next: "n", results: [] } }),
+				reply({
+					success: true,
+					status_code: 200,
+					message: null,
+					data: {
+						count: 40,
+						total_pages: 4,
+						limit: 10,
+						current: 2,
+						previous: "p",
+						next: "n",
+						results: [],
+					},
+				}),
 			)
 			const out = await (await call("?page=2")).json()
-			expect(out.data).toEqual({ count: 40, total_pages: 4, limit: 10, current: 2, previous: "p", next: "n", results: [] })
+			expect(out.data).toEqual({
+				count: 40,
+				total_pages: 4,
+				limit: 10,
+				current: 2,
+				previous: "p",
+				next: "n",
+				results: [],
+			})
 		})
 	})
 }

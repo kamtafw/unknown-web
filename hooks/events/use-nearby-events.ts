@@ -1,7 +1,7 @@
 "use client"
 
-import { EVENTS_PAGE_SIZE, NEARBY_RADIUS_KM } from "@/lib/events/constants"
 import { eventsApi } from "@/lib/events/api"
+import { EVENTS_PAGE_SIZE, NEARBY_RADIUS_KM } from "@/lib/events/constants"
 import { flattenPages } from "@/lib/events/normalize"
 import {
 	searchCoverage,

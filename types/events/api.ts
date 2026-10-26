@@ -3,16 +3,14 @@
  *
  * These are the shapes that enter the query cache and the UI. They are produced
  * only by lib/events/normalize.ts, which copies a fixed whitelist of backend
- * fields — on an event card, host email/phone, guests, links and documents (returned by the
- * backend even for restricted events) are never represented. See docs/events/EVENTS.md (EV-001).
+ * fields — host email/phone, guests, links and documents (returned by the backend
+ * even for restricted events) are never represented here. See docs/events/EVENTS.md (EV-001).
  *
  * Wire shapes are deliberately not typed: normalize.ts reads them as `unknown`
  * so a contract drift degrades to "event skipped" instead of a runtime crash.
  *
  * Pass 2 adds event details (full vs restricted preview), RSVP and the create/edit
- * form model. Pass 3 (P3-02) adds the read-side resources, comments and guests types at the end
- * of this file, each projected to a minimal field set (A-17, A-18, A-20). Join/leave and live
- * types belong to later passes.
+ * form model. Guests, comments, join/leave and live types belong to later passes.
  */
 
 export type EventPrivacy = "public" | "private" | "friends"
@@ -25,12 +23,7 @@ export interface Coordinates {
 
 /** browser location state for discovery */
 export type LocationStatus =
-	| "locating"
-	| "ready"
-	| "denied"
-	| "unavailable"
-	| "timeout"
-	| "unsupported"
+	"locating" | "ready" | "denied" | "unavailable" | "timeout" | "unsupported"
 
 export interface EventHost {
 	id: string
@@ -84,9 +77,7 @@ export type EventLiveStatus = "waiting" | "live" | "ended" | "cancelled"
  * "unknown" must never be presented as "not responded".
  */
 export type RsvpKnowledge =
-	| { state: "unknown" }
-	| { state: "none" }
-	| { state: "set"; status: EventRsvpStatus }
+	{ state: "unknown" } | { state: "none" } | { state: "set"; status: EventRsvpStatus }
 
 export interface EventLink {
 	name: string
@@ -120,8 +111,7 @@ interface EventDetailsBase {
 /**
  * Full access (host, online guest, or a public unlocked event). Host contact data
  * and guests are never retained. Links/documents are kept only so a host can edit
- * them; the Links and docs section reads them from the resources endpoint instead
- * (`EventResources`, Pass 3).
+ * them; viewing them is Pass 3.
  */
 export interface EventFullDetails extends EventDetailsBase {
 	kind: "full"
@@ -163,9 +153,7 @@ export interface EventDocumentUpload {
  * retain existing documents.
  */
 export type DocumentsChange =
-	| { mode: "keep" }
-	| { mode: "clear" }
-	| { mode: "replace"; items: EventDocumentUpload[] }
+	{ mode: "keep" } | { mode: "clear" } | { mode: "replace"; items: EventDocumentUpload[] }
 
 export interface EventFormValues {
 	name: string
@@ -199,18 +187,13 @@ export interface EventFormInitial {
 }
 
 export type EventSubmission =
-	| { kind: "json"; body: Record<string, unknown> }
-	| { kind: "multipart"; body: FormData }
-
-/* -------------------------------------------------------------------------- */
-/* Pass 3 (P3-02): read-side view models for resources, comments and guests   */
-/* -------------------------------------------------------------------------- */
+	{ kind: "json"; body: Record<string, unknown> } | { kind: "multipart"; body: FormData }
 
 /**
  * A document as the resources endpoint describes it. `url` is the stored file. The three
- * metadata fields are shown only when the backend supplied a usable value (A-18).
- * Links reuse `EventLink` (`{ name, url }`): the backend's per-link `date_added` is the event's
- * creation date, not a link date, so it is never kept (A-18).
+ * metadata fields are shown only when the backend supplied a usable value. Links reuse
+ * `EventLink` (`{ name, url }`): the backend's per-link `date_added` is the event's
+ * creation date, not a link date, so it is never kept.
  */
 export interface EventResourceDocument {
 	name: string
@@ -232,7 +215,7 @@ export interface EventResources {
 export type EventGuestRole = "host" | "guest"
 
 /**
- * Minimal comment author (A-20). The author's `pkid`, `id` and `joined_at` are dropped on
+ * Minimal comment author. The author's `pkid`, `id` and `joined_at` are dropped on
  * purpose: no Pass 3 task needs them.
  */
 export interface EventCommentAuthor {

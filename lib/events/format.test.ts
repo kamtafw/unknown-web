@@ -55,7 +55,9 @@ describe("formatListDate", () => {
 	it("shows only the start time when there is no distinct end time", () => {
 		const base = { startDate: "2026-05-19", endDate: "2026-05-19" }
 		expect(formatListDate({ ...base, startTime: "10:00", endTime: "" }, now)?.time).toBe("10:00")
-		expect(formatListDate({ ...base, startTime: "10:00", endTime: "10:00" }, now)?.time).toBe("10:00")
+		expect(formatListDate({ ...base, startTime: "10:00", endTime: "10:00" }, now)?.time).toBe(
+			"10:00",
+		)
 		expect(formatListDate({ ...base, startTime: "", endTime: "" }, now)?.time).toBe("")
 	})
 	it("shows a range for a multi-day event", () => {
@@ -83,7 +85,9 @@ describe("formatListDate", () => {
 		).toBe("Dec 31")
 	})
 	it("returns null for an invalid date", () => {
-		expect(formatListDate({ startDate: "bad", endDate: "", startTime: "", endTime: "" }, now)).toBeNull()
+		expect(
+			formatListDate({ startDate: "bad", endDate: "", startTime: "", endTime: "" }, now),
+		).toBeNull()
 	})
 })
 

@@ -43,7 +43,9 @@ const err = (status: number) => Object.assign(new Error("x"), { response: { stat
 
 function wrapper() {
 	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-	return ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+	return function EventDetailsWrapper({ children }: { children: ReactNode }) {
+		return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+	}
 }
 
 beforeEach(() => {

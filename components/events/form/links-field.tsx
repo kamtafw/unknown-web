@@ -37,7 +37,9 @@ export function LinksField({
 				const urlError = errors[`links.${i}.url`]
 				return (
 					<fieldset key={i} className="flex flex-col gap-2 rounded-xl border border-border p-3">
-						<legend className="px-1 text-[12px] font-semibold text-muted-foreground">Link {i + 1}</legend>
+						<legend className="px-1 text-[12px] font-semibold text-muted-foreground">
+							Link {i + 1}
+						</legend>
 						<input
 							aria-label={`Link ${i + 1} name`}
 							type="text"
@@ -50,7 +52,11 @@ export function LinksField({
 							onChange={(e) => update(i, { name: e.target.value })}
 						/>
 						{nameError && (
-							<p id={`${id}-${i}-name-error`} role="alert" className="text-[12px] font-medium text-destructive">
+							<p
+								id={`${id}-${i}-name-error`}
+								role="alert"
+								className="text-[12px] font-medium text-destructive"
+							>
 								{nameError}
 							</p>
 						)}
@@ -66,7 +72,11 @@ export function LinksField({
 							onChange={(e) => update(i, { url: e.target.value })}
 						/>
 						{urlError && (
-							<p id={`${id}-${i}-url-error`} role="alert" className="text-[12px] font-medium text-destructive">
+							<p
+								id={`${id}-${i}-url-error`}
+								role="alert"
+								className="text-[12px] font-medium text-destructive"
+							>
 								{urlError}
 							</p>
 						)}

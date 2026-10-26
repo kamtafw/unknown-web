@@ -85,7 +85,11 @@ export function EventCommentComposer({ eventId }: { eventId: string }) {
 				</p>
 			)}
 			<button type="submit" disabled={isPending} className={`${primaryButton} self-end`}>
-				{isPending ? <Loader2 size={13} aria-hidden className="animate-spin" /> : <Send size={13} aria-hidden />}
+				{isPending ? (
+					<Loader2 size={13} aria-hidden className="animate-spin" />
+				) : (
+					<Send size={13} aria-hidden />
+				)}
 				{isPending ? "Posting…" : "Post comment"}
 			</button>
 		</form>

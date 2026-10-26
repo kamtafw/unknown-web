@@ -8,9 +8,9 @@ import { CalendarDays, Clock, EyeOff, Lock, MapPin, Pencil, Radio } from "lucide
 import Image from "next/image"
 import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
-import { secondaryButton } from "./event-list"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
+import { secondaryButton } from "./event-list"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
 
@@ -20,7 +20,13 @@ const PRIVACY_LABEL: Record<EventPrivacy, string> = {
 	private: "Private",
 }
 
-function Chip({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "live" }) {
+function Chip({
+	children,
+	tone = "muted",
+}: {
+	children: React.ReactNode
+	tone?: "muted" | "live"
+}) {
 	return (
 		<span
 			className={
@@ -46,7 +52,14 @@ function Cover({ src }: { src: string | null }) {
 		<div className="relative aspect-[16/7] w-full overflow-hidden rounded-xl bg-muted">
 			{src ? (
 				// `unoptimized`: the media host is not verified against next.config yet (EV-005)
-				<Image src={src} alt="" fill unoptimized sizes="(min-width: 1024px) 640px, 100vw" className="object-cover" />
+				<Image
+					src={src}
+					alt=""
+					fill
+					unoptimized
+					sizes="(min-width: 1024px) 640px, 100vw"
+					className="object-cover"
+				/>
 			) : (
 				<div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/5 text-primary/60">
 					<CalendarDays size={36} aria-hidden />
@@ -68,7 +81,9 @@ function HostRow({ host }: { host: EventHost }) {
 				)}
 			</span>
 			<span className="min-w-0">
-				<span className="block truncate text-[13px] font-semibold text-foreground">{host.name}</span>
+				<span className="block truncate text-[13px] font-semibold text-foreground">
+					{host.name}
+				</span>
 				{host.username && (
 					<span className="block truncate text-[12px] text-muted-foreground">@{host.username}</span>
 				)}
@@ -137,7 +152,10 @@ export function EventDetailsView({
 			{details.hashtags.length > 0 && (
 				<ul aria-label="Tags" className="flex flex-wrap gap-2">
 					{details.hashtags.map((tag) => (
-						<li key={tag} className="rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary">
+						<li
+							key={tag}
+							className="rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary"
+						>
 							#{tag}
 						</li>
 					))}
@@ -164,7 +182,10 @@ export function EventDetailsView({
 					</section>
 				)
 			) : (
-				<div role="note" className="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3">
+				<div
+					role="note"
+					className="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3"
+				>
 					<EyeOff size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
 					<p className="text-[12.5px] leading-relaxed text-muted-foreground">
 						Some details are hidden. Hosts and resources are only shown to people who have been
@@ -178,7 +199,10 @@ export function EventDetailsView({
 	)
 
 	return (
-		<article aria-label={details.name} className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8">
+		<article
+			aria-label={details.name}
+			className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8"
+		>
 			<Cover src={details.coverImage} />
 
 			<header className="flex flex-col gap-3">

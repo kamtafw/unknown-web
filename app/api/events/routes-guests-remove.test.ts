@@ -12,7 +12,10 @@ import { POST as removeGuest } from "./[eventId]/guests/remove/route"
 
 const ID = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
 const ctx = (eventId: string = ID) => ({ params: Promise.resolve({ eventId }) })
-const post = (body: unknown, headers: Record<string, string> = { "content-type": "application/json" }) =>
+const post = (
+	body: unknown,
+	headers: Record<string, string> = { "content-type": "application/json" },
+) =>
 	new NextRequest(`http://localhost/api/events/${ID}/guests/remove`, {
 		method: "POST",
 		headers,
@@ -25,15 +28,22 @@ const reply = (body: unknown, status = 200) =>
 		status,
 		headers: { "content-type": "application/json" },
 	})
-const removed = () => ({ success: true, status_code: 200, message: "Guest removed successfully.", data: {} })
-const sentInit = () => fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
+const removed = () => ({
+	success: true,
+	status_code: 200,
+	message: "Guest removed successfully.",
+	data: {},
+})
+const sentInit = () =>
+	fetchMock.mock.calls[0][1] as RequestInit & { headers: Record<string, string> }
 
 beforeEach(() => {
 	vi.clearAllMocks()
 	getAccessToken.mockResolvedValue("token")
 	fetchMock.mockImplementation(async () => reply(removed()))
 	vi.stubGlobal("fetch", fetchMock)
-	for (const m of ["error", "log", "warn"] as const) vi.spyOn(console, m).mockImplementation(() => {})
+	for (const m of ["error", "log", "warn"] as const)
+		vi.spyOn(console, m).mockImplementation(() => {})
 })
 afterEach(() => {
 	vi.unstubAllGlobals()
@@ -42,7 +52,10 @@ afterEach(() => {
 
 describe("POST /api/events/[eventId]/guests/remove", () => {
 	it("forwards only user_id to guests/remove with the bearer token", async () => {
-		const res = await removeGuest(post({ user_id: 42, role: "host", event: "x", is_host: true }), ctx())
+		const res = await removeGuest(
+			post({ user_id: 42, role: "host", event: "x", is_host: true }),
+			ctx(),
+		)
 		expect(res.status).toBe(200)
 		expect(fetchMock).toHaveBeenCalledTimes(1)
 		const url = new URL(String(fetchMock.mock.calls[0][0]))
@@ -70,15 +83,20 @@ describe("POST /api/events/[eventId]/guests/remove", () => {
 		},
 	)
 
-	it.each([null, [], "text", 5])("rejects the body %j with 400 and no upstream request", async (body) => {
-		const res = await removeGuest(post(JSON.stringify(body)), ctx())
-		expect(res.status).toBe(400)
-		expect(fetchMock).not.toHaveBeenCalled()
-	})
+	it.each([null, [], "text", 5])(
+		"rejects the body %j with 400 and no upstream request",
+		async (body) => {
+			const res = await removeGuest(post(JSON.stringify(body)), ctx())
+			expect(res.status).toBe(400)
+			expect(fetchMock).not.toHaveBeenCalled()
+		},
+	)
 
 	it("rejects unparseable JSON and a non-JSON content type without calling upstream", async () => {
 		expect((await removeGuest(post("{nope"), ctx())).status).toBe(400)
-		expect((await removeGuest(post({ user_id: 1 }, { "content-type": "text/plain" }), ctx())).status).toBe(415)
+		expect(
+			(await removeGuest(post({ user_id: 1 }, { "content-type": "text/plain" }), ctx())).status,
+		).toBe(415)
 		expect(fetchMock).not.toHaveBeenCalled()
 	})
 
@@ -97,7 +115,15 @@ describe("POST /api/events/[eventId]/guests/remove", () => {
 
 	it("passes the host-only 403 through, distinct from a missing event", async () => {
 		fetchMock.mockImplementation(async () =>
-			reply({ success: false, status_code: 403, message: "Only event hosts can remove guests.", code: "permission_denied" }, 403),
+			reply(
+				{
+					success: false,
+					status_code: 403,
+					message: "Only event hosts can remove guests.",
+					code: "permission_denied",
+				},
+				403,
+			),
 		)
 		const res = await removeGuest(post({ user_id: 1 }), ctx())
 		expect(res.status).toBe(403)
@@ -126,7 +152,10 @@ describe("POST /api/events/[eventId]/guests/remove", () => {
 	it("does not log the token or the body", async () => {
 		fetchMock.mockImplementation(async () => reply("boom", 500))
 		await removeGuest(post({ user_id: 77 }), ctx())
-		const logged = JSON.stringify([...vi.mocked(console.error).mock.calls, ...vi.mocked(console.log).mock.calls])
+		const logged = JSON.stringify([
+			...vi.mocked(console.error).mock.calls,
+			...vi.mocked(console.log).mock.calls,
+		])
 		expect(logged).not.toContain("token")
 	})
 })

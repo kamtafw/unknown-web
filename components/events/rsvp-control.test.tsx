@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { RsvpControl } from "./rsvp-control"
 
 const useEventRsvp = vi.fn()
-vi.mock("@/hooks/events/use-event-rsvp", () => ({ useEventRsvp: (...a: unknown[]) => useEventRsvp(...a) }))
+vi.mock("@/hooks/events/use-event-rsvp", () => ({
+	useEventRsvp: (...a: unknown[]) => useEventRsvp(...a),
+}))
 
 const setRsvp = vi.fn()
 const clearError = vi.fn()
@@ -26,13 +28,19 @@ beforeEach(() => {
 describe("RsvpControl", () => {
 	it("offers the three RSVP states as a radio group", () => {
 		render(<RsvpControl eventId="e1" details={details} />)
-		expect(screen.getAllByRole("radio").map((r) => r.textContent)).toEqual(["Going", "Interested", "Not going"])
+		expect(screen.getAllByRole("radio").map((r) => r.textContent)).toEqual([
+			"Going",
+			"Interested",
+			"Not going",
+		])
 	})
 
 	it("known 'no response' says so; nothing is selected", () => {
 		render(<RsvpControl eventId="e1" details={details} />)
 		expect(screen.getByText("You haven't responded yet.")).toBeInTheDocument()
-		expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true)
+		expect(
+			screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false"),
+		).toBe(true)
 	})
 
 	it("UNKNOWN is not shown as 'not responded'", () => {
@@ -59,7 +67,11 @@ describe("RsvpControl", () => {
 
 	it("disables the options while saving and shows a backend failure (e.g. event ended) inline", () => {
 		useEventRsvp.mockReturnValue(
-			state({ isPending: true, pendingStatus: "going", error: { message: "This event has already ended." } }),
+			state({
+				isPending: true,
+				pendingStatus: "going",
+				error: { message: "This event has already ended." },
+			}),
 		)
 		render(<RsvpControl eventId="e1" details={details} />)
 		expect(screen.getAllByRole("radio").every((r) => (r as HTMLButtonElement).disabled)).toBe(true)

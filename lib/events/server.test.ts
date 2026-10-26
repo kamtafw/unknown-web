@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { normalizeCommentsPage, normalizeGuestsPage, normalizeResources } from "./normalize"
 import {
 	buildAddressBody,
 	buildCommentBody,
@@ -10,7 +11,6 @@ import {
 	sanitizeGuestsPayload,
 	sanitizeResourcesPayload,
 } from "./server"
-import { normalizeCommentsPage, normalizeGuestsPage, normalizeResources } from "./normalize"
 
 const qs = (s: string) => new URLSearchParams(s)
 
@@ -99,9 +99,7 @@ describe("buildMyEventsRequest", () => {
 
 	it("cannot be overridden by a client-supplied filter", () => {
 		for (const filter of ["", "all", "my_events,all", "MY_EVENTS"]) {
-			const r = buildMyEventsRequest(
-				new URLSearchParams({ filter, q: "a", page: "1" }),
-			)
+			const r = buildMyEventsRequest(new URLSearchParams({ filter, q: "a", page: "1" }))
 			expect(r.query.getAll("filter")).toEqual(["my_events"])
 			const l = buildMyEventsRequest(new URLSearchParams({ filter }))
 			expect(l.query.getAll("filter")).toEqual(["my_events"])
@@ -177,7 +175,13 @@ describe("sanitizeGuestsPayload", () => {
 				previous: null,
 				next: "https://api.example.com/events/x/guests?page=2",
 				results: [
-					{ user_id: 7, user_photo: "p.jpg", user_full_name: "Bola Ade", user_username: "bola", role: "guest" },
+					{
+						user_id: 7,
+						user_photo: "p.jpg",
+						user_full_name: "Bola Ade",
+						user_username: "bola",
+						role: "guest",
+					},
 				],
 			},
 		})
@@ -185,7 +189,15 @@ describe("sanitizeGuestsPayload", () => {
 
 	it("removes RSVP, join date and any contact or unknown field", () => {
 		const out = JSON.stringify(sanitizeGuestsPayload(upstream()))
-		for (const gone of ["rsvp_status", "going", "joined_at", "2026-10-30", "email", "phone", "extra_meta"]) {
+		for (const gone of [
+			"rsvp_status",
+			"going",
+			"joined_at",
+			"2026-10-30",
+			"email",
+			"phone",
+			"extra_meta",
+		]) {
 			expect(out).not.toContain(gone)
 		}
 	})
@@ -206,7 +218,19 @@ describe("sanitizeGuestsPayload", () => {
 	})
 
 	it("returns null for a body that is not the documented shape", () => {
-		for (const bad of [null, undefined, "x", 5, [], {}, { data: null }, { data: [] }, { data: {} }, { data: { results: {} } }, { data: { results: "x" } }]) {
+		for (const bad of [
+			null,
+			undefined,
+			"x",
+			5,
+			[],
+			{},
+			{ data: null },
+			{ data: [] },
+			{ data: {} },
+			{ data: { results: {} } },
+			{ data: { results: "x" } },
+		]) {
 			expect(sanitizeGuestsPayload(bad)).toBeNull()
 		}
 	})
@@ -247,7 +271,9 @@ describe("sanitizeCommentsPayload", () => {
 	})
 
 	it("keeps the comment and the minimal author, and nothing else", () => {
-		const out = sanitizeCommentsPayload(upstream()) as { data: { results: unknown[]; next: unknown } }
+		const out = sanitizeCommentsPayload(upstream()) as {
+			data: { results: unknown[]; next: unknown }
+		}
 		expect(out.data.results).toEqual([
 			{
 				id: "c1",
@@ -275,7 +301,15 @@ describe("sanitizeCommentsPayload", () => {
 	})
 
 	it("returns null for a body that is not the documented shape", () => {
-		for (const bad of [null, "x", [], {}, { data: {} }, { data: { results: null } }, { results: [] }]) {
+		for (const bad of [
+			null,
+			"x",
+			[],
+			{},
+			{ data: {} },
+			{ data: { results: null } },
+			{ results: [] },
+		]) {
 			expect(sanitizeCommentsPayload(bad)).toBeNull()
 		}
 	})
@@ -288,7 +322,9 @@ describe("sanitizeResourcesPayload", () => {
 		message: null,
 		data: {
 			event: "Jos Tech Meetup",
-			links: [{ link_name: "Agenda", url: "https://example.com/a", date_added: "01/11/2026", extra: 1 }],
+			links: [
+				{ link_name: "Agenda", url: "https://example.com/a", date_added: "01/11/2026", extra: 1 },
+			],
 			documents: [
 				{
 					doc_name: "Slides",
@@ -324,13 +360,23 @@ describe("sanitizeResourcesPayload", () => {
 
 	it("removes the event name, date_added and unknown fields", () => {
 		const out = JSON.stringify(sanitizeResourcesPayload(upstream()))
-		for (const gone of ["Jos Tech Meetup", "date_added", "01/11/2026", "extra", "uploaded_by", "someone"]) {
+		for (const gone of [
+			"Jos Tech Meetup",
+			"date_added",
+			"01/11/2026",
+			"extra",
+			"uploaded_by",
+			"someone",
+		]) {
 			expect(out).not.toContain(gone)
 		}
 	})
 
 	it("keeps empty arrays, and does not mutate its input", () => {
-		const empty = sanitizeResourcesPayload({ success: true, data: { event: "x", links: [], documents: [] } })
+		const empty = sanitizeResourcesPayload({
+			success: true,
+			data: { event: "x", links: [], documents: [] },
+		})
 		expect(empty).toEqual({ success: true, data: { links: [], documents: [] } })
 		const input = upstream()
 		const copy = structuredClone(input)
@@ -339,7 +385,17 @@ describe("sanitizeResourcesPayload", () => {
 	})
 
 	it("returns null (never an empty-looking success) when links or documents are missing or wrong", () => {
-		for (const bad of [null, "x", [], {}, { data: {} }, { data: { links: [] } }, { data: { documents: [] } }, { data: { links: {}, documents: [] } }, { data: { links: [], documents: "x" } }]) {
+		for (const bad of [
+			null,
+			"x",
+			[],
+			{},
+			{ data: {} },
+			{ data: { links: [] } },
+			{ data: { documents: [] } },
+			{ data: { links: {}, documents: [] } },
+			{ data: { links: [], documents: "x" } },
+		]) {
 			expect(sanitizeResourcesPayload(bad)).toBeNull()
 		}
 	})
@@ -352,17 +408,52 @@ describe("sanitisers stay compatible with the application normalisers", () => {
 	it("guests", () => {
 		const raw = {
 			success: true,
-			data: { next: "n", results: [{ user_id: 3, user_full_name: "A B", user_username: "ab", user_photo: "p.jpg", role: "host", rsvp_status: "going", joined_at: "2026-01-01T00:00:00Z" }] },
+			data: {
+				next: "n",
+				results: [
+					{
+						user_id: 3,
+						user_full_name: "A B",
+						user_username: "ab",
+						user_photo: "p.jpg",
+						role: "host",
+						rsvp_status: "going",
+						joined_at: "2026-01-01T00:00:00Z",
+					},
+				],
+			},
 		}
-		expect(normalizeGuestsPage(data(sanitizeGuestsPayload(raw)), 1)).toEqual(normalizeGuestsPage(raw.data, 1))
+		expect(normalizeGuestsPage(data(sanitizeGuestsPayload(raw)), 1)).toEqual(
+			normalizeGuestsPage(raw.data, 1),
+		)
 	})
 
 	it("comments", () => {
 		const raw = {
 			success: true,
-			data: { next: null, results: [{ id: "c", message: "m", created_at: "2026-11-01T10:00:00Z", user: { pkid: 1, id: "u", photo: "p.jpg", full_name: "A B", username: "ab", role: "guest", joined_at: "2026-01-01T00:00:00Z" } }] },
+			data: {
+				next: null,
+				results: [
+					{
+						id: "c",
+						message: "m",
+						created_at: "2026-11-01T10:00:00Z",
+						user: {
+							pkid: 1,
+							id: "u",
+							photo: "p.jpg",
+							full_name: "A B",
+							username: "ab",
+							role: "guest",
+							joined_at: "2026-01-01T00:00:00Z",
+						},
+					},
+				],
+			},
 		}
-		expect(normalizeCommentsPage(data(sanitizeCommentsPayload(raw)), 1)).toEqual(normalizeCommentsPage(raw.data, 1))
+		expect(normalizeCommentsPage(data(sanitizeCommentsPayload(raw)), 1)).toEqual(
+			normalizeCommentsPage(raw.data, 1),
+		)
 	})
 
 	it("resources", () => {
@@ -371,19 +462,40 @@ describe("sanitisers stay compatible with the application normalisers", () => {
 			data: {
 				event: "E",
 				links: [{ link_name: "L", url: "https://example.com", date_added: "01/01/2026" }],
-				documents: [{ doc_name: "D", doc_file: "d/x.pdf", size: "1 MB", file_type: "pdf", date_uploaded: "02/01/2026" }],
+				documents: [
+					{
+						doc_name: "D",
+						doc_file: "d/x.pdf",
+						size: "1 MB",
+						file_type: "pdf",
+						date_uploaded: "02/01/2026",
+					},
+				],
 			},
 		}
-		expect(normalizeResources(data(sanitizeResourcesPayload(raw)))).toEqual(normalizeResources(raw.data))
+		expect(normalizeResources(data(sanitizeResourcesPayload(raw)))).toEqual(
+			normalizeResources(raw.data),
+		)
 	})
 })
 
 describe("buildCommentBody / sanitizeCommentCreatePayload (P3-06)", () => {
 	it("keeps only the trimmed message", () => {
-		expect(buildCommentBody({ message: " hi ", user: 1, event: "x" })).toEqual({ ok: true, value: { message: "hi" } })
+		expect(buildCommentBody({ message: " hi ", user: 1, event: "x" })).toEqual({
+			ok: true,
+			value: { message: "hi" },
+		})
 	})
 	it("rejects blank, whitespace-only and non-object input", () => {
-		for (const input of [{ message: "" }, { message: "  " }, {}, null, [], "text", { message: 1 }]) {
+		for (const input of [
+			{ message: "" },
+			{ message: "  " },
+			{},
+			null,
+			[],
+			"text",
+			{ message: 1 },
+		]) {
 			expect(buildCommentBody(input)).toMatchObject({ ok: false, code: "invalid_comment" })
 		}
 	})
@@ -393,7 +505,13 @@ describe("buildCommentBody / sanitizeCommentCreatePayload (P3-06)", () => {
 	})
 	it("sanitises a 201 to the envelope and data.message only", () => {
 		expect(
-			sanitizeCommentCreatePayload({ success: true, status_code: 201, message: null, extra: 1, data: { message: "a", id: "c" } }),
+			sanitizeCommentCreatePayload({
+				success: true,
+				status_code: 201,
+				message: null,
+				extra: 1,
+				data: { message: "a", id: "c" },
+			}),
 		).toEqual({ success: true, status_code: 201, message: null, data: { message: "a" } })
 	})
 	it("treats anything else as unreadable", () => {

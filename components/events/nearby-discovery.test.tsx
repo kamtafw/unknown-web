@@ -1,8 +1,8 @@
+import { useAuthStore } from "@/stores/auth-store"
+import { useEventsLocationStore } from "@/stores/events-location.store"
+import type { FullUser } from "@/types/api"
 import type { EventCard } from "@/types/events/api"
 import { fireEvent, render, screen } from "@testing-library/react"
-import { useAuthStore } from "@/stores/auth-store"
-import { useEventsLocationStore } from "@/stores/events-location-store"
-import type { FullUser } from "@/types/api"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NearbyDiscovery } from "./nearby-discovery"
 
@@ -45,7 +45,12 @@ const refresh = vi.fn()
 const refetch = vi.fn()
 const fetchNextPage = vi.fn()
 
-const ready = { status: "ready", coordinates: { latitude: 9.9, longitude: 8.9 }, permission: "granted", refresh }
+const ready = {
+	status: "ready",
+	coordinates: { latitude: 9.9, longitude: 8.9 },
+	permission: "granted",
+	refresh,
+}
 const failed = (status: string, permission = "prompt") => ({
 	status,
 	coordinates: null,
@@ -230,10 +235,7 @@ describe("NearbyDiscovery search", () => {
 		fireEvent.change(screen.getByRole("searchbox", { name: "Search nearby events" }), {
 			target: { value: "jazz" },
 		})
-		expect(useNearbyEvents).toHaveBeenLastCalledWith(
-			{ latitude: 9.9, longitude: 8.9 },
-			"jazz",
-		)
+		expect(useNearbyEvents).toHaveBeenLastCalledWith({ latitude: 9.9, longitude: 8.9 }, "jazz")
 	})
 
 	it("declares no matches only when the whole nearby set was searched", () => {

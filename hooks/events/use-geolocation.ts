@@ -73,15 +73,26 @@ export function useGeolocation() {
 		)
 	}, [apply])
 
-	// first request on mount; invalidate anything in flight on unmount
+	// start initial browser request after mount
 	useEffect(() => {
-		request()
+		let active = true
+
+		const startRequest = () => {
+			if (!active) return
+			request()
+		}
+
+		// defer the initial request so its synchronous state transition
+		// does not happen inside the effect's execution
+		queueMicrotask(startRequest)
+
 		return () => {
-			requestId.current++
+			active = false
+			requestId.current += 1
 		}
 	}, [request])
 
-	// keep in step with the browser's permission state (revocation, re-enabling, tab return)
+	// sync with the browser's permission state (revocation, re-enabling, tab return)
 	useEffect(() => {
 		if (typeof navigator === "undefined" || !navigator.permissions?.query) return
 

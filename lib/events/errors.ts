@@ -83,7 +83,10 @@ function fieldErrorsFrom(errors: unknown): { fields: FormErrors; nonField: strin
 	return { fields, nonField }
 }
 
-export function describeEventError(error: unknown, fallback = "Something went wrong. Please try again."): EventRequestError {
+export function describeEventError(
+	error: unknown,
+	fallback = "Something went wrong. Please try again.",
+): EventRequestError {
 	const err = (isRecord(error) ? error : {}) as AxiosLike
 	const status = typeof err.response?.status === "number" ? err.response.status : null
 
@@ -115,19 +118,29 @@ export function describeEventError(error: unknown, fallback = "Something went wr
 	})
 
 	if (status === 413 || code === "upload_too_large" || code === "request_too_large") {
-		return make("too_large", "These files are too large to upload. Remove or shrink some and try again.")
+		return make(
+			"too_large",
+			"These files are too large to upload. Remove or shrink some and try again.",
+		)
 	}
 	if (status === 401) return make("unauthorized", "Your session has expired. Sign in again.")
 	if (status === 403) {
 		return make("forbidden", envelopeMessage ?? "You don't have permission to do that.")
 	}
-	if (status === 404) return make("not_found", "This event isn't available. It may have been deleted.")
+	if (status === 404)
+		return make("not_found", "This event isn't available. It may have been deleted.")
 	if (status === 409 && code === "event_live") {
-		return make("live", envelopeMessage ?? "This event is live. End the live session before deleting it.")
+		return make(
+			"live",
+			envelopeMessage ?? "This event is live. End the live session before deleting it.",
+		)
 	}
 	if (status === 400 || status === 415 || status === 409 || status === 422) {
 		const first = Object.values(fields)[0]
-		return make("validation", nonField ?? envelopeMessage ?? first ?? "Please check the form and try again.")
+		return make(
+			"validation",
+			nonField ?? envelopeMessage ?? first ?? "Please check the form and try again.",
+		)
 	}
 	if (status >= 500) {
 		return make("server", "AppsCombo is having trouble right now. Please try again shortly.")

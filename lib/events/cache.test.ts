@@ -120,7 +120,8 @@ describe("event sub-resource cache helpers", () => {
 		client.setQueryData(eventKeys.rsvp(1, 0, A), "going")
 		client.setQueryData(eventKeys.myEvents(1, 0, "", 20), data())
 	}
-	const present = (client: QueryClient, key: readonly unknown[]) => client.getQueryData(key) !== undefined
+	const present = (client: QueryClient, key: readonly unknown[]) =>
+		client.getQueryData(key) !== undefined
 
 	it("removes all three sections of one event for the same account and session only", () => {
 		const client = new QueryClient()
@@ -163,7 +164,11 @@ describe("event sub-resource cache helpers", () => {
 		const client = new QueryClient()
 		seed(client)
 		await invalidateEventSubResources(client, 1, 0, A)
-		for (const key of [eventKeys.resources(1, 0, A), eventKeys.comments(1, 0, A, 20), eventKeys.guests(1, 0, A, 20)]) {
+		for (const key of [
+			eventKeys.resources(1, 0, A),
+			eventKeys.comments(1, 0, A, 20),
+			eventKeys.guests(1, 0, A, 20),
+		]) {
 			expect(client.getQueryState(key)?.isInvalidated).toBe(true)
 		}
 	})
@@ -213,6 +218,8 @@ describe("refreshCommentsFromFirstPage (P3-06)", () => {
 		const client = new QueryClient()
 		client.setQueryData(eventKeys.comments(7, 2, E, 20), thread())
 		await refreshCommentsFromFirstPage(client, null, 2, E)
-		expect(client.getQueryData<ReturnType<typeof thread>>(eventKeys.comments(7, 2, E, 20))?.pages).toHaveLength(2)
+		expect(
+			client.getQueryData<ReturnType<typeof thread>>(eventKeys.comments(7, 2, E, 20))?.pages,
+		).toHaveLength(2)
 	})
 })

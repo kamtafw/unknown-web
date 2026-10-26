@@ -7,7 +7,9 @@ vi.mock("@/hooks/events/use-event-selection", () => ({
 	useEventSelection: () => useEventSelection(),
 }))
 vi.mock("./event-pane", () => ({ EventPane: () => <aside data-testid="pane" /> }))
-vi.mock("./event-room-placeholder", () => ({ EventRoomPlaceholder: () => <aside data-testid="placeholder" /> }))
+vi.mock("./event-room-placeholder", () => ({
+	EventRoomPlaceholder: () => <aside data-testid="placeholder" />,
+}))
 
 const left = () => screen.getByText("The list")
 

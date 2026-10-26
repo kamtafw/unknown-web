@@ -20,17 +20,13 @@ import {
 	MY_EVENTS_FILTER,
 	NEARBY_RADIUS_KM,
 } from "./constants"
-import {
-	formatCoordinateParam,
-	isValidCoordinates,
-	parseCoordinateParam,
-} from "./location"
+import { formatCoordinateParam, isValidCoordinates, parseCoordinateParam } from "./location"
 import { normalizeHttpUrl } from "./normalize"
 import {
 	isValidDateString,
 	isValidPasscode,
-	normalizeCommentMessage,
 	isValidTimeString,
+	normalizeCommentMessage,
 	normalizeHashtags,
 	validateSchedule,
 } from "./validation"
@@ -152,9 +148,13 @@ export function buildRsvpBody(
  * No length limit is applied (EV-030).
  */
 export function buildCommentBody(body: unknown): Built<{ message: string }> {
-	const record = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+	const record =
+		body && typeof body === "object" && !Array.isArray(body)
+			? (body as Record<string, unknown>)
+			: {}
 	const message = normalizeCommentMessage(record.message)
-	if (message === null) return { ok: false, message: "A comment cannot be blank", code: "invalid_comment" }
+	if (message === null)
+		return { ok: false, message: "A comment cannot be blank", code: "invalid_comment" }
 	return { ok: true, value: { message } }
 }
 
@@ -164,7 +164,10 @@ export function buildCommentBody(body: unknown): Built<{ message: string }> {
  * upstream request.
  */
 export function buildGuestRemoveBody(body: unknown): Built<{ user_id: number }> {
-	const record = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+	const record =
+		body && typeof body === "object" && !Array.isArray(body)
+			? (body as Record<string, unknown>)
+			: {}
 	const id = record.user_id
 	if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 1) {
 		return { ok: false, message: "A valid guest is required", code: "invalid_guest" }
@@ -172,7 +175,10 @@ export function buildGuestRemoveBody(body: unknown): Built<{ user_id: number }> 
 	return { ok: true, value: { user_id: id } }
 }
 
-const bad = (message: string, code = "invalid_event"): { ok: false; message: string; code: string } => ({
+const bad = (
+	message: string,
+	code = "invalid_event",
+): { ok: false; message: string; code: string } => ({
 	ok: false,
 	message,
 	code,
@@ -199,7 +205,8 @@ export function buildEventJsonBody(
 	input: unknown,
 	mode: "create" | "update",
 ): Built<Record<string, unknown>> {
-	if (!input || typeof input !== "object" || Array.isArray(input)) return bad("Invalid request body")
+	if (!input || typeof input !== "object" || Array.isArray(input))
+		return bad("Invalid request body")
 	const b = input as Record<string, unknown>
 	const out: Record<string, unknown> = {}
 
@@ -242,8 +249,10 @@ export function buildEventJsonBody(
 	const hasLng = b.longitude !== undefined
 	if (hasLat !== hasLng) return bad("Send latitude and longitude together", "invalid_coordinates")
 	if (hasLat) {
-		const lat = typeof b.latitude === "number" ? b.latitude : parseCoordinateParam(String(b.latitude))
-		const lng = typeof b.longitude === "number" ? b.longitude : parseCoordinateParam(String(b.longitude))
+		const lat =
+			typeof b.latitude === "number" ? b.latitude : parseCoordinateParam(String(b.latitude))
+		const lng =
+			typeof b.longitude === "number" ? b.longitude : parseCoordinateParam(String(b.longitude))
 		if (!isValidCoordinates(lat, lng)) return bad("Invalid coordinates", "invalid_coordinates")
 		out.latitude = lat
 		out.longitude = lng
@@ -263,7 +272,10 @@ export function buildEventJsonBody(
 
 	if (b.passcode !== undefined) {
 		if (b.is_locked !== true || !isValidPasscode(b.passcode)) {
-			return bad("The passcode must be exactly 4 digits and is only used for locked events", "invalid_passcode")
+			return bad(
+				"The passcode must be exactly 4 digits and is only used for locked events",
+				"invalid_passcode",
+			)
 		}
 		out.passcode = b.passcode
 	}
@@ -281,13 +293,15 @@ export function buildEventJsonBody(
 	}
 
 	if (b.links !== undefined) {
-		if (!Array.isArray(b.links) || b.links.length > MAX_LINKS) return bad("Invalid links", "invalid_links")
+		if (!Array.isArray(b.links) || b.links.length > MAX_LINKS)
+			return bad("Invalid links", "invalid_links")
 		const links: { link_name: string; url: string }[] = []
 		for (const item of b.links) {
 			const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {}
 			const name = typeof r.link_name === "string" ? r.link_name.trim() : ""
 			const url = typeof r.url === "string" ? r.url.trim() : ""
-			if (!name || name.length > 255 || !normalizeHttpUrl(url)) return bad("Invalid links", "invalid_links")
+			if (!name || name.length > 255 || !normalizeHttpUrl(url))
+				return bad("Invalid links", "invalid_links")
 			links.push({ link_name: name, url })
 		}
 		out.links = links
@@ -325,7 +339,12 @@ export function checkMultipartRequest(headers: Headers): MultipartCheck {
 			return { ok: false, status: 400, message: "Invalid upload", code: "invalid_upload" }
 		}
 		if (n > MAX_EVENT_REQUEST_BYTES) {
-			return { ok: false, status: 413, message: "The upload is too large", code: "upload_too_large" }
+			return {
+				ok: false,
+				status: 413,
+				message: "The upload is too large",
+				code: "upload_too_large",
+			}
 		}
 	}
 	return { ok: true, contentType, contentLength: declared }
@@ -361,7 +380,11 @@ export function isEventLive(data: unknown): boolean {
 	const d = data as Record<string, unknown>
 	if (d.is_live === true) return true
 	const session = d.live_session
-	return !!session && typeof session === "object" && (session as Record<string, unknown>).status === "live"
+	return (
+		!!session &&
+		typeof session === "object" &&
+		(session as Record<string, unknown>).status === "live"
+	)
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -404,7 +427,8 @@ function sanitizePaged(
 	json: unknown,
 	row: (item: Record<string, unknown>) => Record<string, unknown>,
 ): unknown | null {
-	if (!isPlainRecord(json) || !isPlainRecord(json.data) || !Array.isArray(json.data.results)) return null
+	if (!isPlainRecord(json) || !isPlainRecord(json.data) || !Array.isArray(json.data.results))
+		return null
 	return {
 		...pick(json, ENVELOPE_KEYS),
 		data: {
@@ -447,7 +471,8 @@ export function sanitizeResourcesPayload(json: unknown): unknown | null {
  * time). Anything else is unreadable (null) and the route answers 502 instead of a false success.
  */
 export function sanitizeCommentCreatePayload(json: unknown): unknown | null {
-	if (!isPlainRecord(json) || !isPlainRecord(json.data) || typeof json.data.message !== "string") return null
+	if (!isPlainRecord(json) || !isPlainRecord(json.data) || typeof json.data.message !== "string")
+		return null
 	return { ...pick(json, ENVELOPE_KEYS), data: { message: json.data.message } }
 }
 

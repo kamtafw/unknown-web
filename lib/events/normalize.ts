@@ -234,7 +234,8 @@ function normalizeFullDetails(raw: Record<string, unknown>, card: EventCard): Ev
 		isLocked: card.isLocked,
 		privacy: card.privacy,
 		coverImage: card.coverImage,
-		liveSessionId: integerOrNull(raw.live_session_id) ?? (session ? integerOrNull(session.id) : null),
+		liveSessionId:
+			integerOrNull(raw.live_session_id) ?? (session ? integerOrNull(session.id) : null),
 		address: card.address,
 		hashtags: card.hashtags,
 		coordinates: card.coordinates,
@@ -246,7 +247,11 @@ function normalizeFullDetails(raw: Record<string, unknown>, card: EventCard): Ev
 	}
 }
 
-function normalizePreview(raw: Record<string, unknown>, id: string, name: string): EventPreviewDetails {
+function normalizePreview(
+	raw: Record<string, unknown>,
+	id: string,
+	name: string,
+): EventPreviewDetails {
 	const privacy = text(raw.privacy)
 	return {
 		kind: "preview",
@@ -340,7 +345,10 @@ function normalizeResourceDocuments(items: unknown[]): EventResourceDocument[] {
  */
 export function normalizeResources(data: unknown): EventResources | null {
 	if (!isRecord(data) || !Array.isArray(data.links) || !Array.isArray(data.documents)) return null
-	return { links: normalizeLinks(data.links), documents: normalizeResourceDocuments(data.documents) }
+	return {
+		links: normalizeLinks(data.links),
+		documents: normalizeResourceDocuments(data.documents),
+	}
 }
 
 function guestRole(value: unknown): EventGuestRole | null {

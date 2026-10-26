@@ -78,7 +78,10 @@ describe("EventCommentsSection", () => {
 		useEventComments.mockReturnValue(
 			state({
 				comments: [
-					comment({ id: "h", author: { name: "Host Hal", username: "hal", photo: null, role: "host" } }),
+					comment({
+						id: "h",
+						author: { name: "Host Hal", username: "hal", photo: null, role: "host" },
+					}),
 					comment({ id: "g" }),
 					comment({ id: "n", author: { name: "No Role", username: "", photo: null, role: null } }),
 				],
@@ -108,7 +111,14 @@ describe("EventCommentsSection", () => {
 	it("renders message and name as text, never as HTML", () => {
 		const evil = "<img src=x onerror=alert(1)><script>alert(2)</script><b>bold</b>"
 		useEventComments.mockReturnValue(
-			state({ comments: [comment({ message: evil, author: { name: "<i>x</i>", username: "", photo: null, role: "guest" } })] }),
+			state({
+				comments: [
+					comment({
+						message: evil,
+						author: { name: "<i>x</i>", username: "", photo: null, role: "guest" },
+					}),
+				],
+			}),
 		)
 		const { container } = renderSection()
 		expect(container.querySelector("img")).toBeNull()
@@ -131,7 +141,9 @@ describe("EventCommentsSection", () => {
 
 	it("keeps the order it is given", () => {
 		useEventComments.mockReturnValue(
-			state({ comments: [comment({ id: "1", message: "newest" }), comment({ id: "2", message: "older" })] }),
+			state({
+				comments: [comment({ id: "1", message: "newest" }), comment({ id: "2", message: "older" })],
+			}),
 		)
 		renderSection()
 		const items = screen.getAllByRole("listitem")
@@ -159,7 +171,9 @@ describe("EventCommentsSection", () => {
 		useEventComments.mockReturnValue(state({ comments: [comment()] }))
 		const { rerender } = renderSection()
 		expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument()
-		useEventComments.mockReturnValue(state({ comments: [comment()], hasNextPage: true, isFetchingNextPage: true }))
+		useEventComments.mockReturnValue(
+			state({ comments: [comment()], hasNextPage: true, isFetchingNextPage: true }),
+		)
 		rerender(<EventCommentsSection eventId="e1" />)
 		const pending = screen.getByRole("button", { name: "Loading…" })
 		expect(pending).toBeDisabled()
@@ -181,7 +195,9 @@ describe("EventCommentsSection", () => {
 	})
 
 	it("initial 403 is a comments-specific access message: no raw backend text, no retry, no logout prompt", () => {
-		useEventComments.mockReturnValue(state({ hasLoaded: false, error: "forbidden", phase: "initial" }))
+		useEventComments.mockReturnValue(
+			state({ hasLoaded: false, error: "forbidden", phase: "initial" }),
+		)
 		renderSection()
 		const alert = screen.getByRole("alert")
 		expect(alert).toHaveTextContent(/can.t view these comments/i)
@@ -192,26 +208,35 @@ describe("EventCommentsSection", () => {
 	})
 
 	it("initial 404 is 'comments aren't available', not 'event not found' and not an empty thread", () => {
-		useEventComments.mockReturnValue(state({ hasLoaded: false, error: "not_found", phase: "initial" }))
+		useEventComments.mockReturnValue(
+			state({ hasLoaded: false, error: "not_found", phase: "initial" }),
+		)
 		renderSection()
 		expect(screen.getByRole("alert")).toHaveTextContent(/comments aren.t available/i)
 		expect(screen.queryByText("No comments yet")).not.toBeInTheDocument()
-		expect(screen.queryByText("This event isn't available. It may have been deleted.")).not.toBeInTheDocument()
+		expect(
+			screen.queryByText("This event isn't available. It may have been deleted."),
+		).not.toBeInTheDocument()
 	})
 
 	it("initial 401 says the session expired", () => {
-		useEventComments.mockReturnValue(state({ hasLoaded: false, error: "unauthorized", phase: "initial" }))
+		useEventComments.mockReturnValue(
+			state({ hasLoaded: false, error: "unauthorized", phase: "initial" }),
+		)
 		renderSection()
 		expect(screen.getByRole("alert")).toHaveTextContent(/session has expired/i)
 	})
 
-	it.each(["server", "network", "unknown"])("an initial %s failure offers Retry and is never an empty thread", (error) => {
-		useEventComments.mockReturnValue(state({ hasLoaded: false, error, phase: "initial" }))
-		renderSection()
-		expect(screen.queryByText("No comments yet")).not.toBeInTheDocument()
-		fireEvent.click(screen.getByRole("button", { name: /try again/i }))
-		expect(refetch).toHaveBeenCalledTimes(1)
-	})
+	it.each(["server", "network", "unknown"])(
+		"an initial %s failure offers Retry and is never an empty thread",
+		(error) => {
+			useEventComments.mockReturnValue(state({ hasLoaded: false, error, phase: "initial" }))
+			renderSection()
+			expect(screen.queryByText("No comments yet")).not.toBeInTheDocument()
+			fireEvent.click(screen.getByRole("button", { name: /try again/i }))
+			expect(refetch).toHaveBeenCalledTimes(1)
+		},
+	)
 
 	it("a failed next page keeps the loaded comments, explains, and Load more becomes Try again", () => {
 		useEventComments.mockReturnValue(
@@ -225,7 +250,9 @@ describe("EventCommentsSection", () => {
 	})
 
 	it("a 404 on a later page keeps the comments and points to Refresh", () => {
-		useEventComments.mockReturnValue(state({ comments: [comment()], error: "not_found", phase: "next-page" }))
+		useEventComments.mockReturnValue(
+			state({ comments: [comment()], error: "not_found", phase: "next-page" }),
+		)
 		renderSection()
 		expect(screen.getByText("See you there")).toBeInTheDocument()
 		expect(screen.getByRole("alert")).toHaveTextContent(/no more comments could be loaded/i)
@@ -233,14 +260,18 @@ describe("EventCommentsSection", () => {
 	})
 
 	it("a failed refresh keeps the loaded comments and says so", () => {
-		useEventComments.mockReturnValue(state({ comments: [comment()], error: "network", phase: "refresh" }))
+		useEventComments.mockReturnValue(
+			state({ comments: [comment()], error: "network", phase: "refresh" }),
+		)
 		renderSection()
 		expect(screen.getByText("See you there")).toBeInTheDocument()
 		expect(screen.getByRole("alert")).toHaveTextContent(/loaded earlier/i)
 	})
 
 	it("a refresh 403 keeps the comments and says access may have been lost, without a logout prompt", () => {
-		useEventComments.mockReturnValue(state({ comments: [comment()], error: "forbidden", phase: "refresh" }))
+		useEventComments.mockReturnValue(
+			state({ comments: [comment()], error: "forbidden", phase: "refresh" }),
+		)
 		renderSection()
 		expect(screen.getByText("See you there")).toBeInTheDocument()
 		expect(screen.getByRole("alert")).toHaveTextContent(/no longer have access/i)
@@ -260,9 +291,7 @@ describe("EventCommentsSection", () => {
 	})
 
 	it("renders no other interaction controls (the composer is the only writing control)", () => {
-		useEventComments.mockReturnValue(
-			state({ comments: [comment()], hasNextPage: true }),
-		)
+		useEventComments.mockReturnValue(state({ comments: [comment()], hasNextPage: true }))
 		const { container } = renderSection()
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
 		expect(container.querySelector("textarea, input, form")).toBeNull() // the composer is stubbed here

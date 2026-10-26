@@ -23,7 +23,7 @@ type Ctx = { params: Promise<{ eventId: string }> }
  * One page of this event's comments. Only `page` and `limit` are forwarded (invalid values fall
  * back, `limit` is clamped to the backend maximum); any other client parameter is dropped.
  * Access is decided upstream; errors pass through unchanged. A successful body is reduced to the
- * approved fields before it reaches the browser (A-20); pagination fields are kept.
+ * approved fields before it reaches the browser (A-20); pagination fields are kept
  */
 export async function GET(req: NextRequest, { params }: Ctx) {
 	const token = await getAccessToken()

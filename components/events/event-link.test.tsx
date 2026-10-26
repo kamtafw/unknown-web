@@ -28,7 +28,10 @@ beforeEach(() => {
 describe("EventLink", () => {
 	it("links to the event selection, not to a route with the id in the path", () => {
 		render(<EventLink eventId={ID}>Jazz night</EventLink>)
-		expect(screen.getByRole("link", { name: "Jazz night" })).toHaveAttribute("href", `/events?event=${ID}`)
+		expect(screen.getByRole("link", { name: "Jazz night" })).toHaveAttribute(
+			"href",
+			`/events?event=${ID}`,
+		)
 	})
 
 	it("marks only the selected event as current", () => {

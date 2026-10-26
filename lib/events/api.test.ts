@@ -28,7 +28,9 @@ describe("eventsApi.getNearbyPage", () => {
 
 	it("normalises the empty shape", async () => {
 		getMock.mockResolvedValue({ data: { data: { events: [] } } })
-		expect(await eventsApi.getNearbyPage({ latitude: 1, longitude: 1, page: 1, limit: 20 })).toEqual({
+		expect(
+			await eventsApi.getNearbyPage({ latitude: 1, longitude: 1, page: 1, limit: 20 }),
+		).toEqual({
 			events: [],
 			page: 1,
 			hasNext: false,
@@ -48,7 +50,10 @@ describe("eventsApi.getNearbyPage", () => {
 	it("passes the abort signal through", async () => {
 		getMock.mockResolvedValue({ data: { data: { events: [] } } })
 		const controller = new AbortController()
-		await eventsApi.getNearbyPage({ latitude: 1, longitude: 1, page: 1, limit: 20 }, controller.signal)
+		await eventsApi.getNearbyPage(
+			{ latitude: 1, longitude: 1, page: 1, limit: 20 },
+			controller.signal,
+		)
 		expect(getMock.mock.calls[0][1]?.signal).toBe(controller.signal)
 	})
 })
@@ -142,11 +147,17 @@ describe("eventsApi create / update / delete", () => {
 		postMock.mockResolvedValue({ data: { data: fullEvent } })
 		const form = new FormData()
 		const fractions: number[] = []
-		await eventsApi.createEvent({ kind: "multipart", body: form }, { onProgress: (f) => fractions.push(f) })
+		await eventsApi.createEvent(
+			{ kind: "multipart", body: form },
+			{ onProgress: (f) => fractions.push(f) },
+		)
 		const [, body, config] = postMock.mock.calls[0]
 		expect(body).toBe(form)
 		expect(config?.timeout).toBe(120_000)
-		const hook = config?.onUploadProgress as unknown as (e: { loaded: number; total?: number }) => void
+		const hook = config?.onUploadProgress as unknown as (e: {
+			loaded: number
+			total?: number
+		}) => void
 		hook({ loaded: 50, total: 200 })
 		hook({ loaded: 300, total: 200 })
 		hook({ loaded: 10 })
@@ -237,9 +248,9 @@ describe("eventsApi Pass 3 read methods", () => {
 			hasNext: false,
 		})
 		getMock.mockResolvedValue({ data: { data: { results: "x" } } })
-		await expect(eventsApi.getEventCommentsPage({ eventId: ID, page: 1, limit: 10 })).rejects.toBeInstanceOf(
-			EventPayloadError,
-		)
+		await expect(
+			eventsApi.getEventCommentsPage({ eventId: ID, page: 1, limit: 10 }),
+		).rejects.toBeInstanceOf(EventPayloadError)
 	})
 
 	it("getEventGuestsPage sends only page and limit and projects the guests", async () => {
@@ -258,16 +269,18 @@ describe("eventsApi Pass 3 read methods", () => {
 
 	it("getEventGuestsPage throws on an unreadable body", async () => {
 		getMock.mockResolvedValue({ data: { data: [] } })
-		await expect(eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 })).rejects.toBeInstanceOf(
-			EventPayloadError,
-		)
+		await expect(
+			eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 }),
+		).rejects.toBeInstanceOf(EventPayloadError)
 	})
 
 	it("passes an upstream 403 through as the axios error (access is not 'empty')", async () => {
 		const forbidden = { response: { status: 403, data: { message: "no" } } }
 		getMock.mockRejectedValue(forbidden)
 		await expect(eventsApi.getEventResources(ID)).rejects.toBe(forbidden)
-		await expect(eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 })).rejects.toBe(forbidden)
+		await expect(eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 })).rejects.toBe(
+			forbidden,
+		)
 	})
 
 	it("encodes the event id into the path", async () => {

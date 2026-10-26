@@ -1,9 +1,8 @@
-import type { EventCard } from "@/types/events/api"
-import { fireEvent, render, screen } from "@testing-library/react"
 import { useAuthStore } from "@/stores/auth-store"
-import { useEventsLocationStore } from "@/stores/events-location-store"
+import { useEventsLocationStore } from "@/stores/events-location.store"
 import type { FullUser } from "@/types/api"
-import { act } from "@testing-library/react"
+import type { EventCard } from "@/types/events/api"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MyEventsList } from "./my-events-list"
 
@@ -12,7 +11,9 @@ vi.mock("react-intersection-observer", () => ({
 }))
 
 const useMyEvents = vi.fn()
-vi.mock("@/hooks/events/use-my-events", () => ({ useMyEvents: (...a: unknown[]) => useMyEvents(...a) }))
+vi.mock("@/hooks/events/use-my-events", () => ({
+	useMyEvents: (...a: unknown[]) => useMyEvents(...a),
+}))
 vi.mock("@/hooks/use-debounced-value", () => ({ useDebouncedValue: (v: unknown) => v }))
 
 const card = (id: string, name: string): EventCard => ({
@@ -61,7 +62,9 @@ describe("MyEventsList", () => {
 	})
 
 	it("opens an event in the right pane: each item links to ?event=<id>", () => {
-		useMyEvents.mockReturnValue(state({ events: [card("3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11", "Old gig")] }))
+		useMyEvents.mockReturnValue(
+			state({ events: [card("3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11", "Old gig")] }),
+		)
 		render(<MyEventsList />)
 		expect(screen.getByRole("link", { name: /Old gig/ })).toHaveAttribute(
 			"href",
@@ -126,7 +129,9 @@ describe("MyEventsList", () => {
 		})
 		render(<MyEventsList />)
 		expect(getCurrentPosition).not.toHaveBeenCalled()
-		expect(useMyEvents).toHaveBeenCalledWith(expect.not.objectContaining({ coordinates: expect.anything() }))
+		expect(useMyEvents).toHaveBeenCalledWith(
+			expect.not.objectContaining({ coordinates: expect.anything() }),
+		)
 	})
 
 	it("shows loading, then the empty state", () => {

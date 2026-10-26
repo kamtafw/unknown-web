@@ -54,7 +54,9 @@ export function StateMessage({
 			)}
 			<h2 className="mb-1.5 text-[15px] font-bold leading-tight text-foreground">{title}</h2>
 			{description && (
-				<p className="max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">{description}</p>
+				<p className="max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">
+					{description}
+				</p>
 			)}
 			{children && (
 				<div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">{children}</div>

@@ -63,7 +63,10 @@ describe("useGeolocation", () => {
 	it("treats 0,0 as a valid location", () => {
 		const { result } = renderHook(() => useGeolocation())
 		act(() => requests[0].success(at(0, 0)))
-		expect(result.current).toMatchObject({ status: "ready", coordinates: { latitude: 0, longitude: 0 } })
+		expect(result.current).toMatchObject({
+			status: "ready",
+			coordinates: { latitude: 0, longitude: 0 },
+		})
 	})
 
 	it("rejects non-finite or out-of-range positions as unavailable", () => {
@@ -124,7 +127,11 @@ describe("useGeolocation", () => {
 			permissionStatus.state = "denied"
 			permissionListeners.forEach((l) => l())
 		})
-		expect(result.current).toMatchObject({ status: "denied", coordinates: null, permission: "denied" })
+		expect(result.current).toMatchObject({
+			status: "denied",
+			coordinates: null,
+			permission: "denied",
+		})
 	})
 
 	it("retries automatically when permission becomes granted after a denial", async () => {

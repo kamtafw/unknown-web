@@ -69,7 +69,8 @@ export function useEventGuests(eventId: string, limit = EVENTS_PAGE_SIZE) {
 	const guests = useMemo(() => flattenGuestPages(pages), [pages])
 	const hasLoaded = pages !== undefined
 
-	const error: EventErrorKind | null = valid && query.isError ? describeEventError(query.error).kind : null
+	const error: EventErrorKind | null =
+		valid && query.isError ? describeEventError(query.error).kind : null
 	const phase: "initial" | "next-page" | "refresh" | null = !error
 		? null
 		: !hasLoaded

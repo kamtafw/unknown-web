@@ -69,8 +69,8 @@ export function LocationField({
 				Event&apos;s location
 			</h2>
 			<p id={`${id}-hint`} className="text-[12px] leading-relaxed text-muted-foreground">
-				We use your device&apos;s location to place the event. Nothing is requested until you press the
-				button.
+				We use your device&apos;s location to place the event. Nothing is requested until you press
+				the button.
 			</p>
 
 			<div className="flex items-start gap-2.5 rounded-xl border border-border px-3.5 py-3 text-[13px]">
@@ -99,7 +99,11 @@ export function LocationField({
 					) : (
 						<LocateFixed size={13} aria-hidden />
 					)}
-					{failure ? "Try again" : mode === "edit" || chosen ? "Update to my current location" : "Use my current location"}
+					{failure
+						? "Try again"
+						: mode === "edit" || chosen
+							? "Update to my current location"
+							: "Use my current location"}
 				</button>
 			</div>
 

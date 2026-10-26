@@ -4,8 +4,8 @@ import { validateCoverFile } from "@/lib/events/validation"
 import { ImagePlus, X } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useId, useRef, useState } from "react"
-import { FieldMessages, SECTION_TITLE } from "./fields"
 import { secondaryButton } from "../event-list"
+import { FieldMessages, SECTION_TITLE } from "./fields"
 
 /**
  * Thumbnail ("Add thumbnail" in the design). JPEG or PNG, 2 MB at most, checked as soon as a file
@@ -46,7 +46,14 @@ export function CoverField({
 			<div className="relative flex aspect-[352/132] w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted">
 				{shown ? (
 					// blob: previews and unverified media hosts are not run through the image optimizer
-					<Image src={shown} alt={file ? "Selected thumbnail preview" : "Current thumbnail"} fill unoptimized sizes="400px" className="object-cover" />
+					<Image
+						src={shown}
+						alt={file ? "Selected thumbnail preview" : "Current thumbnail"}
+						fill
+						unoptimized
+						sizes="400px"
+						className="object-cover"
+					/>
 				) : (
 					<ImagePlus size={28} className="text-muted-foreground" aria-hidden />
 				)}
@@ -77,7 +84,11 @@ export function CoverField({
 					</button>
 				)}
 			</div>
-			<FieldMessages id={id} hint="JPEG or PNG, up to 2 MB." error={error ?? problem ?? undefined} />
+			<FieldMessages
+				id={id}
+				hint="JPEG or PNG, up to 2 MB."
+				error={error ?? problem ?? undefined}
+			/>
 		</div>
 	)
 }

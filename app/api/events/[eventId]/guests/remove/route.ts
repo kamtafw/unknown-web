@@ -1,5 +1,11 @@
 import { getAccessToken } from "@/lib/cookies"
-import { envelope, eventNotFound, fetchSanitizedPost, readJsonBody, unauthenticated } from "@/lib/events/bff"
+import {
+	envelope,
+	eventNotFound,
+	fetchSanitizedPost,
+	readJsonBody,
+	unauthenticated,
+} from "@/lib/events/bff"
 import { buildGuestRemoveBody, isEventId, sanitizeGuestRemovePayload } from "@/lib/events/server"
 import { DJANGO_API_URL } from "@/lib/server-config"
 import { NextRequest } from "next/server"

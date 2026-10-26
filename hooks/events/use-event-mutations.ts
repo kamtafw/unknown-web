@@ -1,8 +1,8 @@
 "use client"
 
 import { eventsApi } from "@/lib/events/api"
-import { describeEventError } from "@/lib/events/errors"
 import { invalidateEventSubResources, removeEventSubResources } from "@/lib/events/cache"
+import { describeEventError } from "@/lib/events/errors"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import type { EventDetails, EventSubmission } from "@/types/events/api"

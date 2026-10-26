@@ -44,7 +44,10 @@ function PaneFrame({ onClose, children }: { onClose: () => void; children: React
 
 function PaneSkeleton() {
 	return (
-		<div aria-busy="true" className="mx-auto flex w-full max-w-3xl animate-pulse flex-col gap-5 px-4 py-6 sm:px-8">
+		<div
+			aria-busy="true"
+			className="mx-auto flex w-full max-w-3xl animate-pulse flex-col gap-5 px-4 py-6 sm:px-8"
+		>
 			<p role="status" className="sr-only">
 				Loading event…
 			</p>
@@ -136,10 +139,9 @@ function EventView({ eventId, tab }: { eventId: string; tab?: EventTab }) {
 						isHost={isHost}
 						onEdit={() => go({ mode: "edit", eventId })}
 						onDeleted={close}
-						// a restricted preview has no sections: the view ignores `tab` for it
 						tab={tab}
-						// switching sections replaces the history entry, so Back still closes the event
 						onTabChange={(next) => go({ mode: "view", eventId, tab: next }, { replace: true })}
+						
 					/>
 				))}
 		</PaneFrame>
