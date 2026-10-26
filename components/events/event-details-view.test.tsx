@@ -3,6 +3,11 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
+vi.mock("./event-resources-section", () => ({
+	EventResourcesSection: (p: { eventId: string; isHost: boolean; onEdit: () => void }) => (
+		<div data-testid="resources-stub" data-event={p.eventId} data-host={String(p.isHost)} />
+	),
+}))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
 	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => <div data-testid="delete" data-live-blocked={String(liveBlocked)} />,

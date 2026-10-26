@@ -81,7 +81,8 @@ describe("useUpdateEvent", () => {
 		await act(() => result.current.mutateAsync({ submission }))
 		expect(client.getQueryData<EventDetails>(eventKeys.detail(7, 2, ID))?.name).toBe("B")
 		expect(updateEvent).toHaveBeenCalledWith(ID, submission, { onProgress: undefined })
-		expect(spy).toHaveBeenCalledTimes(2)
+		// two lists, plus this event's resources (P3-04)
+		expect(spy).toHaveBeenCalledTimes(3)
 	})
 
 	it("asks the server again when the response body was unreadable", async () => {
@@ -91,6 +92,61 @@ describe("useUpdateEvent", () => {
 		await act(() => result.current.mutateAsync({ submission }))
 		const keys = spy.mock.calls.map((c) => (c[0] as { queryKey: unknown[] }).queryKey)
 		expect(keys).toContainEqual(eventKeys.detail(7, 2, ID))
+	})
+})
+
+describe("resources cache consistency (P3-04)", () => {
+	const OTHER = "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22"
+	const seed = () => {
+		const keys = {
+			mine: eventKeys.resources(7, 2, ID),
+			otherEvent: eventKeys.resources(7, 2, OTHER),
+			otherAccount: eventKeys.resources(8, 2, ID),
+			otherSession: eventKeys.resources(7, 1, ID),
+		}
+		for (const k of Object.values(keys)) client.setQueryData(k, { links: [], documents: [] })
+		return keys
+	}
+
+	it("a successful edit marks only this event's resources for this account and session stale", async () => {
+		updateEvent.mockResolvedValue(created)
+		const keys = seed()
+		const { result } = renderHook(() => useUpdateEvent(ID), { wrapper })
+		await act(() => result.current.mutateAsync({ submission }))
+		expect(client.getQueryState(keys.mine)?.isInvalidated).toBe(true)
+		expect(client.getQueryState(keys.otherEvent)?.isInvalidated).toBe(false)
+		expect(client.getQueryState(keys.otherAccount)?.isInvalidated).toBe(false)
+		expect(client.getQueryState(keys.otherSession)?.isInvalidated).toBe(false)
+	})
+
+	it("a failed edit leaves the resources alone", async () => {
+		updateEvent.mockRejectedValue(err(400))
+		const keys = seed()
+		const { result } = renderHook(() => useUpdateEvent(ID), { wrapper })
+		await act(() => result.current.mutateAsync({ submission }).catch(() => undefined))
+		expect(client.getQueryState(keys.mine)?.isInvalidated).toBe(false)
+	})
+
+	it("deleting drops only this event's resources for this account and session", async () => {
+		deleteEvent.mockResolvedValue(undefined)
+		const keys = seed()
+		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
+		await act(() => result.current.mutateAsync())
+		expect(client.getQueryData(keys.mine)).toBeUndefined()
+		expect(client.getQueryData(keys.otherEvent)).toBeDefined()
+		expect(client.getQueryData(keys.otherAccount)).toBeDefined()
+		expect(client.getQueryData(keys.otherSession)).toBeDefined()
+	})
+
+	it("a 404 on delete also drops them; a refused delete keeps them", async () => {
+		const keys = seed()
+		const { result } = renderHook(() => useDeleteEvent(ID), { wrapper })
+		deleteEvent.mockRejectedValue(err(409))
+		await act(() => result.current.mutateAsync().catch(() => undefined))
+		expect(client.getQueryData(keys.mine)).toBeDefined()
+		deleteEvent.mockRejectedValue(err(404))
+		await act(() => result.current.mutateAsync().catch(() => undefined))
+		expect(client.getQueryData(keys.mine)).toBeUndefined()
 	})
 })
 
