@@ -187,6 +187,14 @@ export const eventsApi = {
 		return page
 	},
 
+	/**
+	 * Posts a comment (trimmed). Success is a 201 with no comment in it (no id, author or time), so
+	 * nothing is returned: the thread is refetched. Who may post is the backend's decision.
+	 */
+	postEventComment: async (eventId: string, message: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/comments`, { message: message.trim() }, { signal })
+	},
+
 	/** one page of event guests, newest first. The backend answers 403 to anyone without a guest record */
 	getEventGuestsPage: async (params: EventPageParams, signal?: AbortSignal): Promise<EventGuestsPage> => {
 		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(params.eventId)}/guests`, {

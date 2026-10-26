@@ -3,6 +3,12 @@ import { fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { EventCommentsSection } from "./event-comments-section"
 
+vi.mock("./event-comment-composer", () => ({
+	EventCommentComposer: ({ eventId }: { eventId: string }) => (
+		<div data-testid="composer-stub" data-event={eventId} />
+	),
+}))
+
 const useEventComments = vi.fn()
 vi.mock("@/hooks/events/use-event-comments", () => ({
 	useEventComments: (...a: unknown[]) => useEventComments(...a),
@@ -241,13 +247,25 @@ describe("EventCommentsSection", () => {
 		expect(screen.queryByText(/sign in/i)).not.toBeInTheDocument()
 	})
 
-	it("renders no writing or other interaction controls", () => {
+	it("shows the composer with the loaded thread (empty or populated) and not while the first load fails", () => {
+		useEventComments.mockReturnValue(state())
+		const { rerender } = renderSection()
+		expect(screen.getByTestId("composer-stub")).toHaveAttribute("data-event", "e1")
+		useEventComments.mockReturnValue(state({ comments: [comment()] }))
+		rerender(<EventCommentsSection eventId="e1" />)
+		expect(screen.getByTestId("composer-stub")).toBeInTheDocument()
+		useEventComments.mockReturnValue(state({ hasLoaded: false, error: "server", phase: "initial" }))
+		rerender(<EventCommentsSection eventId="e1" />)
+		expect(screen.queryByTestId("composer-stub")).not.toBeInTheDocument()
+	})
+
+	it("renders no other interaction controls (the composer is the only writing control)", () => {
 		useEventComments.mockReturnValue(
 			state({ comments: [comment()], hasNextPage: true }),
 		)
 		const { container } = renderSection()
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
-		expect(container.querySelector("textarea, input, form")).toBeNull()
+		expect(container.querySelector("textarea, input, form")).toBeNull() // the composer is stubbed here
 		const names = screen.getAllByRole("button").map((b) => b.textContent)
 		expect(names).toEqual(["Refresh", "Load more"])
 		expect(screen.queryByText(/reply|react|edit|delete|report|pin|post/i)).not.toBeInTheDocument()
