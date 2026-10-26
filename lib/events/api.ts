@@ -11,7 +11,10 @@
 import type { ApiResponse } from "@/types/api"
 import type {
 	Coordinates,
+	EventCommentsPage,
 	EventDetails,
+	EventGuestsPage,
+	EventResources,
 	EventRsvpStatus,
 	EventsPage,
 	EventSubmission,
@@ -19,7 +22,15 @@ import type {
 } from "@/types/events/api"
 import { apiClient } from "../axios"
 import { EVENT_UPLOAD_TIMEOUT_MS } from "./constants"
-import { normalizeEventDetails, normalizeListData, normalizeNearbyData, normalizeRsvpResult } from "./normalize"
+import {
+	normalizeCommentsPage,
+	normalizeEventDetails,
+	normalizeGuestsPage,
+	normalizeListData,
+	normalizeNearbyData,
+	normalizeResources,
+	normalizeRsvpResult,
+} from "./normalize"
 
 /** a 2xx response whose body is not an event the app can read */
 export class EventPayloadError extends Error {
@@ -52,6 +63,12 @@ function writeConfig(submission: EventSubmission, opts: WriteOptions) {
 }
 
 export interface NearbyParams extends Coordinates {
+	page: number
+	limit: number
+}
+
+export interface EventPageParams {
+	eventId: string
 	page: number
 	limit: number
 }
@@ -146,5 +163,38 @@ export const eventsApi = {
 		})
 		// a 201 means it was saved; fall back to what was asked if the body is unreadable
 		return normalizeRsvpResult(res.data.data) ?? { eventId, status }
+	},
+
+	/**
+	 * Links and documents of an event the viewer can open. A body that is not the documented
+	 * shape throws `EventPayloadError`; an empty list is a real, empty result.
+	 */
+	getEventResources: async (eventId: string, signal?: AbortSignal): Promise<EventResources> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/resources`, { signal })
+		const resources = normalizeResources(res.data.data)
+		if (!resources) throw new EventPayloadError()
+		return resources
+	},
+
+	/** one page of event comments, newest first; `hasNext` comes from the backend `next` link */
+	getEventCommentsPage: async (params: EventPageParams, signal?: AbortSignal): Promise<EventCommentsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(params.eventId)}/comments`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		const page = normalizeCommentsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
+	},
+
+	/** one page of event guests, newest first. The backend answers 403 to anyone without a guest record */
+	getEventGuestsPage: async (params: EventPageParams, signal?: AbortSignal): Promise<EventGuestsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(params.eventId)}/guests`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		const page = normalizeGuestsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
 	},
 }

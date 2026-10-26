@@ -1,7 +1,7 @@
 import type { EventCard, EventsPage } from "@/types/events/api"
 import { QueryClient } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
-import { findCachedRsvp } from "./cache"
+import { findCachedRsvp, invalidateEventSubResources, removeEventSubResources } from "./cache"
 import { eventKeys, keyBelongsTo } from "./query-keys"
 
 const card = (id: string, viewerRsvp: EventCard["viewerRsvp"]): EventCard => ({
@@ -93,5 +93,73 @@ describe("keyBelongsTo", () => {
 		expect(keyBelongsTo(eventKeys.detail(1, 0, "e"), 2, 0)).toBe(false)
 		expect(keyBelongsTo(eventKeys.detail(1, 0, "e"), 1, 1)).toBe(false)
 		expect(keyBelongsTo(eventKeys.detail(null, 0, "e"), null, 0)).toBe(false)
+	})
+})
+
+describe("event sub-resource cache helpers", () => {
+	const A = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
+	const B = "7a1d2c3e-8d0a-4c53-9f3b-1b2a6a0c7d22"
+
+	function seed(client: QueryClient) {
+		for (const [acct, gen, ev] of [
+			[1, 0, A],
+			[1, 0, B],
+			[2, 0, A],
+			[1, 1, A],
+		] as const) {
+			client.setQueryData(eventKeys.resources(acct, gen, ev), { links: [], documents: [] })
+			client.setQueryData(eventKeys.comments(acct, gen, ev, 20), { pages: [], pageParams: [] })
+			client.setQueryData(eventKeys.guests(acct, gen, ev, 20), { pages: [], pageParams: [] })
+		}
+		client.setQueryData(eventKeys.detail(1, 0, A), { kind: "full" })
+		client.setQueryData(eventKeys.rsvp(1, 0, A), "going")
+		client.setQueryData(eventKeys.myEvents(1, 0, "", 20), data())
+	}
+	const present = (client: QueryClient, key: readonly unknown[]) => client.getQueryData(key) !== undefined
+
+	it("removes all three sections of one event for the same account and session only", () => {
+		const client = new QueryClient()
+		seed(client)
+		removeEventSubResources(client, 1, 0, A)
+		expect(present(client, eventKeys.resources(1, 0, A))).toBe(false)
+		expect(present(client, eventKeys.comments(1, 0, A, 20))).toBe(false)
+		expect(present(client, eventKeys.guests(1, 0, A, 20))).toBe(false)
+		// other event, other account, other login session and unrelated keys stay
+		expect(present(client, eventKeys.resources(1, 0, B))).toBe(true)
+		expect(present(client, eventKeys.resources(2, 0, A))).toBe(true)
+		expect(present(client, eventKeys.comments(1, 1, A, 20))).toBe(true)
+		expect(present(client, eventKeys.detail(1, 0, A))).toBe(true)
+		expect(present(client, eventKeys.rsvp(1, 0, A))).toBe(true)
+		expect(present(client, eventKeys.myEvents(1, 0, "", 20))).toBe(true)
+	})
+
+	it("does nothing without a known account", () => {
+		const client = new QueryClient()
+		seed(client)
+		removeEventSubResources(client, null, 0, A)
+		expect(present(client, eventKeys.resources(1, 0, A))).toBe(true)
+	})
+
+	it("invalidates only the named sections of that event, account and session", async () => {
+		const client = new QueryClient()
+		seed(client)
+		await invalidateEventSubResources(client, 1, 0, A, ["comments", "guests"])
+		const stale = (key: readonly unknown[]) => client.getQueryState(key)?.isInvalidated === true
+		expect(stale(eventKeys.comments(1, 0, A, 20))).toBe(true)
+		expect(stale(eventKeys.guests(1, 0, A, 20))).toBe(true)
+		expect(stale(eventKeys.resources(1, 0, A))).toBe(false)
+		expect(stale(eventKeys.comments(1, 0, B, 20))).toBe(false)
+		expect(stale(eventKeys.comments(2, 0, A, 20))).toBe(false)
+		expect(stale(eventKeys.comments(1, 1, A, 20))).toBe(false)
+		expect(stale(eventKeys.detail(1, 0, A))).toBe(false)
+	})
+
+	it("invalidates all three sections by default", async () => {
+		const client = new QueryClient()
+		seed(client)
+		await invalidateEventSubResources(client, 1, 0, A)
+		for (const key of [eventKeys.resources(1, 0, A), eventKeys.comments(1, 0, A, 20), eventKeys.guests(1, 0, A, 20)]) {
+			expect(client.getQueryState(key)?.isInvalidated).toBe(true)
+		}
 	})
 })

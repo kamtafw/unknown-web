@@ -3,14 +3,16 @@
  *
  * These are the shapes that enter the query cache and the UI. They are produced
  * only by lib/events/normalize.ts, which copies a fixed whitelist of backend
- * fields — host email/phone, guests, links and documents (returned by the backend
- * even for restricted events) are never represented here. See docs/events/EVENTS.md (EV-001).
+ * fields — on an event card, host email/phone, guests, links and documents (returned by the
+ * backend even for restricted events) are never represented. See docs/events/EVENTS.md (EV-001).
  *
  * Wire shapes are deliberately not typed: normalize.ts reads them as `unknown`
  * so a contract drift degrades to "event skipped" instead of a runtime crash.
  *
  * Pass 2 adds event details (full vs restricted preview), RSVP and the create/edit
- * form model. Guests, comments, join/leave and live types belong to later passes.
+ * form model. Pass 3 (P3-02) adds the read-side resources, comments and guests types at the end
+ * of this file, each projected to a minimal field set (A-17, A-18, A-20). Join/leave and live
+ * types belong to later passes.
  */
 
 export type EventPrivacy = "public" | "private" | "friends"
@@ -118,7 +120,8 @@ interface EventDetailsBase {
 /**
  * Full access (host, online guest, or a public unlocked event). Host contact data
  * and guests are never retained. Links/documents are kept only so a host can edit
- * them; viewing them is Pass 3.
+ * them; the Links and docs section reads them from the resources endpoint instead
+ * (`EventResources`, Pass 3).
  */
 export interface EventFullDetails extends EventDetailsBase {
 	kind: "full"
@@ -198,3 +201,79 @@ export interface EventFormInitial {
 export type EventSubmission =
 	| { kind: "json"; body: Record<string, unknown> }
 	| { kind: "multipart"; body: FormData }
+
+/* -------------------------------------------------------------------------- */
+/* Pass 3 (P3-02): read-side view models for resources, comments and guests   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A document as the resources endpoint describes it. `url` is the stored file. The three
+ * metadata fields are shown only when the backend supplied a usable value (A-18).
+ * Links reuse `EventLink` (`{ name, url }`): the backend's per-link `date_added` is the event's
+ * creation date, not a link date, so it is never kept (A-18).
+ */
+export interface EventResourceDocument {
+	name: string
+	url: string
+	/** display string such as "1.2 MB" */
+	size: string | null
+	/** uppercased file extension such as "PDF" */
+	fileType: string | null
+	/** `DD/MM/YYYY`, as the backend formats it */
+	uploadedOn: string | null
+}
+
+export interface EventResources {
+	links: EventLink[]
+	documents: EventResourceDocument[]
+}
+
+/** the role an event guest record carries; not a live-session role */
+export type EventGuestRole = "host" | "guest"
+
+/**
+ * Minimal comment author (A-20). The author's `pkid`, `id` and `joined_at` are dropped on
+ * purpose: no Pass 3 task needs them.
+ */
+export interface EventCommentAuthor {
+	name: string
+	username: string
+	photo: string | null
+	role: EventGuestRole | null
+}
+
+export interface EventComment {
+	/** comment UUID; the only key used to de-duplicate pages */
+	id: string
+	message: string
+	/** the backend datetime string, or null when absent or unparseable */
+	createdAt: string | null
+	/** null when the backend sent no usable author */
+	author: EventCommentAuthor | null
+}
+
+export interface EventCommentsPage {
+	comments: EventComment[]
+	page: number
+	/** from the backend `next` link only — never from counts or `comments.length` */
+	hasNext: boolean
+}
+
+/**
+ * Minimal guest (A-17). `userId` is the numeric user `pkid` that `guests/remove` needs. RSVP
+ * status and `joined_at` are dropped on purpose; the list has no online flag, so none exists.
+ */
+export interface EventGuest {
+	userId: number
+	name: string
+	username: string
+	photo: string | null
+	role: EventGuestRole
+}
+
+export interface EventGuestsPage {
+	guests: EventGuest[]
+	page: number
+	/** from the backend `next` link only */
+	hasNext: boolean
+}
