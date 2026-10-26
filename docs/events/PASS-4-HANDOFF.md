@@ -1,6 +1,6 @@
 # Events: Pass 4 handoff (live events and the deferred admission work)
 
-**Status (2026-10-26): PLANNING ONLY. Nothing in Pass 4 is started and no task here is authorised.** This document is a proposal for the owner's approval. It was written from the repository at branch `feat/events-p3-10-integration` (P3-10 closeout commit `53d98cd`; accepted work up to `016135f`), the backend guide (Project doc `events-api-web-implementation-guide.md`, cited `guide §n`) and the three Events documents. No application code was changed to produce it.
+**Status (2026-10-26, updated after the owner's review): the plan below is accepted as the planning baseline with the decisions in section G. Only P4-01 was authorised, and it is implemented and awaiting review (section G). Every other task is not started.** *(Original status: PLANNING ONLY. Nothing in Pass 4 is started and no task here is authorised.)* This document is a proposal for the owner's approval. It was written from the repository at branch `feat/events-p3-10-integration` (P3-10 closeout commit `53d98cd`; accepted work up to `016135f`), the backend guide (Project doc `events-api-web-implementation-guide.md`, cited `guide §n`) and the three Events documents. No application code was changed to produce it.
 
 Predecessors: `PHASE-2-HANDOFF.md` (historical), `PHASE-3-HANDOFF.md` (Pass 3 source of truth, including the Pass 3 acceptance record in its section 11.1), `EVENTS.md` (assumptions A-n, issues EV-nnn) and `PROGRESS.md` (evidence record).
 
@@ -185,6 +185,28 @@ Each task ends with its own verification (focused tests, then the Pass 3 regress
 - **Cache consistency:** socket events must invalidate only this account, session and event; stale responses after account change must be ignored; a session end can flip viewers to a preview (C.3).
 - **Follow-up concerns recorded, not changed:** (1) **EV-034:** a 404 on a single section (comments, guests, resources) shows that section's local message but does **not** remove the event's cached sub-resources; only delete and delete-404 do. (2) **EV-035:** the handoff's Guarantees table (guest add and remove invalidate `myEventsRoot()`) disagrees with the invalidation matrix and the accepted implementation. Neither changes accepted behaviour, and neither is scheduled by this plan.
 - **Environment limits:** the sandbox cannot fetch Google Fonts, so `next build` is unverified; no live backend, socket server or media server is reachable from here.
+
+---
+
+## G. Owner decisions and task status (recorded 2026-10-26)
+
+The owner accepted this document as the planning baseline with the following decisions and constraints. They override the proposals above where they differ.
+
+| Topic | Decision |
+| --- | --- |
+| P3-09 (join and leave) | Maps to Pass 4B, alongside the WebSockets work. Join and leave stay **independently testable** operations (the D.3 mapping is confirmed). |
+| P3-08B (add a guest) | Stays **deferred and outside Pass 4**. D-2 is unresolved. Pass 3 stays incomplete while P3-08B and P3-09 are deferred. |
+| Plan shape | The 4A to 4D structure is the working plan, subject to dependency or scope changes. |
+| P4-02 (host lifecycle) | **Do not start** until D4-4 (can a host start when web media is unavailable, and what the UI does) and D4-5 (the `X-Platform` and `X-App-Version` values) are resolved. |
+| Leave | **Do not implement** until D4-6 is resolved: the documented behaviour may strand a guest with no safe way back, so the documented contract is investigated and a backend or product decision is requested. Join may be considered separately if it is safe and independent. |
+| Sockets | Do not modify or generalise Messenger's socket manager without explicit approval. Resolve the production auth mechanism, the socket origin and the connection topology (D4-1, D4-2) before P4-04. Do not extend the temporary token-in-query-string pattern (ADR-003). |
+| Media | P4-11 stays a separate architecture investigation. No P2P, LiveKit or other path is selected or built before it. |
+| Guest discovery | Do not reuse Messenger search or add guest-add functionality. |
+
+| Task | Status |
+| --- | --- |
+| P4-01 live-session read | **Implemented, awaiting owner review** (2026-10-26, branch `feat/events-p4-01-live-session-read`). Scope was exactly: the BFF read route, types and normalisation, a scoped query key and hook, a minimal status line, and focused tests. Record: `PROGRESS.md` (P4-01 entry), assumptions A-23 and A-24 and issues EV-036 and EV-037 in `EVENTS.md`. The guide and the repository did not contradict this handoff on what P4-01 reads; two points the handoff did not settle were decided and recorded: the no-session 404 is told from the absent-event 404 by message text (A-24), and the read is skipped for an event with nothing attached that is not live (A-23). Section A.1's "accepted branches are separate and not merged" is stale at `main` `7d96cb4` (EV-037). |
+| P4-02 onward | Not started. P4-02 is gated by D4-4 and D4-5; P4-03 (with leave) by D4-6; P4-04 by D4-1 and D4-2. |
 
 ---
 
