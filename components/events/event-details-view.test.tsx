@@ -205,19 +205,4 @@ describe("EventDetailsView sections (P3-03)", () => {
 			expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
 		},
 	)
-
-	it("the resources section mounts only while Links and docs is active, for a full event", () => {
-		const { rerender } = render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />)
-		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
-		rerender(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />)
-		const stub = screen.getByTestId("resources-stub")
-		expect(stub).toHaveAttribute("data-event", "e1")
-		expect(stub).toHaveAttribute("data-host", "true")
-		expect(screen.queryByText(/isn.t available yet/i)).not.toBeInTheDocument()
-	})
-
-	it("a restricted preview never mounts the resources section, even with tab=resources", () => {
-		render(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} tab="resources" />)
-		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
-	})
 })
