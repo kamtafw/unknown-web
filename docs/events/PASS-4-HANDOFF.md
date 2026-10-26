@@ -1,0 +1,193 @@
+# Events: Pass 4 handoff (live events and the deferred admission work)
+
+**Status (2026-10-26): PLANNING ONLY. Nothing in Pass 4 is started and no task here is authorised.** This document is a proposal for the owner's approval. It was written from the repository at branch `feat/events-p3-10-integration` (P3-10 closeout commit `53d98cd`; accepted work up to `016135f`), the backend guide (Project doc `events-api-web-implementation-guide.md`, cited `guide §n`) and the three Events documents. No application code was changed to produce it.
+
+Predecessors: `PHASE-2-HANDOFF.md` (historical), `PHASE-3-HANDOFF.md` (Pass 3 source of truth, including the Pass 3 acceptance record in its section 11.1), `EVENTS.md` (assumptions A-n, issues EV-nnn) and `PROGRESS.md` (evidence record).
+
+Evidence labels are the same as `PHASE-3-HANDOFF.md`: **[repo]** read in the repository now; **[guide]** stated by the guide and **not** verified against the deployed backend (no live-backend call has ever been made from this work); **[reported]** reported by the owner; **[proposal]** a suggestion made here, open to change. Where the repository or the guide is silent this document says so and does not fill the gap.
+
+---
+
+## A. Current baseline
+
+### A.1 Accepted work
+
+| Work | Status | Reference |
+| --- | --- | --- |
+| Pass 1: discovery (25 km, no fallback) and My events | Owner-accepted | branch `feat/events-phase1`, `8c72db1` (do not touch) |
+| Pass 2: details, create, edit, delete, RSVP | Implemented, owner-smoke-tested, not verified live | checkpoint `a96887b` |
+| P3-02 to P3-07: read layer, pane sections, links and documents, comments read and post, guest list | Owner-accepted | `cf8a4e8`, `549bfca`, `a9b4c95`, `5319f96`, `d73238f`, `6e2c365` |
+| P3-08A: host removes a guest | Owner-accepted | `55d94e7` |
+| P3-10: integration and acceptance (test and documentation work) | Owner-accepted 2026-10-26 | `33cf637` (invalidation matrix test), `016135f`, closeout `53d98cd` |
+| **P3-08B: add a guest** | **Deferred by owner decision**; D-2 unresolved | `PHASE-3-HANDOFF.md` section 7.3 |
+| **P3-09: join and leave** | **Deferred to Pass 4 by owner decision (2026-10-25), to be handled alongside the WebSockets work; not implemented, not complete** | `PHASE-3-HANDOFF.md` section 3.2 |
+| **Pass 3 as a whole** | **Not complete** while P3-08B and P3-09 stay deferred | |
+
+Accepted branches are separate and not merged; `feat/events-pass3` and `feat/events-phase1` are not to be modified by Pass 4 planning or work.
+
+### A.2 What exists in the code now [repo]
+
+- **Routes (`app/api/events/`):** nearby, my-location, my-events, create, `[eventId]` (details, update, delete), rsvp, `[eventId]/resources`, `[eventId]/comments` (GET and POST), `[eventId]/guests` (GET), `[eventId]/guests/remove` (POST). **There is no BFF route for `join`, `leave`, `guests/add`, `live-session`, `live-session/start`, `live-session/end`, `update-live-status` or anything under `/live/`.**
+- **Live-related data that already exists:** details and cards carry `isLive`; full details carry `liveSessionId` and `liveSessionStatus` (`lib/events/normalize.ts`, `types/events/api.ts`). They are display-only. The "Live now" chip and "LIVE NOW!" card text show from `isLive`. `room_id` and the attached-session summary (provider, media status, room name) are not retained by the normaliser beyond the id and status.
+- **Delete guard:** the delete dialog is blocked for a live event or live session (`components/events/delete-event-dialog.tsx`), and the BFF answers 409 `event_live` after checking state (`app/api/events/[eventId]/route.ts`; EV-025: a courtesy, not a security boundary).
+- **Passcodes:** handled only in the Phase 2 create and edit form, validation and request builder (four ASCII digits kept as strings, written in the request body, never in a URL; `lib/events/validation.ts`, `lib/events/request.ts`, `components/events/form/access-field.tsx`). **Nothing collects a passcode to join.** The preview note in `components/events/event-details-view.tsx` already says "If it has a passcode, you'll be asked for it when you join", which is not yet true.
+- **Guests, comments, RSVP:** guest list (read) and host remove exist; comments read and post exist; RSVP exists and is independent of membership (guide §4.9). Comment posting needs an **online** guest row (guide §4.15), so it is affected by join and leave (see C.4).
+- **Sockets in the repository:** `socket.io-client` is the only realtime dependency (`package.json`). The only socket code is Messenger's: `lib/messenger/socket-manager.ts` (one connection; reconnect; listener replay; room-join replay), `lib/messenger/socket-auth.ts` (**temporary**, ADR-003: the access token is fetched from `app/api/messenger/socket-credential/route.ts` and sent in the query string, marked not production-ready), `stores/messenger-connection.store.ts`, `components/messenger/messenger-socket-bootstrap.tsx` (mounted in the Messenger layout only) and `docs/messenger/archive/decisions/ADR-002` and `ADR-003`. **No Events code imports any socket code.** Events data has no polling and no realtime (A-21, EV-030).
+- **No media code:** there is no LiveKit, WebRTC or peer-connection library or module in this repository (`lib/` has no webrtc directory; `package.json` has no media dependency). `docs/messenger/MESSENGER-SCOPE.md` records Live and calls as undocumented surfaces that mobile implements with a peer mesh (STUN and TURN, "no SFU found"); that file describes mobile, not this repository's code.
+- **Platform headers:** nothing in the web code sends `X-Platform` or `X-App-Version` [repo grep]. The guide says live-session creation reads them (guide §4.19, §9).
+
+### A.3 Tested and unverified
+
+| Evidence | Result |
+| --- | --- |
+| Automated (mocked transport) | Full Vitest 80 files, 1267 tests passing at P3-10; `tsc --noEmit` exit 0; ESLint clean on touched files; `git diff --check` clean |
+| Browser (P3-10) | Claude ran a 21-check walk-through with Playwright and Chromium against `next dev` and a **mock Django written for that check** (not committed). It covered nearby, My events, links and docs, comments, guests, remove guest, preview behaviour. It did **not** cover create, edit, delete, RSVP, mobile layout or Figma fidelity |
+| Production build | **Not verified.** `next build` fails in the sandbox on the Google Fonts fetch before compiling. The owner must run it |
+| Live backend | **Never verified.** Every contract in this document is [guide] |
+| Sockets and media | **No** socket or media behaviour has been exercised for Events. The sandbox cannot be assumed to reach the socket server |
+| Existing lint findings | `next lint` reports pre-existing findings in five files untouched by Pass 3 (deferred); there is no Prettier config |
+
+### A.4 Existing patterns Pass 4 should reuse [repo]
+
+- **BFF:** `lib/events/bff.ts` (`envelope`, `unauthenticated`, `eventNotFound`, `fetchSanitizedGet`, `fetchSanitizedPost`, `readJsonBody` with the 256 KB guard) and `lib/events/server.ts` builders and sanitisers; event id validated by `isEventId`; only allowlisted body fields forwarded; a malformed 2xx becomes 502, never success; upstream 401/403/404 pass through. Templates: `app/api/events/[eventId]/comments/route.ts` and `guests/remove/route.ts`.
+- **Client:** `lib/events/api.ts` (`eventsApi`), query keys scoped by account and login session (`lib/events/query-keys.ts`), cache helpers (`lib/events/cache.ts`: `invalidateEventSubResources`, `removeEventSubResources`, `refreshFromFirstPage`), mutation hooks with an in-flight guard and no optimistic insert (`use-post-event-comment.ts`, `use-remove-event-guest.ts`), local per-section error wording instead of changing `describeEventError` (EV-033), confirmation dialogs (`delete-event-dialog.tsx`, `remove-guest-dialog.tsx`).
+- **Tests:** BFF route tests over a stubbed `fetch` with the real `server-fetch`; hook tests with `eventsApi` mocked; component tests; and the cross-hook invalidation matrix test `hooks/events/invalidation-matrix.integration.test.tsx`, which any new mutation that touches Events caches should extend.
+- **Socket pattern to learn from, not to copy blindly:** the Messenger manager registers listeners before the socket exists and replays them; it replays room joins on every `connect`; hooks return an unsubscribe and clean up on unmount; status lives in a small store. It is Messenger-named, hard-wired to the default namespace and to a Messenger connection store (see C.2).
+
+---
+
+## B. Deferred scope: what Pass 4 inherits
+
+### B.1 P3-09 (join and leave): the actual state
+
+| Item | State | Evidence |
+| --- | --- | --- |
+| `POST {id}/join` | **Not implemented** in web code. Contract [guide §4.10]: optional `passcode` body field; needs the event not ended and `is_live`; with an attached session it must be `live` and the user not blocked; 201 joined or rejoined, 200 already joined or host opened; data `live_session_id` and `socket` (both may be null); 400 for event-not-found on this route only, ended, not live, passcode required, `event_not_live`, `live_session_blocked`; 403 `Incorrect passcode.` It creates or reactivates **live participation** as a side effect and creates or reactivates the guest row |
+| `POST {id}/leave` | **Not implemented.** Contract [guide §4.11]: no body; a guest record must exist; marks it offline and deactivates non-host live participation; 200 `You have left the event.`; 400 `You are not a guest of this event.`; hosts usually have no guest row. It works outside a live session, and used there the guide's consequences (derived, not verified) are that an offline guest loses full access to locked, private and friends events and `guests/add` rejects an existing record, so the way back can be closed (`PHASE-3-HANDOFF.md` section 3.2) |
+| Passcode handling | **Create and edit only.** No join passcode input, no attempt handling, no incorrect-passcode state. The handoff's passcode rules apply when it is built: body only, never in a URL, storage, log, error text, query key or surviving mutation cache; `gcTime: 0` and reset on success and on close |
+| Admission and access control | Partly present as **read-side behaviour**: full details versus restricted preview (guide §4.8), the preview note, no sub-resource requests for a preview, and a guest-list 403 message. **Missing:** any way for a viewer to become admitted from the web, the event-specific live-session read (§4.18) and its 403/404 handling, and the admission-to-socket sequence (guide §8.7) |
+| Relationship to sockets | Join returns a `socket` descriptor (`namespace` `/live`, `join_event` `live:join`, `join_payload.sessionId`) that is **not** a socket URL or a media credential [guide §3.6]. A socket connection alone authorises nothing; the client must wait for admission before `live:join` [guide §6.1] |
+
+What still needs confirmation (not decided anywhere): the leave-stranding risk (owner choice between the P3-09 options if leave is built before a documented non-live way back exists); whether a host can reach the full event as a "viewer" without a guest row; and how a viewer who was never added gets a first view of a locked non-live event (there is none, by design [guide §8.4]).
+
+### B.2 P3-08B (guest discovery and addition): separate, still blocked
+
+Not part of Pass 4 scope and **not to be pulled in silently.** D-2 is unresolved. No documented, suitable user-selection mechanism exists; the documented `guests/add` contract (guide §4.13) does not say who is discoverable or eligible; the Messenger lookup `chats/users` is undocumented, chat-coupled and capped at 20 results and **must not be reused without an explicit contract and product approval** (`PHASE-3-HANDOFF.md` sections 7.1 to 7.3). Reopening it needs an approved, documented discovery contract, any product and backend decisions, and the owner's explicit authorisation.
+
+Interaction to note: guide §9 states that guest add does not create live participation and remove does not revoke it. Removing a guest during a live session therefore needs the live moderation controls (kick, block; guide §5.4). The P3-08A dialog copy deliberately makes no claim about live media; a Pass 4C task may want to point to moderation (a proposal, not a change made here).
+
+---
+
+## C. WebSockets and live behaviour
+
+### C.1 What is documented [guide]
+
+Everything below comes from the guide and is unverified live.
+
+- **Connection (§6, §6.1):** Socket.IO to the configured socket origin, namespace `/live`, access token in handshake `auth.token` (the server also accepts a token query parameter; handshake auth is preferred for new web work); the socket origin and the HTTP origin can differ (§1). Authentication failures reject the connection.
+- **Client emissions:** `live:join` with positive integer `sessionId` (acknowledgement `ok`, `sessionId`; success also emits `live:joined`; failure code `live_room_unauthorized` plus `live:error`); `live:leave` (emits `live:left`; does **not** call event leave). Reconnect: revalidate membership and rejoin the room; a socket disconnect does not call event leave.
+- **Server events (§6.2):** `event:live-session:available` (`event_id`, `session_id`, `phase` created, started or ended, `status`, `is_live`, `recipient_ids`; sent to **personal `/live` user rooms** of event hosts and users with any guest record; not a global nearby notification); `live:session:started`, `live:session:ended`, `live:session:cancelled`; `live:participant:joined` and `live:participant:left` (with `participant_count`); `live:comment`; `live:reaction`; `live:mic:requested`, `live:mic:approved`, `live:mic:revoked`; `live:co-host:added`, `live:co-host:removed`; `live:participant:muted`, `live:participant:kicked`, `live:participant:blocked`; `live:error`. Legacy `live:signal`, `live:ice`, `live:speaking` are feature-gated and return `live:error` `deprecated_transport_disabled` when off.
+- **HTTP supporting routes (§4.18 to §4.22, §5):** event-specific session read, create, start, end, compatibility `update-live-status`; session read; participants (paginated); live comments (POST, list); reactions; media credentials and status; mic requests, co-hosts, mute, kick, block, unblock. Event comments and live comments are **independent stores** with different field names and ids (§5.3).
+
+### C.2 Existing evidence in this repository [repo]
+
+The Messenger manager proves the project already runs Socket.IO from the browser and has solved listener timing, reconnect replay and cleanup. It does **not** yet answer the Events questions: it uses the default namespace, not `/live`; it sends the token in the **query string** through a route that exposes the httpOnly cookie's token to client JavaScript and is documented as temporary and not production-ready (ADR-003); its origin comes from `NEXT_PUBLIC_MESSENGER_SOCKET_URL` (default `https://socket.appscombo.com`), which is a Messenger setting, not a confirmed Events setting; and its status store and bootstrap are Messenger-specific. ADR-002 also records that the "one connection for chat, group and live" topology is a **working hypothesis**, not confirmed, and that mobile uses separate chat, call and live sockets. Reusing or generalising `socket-manager.ts` would modify Messenger code and needs approval (the project rules forbid unrelated refactoring).
+
+### C.3 Required updates and the code they affect (proposals, [guide]-based)
+
+| Trigger | Affected data or UI | Proposed handling | Basis |
+| --- | --- | --- | --- |
+| `event:live-session:available` (created, started, ended) | event details (`isLive`, session status), nearby and My events cards, delete guard, "Live now" chips | Invalidate this event's detail and the two list roots; never add an unfiltered list call | Guide: "refresh matching details/My events"; **the way the client subscribes to its personal user room is not documented** (gap) |
+| `live:session:started` / `ended` / `cancelled` | live panel state, publish, comment and reaction controls, media | Reconcile session state by refetching the event-specific session read; disable controls on ended | Guide §6.2 |
+| Session end | **Pass 3 caches**: ending "marks online event guests offline" (§4.21), so a non-host guest of a locked, private or friends event can flip from full details to a restricted preview | Treat as a full-to-preview transition: sub-resource caches for that event must stop being served and no sub-resource request may be made for a preview (existing Pass 3 guarantees) | Guide §4.8, §4.21; derived, not verified |
+| `live:participant:joined` / `left` | participants list and count | Merge or refetch page 1; de-duplicate by user | Guide §6.2 |
+| `live:comment`, `live:reaction` | live comment list, reaction counts | Merge once by live comment id (HTTP POST and socket can both deliver it); de-duplicate reactions by the reaction emission id and use the server `emoji_count` | Guide §5.3, §6.2 |
+| mic and co-host events, `muted`, `kicked`, `blocked` | roster, roles, publish controls | Refetch roles and permissions; a kicked or blocked viewer disconnects media and must not auto-rejoin | Guide §5.4, §6.2 |
+| `live:error`, connect error, disconnect | connection status UI | Never show "connected" before admission and the `live:join` acknowledgement; revalidate and rejoin on reconnect | Guide §6.1, §8.7 |
+
+**Proposal versus documentation:** the handlers and cache targets above are proposals built from the documented event list; event names are only those the guide lists, and **payload fields not named in the guide are not assumed**. The guide documents no event for event comments and none for RSVP or guest add or remove; those stay HTTP and refetch.
+
+### C.4 Interactions with existing Pass 3 behaviour (read before planning)
+
+- **Comments:** posting needs an online guest row. After `leave` (offline) or after a session ends (guests marked offline), a previously permitted viewer gets 404 "has not joined" on post. The composer is deliberately not gated by inference (D-3), and the local 404 wording already covers it.
+- **Guest list:** offline guest records stay in the list and there is no `is_online` field, so join, leave and session end do not change what the list shows; a live participant roster is a **different** data source (§5.3).
+- **My events:** a guest record keeps an event listed even when offline; `leave` therefore does not remove it.
+- **Delete:** the web guard and EV-025 stay as they are until a session can be ended from the web.
+
+### C.5 Gaps the contracts leave open (do not guess)
+
+Lifecycle and ownership of the `/live` connection (when it opens and closes: per event view, per live panel, app-wide; the Messenger bootstrap mounts only inside its own layout); how a client joins its **personal user room** for `event:live-session:available`; whether missed events are replayed after reconnect (assume no and refetch, but this is not stated); duplicate and out-of-order delivery beyond the two documented dedupe keys; authorisation changes while connected (a guest set offline by session end, a block); token refresh over a long socket session (access tokens are short-lived; the guide says refresh on confirmed expiry through the app's auth flow); cleanup on account change and logout; and whether the deployed socket host is the Messenger host.
+
+---
+
+## D. Dependencies and blockers
+
+### D.1 Decisions and contracts needed (owner or backend)
+
+| ID | Needed | Needed by | Notes |
+| --- | --- | --- | --- |
+| **D4-1** | Socket origin, namespace and **production auth mechanism** for `/live`: is the host the same as `NEXT_PUBLIC_MESSENGER_SOCKET_URL`; handshake `auth.token` versus the temporary query-string route; does the backend confirm a short-lived ticket or cookie handshake (ADR-003 is still pending) | Any socket task | Without it the only option is to reuse the temporary, explicitly non-production mechanism |
+| **D4-2** | Socket topology: one shared connection versus a separate `/live` connection, and whether the Messenger manager may be generalised (touches Messenger code) or a second manager is created | Socket foundation | ADR-002 hypothesis unconfirmed |
+| **D4-3** | **Web media path** (Pass 4D): guide §9 says `X-Platform=web` selects P2P even when LiveKit is enabled; web may consume a mobile-created LiveKit session; web-hosted LiveKit creation needs backend support; legacy P2P signalling can be disabled independently; spoofing a mobile platform is not acceptable. Which path is intended for web, and is P2P signalling enabled in the deployed environment | Media tasks, and the decision whether web can host at all | There is no media library in the repository; the roadmap says not to assume the provider configuration is suitable |
+| **D4-4** | Does Pass 4A ship **lifecycle without media** (host can create, start and end; attendees see state) or wait for 4D? Offering "Start" when the web client cannot broadcast is a product question (guide §9: gate unavailable media controls) | 4A scope | |
+| **D4-5** | `X-Platform` and `X-App-Version` values the web BFF should send for session creation | Session create and start | Guide §4.19 says send the actual client values |
+| **D4-6** | Leave semantics: which P3-09 option applies (confirm the guide-derived stranding risk is acceptable, or the backend documents a way back) | Join and leave | See B.1 |
+| **D4-7** | How the client subscribes to the personal user room; whether events are replayed | Event-level updates | C.5 |
+| **D4-8** | Which participant controls the web ships (mic requests, co-host, mute, kick, block) in Pass 4C | 4C scope | |
+| **D4-9** | Whether Pass 4 needs a mocked Socket.IO server in tests (adding a dev dependency) or fakes at the manager boundary | All socket tests | |
+
+### D.2 What can proceed with the documented contracts
+
+Read-side live-session state (§4.18, §5.1) and the HTTP admission calls (`join`, `leave`) are fully specified in the guide and need no socket or media. Host lifecycle calls (create, start, end) are specified but depend on D4-4 and D4-5. Socket tasks wait on D4-1, D4-2 and D4-7. Media waits on D4-3. P3-08B waits on its own discovery contract and is independent of all of the above.
+
+### D.3 Documentation contradictions and cautions
+
+- The Pass 3 handoff D-1 says join and leave "stay in Pass 4B"; the owner decision of 2026-10-25 says "Pass 4, alongside the WebSockets work". The roadmap's Pass 4B is "Admission and Realtime", so this document maps P3-09 to 4B and orders host lifecycle (4A) first, because join needs a live event. **Confirm that mapping.**
+- The handoff's "Guarantees" table says guest add and remove should invalidate `myEventsRoot()`, while the invalidation matrix, the implementation and the accepted P3-08A work invalidate `guests` and `comments` only (EV-035).
+- `PHASE-3-HANDOFF.md` section 12 and some older sentences still describe P3-03 as "next"; those are historical and superseded by the status lines.
+- The preview note promises a passcode prompt "when you join" that does not exist yet (A.2).
+- The guide says the socket **payload** for several events is a raw event, not an HTTP envelope, but gives field lists only for some; do not infer the rest.
+
+---
+
+## E. Proposed implementation sequence (a proposal; none of it is authorised)
+
+Each task is small, independently verifiable and stops for review. Numbering is proposed. "Contract ready" means the guide fully specifies it (still unverified live).
+
+| Task | Objective and scope | Existing files and APIs | Prerequisites and blockers | Acceptance and tests | Contract ready? |
+| --- | --- | --- | --- | --- | --- |
+| **P4-00** | Documentation only: record D4-1 to D4-9 answers and the P3-09 to 4B mapping; fix the stale Guarantees wording only if the owner asks | the three Events docs | Owner answers | Docs consistent | n/a |
+| **P4-01** | 4A: live-session **read**. BFF `GET {id}/live-session`; types and normaliser (status, provider, media status, `current_user_role`, no secrets); query key and hook; no UI beyond a status line | `bff.ts`, `normalize.ts`, `query-keys.ts`; guide §4.18, §5.1 | None beyond contract | BFF tests (403 "Join this event…" and 404 distinction, malformed 2xx is 502); hook and key scoping tests; restricted preview makes no request | Yes |
+| **P4-02** | 4A: host lifecycle. BFF POST create, start, end; mutation hooks; Start and End controls for hosts; ended and cancelled states; invalidate this event's detail and both list roots; update the delete-guard reasoning (EV-025) | `delete-event-dialog.tsx`, `use-event-mutations.ts`, `cache.ts` | **D4-4, D4-5**; P4-01 | Route tests (no body, headers, 400 lifecycle codes, no repeat toggling); hook tests (duplicate-submit guard, matrix extension); component tests for states; Pass 3 regression run | Yes (guide §4.19 to §4.21) |
+| **P4-03** | 4B: **admission (P3-09)**. BFF `join` (passcode in body only) and `leave`; join dialog with passcode, incorrect-passcode and not-live states; leave action; invalidation per the matrix (detail, resources, comments, guests, `myEventsRoot()`, `nearbyRoot()`) | `bff.ts`, `request.ts` passcode rules, `use-event-details.ts`, cache helpers | **D4-6**; P4-01, P4-02 (join needs a live event); passcode rules from `PHASE-3-HANDOFF.md` section 6 | Route tests (body-only passcode, no body logging, 403 versus 401 distinct); hook tests (mutation scrubbed on success and close); component tests; preview-to-full transition test; extend the matrix test | Yes (§4.10, §4.11) |
+| **P4-04** | 4B: **socket foundation for `/live`** (no feature events): connect, auth, reconnect, status, cleanup on logout and account change, behind one interface | `socket-manager.ts`, `socket-auth.ts` as references; `socket.io-client` | **D4-1, D4-2, D4-9** | Unit tests with a fake socket or mocked server for connect, reconnect, listener replay, teardown; no feature code | Needs confirmation first |
+| **P4-05** | 4B: room membership. `live:join` after admission, acknowledgement, `live:error`, `live_room_unauthorized`, `live:leave`, rejoin after reconnect, failure states | guide §6.1, §8.7 | P4-03, P4-04 | Handler tests for ack success and failure; no "connected" before acknowledgement; reconnect revalidates | Yes (given P4-04) |
+| **P4-06** | 4B: event-level updates (`event:live-session:available`, `live:session:started` / `ended` / `cancelled`) mapped to cache invalidation | `cache.ts`, `query-keys.ts` | **D4-7**; P4-04 | Tests per event: correct keys invalidated for this account, session and event only; duplicate events harmless; ended-session full-to-preview transition handled | Partly (personal-room subscription undocumented) |
+| **P4-07** | 4B: participants and presence. `GET sessions/{id}/participants` (paginated) and join/left events with de-duplication and count | guide §5.1, §5.3, §6.2 | P4-05 | Pagination by `next`; merge and dedupe tests | Yes |
+| **P4-08** | 4C: live comments and reactions. POST and list, merge by id across HTTP and socket, 1,000-character limit, 429 throttle | guide §5.3 | P4-05; keep separate from event comments | Dedupe tests, throttle and not-live errors | Yes |
+| **P4-09** | 4C: participant mic requests (listener side), request and status | guide §5.4 | P4-05, D4-8 | State machine tests including resubmit after rejection | Yes |
+| **P4-10** | 4C: host and moderation controls (approve and revoke mic, co-host, mute, kick, block, unblock), including the 202 pending and 503 `media_service_unavailable` semantics (refetch before retry) | guide §5.4 | P4-09, D4-8; do not repeat uncertain moderation mutations blindly | Permission and error tests; role and permission refetch | Yes |
+| **P4-11** | 4D: **media architecture verification** (investigation only, no code): confirm provider path for web, deployed signalling flags, available libraries, hosting and ceilings | guide §9, §5.2; `MESSENGER-SCOPE.md` for the mobile baseline | **D4-3** | A written decision record; nothing built | n/a |
+| **P4-12** | 4D: browser media permissions and status (microphone, camera consent; permission states; never prompt without user action; status surface) | | P4-11 | Permission-state tests; no capture without consent | After P4-11 |
+| **P4-13** | 4D: media connection (credentials request, connect, reconnect, failure) for the provider chosen in P4-11 | guide §5.2 (credentials throttle 10 per minute, 15-minute default token) | P4-11, P4-12 | Failure and reconnect tests with a fake provider; no secrets in logs or storage | After P4-11 |
+
+Dependencies in short: P4-01 then P4-02 then P4-03; P4-04 can start once D4-1 and D4-2 are answered and is independent of P4-02; P4-05 needs P4-03 and P4-04; P4-06 to P4-08 need P4-05; P4-09 and P4-10 follow; P4-11 is independent and can run any time before P4-12; P4-13 is last. P3-08B is outside this sequence.
+
+Each task ends with its own verification (focused tests, then the Pass 3 regression files it touches, full suite, `tsc`, ESLint on touched files, `git diff --check`), a docs update and a stop. Live-backend and production-build results are reported separately and never claimed unless run.
+
+---
+
+## F. Risks and validation
+
+- **Mocked versus live.** Every contract here is [guide]. Socket behaviour in particular (acknowledgements, replay, token expiry, personal rooms) cannot be proven by mocks. Plan a staged live check with the backend team for P4-04 to P4-06 and report it separately; the existing `scripts/messenger-socket-smoke-test.mjs` is a Messenger smoke test and not evidence for `/live`.
+- **Regression guards:** nearby at 25 km with no global fallback; `filter=my_events`; preview versus full; no sub-resource requests for a restricted preview; whitelisted guest and comment projections; collection-update semantics; invalidation matrix (extend `invalidation-matrix.integration.test.tsx` rather than adding parallel tests); the Phase 2 delete guard; the P3-08A and P3-06 error wording (EV-033).
+- **Access control and privacy:** the access token reaches client JavaScript for the socket under the temporary mechanism (ADR-003); do not extend that pattern or treat it as production-ready, and do not log tokens, bodies or passcodes. Passcodes are body-only and must be scrubbed. Join has no distance, invitation or friend check for unlocked non-public events [guide §9], so the UI must not advertise invitation-only admission. Guest removal does not revoke live participation (guide §9).
+- **Cache consistency:** socket events must invalidate only this account, session and event; stale responses after account change must be ignored; a session end can flip viewers to a preview (C.3).
+- **Follow-up concerns recorded, not changed:** (1) **EV-034:** a 404 on a single section (comments, guests, resources) shows that section's local message but does **not** remove the event's cached sub-resources; only delete and delete-404 do. (2) **EV-035:** the handoff's Guarantees table (guest add and remove invalidate `myEventsRoot()`) disagrees with the invalidation matrix and the accepted implementation. Neither changes accepted behaviour, and neither is scheduled by this plan.
+- **Environment limits:** the sandbox cannot fetch Google Fonts, so `next build` is unverified; no live backend, socket server or media server is reachable from here.
+
+---
+
+## Approval requested
+
+The owner is asked to (1) approve or amend the task sequence in section E, (2) answer D4-1 to D4-9 (or say which can be deferred), (3) confirm the P3-09 to Pass 4B mapping in D.3, and (4) say which task, if any, to authorise first. Nothing in this document starts work.
