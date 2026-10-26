@@ -158,6 +158,20 @@ export function buildCommentBody(body: unknown): Built<{ message: string }> {
 	return { ok: true, value: { message } }
 }
 
+/**
+ * `POST guests/remove`: the only field forwarded is `user_id`, a positive integer (the user's
+ * numeric `pkid`). A string, fraction, zero, negative or missing value is rejected before any
+ * upstream request.
+ */
+export function buildGuestRemoveBody(body: unknown): Built<{ user_id: number }> {
+	const record = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+	const id = record.user_id
+	if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 1) {
+		return { ok: false, message: "A valid guest is required", code: "invalid_guest" }
+	}
+	return { ok: true, value: { user_id: id } }
+}
+
 const bad = (message: string, code = "invalid_event"): { ok: false; message: string; code: string } => ({
 	ok: false,
 	message,
@@ -435,4 +449,14 @@ export function sanitizeResourcesPayload(json: unknown): unknown | null {
 export function sanitizeCommentCreatePayload(json: unknown): unknown | null {
 	if (!isPlainRecord(json) || !isPlainRecord(json.data) || typeof json.data.message !== "string") return null
 	return { ...pick(json, ENVELOPE_KEYS), data: { message: json.data.message } }
+}
+
+/**
+ * `POST guests/remove` success: a 200 with the standard envelope and an empty `data` (guide
+ * §4.14). Anything that is not a successful envelope is unreadable (null) and the route answers
+ * 502 instead of a false success.
+ */
+export function sanitizeGuestRemovePayload(json: unknown): unknown | null {
+	if (!isPlainRecord(json) || json.success !== true) return null
+	return { ...pick(json, ENVELOPE_KEYS), data: {} }
 }

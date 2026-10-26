@@ -248,3 +248,11 @@ describe("EventGuestsSection", () => {
 		expect(screen.queryByText(/add guest|remove|invite|kick|block/i)).not.toBeInTheDocument()
 	})
 })
+
+describe("EventGuestsSection remove action (P3-08A)", () => {
+	it("shows no Remove action to a non-host", () => {
+		useEventGuests.mockReturnValue(state({ guests: roster() }))
+		renderSection()
+		expect(screen.queryByRole("button", { name: /^Remove / })).toBeNull()
+	})
+})

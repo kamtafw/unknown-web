@@ -258,7 +258,7 @@ export function EventDetailsView({
 									) : value === "comments" ? (
 										<EventCommentsSection eventId={details.id} />
 									) : (
-										<EventGuestsSection eventId={details.id} />
+										<EventGuestsSection eventId={details.id} isHost={isHost} />
 									))}
 						</Tabs.Content>
 					))}
