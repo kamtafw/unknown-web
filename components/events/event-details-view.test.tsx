@@ -86,6 +86,28 @@ describe("EventDetailsView", () => {
 		expect(screen.queryByTestId("delete")).not.toBeInTheDocument()
 	})
 
+	it("P4-01: a full event shows the live-session status line; a restricted preview does not mount it", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.getByTestId("live-status-stub")).toHaveAttribute("data-kind", "full")
+		rerender(<EventDetailsView details={preview} isHost={false} onEdit={noop} onDeleted={noop} />)
+		expect(screen.queryByTestId("live-status-stub")).not.toBeInTheDocument()
+	})
+
+	it("P4-01: the live-session status stays mounted on the other sections (Details stays mounted)", () => {
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
+		expect(screen.getByTestId("live-status-stub")).toBeInTheDocument()
+	})
+
 	it("both shapes offer RSVP", () => {
 		const { rerender } = render(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,

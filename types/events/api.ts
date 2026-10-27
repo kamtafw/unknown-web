@@ -260,3 +260,56 @@ export interface EventGuestsPage {
 	/** from the backend `next` link only */
 	hasNext: boolean
 }
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-01): the event-specific live-session read                       */
+/* -------------------------------------------------------------------------- */
+
+export type LiveSessionType = "public" | "private"
+export type LiveMediaProvider = "p2p" | "livekit"
+export type LiveMediaStatus =
+	"legacy" | "pending" | "provisioning" | "ready" | "failed" | "missing" | "ended"
+/** the viewer's role in the live session; not an event host or guest role */
+export type LiveParticipantRole = "host" | "co_host" | "speaker" | "listener"
+
+/**
+ * What `GET {event_id}/live-session` says about the attached session. Only a status-level
+ * projection is kept: the session host, the participant list, the invite code, the media room
+ * name and the media permissions are never represented here (the BFF removes them first).
+ * `mediaStatus` describes the provider, not whether web media works.
+ */
+export interface EventLiveSession {
+	/** integer session id; used only with live routes and the socket join */
+	id: number
+	title: string
+	status: EventLiveStatus
+	sessionType: LiveSessionType | null
+	/** null when the backend sent no usable count */
+	participantCount: number | null
+	startedAt: string | null
+	endedAt: string | null
+	mediaProvider: LiveMediaProvider | null
+	mediaStatus: LiveMediaStatus | null
+	/** the viewer's live role; null when not an active participant (or not stated) */
+	currentUserRole: LiveParticipantRole | null
+	/** the viewer has an active live participant record (live participation, not event membership) */
+	isJoined: boolean
+}
+
+/**
+ * The documented connection descriptor (guide §3.6). It is not a socket URL and not a media
+ * credential, and holding it authorises nothing: admission comes first.
+ */
+export interface LiveSocketDescriptor {
+	namespace: "/live"
+	joinEvent: "live:join"
+	sessionId: number
+}
+
+export interface EventLiveSessionState {
+	/** the event UUID the backend answered for */
+	eventId: string
+	session: EventLiveSession
+	/** null when absent or not exactly the documented descriptor */
+	socket: LiveSocketDescriptor | null
+}

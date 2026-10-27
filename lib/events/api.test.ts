@@ -322,3 +322,53 @@ describe("eventsApi.removeEventGuest (P3-08A)", () => {
 		expect(postMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/guests/remove")
 	})
 })
+
+describe("eventsApi.getEventLiveSession (P4-01)", () => {
+	const body = (over: Record<string, unknown> = {}) => ({
+		data: {
+			data: {
+				event_id: ID,
+				live_session: { id: 7, status: "waiting", media: { provider: "p2p", status: "legacy" } },
+				socket: { namespace: "/live", join_event: "live:join", join_payload: { sessionId: 7 } },
+				...over,
+			},
+		},
+	})
+
+	it("reads the BFF live-session route with no parameters and projects the session", async () => {
+		getMock.mockResolvedValue(body())
+		const out = await eventsApi.getEventLiveSession(ID)
+		const [url, config] = getMock.mock.calls[0]
+		expect(url).toBe(`/api/events/${ID}/live-session`)
+		expect(config?.params).toBeUndefined()
+		expect(postMock).not.toHaveBeenCalled()
+		expect(out.session).toMatchObject({ id: 7, status: "waiting", mediaProvider: "p2p" })
+		expect(out.socket).toEqual({ namespace: "/live", joinEvent: "live:join", sessionId: 7 })
+	})
+
+	it("encodes the event id into the path", async () => {
+		getMock.mockResolvedValue(body({ event_id: "a/b" }))
+		await eventsApi.getEventLiveSession("a/b")
+		expect(getMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/live-session")
+	})
+
+	it("throws on an unreadable body", async () => {
+		for (const bad of [{ data: { data: [] } }, { data: { data: { event_id: ID } } }]) {
+			getMock.mockResolvedValue(bad)
+			await expect(eventsApi.getEventLiveSession(ID)).rejects.toBeInstanceOf(EventPayloadError)
+		}
+	})
+
+	it("throws when the answer is for another event (never cached under this event's key)", async () => {
+		getMock.mockResolvedValue(body({ event_id: "99999999-9999-4999-8999-999999999999" }))
+		await expect(eventsApi.getEventLiveSession(ID)).rejects.toBeInstanceOf(EventPayloadError)
+	})
+
+	it("passes an upstream 403 and 404 through as the axios error", async () => {
+		for (const status of [403, 404]) {
+			const failure = { response: { status, data: { message: "m" } } }
+			getMock.mockRejectedValue(failure)
+			await expect(eventsApi.getEventLiveSession(ID)).rejects.toBe(failure)
+		}
+	})
+})

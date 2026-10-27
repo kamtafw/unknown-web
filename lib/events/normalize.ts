@@ -12,6 +12,8 @@ import type {
 	EventGuestsPage,
 	EventHost,
 	EventLink,
+	EventLiveSession,
+	EventLiveSessionState,
 	EventLiveStatus,
 	EventPreviewDetails,
 	EventPrivacy,
@@ -19,6 +21,11 @@ import type {
 	EventResources,
 	EventRsvpStatus,
 	EventsPage,
+	LiveMediaProvider,
+	LiveMediaStatus,
+	LiveParticipantRole,
+	LiveSessionType,
+	LiveSocketDescriptor,
 	RsvpKnowledge,
 	RsvpResult,
 } from "@/types/events/api"
@@ -416,4 +423,81 @@ export function normalizeGuestsPage(data: unknown, page: number): EventGuestsPag
 		page,
 		hasNext: hasNext(data),
 	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-01): live-session read                                          */
+/* -------------------------------------------------------------------------- */
+
+const SESSION_TYPE = new Set<string>(["public", "private"])
+const MEDIA_PROVIDER = new Set<string>(["p2p", "livekit"])
+const MEDIA_STATUS = new Set<string>([
+	"legacy",
+	"pending",
+	"provisioning",
+	"ready",
+	"failed",
+	"missing",
+	"ended",
+])
+const LIVE_ROLE = new Set<string>(["host", "co_host", "speaker", "listener"])
+
+function oneOf<T extends string>(set: Set<string>, value: unknown): T | null {
+	const v = text(value)
+	return set.has(v) ? (v as T) : null
+}
+
+function positiveInteger(value: unknown): number | null {
+	return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null
+}
+
+/**
+ * The documented descriptor exactly (guide §3.6): namespace `/live`, join event `live:join` and a
+ * positive integer session id that matches the session it came with. Anything else is dropped, so
+ * a drifted payload can never point the later socket code somewhere unexpected.
+ */
+function normalizeSocketDescriptor(raw: unknown, sessionId: number): LiveSocketDescriptor | null {
+	if (!isRecord(raw)) return null
+	if (raw.namespace !== "/live" || raw.join_event !== "live:join") return null
+	const payload = isRecord(raw.join_payload) ? raw.join_payload : null
+	if (!payload || positiveInteger(payload.sessionId) !== sessionId) return null
+	return { namespace: "/live", joinEvent: "live:join", sessionId }
+}
+
+function dateString(value: unknown): string | null {
+	return text(value) || null
+}
+
+/**
+ * `GET {event_id}/live-session` `data` (guide §4.18, §5.1): `event_id`, the full `live_session` and
+ * `socket`. The provider and media status sit under `media` in the full shape and flat as
+ * `media_provider` / `media_status` in the attached summary (§3.5); either is read. A body without
+ * an event id, an integer session id and a known status is not trusted: it returns null and the
+ * caller reports an unreadable response, never an invented session.
+ */
+export function normalizeLiveSession(data: unknown): EventLiveSessionState | null {
+	if (!isRecord(data) || !isRecord(data.live_session)) return null
+	const eventId = text(data.event_id)
+	const raw = data.live_session
+	const id = positiveInteger(raw.id)
+	const status = oneOf<EventLiveStatus>(LIVE_STATUS, raw.status)
+	if (!eventId || id === null || status === null) return null
+
+	const media = isRecord(raw.media) ? raw.media : {}
+	const count = raw.participant_count
+	const session: EventLiveSession = {
+		id,
+		title: text(raw.title),
+		status,
+		sessionType: oneOf<LiveSessionType>(SESSION_TYPE, raw.session_type),
+		participantCount:
+			typeof count === "number" && Number.isInteger(count) && count >= 0 ? count : null,
+		startedAt: dateString(raw.started_at),
+		endedAt: dateString(raw.ended_at),
+		mediaProvider: oneOf<LiveMediaProvider>(MEDIA_PROVIDER, media.provider ?? raw.media_provider),
+		mediaStatus: oneOf<LiveMediaStatus>(MEDIA_STATUS, media.status ?? raw.media_status),
+		currentUserRole: oneOf<LiveParticipantRole>(LIVE_ROLE, raw.current_user_role),
+		isJoined: raw.is_joined === true,
+	}
+	return { eventId, session, socket: normalizeSocketDescriptor(data.socket, id) }
 }

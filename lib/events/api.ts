@@ -14,6 +14,7 @@ import type {
 	EventCommentsPage,
 	EventDetails,
 	EventGuestsPage,
+	EventLiveSessionState,
 	EventResources,
 	EventRsvpStatus,
 	EventsPage,
@@ -27,6 +28,7 @@ import {
 	normalizeEventDetails,
 	normalizeGuestsPage,
 	normalizeListData,
+	normalizeLiveSession,
 	normalizeNearbyData,
 	normalizeResources,
 	normalizeRsvpResult,
@@ -229,5 +231,24 @@ export const eventsApi = {
 		const page = normalizeGuestsPage(res.data.data, params.page)
 		if (!page) throw new EventPayloadError()
 		return page
+	},
+
+	/**
+	 * The attached live session of an event, read only. A body that is not the documented shape, or
+	 * that answers for another event, throws `EventPayloadError`. A 404 can mean the event is gone or
+	 * that it has no session; the caller tells them apart (see `classifyLiveSessionError`).
+	 */
+	getEventLiveSession: async (
+		eventId: string,
+		signal?: AbortSignal,
+	): Promise<EventLiveSessionState> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/live-session`, {
+			signal,
+		})
+		const state = normalizeLiveSession(res.data.data)
+		if (!state || state.eventId.toLowerCase() !== eventId.toLowerCase()) {
+			throw new EventPayloadError()
+		}
+		return state
 	},
 }
