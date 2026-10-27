@@ -93,10 +93,14 @@ describe("EventLiveSessionStatus", () => {
 		expect(screen.getByLabelText("Checking the live session")).toHaveAttribute("aria-busy", "true")
 	})
 
-	it("says a live event's session is for the host and guests when the viewer is not admitted (no login prompt)", () => {
+	it("says a live event's session is for the host and currently-present guests when the viewer is not admitted (no login prompt)", () => {
 		useEventLiveSession.mockReturnValue({ status: "not_admitted", state: null, refetch: vi.fn() })
 		render(<EventLiveSessionStatus details={{ ...details, isLive: true }} />)
 		expect(screen.getByRole("note")).toHaveTextContent(LIVE_SESSION_NOT_ADMITTED)
+		// the documented rule: the host and guests who are currently in the event (guide §4.18)
+		expect(screen.getByRole("note")).toHaveTextContent(
+			"Live session details are available to the host and guests who are currently in the event.",
+		)
 		expect(screen.queryByText(/sign in|session has expired|Join this event/i)).not.toBeInTheDocument()
 	})
 

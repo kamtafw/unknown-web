@@ -169,6 +169,79 @@ describe("useEventLiveSession: what it reports", () => {
 	})
 })
 
+describe("useEventLiveSession: a failed refetch after a successful read", () => {
+	const live12 = (): EventLiveSessionState => {
+		const s = sessionState("live")
+		return { ...s, session: { ...s.session, participantCount: 12 } }
+	}
+
+	async function loadThenFail(failure: unknown) {
+		getEventLiveSession.mockResolvedValueOnce(live12())
+		const harness = setup(full())
+		await waitFor(() => expect(harness.result.current.status).toBe("ready"))
+		expect(harness.result.current.state?.session).toMatchObject({
+			status: "live",
+			participantCount: 12,
+		})
+		getEventLiveSession.mockRejectedValue(failure)
+		await act(async () => {
+			await harness.result.current.refetch()
+		})
+		// the observer publishes the failed refetch to React asynchronously
+		await waitFor(() => expect(harness.result.current.status).not.toBe("ready"), { timeout: 3000 })
+		return harness
+	}
+
+	it.each([
+		[403, "not_admitted", "Join this event before accessing its live session."],
+		[404, "no_session", "This event does not have a live session."],
+		[404, "unavailable", "Event not found."],
+		[500, "error", "boom"],
+	] as const)(
+		"%s (%s) is reported as that state; the old session is no longer ready data",
+		async (status, expected, message) => {
+			const { result } = await loadThenFail(err(status, message))
+			expect(result.current.status).toBe(expected)
+			expect(result.current.state).toBeNull()
+		},
+	)
+
+	it("a network failure is an error and withholds the old session", async () => {
+		const { result } = await loadThenFail(new Error("offline"))
+		expect(result.current.status).toBe("error")
+		expect(result.current.state).toBeNull()
+	})
+
+	it("a later successful refetch restores ready with the new session", async () => {
+		const { result } = await loadThenFail(err(403, "x"))
+		expect(result.current.status).toBe("not_admitted")
+
+		const ended = sessionState("live")
+		getEventLiveSession.mockReset()
+		getEventLiveSession.mockResolvedValue({
+			...ended,
+			session: { ...ended.session, status: "ended", participantCount: 0 },
+		})
+		await act(async () => {
+			await result.current.refetch()
+		})
+		await waitFor(() => expect(result.current.status).toBe("ready"))
+		expect(result.current.state?.session).toMatchObject({ status: "ended", participantCount: 0 })
+	})
+
+	it("a refetch that is still in flight keeps the last good read (nothing has failed)", async () => {
+		getEventLiveSession.mockResolvedValueOnce(live12())
+		const { result } = setup(full())
+		await waitFor(() => expect(result.current.status).toBe("ready"))
+		getEventLiveSession.mockImplementation(() => new Promise(() => {}))
+		act(() => {
+			void result.current.refetch()
+		})
+		expect(result.current.status).toBe("ready")
+		expect(result.current.state?.session.participantCount).toBe(12)
+	})
+})
+
 describe("useEventLiveSession: scoping", () => {
 	it("serves nothing once the viewer drops from full details to a preview (cached data is not shown)", async () => {
 		getEventLiveSession.mockResolvedValue(sessionState("live"))

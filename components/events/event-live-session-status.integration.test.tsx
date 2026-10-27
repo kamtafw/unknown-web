@@ -68,7 +68,9 @@ describe("EventLiveSessionStatus with the real hook", () => {
 			err(403, "Join this event before accessing its live session."),
 		)
 		mount()
-		expect(await screen.findByRole("note")).toHaveTextContent(/host and guests/i)
+		expect(await screen.findByRole("note")).toHaveTextContent(
+			/host and guests who are currently in the event/i,
+		)
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
 		expect(screen.queryByText(/Join this event/)).not.toBeInTheDocument()
 	})

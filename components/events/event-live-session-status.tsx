@@ -14,7 +14,8 @@ export const LIVE_SESSION_STATUS_LABEL: Record<EventLiveStatus, string> = {
 }
 
 /** shown only for a live event the viewer may not read the session of; the backend's text is not used */
-export const LIVE_SESSION_NOT_ADMITTED = "Live session details are shown to the host and guests."
+export const LIVE_SESSION_NOT_ADMITTED =
+	"Live session details are available to the host and guests who are currently in the event."
 
 /**
  * One status line for the attached live session of a FULL event (P4-01): its state, and the

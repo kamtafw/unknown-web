@@ -61,7 +61,8 @@ function statusOf(error: unknown): number | null {
  *
  * It only reads: it creates no session and does not join the caller. A 403 is an access state, a
  * 404 is either "no session" or "event unavailable", and a failure is never shown as an empty or
- * ended session.
+ * ended session. `state` is the most recent SUCCESSFUL read and is not a real-time guarantee; once a
+ * later read fails it is withheld (status reports the failure) until a read succeeds again.
  */
 export function useEventLiveSession(details: EventDetails | null) {
 	const accountId = useAuthStore((s) => s.user?.pkid ?? null)
@@ -90,12 +91,17 @@ export function useEventLiveSession(details: EventDetails | null) {
 		},
 	})
 
-	const state: EventLiveSessionState | null = enabled ? (query.data ?? null) : null
+	// TanStack keeps the last successful `data` after a failed refetch. A failed read must win over
+	// it: otherwise a session that has since ended, or that the viewer can no longer read (a 403
+	// once guests are marked offline), would keep being shown as confirmed. The next successful
+	// read clears the error and restores `ready`.
+	const failed = enabled && query.isError
+	const state: EventLiveSessionState | null = enabled && !failed ? (query.data ?? null) : null
 
 	let status: EventLiveSessionStatus
 	if (!enabled) status = "disabled"
+	else if (failed) status = classifyLiveSessionError(query.error)
 	else if (state) status = "ready"
-	else if (query.isError) status = classifyLiveSessionError(query.error)
 	else status = "loading"
 
 	return { status, state, refetch: query.refetch, isRefetching: query.isRefetching }
