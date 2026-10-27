@@ -128,9 +128,9 @@ Lifecycle and ownership of the `/live` connection (when it opens and closes: per
 | --- | --- | --- | --- |
 | **D4-1** | Socket origin, namespace and **production auth mechanism** for `/live`: is the host the same as `NEXT_PUBLIC_MESSENGER_SOCKET_URL`; handshake `auth.token` versus the temporary query-string route; does the backend confirm a short-lived ticket or cookie handshake (ADR-003 is still pending) | Any socket task | Without it the only option is to reuse the temporary, explicitly non-production mechanism |
 | **D4-2** | Socket topology: one shared connection versus a separate `/live` connection, and whether the Messenger manager may be generalised (touches Messenger code) or a second manager is created | Socket foundation | ADR-002 hypothesis unconfirmed |
-| **D4-3** | **Web media path** (Pass 4D): guide §9 says `X-Platform=web` selects P2P even when LiveKit is enabled; web may consume a mobile-created LiveKit session; web-hosted LiveKit creation needs backend support; legacy P2P signalling can be disabled independently; spoofing a mobile platform is not acceptable. Which path is intended for web, and is P2P signalling enabled in the deployed environment | Media tasks, and the decision whether web can host at all | There is no media library in the repository; the roadmap says not to assume the provider configuration is suitable |
+| **D4-3** | **Web media path** (Pass 4D): guide §9 says `X-Platform=web` selects P2P even when LiveKit is enabled; web may consume a mobile-created LiveKit session; web-hosted LiveKit creation needs backend support; legacy P2P signalling can be disabled independently; spoofing a mobile platform is not acceptable. Which path is intended for web, and is P2P signalling enabled in the deployed environment | Media tasks, and the decision whether web can host at all | There is no media library in the repository; the roadmap says not to assume the provider configuration is suitable **Investigated 2026-10-27, still open: see section H.** |
 | **D4-4** | Does Pass 4A ship **lifecycle without media** (host can create, start and end; attendees see state) or wait for 4D? Offering "Start" when the web client cannot broadcast is a product question (guide §9: gate unavailable media controls) | 4A scope | |
-| **D4-5** | `X-Platform` and `X-App-Version` values the web BFF should send for session creation | Session create and start | Guide §4.19 says send the actual client values |
+| **D4-5** | `X-Platform` and `X-App-Version` values the web BFF should send for session creation | Session create and start | Guide §4.19 says send the actual client values. **Evidence and the `0.1.0` versus `1.0.0` discrepancy: section H.5; still open.** |
 | **D4-6** | Leave semantics: which P3-09 option applies (confirm the guide-derived stranding risk is acceptable, or the backend documents a way back) | Join and leave | See B.1 |
 | **D4-7** | How the client subscribes to the personal user room; whether events are replayed | Event-level updates | C.5 |
 | **D4-8** | Which participant controls the web ships (mic requests, co-host, mute, kick, block) in Pass 4C | 4C scope | |
@@ -207,7 +207,118 @@ The owner accepted this document as the planning baseline with the following dec
 | --- | --- |
 | P4-01 live-session read | **Implemented, awaiting owner review** (2026-10-26, branch `feat/events-p4-01-live-session-read`). Scope was exactly: the BFF read route, types and normalisation, a scoped query key and hook, a minimal status line, and focused tests. Record: `PROGRESS.md` (P4-01 entry), assumptions A-23 and A-24 and issues EV-036 and EV-037 in `EVENTS.md`. The guide and the repository did not contradict this handoff on what P4-01 reads; two points the handoff did not settle were decided and recorded: the no-session 404 is told from the absent-event 404 by message text (A-24), and the read is skipped for an event with nothing attached that is not live (A-23). Section A.1's "accepted branches are separate and not merged" is stale at `main` `7d96cb4` (EV-037). **Review fixes (2026-10-27):** a failed refetch now takes precedence over retained data in `useEventLiveSession`; the 403 note says "host and guests who are currently in the event"; the status line is **the most recent successful read, not a real-time guarantee** until P4-04 to P4-06 (no polling, no refresh control, no `refetchOnMount: "always"`; A-23). |
 | P4-04 and P4-05 (carried caveat) | When they read `EventLiveSessionState.socket`: `null` means absent, invalid or mismatched, **not** "safe legacy event" (A-25). The 404 message-matching limitation (A-24) also stays. |
+| Media architecture investigation (2026-10-27) | Done as investigation only: findings, unknowns and options in section H. No decision made, no code, no task authorised. |
 | P4-02 onward | Not started. P4-02 is gated by D4-4 and D4-5; P4-03 (with leave) by D4-6; P4-04 by D4-1 and D4-2. |
+
+---
+
+## H. Media architecture investigation (P4-11 pre-read, recorded 2026-10-27)
+
+**Investigation only. No code, no decision and no task authorisation came out of it.** Nothing here selects a media path. Every item is labelled; read the labels before relying on a statement.
+
+Extra evidence label: **[mobile]** read in the mobile repository `kamtafw/unknown` (shallow clone, `HEAD b7db079`) on 2026-10-27. This proves what the mobile client *does*. It does **not** prove what the deployed backend, LiveKit server, socket server or TURN service currently *accept*, and it does not say which mobile build is in production. No credential values were read; the `.env.example` TURN values were deliberately not opened.
+
+### H.1 Established facts
+
+**Mobile client [mobile]**
+
+| # | Fact | Source path |
+| --- | --- | --- |
+| M1 | Two media providers exist on mobile: **LiveKit** (`livekit-client` 2.20.1 and `@livekit/react-native` 2.12.0) and a legacy **P2P audio mesh**. The room's `media.provider` (`p2p` or `livekit`) picks the class; both are built in `useLiveAudioSession`. | `package.json`; `hooks/messenger/use-live-audio-session.ts` (`LiveP2PAudioSession` at line 101, `LiveKitAudioSession` effect ~line 821) |
+| M2 | LiveKit flow: `POST live/sessions/{id}/media/credentials` (no body) returns `server_url`, `token`, `room`, `identity`, `expires_at`, `permissions`, `correlation_id`; then `room.connect(server_url, token, { autoSubscribe: permissions.can_subscribe })`; then the client checks `room.name === credentials.room` and `localParticipant.identity === credentials.identity` and disconnects on mismatch; the token is not persisted. Microphone is published only after connect (audio and screen share only; no camera). | `lib/messenger/live-api.ts`; `lib/messenger/livekit-audio-session.ts` (connect and verification ~lines 120-215) |
+| M3 | LiveKit enablement is gated on `room status === live`, an active participant and, for LiveKit, `media.status === "ready"`. Before connecting, the client calls `ensureLiveRoomJoined(sessionId)` (socket `live:join`). | `use-live-audio-session.ts` ~lines 700 and 1139 |
+| M4 | P2P signalling uses the `/live` socket: `live:signal {to: socketId, type: offer|answer|ice, payload}`, `live:ice {to, candidate}`, `live:speaking`. The offerer for a pair is chosen by comparing socket ids (`localeCompare`), so every participant (listeners included) opens a peer to every other (mesh). | `lib/socket/live-socket.ts`; `use-live-audio-session.ts` lines 101-200, 520-560 |
+| M5 | P2P ICE servers are three public STUN hosts hard-coded in the client plus **TURN taken from build-time environment variables** (`EXPO_PUBLIC_TURN_URLS`, `_USERNAME`, `_PASSWORD`). **No backend endpoint supplies ICE or TURN configuration in the mobile code.** | `lib/webrtc/peer-connection.ts` lines 19-56 |
+| M6 | Socket: `/live` namespace, WebSocket transport, `auth: { token }`, `live:join { sessionId }`. A missing acknowledgement is tolerated (`live:joined` counts as success), which suggests some deployments do not acknowledge. Default origin falls back to `https://socket.appscombo.com`. | `lib/socket/live-socket.ts`; `lib/messenger/live-runtime.ts` |
+| M7 | Headers: `X-Platform` is `"ios"` or `"android"` and the helper **throws on any other platform**; `X-App-Version` must match a strict semver pattern (taken from the Expo config). Mobile sends both on: event live-session read (`GET`), create, update-live-status, start, end, session create, series calls and **media credentials**. It does **not** send them on event `join` or `leave`. | `lib/messenger/live-runtime.ts`; `hooks/events/use-events.ts` (lines 279, 448-504); `lib/messenger/live-api.ts` line 14 |
+| M8 | The mobile docs in the repository contain **no infrastructure documentation** (no LiveKit deployment, CORS, TURN or socket-host notes). `docs/` holds Messenger and E2EE notes and the live background-audio spec only. | `docs/` listing |
+
+**Backend guide [guide]** (all unverified against the deployed backend)
+
+| # | Fact | Section |
+| --- | --- | --- |
+| G1 | Create, start and end are host-only. Create and start take `X-Platform` and `X-App-Version` ("send actual client platform/version"; start uses them only when it must first create a session). End, read, join, leave and credentials list **no** header requirement. | §4.19-§4.21, §4.18, §4.10-§4.11, §5.2 |
+| G2 | `X-Platform=web` selects **P2P even when LiveKit is enabled**. Provider selection recognises only eligible iOS/Android platform and version combinations. Existing sessions keep their provider. Web may consume an eligible mobile-created LiveKit session; web-hosted LiveKit creation needs backend web-platform support; spoofing a mobile platform is not acceptable. | §9 |
+| G3 | Credentials: caller must already be an active participant admitted through the event flow; 201 with `correlation_id`, `server_url`, `room`, `identity`, `token`, `expires_at`, `permissions`; P2P sessions return 400 `media_provider_not_livekit`; throttle 10 per minute per user and session; token default 900 s; other codes listed in §5.2. | §5.2 |
+| G4 | Socket: `/live`, handshake `auth.token` (query token also accepted), `live:join {sessionId}` only after admission, ack `ok` / `code=live_room_unauthorized`. Legacy `live:signal`, `live:ice`, `live:speaking` are **feature-gated and can be disabled**, returning `live:error deprecated_transport_disabled`. | §6.1-§6.2, §9 |
+| G5 | The guide documents **no ICE, STUN or TURN endpoint** and no browser-specific media contract. | whole guide |
+| G6 | A host who starts a LiveKit session must see provisioning succeed; start errors include `media_provisioning`, `media_service_unavailable`, `media_state_conflict`. | §4.20 |
+
+**Repository facts [repo]**
+
+- The web repository has `socket.io-client` ^4.8.1 and **no** `livekit-client` or other media dependency. `package.json` `"version"` is **`0.1.0`**.
+- `next.config.ts` defines no `headers()` and the repository has no Content-Security-Policy configuration, so no `connect-src` allow-list for a LiveKit or socket host is present in this code. Whether the hosting layer adds one is unknown.
+- `docs/messenger/MESSENGER-SCOPE.md` (line 29) says "No SFU found anywhere ... peer-mesh only". **That is contradicted by the mobile repository at `b7db079`**, which ships LiveKit (M1). Either the scope note predates LiveKit or it was written from another mobile revision. Treat the scope note as stale for media until the owner says otherwise. No change was made to that file.
+
+### H.2 Inferences (reasonable, not verified)
+
+- **I1.** `livekit-client` is a browser-capable JavaScript SDK, so a browser can in principle join a LiveKit room using the same credentials API and the same room-and-identity checks as mobile. Not tested, and it depends on the LiveKit server's reachability and CORS or origin rules from a browser (U3).
+- **I2.** Because §9 names `X-Platform=web` as an input that selects P2P, the backend most likely recognises the value `web`. The guide never lists accepted platform values or the version format, so this is an inference from one sentence.
+- **I3.** A web-created session would be P2P. For a browser and mobile to interoperate the web client would have to speak the same `live:signal` and `live:ice` message shapes, offer/answer roles and ICE configuration as mobile (M4, M5). Standard WebRTC SDP should interoperate with `react-native-webrtc`, but this has never been exercised here.
+- **I4.** A web listener in a P2P mesh opens a peer to every participant (M4), so mesh size limits and TURN cost apply to web exactly as to mobile.
+- **I5.** Event-room media on mobile uses the **generic live-room** endpoints (`live/sessions/{id}` and `.../media/credentials`) alongside the event routes (M3, `components/events/event-room.tsx`). The guide §5 documents the same endpoints for web. This matches, but the live-room GET and participants routes have not been planned for web yet.
+
+### H.3 Unknowns and information gaps (the team must supply these)
+
+| # | Unknown | Who can answer | Blocks |
+| --- | --- | --- | --- |
+| U1 | Which platform values and version formats the backend accepts, and whether `web` is accepted, on create, start, **read** and **credentials**. | Backend | D4-5, P4-02 |
+| U2 | The backend rule that makes a platform and version combination eligible for LiveKit, and whether a web value can be added. | Backend | Option C |
+| U3 | The deployed LiveKit server URL class (cloud or self-hosted), whether it accepts browser WebSocket and WebRTC from the web origins (CORS, allowed origins, TLS), and whether `media.status` ever reaches `ready` in staging. | Infrastructure | Options A and C |
+| U4 | Whether the deployed socket server has legacy `live:signal` / `live:ice` enabled, and whether `live:join` is acknowledged. | Backend | Option B |
+| U5 | How a browser gets ICE and TURN configuration (a backend endpoint, a public config, or a build-time value as on mobile) and whether the TURN credentials may ship to browsers. | Infrastructure and security | Option B |
+| U6 | Socket origin, allowed web origins and the production auth mechanism (existing D4-1, D4-2). | Backend | all socket tasks |
+| U7 | Whether the mobile build at `b7db079` matches production, and which mobile version first created LiveKit sessions. | Owner | all options |
+| U8 | Whether a staging environment with a mobile-hosted LiveKit session and two test accounts exists. | Owner | every proof plan |
+| U9 | Product intent for web: listener only, or speaker, or host (D4-3, D4-4). | Owner | scope |
+
+Nothing in this document claims the deployed media infrastructure works. No call was made to any backend, LiveKit, socket or TURN service in this investigation.
+
+### H.4 Options (none is chosen)
+
+**A. Web as a LiveKit client of mobile-created sessions (listener first, speaker if promoted).**
+
+- *Reuse:* the credentials API (G3, M2), the room-and-identity verification pattern, the admission flow (join), the `/live` socket join (M3), the participant and role fields already normalised in P4-01.
+- *Implement on web:* BFF credentials route (no body; token never cached or logged); `livekit-client` dependency; a connection manager with connect, reconnect and credential refresh before `expires_at`; remote audio attachment and the browser autoplay unlock gesture; microphone publish only for a speaker, after browser consent; cleanup on leave, end, logout and account switch.
+- *Backend or infrastructure:* confirm U1 for credentials with `web` or no header, U3 for browser access to the LiveKit host, admission (P4-03 join) for the web account.
+- *Risks:* a web host cannot create a LiveKit session (G2), so a web-hosted event stays P2P and A covers only mobile-hosted events; header acceptance (U1); browser autoplay and device behaviour; token expiry and the 10-per-minute throttle; no CSP allow-list present here (a hosting-layer one is unknown).
+- *Two-browser proof:* a mobile host creates and starts a LiveKit event session in staging; browser 1 (account X, promoted to speaker by the host) publishes a microphone; browser 2 (account Y, listener) subscribes. Evidence: both rooms report `connected`, browser 2 holds a subscribed remote audio track, and `RTCPeerConnection.getStats()` inbound-audio bytes increase on browser 2 while browser 1 speaks. Server side, `GET sessions/{id}/media/status` (host) shows `media_connected_count` of at least 2 plus the host. Requires U3, U7 and U8.
+
+**B. Browser WebRTC over the existing P2P socket signalling (web-created sessions).**
+
+- *Reuse:* the `/live` socket, `live:signal` and `live:ice` shapes and the socket-id offerer rule (M4), `X-Platform: web` sessions (G2).
+- *Implement on web:* a signalling client for `/live`, a mesh peer manager, ICE and TURN configuration, speaking detection, reconnection and per-peer cleanup. This is new web code that duplicates what mobile already runs.
+- *Backend or infrastructure:* U4 (signalling enabled), U5 (TURN for browsers), U6 (socket auth and origin).
+- *Risks:* signalling can be switched off independently (G4), so web media could be unavailable by configuration; mesh scaling (I4); TURN credential exposure; interop with `react-native-webrtc` unproven (I3); the socket-id ordering rule must be replicated exactly or peers glare.
+- *Two-browser proof:* browser 1 hosts a web-created event session (P2P), browser 2 joins; confirm `live:joined` and the offer/answer/ICE exchange, `connectionState === "connected"` on both, and inbound audio bytes increasing in `getStats()`. Run once on one network and once with relay forced to show TURN works. Requires U4 and U5.
+
+**C. Backend work: web-platform LiveKit creation, then Option A for web-hosted sessions.**
+
+- *Reuse:* everything in A.
+- *Implement:* nothing beyond A on web, plus whatever the backend defines for a web platform.
+- *Backend or infrastructure:* provider selection recognising a web platform (U1, U2), a web-eligible version rule, and LiveKit browser access (U3).
+- *Risks:* depends on a backend change outside this repository, so the delivery date is not in the web team's control; must not be worked around by sending an iOS or Android value (G2).
+- *Two-browser proof:* identical to A except the host is also a browser.
+
+The investigation found **no evidence that new signalling or media infrastructure is needed**: LiveKit and the mesh both already exist (M1). The open questions are whether the existing pieces accept browsers (U3 to U5) and whether the backend will classify a web client for LiveKit (U1, U2). No recommendation to build new infrastructure is made.
+
+### H.5 Headers: `X-Platform` and `X-App-Version`
+
+- Proposal from the owner: `X-Platform: web` and `X-App-Version: 1.0.0`.
+- **`web` as a value:** the guide mentions `X-Platform=web` once (§9) and does not list accepted values. Not confirmed. Mobile never sends `web` (M7).
+- **`1.0.0` is not the web package version.** `package.json` says `0.1.0`. Either `0.1.0` is sent (it matches the same strict semver pattern as mobile) or the owner states that `1.0.0` is a deliberate contract value. This needs the owner's ruling because the guide says "actual client platform/version" (§4.19) and the backend may gate on the version (§9, "eligible platform/version combinations").
+- **Which calls carry them:** the guide requires them on create and start only (G1). Mobile also sends them on read and credentials (M7); whether the backend consults them there is unknown (U1). P4-01's read sends none (`app/api/events/[eventId]/live-session/route.ts`); that stays as is until U1 is answered.
+- **Needed confirmation (backend):** accepted platform values, version format, and whether any call besides create and start requires or reads them.
+- **When implemented:** one constant (or one small module) in the BFF is the single source for both values, so a later confirmed change touches one place. Nothing was added now.
+- Status: **D4-5 stays open.** This section is evidence, not a resolution.
+
+### H.6 Proposed sequence (a proposal; nothing here is authorised)
+
+1. **Owner and backend answers** (no code): U1, U3, U4, U5, U7, U8, U9, plus the D4-5 ruling on the two header values and D4-4 scope. These are the only things that unblock a chosen path.
+2. **Smallest useful implementation task, once step 1 answers U1, U3, U7 and U8:** *listener-only LiveKit proof* behind a development-only harness. It adds the BFF credentials route (POST, no body, headers from the single constant, nothing cached or logged), `livekit-client`, and a connect-and-verify step that mirrors M2 (room and identity check) with no publishing, no socket and no lifecycle controls. It needs an already-admitted test account (admitted from the mobile app, or P4-03 join). It proves or disproves I1 and U3 with the smallest surface. If step 1 shows LiveKit is not reachable from browsers, Options B or C decide the path before any code.
+3. Then, depending on the result: Option A speaker publishing (P4-12 area), or Option B or C. P4-02 stays gated by D4-4 and D4-5; the socket tasks (P4-04 to P4-06) stay gated by D4-1, D4-2 and D4-7.
+
+Open items for the owner: rule on `1.0.0` versus `0.1.0`; whether to correct or supersede `MESSENGER-SCOPE.md` line 29; whether a staging environment and test accounts exist (U8).
 
 ---
 
