@@ -9,6 +9,25 @@ function isSessionId(value: string): boolean {
 	return /^[A-Za-z0-9_-]{1,128}$/.test(value)
 }
 
+function safeUpstreamDiagnostic(value: unknown): string {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return "non-JSON error response"
+	const body = value as Record<string, unknown>
+	const fields = ["message", "detail", "code", "error"]
+	const safe: Record<string, string> = {}
+	for (const field of fields) {
+		const candidate = body[field]
+		if (typeof candidate !== "string") continue
+		// Never log likely credentials, JWTs, or long opaque values from an upstream error.
+		const redacted = candidate
+			.replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")
+			.replace(/eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]")
+			.replace(/(token|secret|password|authorization)\\s*[:=]\\s*[^,;\\s]+/gi, "$1=[REDACTED]")
+			.slice(0, 240)
+		safe[field] = redacted
+	}
+	return Object.keys(safe).length ? JSON.stringify(safe) : "no safe diagnostic fields"
+}
+
 function credentialsFrom(value: unknown): MediaCredentials | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null
 	const body = value as Record<string, unknown>
@@ -45,6 +64,21 @@ export async function POST(_request: Request, { params }: Ctx) {
 		return NextResponse.json({ message: "Unable to retrieve media credentials" }, { status: 502 })
 	}
 	if (!upstream.ok) {
+		if (process.env.NODE_ENV !== "production") {
+			let diagnostic = "unreadable error response"
+			try {
+				const body: unknown = await upstream.clone().json()
+				diagnostic = safeUpstreamDiagnostic(body)
+			} catch {
+				// Do not log raw upstream text; it may contain sensitive data.
+			}
+			console.warn("[livekit-listener-proof] Media credentials upstream failure", {
+				sessionId,
+				status: upstream.status,
+				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+				diagnostic,
+			})
+		}
 		return NextResponse.json(
 			{ message: upstream.status === 403 ? "Access denied" : "Media credentials request failed" },
 			{ status: upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502 },
