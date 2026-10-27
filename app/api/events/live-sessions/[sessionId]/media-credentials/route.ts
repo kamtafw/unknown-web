@@ -19,9 +19,9 @@ function safeUpstreamDiagnostic(value: unknown): string {
 		if (typeof candidate !== "string") continue
 		// Never log likely credentials, JWTs, or long opaque values from an upstream error.
 		const redacted = candidate
-			.replace(/Bearer\\s+\\S+/gi, "Bearer [REDACTED]")
-			.replace(/eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]")
-			.replace(/(token|secret|password|authorization)\\s*[:=]\\s*[^,;\\s]+/gi, "$1=[REDACTED]")
+			.replace(/Bearer\s+\\S+/gi, "Bearer [REDACTED]")
+			.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]")
+			.replace(/(token|secret|password|authorization)\s*[:=]\s*[^,;\s]+/gi, "$1=[REDACTED]")
 			.slice(0, 240)
 		safe[field] = redacted
 	}
