@@ -119,3 +119,7 @@ export const MAX_EVENT_REQUEST_BYTES = MAX_TOTAL_UPLOAD_BYTES + 1024 * 1024
 export const EVENT_UPLOAD_TIMEOUT_MS = 120_000
 
 export const PASSCODE_LENGTH = 4
+
+
+/** Keep aligned with package.json; lifecycle session creation requires the actual web client version. */
+export const WEB_APP_VERSION = "0.1.0"
