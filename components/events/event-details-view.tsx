@@ -172,7 +172,9 @@ export function EventDetailsView({
 
 			{full && <EventLiveSessionStatus details={full} />}
 
-			{details.isLive && !isHost && <EventJoinControl eventId={details.id} isLocked={details.isLocked} />}
+			{(details.isLive || full?.liveSessionStatus === "live") && !isHost && (
+				<EventJoinControl eventId={details.id} isLocked={details.isLocked} />
+			)}
 
 			{full ? (
 				full.hosts.length > 0 && (
