@@ -28,6 +28,34 @@ function safeUpstreamDiagnostic(value: unknown): string {
 	return Object.keys(safe).length ? JSON.stringify(safe) : "no safe diagnostic fields"
 }
 
+function describeResponseShape(value: unknown, depth = 0): unknown {
+	if (value === null) return "null"
+	if (Array.isArray(value)) {
+		return {
+			type: "array",
+			length: value.length,
+			...(value.length > 0 && depth < 2 ? { firstItem: describeResponseShape(value[0], depth + 1) } : {}),
+		}
+	}
+	if (typeof value !== "object") return typeof value
+	const body = value as Record<string, unknown>
+	return {
+		type: "object",
+		fields: Object.fromEntries(
+			Object.entries(body).map(([key, fieldValue]) => [
+				key,
+				fieldValue !== null && typeof fieldValue === "object" && depth < 2
+					? describeResponseShape(fieldValue, depth + 1)
+					: fieldValue === null
+						? "null"
+						: Array.isArray(fieldValue)
+							? "array"
+							: typeof fieldValue,
+			]),
+		),
+	}
+}
+
 function credentialsFrom(value: unknown): MediaCredentials | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null
 	const body = value as Record<string, unknown>
@@ -56,7 +84,7 @@ export async function POST(_request: Request, { params }: Ctx) {
 				Authorization: `Bearer ${token}`,
 				Accept: "application/json",
 				"X-Platform": "web",
-				"X-App-Version": "0.1.0",
+				"X-App-Version": "1.0.0",
 			},
 			cache: "no-store",
 		})
@@ -86,7 +114,21 @@ export async function POST(_request: Request, { params }: Ctx) {
 	}
 	let json: unknown
 	try { json = await upstream.json() } catch {
+		if (process.env.NODE_ENV !== "production") {
+			console.warn("[livekit-listener-proof] Media credentials response was not valid JSON", {
+				sessionId,
+				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+			})
+		}
 		return NextResponse.json({ message: "Invalid media credentials response" }, { status: 502 })
+	}
+	if (process.env.NODE_ENV !== "production") {
+		// Log field names and value types only; never log credentials, URLs, or raw response values.
+		console.info("[livekit-listener-proof] Media credentials response shape", {
+			sessionId,
+			status: upstream.status,
+			shape: describeResponseShape(json),
+		})
 	}
 	const credentials = credentialsFrom(json)
 	if (!credentials) return NextResponse.json({ message: "Invalid media credentials response" }, { status: 502 })
