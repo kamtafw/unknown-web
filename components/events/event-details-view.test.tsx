@@ -23,6 +23,10 @@ vi.mock("./event-live-session-status", () => ({
 		<div data-testid="live-status-stub" data-event={p.details.id} data-kind={p.details.kind} />
 	),
 }))
+vi.mock("./event-live-session-controls", () => ({
+	EventLiveSessionControls: (p: { details: { id: string }; isHost: boolean }) =>
+		p.isHost ? <div data-testid="live-controls-stub" data-event={p.details.id} /> : null,
+}))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
 	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => (
