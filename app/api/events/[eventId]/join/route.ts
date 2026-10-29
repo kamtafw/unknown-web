@@ -61,5 +61,19 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     })
   }
 
-  return NextResponse.json(result.json, { status: result.status })
+  const responseBody = result.json
+  if (
+    result.status < 200 ||
+    result.status >= 300 ||
+    !responseBody ||
+    typeof responseBody !== "object" ||
+    Array.isArray(responseBody) ||
+    (responseBody as Record<string, unknown>).success !== true ||
+    !(responseBody as Record<string, unknown>).data ||
+    typeof (responseBody as Record<string, unknown>).data !== "object" ||
+    Array.isArray((responseBody as Record<string, unknown>).data)
+  ) {
+    return envelope(502, "Upstream returned an unexpected join response", "invalid_upstream_response")
+  }
+  return NextResponse.json(responseBody, { status: result.status })
 }
