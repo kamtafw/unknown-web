@@ -1,6 +1,7 @@
 "use client"
 
 import { useJoinEvent } from "@/hooks/events/use-join-event"
+import { EventLiveAudioListener } from "./event-live-audio-listener"
 import { useState } from "react"
 import { secondaryButton } from "./event-list"
 
@@ -12,26 +13,30 @@ export function EventJoinControl({
   isLocked: boolean
 }) {
   const [passcode, setPasscode] = useState("")
-  const [showPasscode, setShowPasscode] = useState(false)
   const [joined, setJoined] = useState(false)
+  const [sessionId, setSessionId] = useState<number | null>(null)
   const { join, isPending, errorMessage, clearError } = useJoinEvent(eventId)
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     clearError()
-    const success = await join(isLocked ? passcode : undefined)
-    if (success) {
+    const result = await join(isLocked ? passcode : undefined)
+    if (result !== false) {
       setPasscode("")
       setJoined(true)
-      setShowPasscode(false)
+      setSessionId(result)
     }
   }
 
   if (joined) {
     return (
-      <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
-        You&apos;ve joined the event. Refreshing your access…
-      </p>
+      <div className="flex flex-col gap-3">
+        <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
+          You&apos;ve joined the event. Your event access is being refreshed.
+        </p>
+        {sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
+        {sessionId === null && <p className="text-[12px] text-muted-foreground">The event was joined, but no live audio session was returned. Refresh the event and try again.</p>}
+      </div>
     )
   }
 
@@ -73,7 +78,6 @@ export function EventJoinControl({
       <button type="submit" disabled={isPending || (isLocked && !/^\d{4}$/.test(passcode))} className={secondaryButton}>
         {isPending ? "Joining…" : "Join event"}
       </button>
-      {showPasscode && <span className="sr-only">Passcode required</span>}
     </form>
   )
 }
