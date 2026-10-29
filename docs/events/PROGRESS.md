@@ -1,9 +1,6 @@
 # Events — progress and reconciliation
 
-**Current record: Phase 2 closeout, 2026-10-22; Pass 3 checkpoint in section G** (after E2-RECONCILE-01). Pass 2 is **implemented and closed out for delivery** at checkpoint `a96887b`;
-by the owner's decision, in-depth verification is deferred to QA or a later session. It is **implemented and owner-smoke-tested, not verified against the live backend**.
-**Next pass: Pass 3** (participation, resources, discussions). Pass 3 and Pass 4 are **not started**. Nothing in this file says the Events experience is complete.
-The sections after "Historical record" are the earlier checkpoint reports, kept for history; where they conflict with this section, this section wins.
+**Current record: updated 2026-10-29.** Passes 1-3 remain governed by their accepted records and deferred decisions below. Pass 4 is active on `feat/events-p4-livekit-listener-proof`; the web join/listener flow was merged there, and the owner reports that the automated checks passed and actual Events-page playback from a mobile-hosted session worked. P4-02 host lifecycle work is in progress on `feat/events-web-host-lifecycle`: the create/start/end BFF routes and host create/end UI are added, but local validation of this new branch is pending. Web Start remains unavailable in the UI until browser publishing has a supported media path. This current record supersedes older statements below that Pass 4 has not started. The historical sections remain for context; where they conflict with this status, this paragraph wins.
 
 ## A. Repository state (verified 2026-10-22)
 
