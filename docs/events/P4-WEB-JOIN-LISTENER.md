@@ -1,6 +1,6 @@
 # Events web join and listener handoff
 
-**Scope:** event admission plus listener-only LiveKit connection, built on the existing Pass 4 listener proof. No microphone publishing, event lifecycle controls, Events Socket.IO integration, or backend changes are included.
+**Scope:** event admission plus listener-only LiveKit connection for a mobile-hosted live event. No microphone publishing, event lifecycle controls, Events Socket.IO integration, or backend changes are included.
 
 ## Implemented on `feat/events-web-join`
 
@@ -8,36 +8,28 @@
 - `eventsApi.joinEvent` calls the BFF and extracts a positive `live_session_id` when the response supplies one.
 - `useJoinEvent` prevents duplicate in-flight submissions and invalidates this account/session's event detail, live-session read, Nearby, and My Events caches after admission. If join omits a session id, it attempts the event-specific live-session read.
 - Event details expose a join control for non-host viewers of live events. Locked events collect the passcode in a password field; the value is sent only in the POST body and is not logged or persisted.
-- The listener component requests media credentials through the existing BFF, lazy-loads `livekit-client`, connects as a listener, subscribes to remote audio tracks, and removes audio elements/disconnects on unmount.
-- The media-credentials BFF remains development-only by design. The event admission control is available in production, but it explicitly does not start the listener there. Enabling production media credentials requires a separate security review of the authenticated media route and its upstream contract.
+- After admission, the production Events component mounts the listener using the returned live session id.
+- The authenticated media-credentials BFF calls the backend-issued `/live/sessions/{id}/media/credentials` endpoint with `X-Platform: web` and `X-App-Version: 0.1.0`. It validates the response, disables caching, and never logs credential values. The backend remains responsible for deciding whether this viewer is admitted.
+- The listener lazy-loads `livekit-client`, connects as a listener, subscribes to remote audio tracks, removes detached audio on unsubscribe/disconnect/unmount, and provides playback retry and connection retry actions.
+- No media token, passcode, or raw credential response is persisted. Credentials are held in memory only for the LiveKit connection.
 
-## Required owner-run checks
+## Owner-run validation
 
 Run from a clean checkout of this branch:
 
 ```bash
-npm test -- --run 'app/api/events/[eventId]/join/route.test.ts'
-npm test -- --run app/api/events/routes-live-session.test.ts
 npx tsc --noEmit
-npx eslint 'app/api/events/[eventId]/join' 'hooks/events/use-join-event.ts' 'components/events/event-join-control.tsx' 'components/events/event-live-audio-listener.tsx' 'components/events/event-details-view.tsx' 'app/api/events/live-sessions/[sessionId]/media-credentials/route.ts'
+npx eslint "app/api/events/[eventId]/join" "app/api/events/live-sessions/[sessionId]/media-credentials" "hooks/events/use-join-event.ts" "components/events/event-join-control.tsx" "components/events/event-live-audio-listener.tsx" "components/events/event-details-view.tsx"
+npx vitest run app/api/events
 git diff --check
 ```
 
-The GitHub API editing environment did not execute these commands. Do not treat this branch as locally validated until they pass. The listener still requires a second participant publishing audio from an authorized mobile-created LiveKit session to verify audible playback end to end.
+The GitHub editing environment did not execute these commands. Do not treat the branch as locally validated until they pass. End-to-end playback should still be confirmed against a mobile-hosted session using the production-equivalent backend configuration.
 
-## Known boundaries
+## Boundaries and follow-up
 
 - Joining the event and obtaining media credentials are separate steps. The backend remains authoritative for eligibility and passcode validation.
-- No LiveKit token, passcode, or raw credentials response values should be logged or persisted.
 - The current listener is receive-only. No microphone permission, publishing, or host controls are implemented.
-- The development media-credentials route returns 404 in production intentionally. Do not remove that guard as part of this change without reviewing production auth, headers, response validation, and token exposure.
-
-## Listener hardening follow-up
-
-- Removed redundant `NODE_ENV !== "production"` comparisons inside the media-credentials route. The route already exits with 404 at the top in production; logging below that guard is development/test-only by control flow. This avoids TypeScript's impossible-comparison diagnostics from the project's generated environment typing.
-- The development listener now detaches and removes audio elements on track unsubscribe, explicit disconnect, unexpected room disconnect, failed connection, and component unmount.
-- Added an explicit retry-playback action for browser autoplay restrictions.
-- The displayed audio count now reflects currently attached audio tracks, not cumulative subscriptions.
-- Connection generation checks continue to prevent stale asynchronous attempts from taking over after disconnect/reconnect.
-
-These changes have been pushed but are not locally validated yet. Run TypeScript, ESLint, and the Events API tests after updating your checkout. Also manually test: connect → receive audio → disconnect; connect → receive audio → navigate away; host ends/disconnects; autoplay blocked → retry; reconnect to another session. Confirm no audio continues after disconnect or navigation.
+- The BFF returns only the fields needed to connect; the browser necessarily receives the backend-issued LiveKit token to establish the media connection. Token expiry and authorization are backend responsibilities.
+- The listener currently targets the LiveKit credential response shape. If the backend chooses P2P for `X-Platform: web`, that platform selection needs to be aligned with the intended web media provider before broad rollout.
+- Keep the current scope focused on a reliable listener experience before adding publishing or host controls.
