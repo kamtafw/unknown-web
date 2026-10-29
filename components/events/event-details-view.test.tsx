@@ -1,5 +1,6 @@
 import type { EventFullDetails, EventPreviewDetails } from "@/types/events/api"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
@@ -74,9 +75,20 @@ const preview: EventPreviewDetails = {
 }
 const noop = () => {}
 
+function renderWithQueryClient(ui: React.ReactElement) {
+	const queryClient = new QueryClient({
+		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+	})
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		),
+	})
+}
+
 describe("EventDetailsView", () => {
 	it("full: shows schedule, address, tags, hosts and indicators, but not links or documents (Pass 3)", () => {
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		renderWithQueryClient(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
 		expect(screen.getByRole("heading", { name: "Jazz night" })).toBeInTheDocument()
 		expect(screen.getByText("Amuwo, Lagos")).toBeInTheDocument()
 		expect(screen.getByText("#music")).toBeInTheDocument()
@@ -87,7 +99,7 @@ describe("EventDetailsView", () => {
 	})
 
 	it("preview: says details are hidden and shows no hosts, no resources, no host controls", () => {
-		render(<EventDetailsView details={preview} isHost onEdit={noop} onDeleted={noop} />)
+		renderWithQueryClient(<EventDetailsView details={preview} isHost onEdit={noop} onDeleted={noop} />)
 		expect(screen.getByRole("note")).toHaveTextContent(/details are hidden/i)
 		expect(screen.queryByText("Hosted by")).not.toBeInTheDocument()
 		// even if a caller wrongly passed isHost, a preview never offers edit or delete
@@ -96,7 +108,7 @@ describe("EventDetailsView", () => {
 	})
 
 	it("P4-01: a full event shows the live-session status line; a restricted preview does not mount it", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.getByTestId("live-status-stub")).toHaveAttribute("data-kind", "full")
@@ -105,7 +117,7 @@ describe("EventDetailsView", () => {
 	})
 
 	it("P4-01: the live-session status stays mounted on the other sections (Details stays mounted)", () => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={full}
 				isHost={false}
@@ -118,7 +130,7 @@ describe("EventDetailsView", () => {
 	})
 
 	it("both shapes offer RSVP", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
@@ -127,7 +139,7 @@ describe("EventDetailsView", () => {
 	})
 
 	it("host controls only for a host of a full event", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
@@ -142,7 +154,7 @@ describe("EventDetailsView", () => {
 		["the event is live", { isLive: true }],
 		["its session is live", { liveSessionStatus: "live" as const }],
 	])("blocks delete when %s, and offers no join control", (_n, over) => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView details={{ ...full, ...over }} isHost onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.getByTestId("delete")).toHaveAttribute("data-live-blocked", "true")
@@ -156,7 +168,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 		document.getElementById(tab.getAttribute("aria-controls") ?? "")
 
 	it("a full event has an accessible tab list with the four sections, on Details by default", () => {
-		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		renderWithQueryClient(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
 		expect(screen.getByRole("tablist", { name: "Event sections" })).toBeInTheDocument()
 		const tabs = screen.getAllByRole("tab")
 		expect(tabs.map((t) => t.textContent)).toEqual(names)
@@ -167,7 +179,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("every tab controls a real panel, labelled by that tab; only the active one is shown", () => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={full}
 				isHost={false}
@@ -186,7 +198,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("the guests section mounts only while Guests is active, for a full event; inactive panels are empty", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
@@ -219,7 +231,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("the comments section mounts only while Comments is active, for a full event", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
@@ -236,7 +248,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("the Links and docs section shows nothing from the event's own link and document lists (it reads the resources endpoint)", () => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
 		)
 		expect(screen.queryByText("Secret agenda")).not.toBeInTheDocument()
@@ -246,7 +258,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 
 	it("choosing a tab reports it; choosing the current tab does not re-report", () => {
 		const onTabChange = vi.fn()
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={full}
 				isHost={false}
@@ -264,7 +276,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 
 	it("arrow keys move between tabs (keyboard operable)", async () => {
 		const onTabChange = vi.fn()
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={full}
 				isHost={false}
@@ -281,7 +293,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("roving focus: once a tab is focused, only it is in the tab order", async () => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={full}
 				isHost={false}
@@ -299,7 +311,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("switching sections keeps the Details content mounted (RSVP state survives)", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
 		)
 		const rsvp = screen.getByLabelText("rsvp-stub")
@@ -319,7 +331,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("host controls stay above the sections and appear on every section", () => {
-		render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="guests" />)
+		renderWithQueryClient(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="guests" />)
 		expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument()
 		expect(screen.getByTestId("delete")).toBeInTheDocument()
 		expect(screen.getByRole("button", { name: "Edit" }).closest("[role=tabpanel]")).toBeNull()
@@ -328,7 +340,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	it.each(["comments", "resources", "guests"] as const)(
 		"a restricted preview has no sections and cannot reach %s by tab",
 		(tab) => {
-			render(
+			renderWithQueryClient(
 				<EventDetailsView
 					details={preview}
 					isHost={false}
@@ -348,7 +360,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	)
 
 	it("the resources section mounts only while Links and docs is active, for a full event", () => {
-		const { rerender } = render(
+		const { rerender } = renderWithQueryClient(
 			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
 		)
 		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
@@ -361,7 +373,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 	})
 
 	it("a restricted preview never mounts the resources section, even with tab=resources", () => {
-		render(
+		renderWithQueryClient(
 			<EventDetailsView
 				details={preview}
 				isHost={false}
