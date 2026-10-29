@@ -166,10 +166,31 @@ export async function fetchSanitizedPost(
 }
 
 /**
- * Reads a small JSON request body under the generic JSON size guard (the one create/update use).
- * Too large is a request-size error (413 `request_too_large`), never a content rule; not JSON is a
- * 400 and a non-JSON content type a 415. Nothing about the content is logged.
+ * Authenticated POST without a request body. Optional headers are reserved for documented
+ * platform/version metadata; callers cannot supply an arbitrary URL or authorization header.
  */
+export async function fetchSanitizedPostNoBody(
+	url: string,
+	accessToken: string,
+	sanitize: (json: unknown) => unknown | null,
+	extraHeaders: Record<string, string> = {},
+): Promise<NextResponse> {
+	return fetchSanitized(
+		url,
+		{
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/json",
+				...extraHeaders,
+			},
+			cache: "no-store",
+		},
+		sanitize,
+	)
+}
+
+/** Reads a small JSON request body under the generic JSON size guard (the one create/update use). */
 export async function readJsonBody(
 	req: NextRequest,
 ): Promise<{ ok: true; value: unknown } | { ok: false; response: NextResponse }> {
