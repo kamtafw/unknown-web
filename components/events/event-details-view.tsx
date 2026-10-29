@@ -170,9 +170,6 @@ export function EventDetailsView({
 				</p>
 			)}
 
-			{full && <EventLiveSessionStatus details={full} />}
-			{full && <EventLiveSessionControls details={full} isHost={isHost} />}
-
 			{(details.isLive || full?.liveSessionStatus === "live") && !isHost && (
 				<EventJoinControl eventId={details.id} isLocked={details.isLocked} />
 			)}
@@ -247,6 +244,9 @@ export function EventDetailsView({
 					</div>
 				)}
 			</header>
+
+			{full && <EventLiveSessionStatus details={full} />}
+			{full && <EventLiveSessionControls details={full} isHost={isHost} />}
 
 			{full ? (
 				<Tabs.Root
