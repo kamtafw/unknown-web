@@ -58,12 +58,16 @@ function describeResponseShape(value: unknown, depth = 0): unknown {
 
 function credentialsFrom(value: unknown): MediaCredentials | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null
-	const body = value as Record<string, unknown>
-	if (typeof body.server_url !== "string" || !/^wss?:\/\//i.test(body.server_url) ||
-		typeof body.token !== "string" || !body.token ||
-		typeof body.room !== "string" || !body.room ||
-		typeof body.identity !== "string" || !body.identity) return null
-	return { server_url: body.server_url, token: body.token, room: body.room, identity: body.identity }
+	const envelope = value as Record<string, unknown>
+	if (envelope.success !== true || !envelope.data || typeof envelope.data !== "object" || Array.isArray(envelope.data)) {
+		return null
+	}
+	const data = envelope.data as Record<string, unknown>
+	if (typeof data.server_url !== "string" || !/^wss?:\/\//i.test(data.server_url) ||
+		typeof data.token !== "string" || !data.token ||
+		typeof data.room !== "string" || !data.room ||
+		typeof data.identity !== "string" || !data.identity) return null
+	return { server_url: data.server_url, token: data.token, room: data.room, identity: data.identity }
 }
 
 /** Development-only bridge for an authenticated listener proof; never create or join a session here. */
