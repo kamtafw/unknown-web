@@ -12,6 +12,7 @@ import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
 import { EventJoinControl } from "./event-join-control"
 import { EventLiveSessionStatus } from "./event-live-session-status"
+import { EventLiveSessionControls } from "./event-live-session-controls"
 import { secondaryButton } from "./event-list"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
@@ -104,8 +105,7 @@ function HostRow({ host }: { host: EventHost }) {
  * held in the URL by the caller (A-16). Details, Links and docs (P3-04), Comments (P3-05, P3-06)
  * and Guests (P3-07, read-only) each have their own content, fetched only while that section is
  * active. A restricted preview has no sections and ignores `tab`, so a
- * link with `&tab=` cannot reach one. Joining is a later pass, so a live event only gets a "Live
- * now" mark and a note. Host controls are shown by a UUID match and the server stays authoritative.
+ * link with `&tab=` cannot reach one. Live-session host controls are separate from event edit/delete controls. The backend remains authoritative for every lifecycle mutation.
  */
 export function EventDetailsView({
 	details,
@@ -171,6 +171,7 @@ export function EventDetailsView({
 			)}
 
 			{full && <EventLiveSessionStatus details={full} />}
+			{full && <EventLiveSessionControls details={full} isHost={isHost} />}
 
 			{(details.isLive || full?.liveSessionStatus === "live") && !isHost && (
 				<EventJoinControl eventId={details.id} isLocked={details.isLocked} />
