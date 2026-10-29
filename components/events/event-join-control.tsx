@@ -34,9 +34,9 @@ export function EventJoinControl({
         <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
           You&apos;ve joined the event. Your event access is being refreshed.
         </p>
-        {sessionId !== null && process.env.NODE_ENV !== "production" && <EventLiveAudioListener sessionId={sessionId} />}
-        {sessionId === null && <p className="text-[12px] text-muted-foreground">The event was joined, but no live audio session was returned. Refresh the event and try again.</p>}
-        {sessionId !== null && process.env.NODE_ENV === "production" && <p className="text-[12px] text-muted-foreground">You are admitted. Live audio playback is still in development verification.</p>}
+        {sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
+        {sessionId === null && <p className="text-[12px] text-muted-foreground">You were admitted, but the live audio session could not be found. Refresh the event and try again.</p>}
+        
       </div>
     )
   }
