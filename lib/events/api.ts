@@ -265,4 +265,19 @@ export const eventsApi = {
 		}
 		return state
 	},
+
+	/** Create a waiting live session for this event (host only; no request body). */
+	createEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session`, undefined, { signal })
+	},
+
+	/** Start is not idempotent. The UI keeps this unavailable until web publishing is supported. */
+	startEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session/start`, undefined, { signal })
+	},
+
+	/** End a waiting or live session (host only; no request body). */
+	endEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session/end`, undefined, { signal })
+	},
 }
