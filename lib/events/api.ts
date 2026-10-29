@@ -207,8 +207,17 @@ export const eventsApi = {
 	},
 
 	/** Join an event before requesting media credentials. Passcodes remain write-only. */
-	joinEvent: async (eventId: string, passcode?: string): Promise<void> => {
-		await apiClient.post(`${eventPath(eventId)}/join`, passcode === undefined ? {} : { passcode })
+	joinEvent: async (eventId: string, passcode?: string): Promise<number | null> => {
+		const res = await apiClient.post<ApiResponse<unknown>>(
+			`${eventPath(eventId)}/join`,
+			passcode === undefined ? {} : { passcode },
+		)
+		const data = res.data.data
+		if (!data || typeof data !== "object" || Array.isArray(data)) return null
+		const sessionId = (data as Record<string, unknown>).live_session_id
+		return typeof sessionId === "number" && Number.isSafeInteger(sessionId) && sessionId > 0
+			? sessionId
+			: null
 	},
 
 	/**
