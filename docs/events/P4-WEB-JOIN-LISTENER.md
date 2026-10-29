@@ -31,3 +31,13 @@ The GitHub API editing environment did not execute these commands. Do not treat 
 - No LiveKit token, passcode, or raw credentials response values should be logged or persisted.
 - The current listener is receive-only. No microphone permission, publishing, or host controls are implemented.
 - The development media-credentials route returns 404 in production intentionally. Do not remove that guard as part of this change without reviewing production auth, headers, response validation, and token exposure.
+
+## Listener hardening follow-up
+
+- Removed redundant `NODE_ENV !== "production"` comparisons inside the media-credentials route. The route already exits with 404 at the top in production; logging below that guard is development/test-only by control flow. This avoids TypeScript's impossible-comparison diagnostics from the project's generated environment typing.
+- The development listener now detaches and removes audio elements on track unsubscribe, explicit disconnect, unexpected room disconnect, failed connection, and component unmount.
+- Added an explicit retry-playback action for browser autoplay restrictions.
+- The displayed audio count now reflects currently attached audio tracks, not cumulative subscriptions.
+- Connection generation checks continue to prevent stale asynchronous attempts from taking over after disconnect/reconnect.
+
+These changes have been pushed but are not locally validated yet. Run TypeScript, ESLint, and the Events API tests after updating your checkout. Also manually test: connect → receive audio → disconnect; connect → receive audio → navigate away; host ends/disconnects; autoplay blocked → retry; reconnect to another session. Confirm no audio continues after disconnect or navigation.
