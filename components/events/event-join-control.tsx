@@ -32,11 +32,10 @@ export function EventJoinControl({
     return (
       <div className="flex flex-col gap-3">
         <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
-          You&apos;ve joined the event. Your event access is being refreshed.
+          You&apos;ve joined the event. Connecting to live audio…
         </p>
         {sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
         {sessionId === null && <p className="text-[12px] text-muted-foreground">You were admitted, but the live audio session could not be found. Refresh the event and try again.</p>}
-        
       </div>
     )
   }
