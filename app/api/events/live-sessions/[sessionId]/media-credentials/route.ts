@@ -127,7 +127,7 @@ export async function POST(_request: Request, { params }: Ctx) {
 		console.info("[livekit-listener-proof] Media credentials response shape", {
 			sessionId,
 			status: upstream.status,
-			shape: describeResponseShape(json),
+			shape: JSON.stringify(describeResponseShape(json)),
 		})
 	}
 	const credentials = credentialsFrom(json)
