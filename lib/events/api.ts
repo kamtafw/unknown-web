@@ -206,6 +206,20 @@ export const eventsApi = {
 		await apiClient.post(`${eventPath(eventId)}/comments`, { message: message.trim() }, { signal })
 	},
 
+	/** Join an event before requesting media credentials. Passcodes remain write-only. */
+	joinEvent: async (eventId: string, passcode?: string): Promise<number | null> => {
+		const res = await apiClient.post<ApiResponse<unknown>>(
+			`${eventPath(eventId)}/join`,
+			passcode === undefined ? {} : { passcode },
+		)
+		const data = res.data.data
+		if (!data || typeof data !== "object" || Array.isArray(data)) return null
+		const sessionId = (data as Record<string, unknown>).live_session_id
+		return typeof sessionId === "number" && Number.isSafeInteger(sessionId) && sessionId > 0
+			? sessionId
+			: null
+	},
+
 	/**
 	 * Removes a guest record (host only; the backend decides). `userId` is the guest's numeric
 	 * `pkid`. Success is a 200 with no data. The backend also deletes that guest's comments in this

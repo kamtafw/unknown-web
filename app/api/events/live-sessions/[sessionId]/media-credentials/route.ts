@@ -70,11 +70,8 @@ function credentialsFrom(value: unknown): MediaCredentials | null {
 	return { server_url: data.server_url, token: data.token, room: data.room, identity: data.identity }
 }
 
-/** Development-only bridge for an authenticated listener proof; never create or join a session here. */
+/** Authenticated bridge to the backend-issued media credentials; never create or join a session here. */
 export async function POST(_request: Request, { params }: Ctx) {
-	if (process.env.NODE_ENV === "production") {
-		return NextResponse.json({ message: "Not found" }, { status: 404 })
-	}
 	const token = await getAccessToken()
 	if (!token) return NextResponse.json({ message: "Not authenticated" }, { status: 401 })
 	const { sessionId } = await params
@@ -88,7 +85,7 @@ export async function POST(_request: Request, { params }: Ctx) {
 				Authorization: `Bearer ${token}`,
 				Accept: "application/json",
 				"X-Platform": "web",
-				"X-App-Version": "1.0.0",
+				"X-App-Version": "0.1.0",
 			},
 			cache: "no-store",
 		})
@@ -96,20 +93,18 @@ export async function POST(_request: Request, { params }: Ctx) {
 		return NextResponse.json({ message: "Unable to retrieve media credentials" }, { status: 502 })
 	}
 	if (!upstream.ok) {
-		if (process.env.NODE_ENV !== "production") {
-			let diagnostic = "unreadable error response"
-			try {
-				const body: unknown = await upstream.clone().json()
-				diagnostic = safeUpstreamDiagnostic(body)
-			} catch {
-				// Do not log raw upstream text; it may contain sensitive data.
-			}
-			console.warn("[livekit-listener-proof] Media credentials upstream failure", {
-				sessionId,
-				status: upstream.status,
-				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
-				diagnostic,
-			})
+		let diagnostic = "unreadable error response"
+		try {
+			const body: unknown = await upstream.clone().json()
+			diagnostic = safeUpstreamDiagnostic(body)
+		} catch {
+			// Do not log raw upstream text; it may contain sensitive data.
+		}
+		if (process.env.NODE_ENV !== "production") console.warn("[events-media-credentials] Upstream failure", {
+			sessionId,
+			status: upstream.status,
+			contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+			diagnostic,
 		}
 		return NextResponse.json(
 			{ message: upstream.status === 403 ? "Access denied" : "Media credentials request failed" },
@@ -118,17 +113,15 @@ export async function POST(_request: Request, { params }: Ctx) {
 	}
 	let json: unknown
 	try { json = await upstream.json() } catch {
-		if (process.env.NODE_ENV !== "production") {
-			console.warn("[livekit-listener-proof] Media credentials response was not valid JSON", {
-				sessionId,
-				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
-			})
-		}
+		if (process.env.NODE_ENV !== "production") console.warn("[events-media-credentials] Response was not valid JSON", {
+			sessionId,
+			contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+		})
 		return NextResponse.json({ message: "Invalid media credentials response" }, { status: 502 })
 	}
+	// Development diagnostics expose response shape only, never credential values.
 	if (process.env.NODE_ENV !== "production") {
-		// Log field names and value types only; never log credentials, URLs, or raw response values.
-		console.info("[livekit-listener-proof] Media credentials response shape", {
+		console.info("[events-media-credentials] Response shape", {
 			sessionId,
 			status: upstream.status,
 			shape: JSON.stringify(describeResponseShape(json)),

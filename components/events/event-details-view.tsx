@@ -10,6 +10,7 @@ import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
+import { EventJoinControl } from "./event-join-control"
 import { EventLiveSessionStatus } from "./event-live-session-status"
 import { secondaryButton } from "./event-list"
 import { EventResourcesSection } from "./event-resources-section"
@@ -165,11 +166,15 @@ export function EventDetailsView({
 
 			{details.isLive && (
 				<p className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-					This event is live. Joining live events isn&apos;t available in the web app yet.
+					This event is live. Join to request access to live audio.
 				</p>
 			)}
 
 			{full && <EventLiveSessionStatus details={full} />}
+
+			{(details.isLive || full?.liveSessionStatus === "live") && !isHost && (
+				<EventJoinControl eventId={details.id} isLocked={details.isLocked} />
+			)}
 
 			{full ? (
 				full.hosts.length > 0 && (
