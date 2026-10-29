@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import type { Room as LiveKitRoom, Track as LiveKitTrack } from "livekit-client"
+import type { Room as LiveKitRoom } from "livekit-client"
 
 type ListenerStatus = "connecting" | "connected" | "disconnected" | "error"
 
@@ -68,7 +68,7 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
         room = new Room({ adaptiveStream: true, dynacast: false })
         roomRef.current = room
 
-        room.on(RoomEvent.TrackSubscribed, (track: LiveKitTrack, _publication, participant) => {
+        room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
           if (cancelled || current !== generation.current || track.kind !== Track.Kind.Audio) return
           const key = `${participant.identity}:${track.sid}`
           removeAudio(key)
