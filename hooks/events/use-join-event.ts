@@ -19,13 +19,20 @@ export function useJoinEvent(eventId: string) {
   })
   const { mutateAsync, reset } = mutation
 
-  async function join(passcode?: string): Promise<boolean> {
+  async function join(passcode?: string): Promise<number | null | false> {
     if (inFlight.current) return false
     if (passcode !== undefined && !/^\d{4}$/.test(passcode)) return false
     inFlight.current = true
     try {
-      await mutateAsync(passcode)
+      let sessionId = await mutateAsync(passcode)
       reset()
+      if (sessionId === null) {
+        try {
+          sessionId = (await eventsApi.getEventLiveSession(eventId)).session.id
+        } catch {
+          // Admission may succeed while the attached-session read is briefly unavailable.
+        }
+      }
       if (accountId !== null) {
         const belongsToSession = (query: { queryKey: readonly unknown[] }) =>
           query.queryKey[2] === accountId && query.queryKey[3] === sessionGeneration
@@ -39,7 +46,7 @@ export function useJoinEvent(eventId: string) {
           }),
         ])
       }
-      return true
+      return sessionId
     } catch {
       return false
     } finally {
