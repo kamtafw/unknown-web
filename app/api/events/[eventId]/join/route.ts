@@ -61,6 +61,12 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     })
   }
 
+  // Admission failures are expected domain responses (for example, an incorrect passcode),
+  // not malformed success responses. Preserve the backend status and error envelope.
+  if (result.status >= 400) {
+    return NextResponse.json(result.json, { status: result.status })
+  }
+
   const responseBody = result.json
   if (
     result.status < 200 ||
