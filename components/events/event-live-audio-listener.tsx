@@ -90,7 +90,7 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
           setMessage("Audio received. You're listening live.")
         })
 
-        room.on(RoomEvent.TrackUnsubscribed, (track: LiveKitTrack, _publication, participant) => {
+        room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
           if (cancelled || current !== generation.current || track.kind !== Track.Kind.Audio) return
           const key = `${participant.identity}:${track.sid}`
           track.detach().forEach((element) => element.remove())
