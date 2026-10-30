@@ -175,6 +175,26 @@ describe("EventsSocketManager", () => {
     expect(onReconnect).toHaveBeenCalledTimes(1)
   })
 
+  it("reconciles when the first successful connection follows a retry attempt", async () => {
+    const onReconnect = vi.fn()
+    const manager = new EventsSocketManager({
+      authProvider: { getAuth: vi.fn().mockResolvedValue({ token: "x" }) },
+      onReconnect,
+    })
+    const connecting = manager.connect()
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
+    const socket = socketHarness.sockets[0]
+    const failure = new Error("temporary connection failure")
+    socket.trigger("connect_error", failure)
+    await expect(connecting).rejects.toBe(failure)
+
+    socket.io.trigger("reconnect_attempt")
+    socket.connected = true
+    socket.trigger("connect")
+
+    expect(onReconnect).toHaveBeenCalledTimes(1)
+  })
+
   it("attaches listeners registered before connect and supports unsubscribe", async () => {
     const manager = new EventsSocketManager({
       authProvider: { getAuth: vi.fn().mockResolvedValue({ token: "x" }) },
