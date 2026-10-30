@@ -260,6 +260,28 @@ describe("EventsSocketManager", () => {
     await expect(manager.joinRoom(roomDescriptor(58), vi.fn().mockResolvedValue(true))).rejects.toThrow("not connected")
   })
 
+  it("revokes local room membership when live:error reports live_room_unauthorized", async () => {
+    const onRoomError = vi.fn()
+    const { manager, socket } = await connectManager({ onRoomError })
+    const joined = manager.joinRoom(roomDescriptor(66), vi.fn().mockResolvedValue(true))
+    await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
+    socket.acknowledgeNext({ ok: true, sessionId: 66 })
+    await joined
+    expect(manager.getRoomStatus(66)).toBe("joined")
+
+    socket.trigger("live:error", {
+      event: "live:join",
+      code: "live_room_unauthorized",
+      sessionId: 66,
+    })
+
+    expect(manager.getRoomStatus(66)).toBe("not_admitted")
+    expect(onRoomError).toHaveBeenCalledWith(
+      66,
+      expect.objectContaining({ code: "live_room_unauthorized", sessionId: 66 }),
+    )
+  })
+
   it("leaves the socket room without invoking event leave", async () => {
     const { manager, socket } = await connectManager()
     const joined = manager.joinRoom(roomDescriptor(59), vi.fn().mockResolvedValue(true))
