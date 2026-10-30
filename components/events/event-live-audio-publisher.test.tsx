@@ -94,6 +94,18 @@ function renderPublisher() {
 	)
 }
 
+function renderWaitingPublisher(onStart: () => Promise<boolean>) {
+	const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+	useAuthStore.setState({ user: { pkid: 42 } as never, isAuthenticated: true, sessionGeneration: 1 })
+	return render(
+		<QueryClientProvider client={queryClient}>
+			<EventsSocketProvider>
+				<EventLiveAudioPublisher sessionId={71} sessionStatus="waiting" onStart={onStart} />
+			</EventsSocketProvider>
+		</QueryClientProvider>,
+	)
+}
+
 describe("EventLiveAudioPublisher", () => {
 	it("toggles the published microphone off to mute and back on to unmute", async () => {
 		renderPublisher()
@@ -119,6 +131,25 @@ describe("EventLiveAudioPublisher", () => {
 		})
 		expect(mocks.room.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(true)
 	})
+	it("does not start publishing if the session ends while the host start request is pending", async () => {
+		let resolveStart!: (started: boolean) => void
+		const onStart = vi.fn(() => new Promise<boolean>((resolve) => { resolveStart = resolve }))
+		renderWaitingPublisher(onStart)
+		fireEvent.click(screen.getByRole("button", { name: "Start session and go live" }))
+		await waitFor(() => expect(onStart).toHaveBeenCalledTimes(1))
+
+		socketHarness.instances[0].trigger("live:session:ended", {
+			session_id: 71,
+			ended_at: "2026-10-30T09:00:00Z",
+		})
+		resolveStart(true)
+
+		await waitFor(() => {
+			expect(screen.getByText("The live session has ended.")).toBeInTheDocument()
+		})
+		expect(fetch).not.toHaveBeenCalled()
+	})
+
 	it("disconnects host media immediately when the server ends the session", async () => {
 		renderPublisher()
 		fireEvent.click(screen.getByRole("button", { name: "Connect microphone" }))
