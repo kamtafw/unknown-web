@@ -41,7 +41,7 @@ Tests: `lib/events/live-participant-socket-events.test.ts`, plus the existing `l
 
 ## P4-07D — Participant roster UI
 
-Added `components/events/event-live-participants-section.tsx`, mounted by `EventLiveSessionStatus` only after the canonical session read succeeds and reports `live`.
+Added `components/events/event-live-participants-section.tsx`, mounted by `EventLiveSessionStatus` only after the canonical session read succeeds and reports `live`. The section uses `hooks/events/use-event-live-room.ts` to join the session room only when the read confirms `is_joined` and supplies the exact validated `/live` + `live:join` descriptor; it uses the existing `createEventRoomRevalidator` for reconnect authorization. Temporary transport status changes do not tear down room intent.
 
 The read-only roster:
 - Shows the backend's canonical session participant count, not a page-derived count.
@@ -53,7 +53,7 @@ The read-only roster:
 
 No moderation actions, guest management, media controls, personal-room behavior or new backend fields were added.
 
-Tests: `components/events/event-live-participants-section.test.tsx` and updated `components/events/event-live-session-status.test.tsx`.
+Tests: `components/events/event-live-participants-section.test.tsx`, `hooks/events/use-event-live-room.test.tsx`, and updated `components/events/event-live-session-status.test.tsx` and `components/events/events-socket-provider.test.tsx`.
 
 ## Verification and limits
 
