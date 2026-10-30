@@ -63,7 +63,7 @@ describe("EventsSocketProvider", () => {
     renderProvider()
     expect(harness.instances).toHaveLength(1)
     expect(harness.instances[0].connect).toHaveBeenCalledTimes(1)
-    expect(harness.instances[0].on).toHaveBeenCalledTimes(4)
+    expect(harness.instances[0].on).toHaveBeenCalledTimes(6)
     expect(
       harness.instances[0].on.mock.invocationCallOrder.every(
         (order: number) => order < harness.instances[0].connect.mock.invocationCallOrder[0],
@@ -78,7 +78,7 @@ describe("EventsSocketProvider", () => {
     act(() => authenticated(84, 2))
     rerenderProvider()
     expect(previous.disconnect).toHaveBeenCalledTimes(1)
-    expect(harness.unsubscribers.slice(0, 4).every((unsubscribe) => unsubscribe.mock.calls.length === 1)).toBe(true)
+    expect(harness.unsubscribers.slice(0, 6).every((unsubscribe) => unsubscribe.mock.calls.length === 1)).toBe(true)
     expect(harness.instances).toHaveLength(2)
   })
 
