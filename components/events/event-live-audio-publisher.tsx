@@ -76,7 +76,7 @@ export function EventLiveAudioPublisher({
 				: "Connect your microphone to broadcast.",
 		)
 		setHasStarted(sessionStatus === "live")
-	}, [sessionId])
+	}, [sessionId, sessionStatus])
 
 	useEffect(() => {
 		if (sessionStatus === "live") setHasStarted(true)
