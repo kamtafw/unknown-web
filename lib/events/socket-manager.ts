@@ -87,7 +87,8 @@ export class EventsSocketManager {
   getRoomStatus(sessionId: number): EventsRoomStatus { return this.roomStatuses.get(sessionId) ?? "idle" }
 
   private setRoomStatus(sessionId: number, status: EventsRoomStatus, error?: string): void {
-    this.roomStatuses.set(sessionId, status)
+    if (status === "idle") this.roomStatuses.delete(sessionId)
+    else this.roomStatuses.set(sessionId, status)
     this.onRoomStatusChange?.(sessionId, status, error)
   }
 
