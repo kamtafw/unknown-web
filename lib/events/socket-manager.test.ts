@@ -174,11 +174,15 @@ describe("EventsSocketManager", () => {
     await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
 
+    // Attach the rejection assertion before triggering connect_error so Vitest
+    // observes the expected rejection immediately rather than reporting it as
+    // an unhandled rejection while the auth-refresh assertion is pending.
+    const connectionFailure = expect(connecting).rejects.toThrow("expired")
     socket.trigger("connect_error", new Error("expired"))
     await vi.waitFor(() => {
       expect(socket.auth).toEqual({ token: "refreshed" })
     })
-    await expect(connecting).rejects.toThrow("expired")
+    await connectionFailure
     expect(manager.getStatus()).toBe("error")
   })
 
@@ -198,7 +202,7 @@ describe("EventsSocketManager", () => {
     manager.disconnect()
     expect(socket.disconnected).toBe(true)
     expect(manager.getStatus()).toBe("disconnected")
-    expect(onStatusChange).toHaveBeenLastCalledWith("disconnected")
+    expect(onStatusChange).toHaveBeenLastCalledWith("disconnected", undefined)
     expect(manager.emit("live:join", {})).toBe(false)
   })
 
