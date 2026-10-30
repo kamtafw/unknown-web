@@ -96,6 +96,7 @@ describe("EventsSocketManager", () => {
 
     const connecting = manager.connect()
     expect(manager.getStatus()).toBe("connecting")
+    await vi.waitFor(() => expect(socketHarness.io).toHaveBeenCalled())
     expect(socketHarness.io).toHaveBeenCalledWith(
       "https://events.example.test",
       expect.objectContaining({
@@ -106,6 +107,7 @@ describe("EventsSocketManager", () => {
       }),
     )
 
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
