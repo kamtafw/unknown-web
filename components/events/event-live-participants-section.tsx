@@ -93,9 +93,10 @@ export function EventLiveParticipantsSection({ liveState }: { liveState: EventLi
       )}
 
       {query.error && query.hasLoaded && (
-        <p role="alert" className="text-[11px] text-muted-foreground">
-          The roster could not be refreshed. Previously loaded participants are still shown.
-        </p>
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+          <span>The roster could not be refreshed. Previously loaded participants are still shown.</span>
+          <RetryButton onClick={() => void query.refetch()} />
+        </div>
       )}
 
       {query.hasNextPage && (
