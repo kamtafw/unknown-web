@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import type { Room as LiveKitRoom } from "livekit-client"
 import { useEventsSocket } from "./events-socket-provider"
 
-type PublisherStatus = "idle" | "connecting" | "publishing" | "muted" | "error"
+type PublisherStatus = "idle" | "connecting" | "publishing" | "muted" | "error" | "ended"
 
 type Credentials = {
 	server_url: string
@@ -91,7 +91,7 @@ export function EventLiveAudioPublisher({
 			const room = roomRef.current
 			roomRef.current = null
 			setIsBusy(false)
-			setStatus("idle")
+			setStatus("ended")
 			setMessage(message)
 			if (room) void room.disconnect()
 		}
@@ -214,7 +214,7 @@ export function EventLiveAudioPublisher({
 			</div>
 			<p role="status" aria-live="polite" className="text-[12px] leading-relaxed text-muted-foreground">{message}</p>
 			<div className="flex flex-wrap gap-2">
-				{status === "publishing" || status === "muted" ? (
+				{status === "ended" ? null : status === "publishing" || status === "muted" ? (
 					<>
 						<button type="button" onClick={() => void toggleMicrophone()} disabled={isBusy} className="rounded-full border border-border px-3 py-2 text-[12px] font-medium text-foreground disabled:opacity-60">
 							{status === "muted" ? "Unmute microphone" : "Mute microphone"}
