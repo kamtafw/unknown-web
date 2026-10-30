@@ -17,6 +17,14 @@ const credentials = {
     token: "issued-livekit-token",
     room: "event-room-72",
     identity: "viewer-9",
+    permissions: {
+      can_subscribe: true,
+      can_publish_microphone: true,
+      can_publish_screen_share: false,
+      can_publish_camera: false,
+      can_publish_data: false,
+      room_admin: true,
+    },
   },
 }
 const reply = (body: unknown, status = 200) =>
@@ -78,7 +86,10 @@ describe("POST /api/events/live-sessions/[sessionId]/media-credentials", () => {
   it("rejects incomplete or malformed credential responses", async () => {
     fetchMock.mockResolvedValue(reply({
       success: true,
-      data: { server_url: "wss://media.example.test", token: "", room: "room", identity: "viewer" },
+      data: {
+        server_url: "wss://media.example.test", token: "token", room: "room", identity: "viewer",
+        permissions: { can_subscribe: true, can_publish_microphone: true },
+      },
     }))
     const response = await POST(request(), ctx())
     expect(response.status).toBe(502)

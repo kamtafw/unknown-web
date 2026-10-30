@@ -1,6 +1,6 @@
 # Events — progress and reconciliation
 
-**Current record: updated 2026-10-29.** Passes 1-3 remain governed by their accepted records and deferred decisions below. Pass 4 is active on `feat/events-p4-livekit-listener-proof`; the web join/listener flow was merged there, and the owner reports that the automated checks passed and actual Events-page playback from a mobile-hosted session worked. P4-02 host lifecycle work is in progress on `feat/events-web-host-lifecycle`: the create/start/end BFF routes and host create/end UI are added, but local validation of this new branch is pending. Web Start remains unavailable in the UI until browser publishing has a supported media path. This current record supersedes older statements below that Pass 4 has not started. The historical sections remain for context; where they conflict with this status, this paragraph wins.
+**Current record: updated 2026-10-30.** Passes 1-3 remain governed by their accepted records and deferred decisions below. Pass 4 listener work and P4-02 host lifecycle are implemented; PR #27 was merged into the listener integration branch. Browser microphone publishing and host Start integration are in progress on `feat/events-web-microphone-publishing`. The owner confirmed that web-created and web-started sessions can receive LiveKit credentials with `can_publish_microphone: true`. Local validation and real-browser end-to-end audio verification remain pending. This current record supersedes older statements below that Pass 4 has not started. The historical sections remain for context; where they conflict with this status, this paragraph wins.
 
 ## A. Repository state (verified 2026-10-22)
 
@@ -237,3 +237,12 @@ mocked-backend smoke test of create, details, edit and delete, then update `EVEN
 
 ESLint override added: `components/events/form/cover-field.tsx` only (rules already in that block: `set-state-in-effect`, `exhaustive-deps`, `purity` off for the listed files).
 Earlier checkpoint (before this task): lint failed with 10 errors; tsc passed; vitest 63 files / 834 tests passed; build not run.
+
+
+### Pass 4 browser host publishing (2026-10-30)
+
+- Branch: `feat/events-web-microphone-publishing`, based on the merged P4-02 integration commit.
+- Adds a host publisher using the existing LiveKit browser SDK; Start is followed by credentials retrieval and permission-gated microphone publication.
+- Credentials BFF now preserves the backend permission object after strict validation.
+- Owner confirmed the backend supports LiveKit microphone publishing for a host on a web-created and web-started session.
+- **Not yet verified locally or against live media:** focused Vitest, TypeScript, ESLint, and a real web-host-to-second-client audio test are required.
