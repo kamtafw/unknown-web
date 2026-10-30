@@ -568,9 +568,15 @@ const LIVE_PARTICIPANT_USER_KEYS = [
  * invite/scheduling data and arbitrary future fields never cross the BFF boundary.
  */
 export function sanitizeLiveParticipantsPayload(json: unknown): unknown | null {
+	if (
+		!isPlainRecord(json) ||
+		!isPlainRecord(json.data) ||
+		!Array.isArray(json.data.results) ||
+		!json.data.results.every((item) => isPlainRecord(item) && isPlainRecord(item.user))
+	) return null
 	return sanitizePaged(json, (item) => {
 		const row = pick(item, LIVE_PARTICIPANT_KEYS)
-		if (isPlainRecord(item.user)) row.user = pick(item.user, LIVE_PARTICIPANT_USER_KEYS)
+		row.user = pick(item.user, LIVE_PARTICIPANT_USER_KEYS)
 		return row
 	})
 }
