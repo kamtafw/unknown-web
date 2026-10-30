@@ -12,7 +12,7 @@
  * the scope (coordinates, radius, limit, search) is.
  */
 
-import type { Coordinates } from "@/types/events/api"
+import type { Coordinates, LiveParticipantRole } from "@/types/events/api"
 import { roundForKey } from "./location"
 
 export const eventKeys = {
@@ -99,7 +99,7 @@ export const eventKeys = {
 		sessionGeneration: number | null,
 		sessionId: number,
 		limit: number,
-		role: string | null = null,
+		role: LiveParticipantRole | null = null,
 	) =>
 		[
 			...eventKeys.liveParticipantsRoot(),
