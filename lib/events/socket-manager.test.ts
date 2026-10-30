@@ -49,7 +49,7 @@ const socketHarness = vi.hoisted(() => {
       return this
     }
 
-    timeout(_milliseconds: number) {
+    timeout() {
       return {
         emit: (event: string, payload: unknown, acknowledgement: (error: Error | null, response?: unknown) => void) => {
           this.emitted.push({ event, payload })
