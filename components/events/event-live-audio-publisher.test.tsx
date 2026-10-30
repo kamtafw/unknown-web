@@ -54,6 +54,10 @@ describe("EventLiveAudioPublisher", () => {
 	it("toggles the published microphone off to mute and back on to unmute", async () => {
 		render(<EventLiveAudioPublisher sessionId={71} sessionStatus="live" />)
 
+		// The publisher is intentionally idle on mount; the host must explicitly
+		// grant microphone access by choosing Connect microphone.
+		fireEvent.click(screen.getByRole("button", { name: "Connect microphone" }))
+
 		await waitFor(() => {
 			expect(screen.getByText("You are live. Your microphone is broadcasting.")).toBeInTheDocument()
 		})
