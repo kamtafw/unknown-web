@@ -290,7 +290,7 @@ describe("EventsSocketManager", () => {
     const { manager, socket } = await connectManager()
     let resolveRevalidation!: (allowed: boolean) => void
     const revalidate = vi.fn(() => new Promise<boolean>((resolve) => { resolveRevalidation = resolve }))
-    const joined = manager.joinRoom(65, vi.fn().mockResolvedValue(true))
+    const joined = manager.joinRoom(65, revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 65 })
     await joined
@@ -299,11 +299,11 @@ describe("EventsSocketManager", () => {
     socket.trigger("disconnect", "transport close")
     socket.connected = true
     socket.trigger("connect")
-    await vi.waitFor(() => expect(revalidate).not.toHaveBeenCalled())
-    // The stored validator is the one supplied on the successful initial join.
-    // A caller cannot issue a second live:join while it is still resolving.
+    await vi.waitFor(() => expect(revalidate).toHaveBeenCalledTimes(1))
+
+    // A second caller must share the recovery operation, not issue a new join.
     const recovering = manager.joinRoom(65, revalidate)
-    await vi.waitFor(() => expect(socket.emitted.filter((item) => item.event === "live:join")).toHaveLength(1))
+    expect(socket.emitted.filter((item) => item.event === "live:join")).toHaveLength(1)
     resolveRevalidation(true)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 65 })
