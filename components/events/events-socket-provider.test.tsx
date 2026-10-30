@@ -7,7 +7,6 @@ const harness = vi.hoisted(() => ({
 	instances: [] as Array<{
 		connect: ReturnType<typeof vi.fn>
 		disconnect: ReturnType<typeof vi.fn>
-		getStatus: ReturnType<typeof vi.fn>
 	}>,
 }))
 vi.mock("@/lib/events/socket-manager", () => ({
@@ -19,6 +18,9 @@ vi.mock("@/lib/events/socket-manager", () => ({
 			harness.instances.push(this)
 		}
 	},
+}))
+vi.mock("@/lib/events/socket-auth", () => ({
+	eventsSocketAuthProvider: { getAuth: vi.fn().mockResolvedValue({ token: "handshake" }) },
 }))
 
 function Consumer() {
@@ -41,8 +43,7 @@ describe("EventsSocketProvider", () => {
 		useAuthStore.setState({ user: null, isAuthenticated: false, sessionGeneration: 0 }),
 	)
 
-	it("stays inert without a confirmed auth provider", () => {
-		authenticated(42)
+	it("stays inert without an authenticated account", () => {
 		render(
 			<EventsSocketProvider>
 				<Consumer />
@@ -52,12 +53,10 @@ describe("EventsSocketProvider", () => {
 		expect(harness.instances).toHaveLength(0)
 	})
 
-	it("connects once for the authenticated account when an auth provider is supplied", () => {
+	it("connects once for an authenticated account", () => {
 		authenticated(42)
 		render(
-			<EventsSocketProvider
-				authProvider={{ getAuth: vi.fn().mockResolvedValue({ token: "handshake" }) }}
-			>
+			<EventsSocketProvider>
 				<Consumer />
 			</EventsSocketProvider>,
 		)
@@ -66,17 +65,16 @@ describe("EventsSocketProvider", () => {
 	})
 
 	it("disconnects the previous account manager when the account generation changes", () => {
-		const authProvider = { getAuth: vi.fn().mockResolvedValue({ token: "handshake" }) }
 		authenticated(42)
 		const { rerender } = render(
-			<EventsSocketProvider authProvider={authProvider}>
+			<EventsSocketProvider>
 				<Consumer />
 			</EventsSocketProvider>,
 		)
 		const previous = harness.instances[0]
 		act(() => authenticated(84, 2))
 		rerender(
-			<EventsSocketProvider authProvider={authProvider}>
+			<EventsSocketProvider>
 				<Consumer />
 			</EventsSocketProvider>,
 		)
@@ -85,17 +83,16 @@ describe("EventsSocketProvider", () => {
 	})
 
 	it("disconnects on logout", () => {
-		const authProvider = { getAuth: vi.fn().mockResolvedValue({ token: "handshake" }) }
 		authenticated(42)
 		const { rerender } = render(
-			<EventsSocketProvider authProvider={authProvider}>
+			<EventsSocketProvider>
 				<Consumer />
 			</EventsSocketProvider>,
 		)
 		const manager = harness.instances[0]
 		act(() => useAuthStore.setState({ user: null, isAuthenticated: false, sessionGeneration: 2 }))
 		rerender(
-			<EventsSocketProvider authProvider={authProvider}>
+			<EventsSocketProvider>
 				<Consumer />
 			</EventsSocketProvider>,
 		)
