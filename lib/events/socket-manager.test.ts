@@ -273,6 +273,7 @@ describe("EventsSocketManager", () => {
 
     socket.connected = false
     socket.trigger("disconnect", "transport close")
+    expect(manager.getRoomStatus(60)).toBe("rejoining")
     socket.connected = true
     socket.trigger("connect")
 
