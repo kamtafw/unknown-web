@@ -1,6 +1,6 @@
 # Events: Pass 4 handoff (live events and the deferred admission work)
 
-**Status updated 2026-10-29:** P4-01 live-session read and the web join/listener flow are implemented on the current integration branch. P4-02 host lifecycle foundation is in progress on `feat/events-web-host-lifecycle`: create/end controls are being added, while web Start remains disabled until the web host media path is supported. This implementation status supersedes the older planning-only statements below. This document is a proposal for the owner's approval. It was written from the repository at branch `feat/events-p3-10-integration` (P3-10 closeout commit `53d98cd`; accepted work up to `016135f`), the backend guide (Project doc `events-api-web-implementation-guide.md`, cited `guide §n`) and the three Events documents. No application code was changed to produce it.
+**Status updated 2026-10-30:** P4-01 live-session read and the web listener are implemented. P4-02 host lifecycle foundation is merged in PR #27. Browser microphone publishing and host Start integration are being implemented on `feat/events-web-microphone-publishing`. This implementation status supersedes the older planning-only statements below. This document is a proposal for the owner's approval. It was written from the repository at branch `feat/events-p3-10-integration` (P3-10 closeout commit `53d98cd`; accepted work up to `016135f`), the backend guide (Project doc `events-api-web-implementation-guide.md`, cited `guide §n`) and the three Events documents. No application code was changed to produce it.
 
 Predecessors: `PHASE-2-HANDOFF.md` (historical), `PHASE-3-HANDOFF.md` (Pass 3 source of truth, including the Pass 3 acceptance record in its section 11.1), `EVENTS.md` (assumptions A-n, issues EV-nnn) and `PROGRESS.md` (evidence record).
 
@@ -325,3 +325,17 @@ Open items for the owner: rule on `1.0.0` versus `0.1.0`; whether to correct or 
 ## Approval requested
 
 The owner is asked to (1) approve or amend the task sequence in section E, (2) answer D4-1 to D4-9 (or say which can be deferred), (3) confirm the P3-09 to Pass 4B mapping in D.3, and (4) say which task, if any, to authorise first. Nothing in this document starts work.
+
+
+## I. Browser host microphone publishing (2026-10-30)
+
+**Owner confirmation:** the backend can issue LiveKit credentials to the host for a session created and started with `X-Platform: web`, with `permissions.can_publish_microphone: true`. This resolves the previous provider-selection blocker for the browser-host path.
+
+**Implementation on `feat/events-web-microphone-publishing`:**
+- The media-credentials BFF now validates and forwards the six documented permission booleans alongside the server URL, room, identity and token. Credential values remain uncached and are never logged.
+- The host controls expose Start for a waiting session. Start succeeds before the browser requests credentials; a credentials failure leaves the live session available for a retry rather than attempting to start it again.
+- The publisher checks secure-context/browser microphone support and the backend's `can_publish_microphone` permission before connecting. It connects with the backend-issued token, verifies room and identity, then publishes through LiveKit's browser microphone API.
+- The host can mute, unmute and disconnect. Unmounting the publisher (including when the session ends or the host leaves the details view) disconnects the LiveKit room.
+- A session whose credentials do not grant microphone publishing is rejected; the client does not infer host publishing permission from the event-host UI role.
+
+**Still requires owner-run verification:** run the focused tests and typecheck, then test with a real web-created session and a second browser/device as listener. Automated repository checks cannot prove browser microphone permission prompts, LiveKit connectivity or end-to-end audio delivery.
