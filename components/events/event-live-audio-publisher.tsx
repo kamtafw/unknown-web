@@ -77,7 +77,6 @@ export function EventLiveAudioPublisher({
 
 	useEffect(() => {
 		return () => {
-			sessionEnded.current = true
 			generation.current += 1
 			const room = roomRef.current
 			roomRef.current = null
@@ -93,6 +92,7 @@ export function EventLiveAudioPublisher({
 
 			// Invalidate in-flight credential/connect work as well as disconnecting
 			// an established LiveKit room before the HTTP state refetch completes.
+			sessionEnded.current = true
 			generation.current += 1
 			const room = roomRef.current
 			roomRef.current = null
