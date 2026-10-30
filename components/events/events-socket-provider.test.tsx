@@ -35,11 +35,13 @@ const authenticated = (pkid: number, generation = 1) =>
 
 function renderProvider() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
+  const tree = () => (
     <QueryClientProvider client={queryClient}>
       <EventsSocketProvider><Consumer /></EventsSocketProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
+  const result = render(tree())
+  return { ...result, rerenderProvider: () => result.rerender(tree()) }
 }
 
 describe("EventsSocketProvider", () => {
@@ -66,7 +68,7 @@ describe("EventsSocketProvider", () => {
 
   it("disconnects the previous account manager when the account generation changes", () => {
     authenticated(42)
-    const { rerender } = renderProvider()
+    const { rerenderProvider } = renderProvider()
     const previous = harness.instances[0]
     act(() => authenticated(84, 2))
     rerenderProvider()
@@ -77,7 +79,7 @@ describe("EventsSocketProvider", () => {
 
   it("disconnects on logout", () => {
     authenticated(42)
-    const { rerender } = renderProvider()
+    const { rerenderProvider } = renderProvider()
     const manager = harness.instances[0]
     act(() => useAuthStore.setState({ user: null, isAuthenticated: false, sessionGeneration: 2 }))
     rerenderProvider()
