@@ -3,7 +3,20 @@ import { DJANGO_API_URL } from "@/lib/server-config"
 import { NextResponse } from "next/server"
 
 type Ctx = { params: Promise<{ sessionId: string }> }
-type MediaCredentials = { server_url: string; token: string; room: string; identity: string }
+type MediaCredentials = {
+	server_url: string
+	token: string
+	room: string
+	identity: string
+	permissions: {
+		can_subscribe: boolean
+		can_publish_microphone: boolean
+		can_publish_screen_share: boolean
+		can_publish_camera: boolean
+		can_publish_data: boolean
+		room_admin: boolean
+	}
+}
 
 function isSessionId(value: string): boolean {
 	return /^[A-Za-z0-9_-]{1,128}$/.test(value)
@@ -66,8 +79,25 @@ function credentialsFrom(value: unknown): MediaCredentials | null {
 	if (typeof data.server_url !== "string" || !/^wss?:\/\//i.test(data.server_url) ||
 		typeof data.token !== "string" || !data.token ||
 		typeof data.room !== "string" || !data.room ||
-		typeof data.identity !== "string" || !data.identity) return null
-	return { server_url: data.server_url, token: data.token, room: data.room, identity: data.identity }
+		typeof data.identity !== "string" || !data.identity ||
+		!data.permissions || typeof data.permissions !== "object" || Array.isArray(data.permissions)) return null
+	const permissions = data.permissions as Record<string, unknown>
+	const permissionKeys = [
+		"can_subscribe",
+		"can_publish_microphone",
+		"can_publish_screen_share",
+		"can_publish_camera",
+		"can_publish_data",
+		"room_admin",
+	] as const
+	if (permissionKeys.some((key) => typeof permissions[key] !== "boolean")) return null
+	return {
+		server_url: data.server_url,
+		token: data.token,
+		room: data.room,
+		identity: data.identity,
+		permissions: Object.fromEntries(permissionKeys.map((key) => [key, permissions[key]])) as MediaCredentials["permissions"],
+	}
 }
 
 /** Authenticated bridge to the backend-issued media credentials; never create or join a session here. */
