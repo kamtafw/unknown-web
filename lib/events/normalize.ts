@@ -24,6 +24,8 @@ import type {
 	LiveMediaProvider,
 	LiveMediaStatus,
 	LiveParticipantRole,
+	LiveParticipant,
+	LiveParticipantsPage,
 	LiveSessionType,
 	LiveSocketDescriptor,
 	RsvpKnowledge,
@@ -500,4 +502,72 @@ export function normalizeLiveSession(data: unknown): EventLiveSessionState | nul
 		isJoined: raw.is_joined === true,
 	}
 	return { eventId, session, socket: normalizeSocketDescriptor(data.socket, id) }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-07A): live participants                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A participant row is accepted only when its documented identity, role, booleans and timestamp
+ * are readable. A malformed row invalidates the page rather than silently turning a broken
+ * response into an apparently empty roster.
+ */
+export function normalizeLiveParticipant(raw: unknown): LiveParticipant | null {
+	if (!isRecord(raw) || !isRecord(raw.user)) return null
+	const id = positiveInteger(raw.id)
+	const userId = positiveInteger(raw.user.pkid)
+	const userUuid = text(raw.user.id)
+	const username = text(raw.user.username)
+	const name = [text(raw.user.first_name), text(raw.user.last_name)].filter(Boolean).join(" ") || username
+	const role = oneOf<LiveParticipantRole>(LIVE_ROLE, raw.role)
+	const joinedAt = text(raw.joined_at)
+	if (
+		id === null ||
+		userId === null ||
+		!userUuid ||
+		!name ||
+		role === null ||
+		typeof raw.is_active !== "boolean" ||
+		typeof raw.is_muted !== "boolean" ||
+		typeof raw.media_connected !== "boolean" ||
+		typeof raw.microphone_published !== "boolean" ||
+		typeof raw.camera_published !== "boolean" ||
+		!joinedAt ||
+		!Number.isFinite(Date.parse(joinedAt))
+	) return null
+
+	return {
+		id,
+		user: {
+			userId,
+			userUuid,
+			name,
+			username,
+			photo: mediaUrl(raw.user.profile_photo),
+		},
+		role,
+		isActive: raw.is_active,
+		isMuted: raw.is_muted,
+		mediaConnected: raw.media_connected,
+		microphonePublished: raw.microphone_published,
+		cameraPublished: raw.camera_published,
+		joinedAt,
+	}
+}
+
+/** GET sessions/{id}/participants: oldest joined first; preserve server order and next-link paging. */
+export function normalizeLiveParticipantsPage(
+	data: unknown,
+	page: number,
+): LiveParticipantsPage | null {
+	if (!isRecord(data) || !Array.isArray(data.results)) return null
+	const participants: LiveParticipant[] = []
+	for (const raw of data.results) {
+		const participant = normalizeLiveParticipant(raw)
+		if (!participant) return null
+		participants.push(participant)
+	}
+	return { participants, page, hasNext: hasNext(data) }
 }
