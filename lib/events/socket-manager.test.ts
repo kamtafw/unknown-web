@@ -269,6 +269,10 @@ describe("EventsSocketManager", () => {
     await joined
     expect(manager.getRoomStatus(66)).toBe("joined")
 
+    socket.trigger("live:error", { event: "live:comment", code: "comment_rejected", sessionId: 66 })
+    expect(manager.getRoomStatus(66)).toBe("joined")
+    expect(onRoomError).not.toHaveBeenCalled()
+
     socket.trigger("live:error", {
       event: "live:join",
       code: "live_room_unauthorized",
