@@ -197,4 +197,25 @@ describe("EventsSocketManager", () => {
     expect(onStatusChange).toHaveBeenLastCalledWith("disconnected")
     expect(manager.emit("live:join", {})).toBe(false)
   })
+
+  it("does not create a stale connection when disconnected during auth lookup", async () => {
+    let resolveAuth!: (value: Record<string, string>) => void
+    const getAuth = vi.fn(
+      () =>
+        new Promise<Record<string, string>>((resolve) => {
+          resolveAuth = resolve
+        }),
+    )
+    const manager = new EventsSocketManager({
+      authProvider: { getAuth },
+    })
+
+    const connecting = manager.connect()
+    manager.disconnect()
+    resolveAuth({ token: "old-account-token" })
+    await connecting
+
+    expect(socketHarness.io).not.toHaveBeenCalled()
+    expect(manager.getStatus()).toBe("disconnected")
+  })
 })
