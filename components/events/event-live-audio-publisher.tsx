@@ -68,17 +68,6 @@ export function EventLiveAudioPublisher({
 	const sessionEnded = useRef(false)
 
 	useEffect(() => {
-		sessionEnded.current = false
-		setStatus("idle")
-		setMessage(
-			sessionStatus === "waiting"
-				? "Start the session and connect your microphone to go live."
-				: "Connect your microphone to broadcast.",
-		)
-		setHasStarted(sessionStatus === "live")
-	}, [sessionId, sessionStatus])
-
-	useEffect(() => {
 		if (sessionStatus === "live") setHasStarted(true)
 	}, [sessionStatus])
 
