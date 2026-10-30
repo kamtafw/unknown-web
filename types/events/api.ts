@@ -313,3 +313,37 @@ export interface EventLiveSessionState {
 	/** null when absent or not exactly the documented descriptor */
 	socket: LiveSocketDescriptor | null
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-07A): live participant roster                                    */
+/* -------------------------------------------------------------------------- */
+
+/** Minimal user snapshot from guide §5.1. Contact and account metadata are not retained. */
+export interface LiveParticipantUser {
+	userId: number
+	userUuid: string
+	name: string
+	username: string
+	photo: string | null
+}
+
+/** A live-session participant; distinct from an event guest row and a media connection. */
+export interface LiveParticipant {
+	id: number
+	user: LiveParticipantUser
+	role: LiveParticipantRole
+	isActive: boolean
+	isMuted: boolean
+	mediaConnected: boolean
+	microphonePublished: boolean
+	cameraPublished: boolean
+	joinedAt: string
+}
+
+export interface LiveParticipantsPage {
+	participants: LiveParticipant[]
+	page: number
+	/** Derived only from the backend's next link, never from count or page length. */
+	hasNext: boolean
+}
