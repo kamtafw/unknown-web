@@ -158,7 +158,7 @@ export function EventLiveAudioPublisher({
 		if (!room || isBusy) return
 		setIsBusy(true)
 		try {
-			const enabled = status !== "muted"
+			const enabled = status === "muted"
 			await room.localParticipant.setMicrophoneEnabled(enabled)
 			setStatus(enabled ? "publishing" : "muted")
 			setMessage(enabled ? "Your microphone is broadcasting." : "Your microphone is muted.")
