@@ -73,6 +73,7 @@ export function EventLiveAudioPublisher({
 
 	useEffect(() => {
 		return () => {
+			sessionEnded.current = true
 			generation.current += 1
 			const room = roomRef.current
 			roomRef.current = null
