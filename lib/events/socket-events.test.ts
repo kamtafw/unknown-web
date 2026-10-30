@@ -148,6 +148,23 @@ describe("Events realtime cache handlers", () => {
     detach()
   })
 
+  it.each([
+    ["live:session:started", false],
+    ["live:session:cancelled", true],
+  ] as const)("handles %s from the admitted session room", (eventName, shouldLeave) => {
+    const client = createClient()
+    const manager = new FakeManager()
+    client.setQueryData(eventKeys.liveSession(42, 7, eventId), liveState(99, eventId))
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
+
+    manager.emit(eventName, { session_id: 99 })
+
+    expect(invalidate).toHaveBeenCalledTimes(2)
+    expect(manager.leaveRoom).toHaveBeenCalledTimes(shouldLeave ? 1 : 0)
+    detach()
+  })
+
   it("reconciles only this account/login session's event queries after reconnect", async () => {
     const client = createClient()
     const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
