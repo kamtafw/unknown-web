@@ -221,7 +221,7 @@ describe("GET /api/events/[eventId]/live-session", () => {
 		expect((await GET(req(), ctx())).status).toBe(502)
 	})
 
-	it("exports GET only: there is no start, end, create, join or leave here", () => {
-		expect(Object.keys(liveSessionRoute).sort()).toEqual(["GET"])
+	it("exports GET for reading and POST for creating the attached live session", () => {
+		expect(Object.keys(liveSessionRoute).sort()).toEqual(["GET", "POST"])
 	})
 })
