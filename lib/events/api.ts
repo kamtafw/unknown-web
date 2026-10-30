@@ -271,7 +271,7 @@ export const eventsApi = {
 		await apiClient.post(`${eventPath(eventId)}/live-session`, undefined, { signal })
 	},
 
-	/** Start is not idempotent. The UI keeps this unavailable until web publishing is supported. */
+	/** Start is not idempotent. The host UI calls this before requesting browser media credentials. */
 	startEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
 		await apiClient.post(`${eventPath(eventId)}/live-session/start`, undefined, { signal })
 	},
