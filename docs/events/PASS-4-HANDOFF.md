@@ -339,3 +339,27 @@ The owner is asked to (1) approve or amend the task sequence in section E, (2) a
 - A session whose credentials do not grant microphone publishing is rejected; the client does not infer host publishing permission from the event-host UI role.
 
 **Still requires owner-run verification:** run the focused tests and typecheck, then test with a real web-created session and a second browser/device as listener. Automated repository checks cannot prove browser microphone permission prompts, LiveKit connectivity or end-to-end audio delivery.
+
+
+## J. P4-04A Events socket foundation (2026-10-30)
+
+**Implementation started on `feat/events-web-microphone-publishing`.** Added `lib/events/socket-manager.ts` as an Events-owned Socket.IO connection manager. It does not import or share Messenger's socket manager, connection store, authentication provider, or room registry.
+
+The manager provides:
+- An independent Socket.IO connection using `NEXT_PUBLIC_EVENTS_SOCKET_URL`, falling back to `https://socket.appscombo.com`.
+- Listener registration before connection and listener reattachment when the socket is created.
+- Connection status callbacks, automatic Socket.IO reconnection, and fresh handshake-auth retrieval after a connection error.
+- A guarded emit method and explicit disconnect for logout/account switching.
+- Dependency-injected authentication; no token is placed in a URL and no temporary Messenger credential endpoint is reused.
+
+**Intentional boundary:** this is the transport foundation, not a completed production connection. No Events auth provider is wired yet. The browser's access token is held in an httpOnly cookie, and the backend has not confirmed how a browser should authenticate the `/live` Socket.IO handshake. The manager must not be instantiated by application code until that contract is settled and a provider can be supplied.
+
+**Configuration supplied by owner:** mobile's `EXPO_PUBLIC_LIVE_SOCKET_URL` is `https://socket.appscombo.com`; web uses the Events-specific `NEXT_PUBLIC_EVENTS_SOCKET_URL` name and the same fallback. The origin and browser CORS/allowed-origin policy remain deployment facts to verify, not claims established by this code.
+
+**Backend follow-ups retained:**
+1. Confirm browser handshake auth: cookie-backed handshake, short-lived credential exchanged through a documented BFF route, or another supported mechanism. Confirm the exact Socket.IO `auth` payload shape.
+2. Confirm the accepted browser origin(s) and whether the production socket server permits WebSocket connections from them.
+3. Confirm whether authenticated clients are automatically subscribed to personal user rooms, and the event names/payloads for user-targeted lifecycle notifications.
+4. Confirm whether missed lifecycle events are replayed or must be recovered through an HTTP read after reconnect.
+
+**Validation still required:** add unit tests for listener registration/removal, connection/reconnection auth refresh, status transitions, emit while disconnected, and disconnect. Then run the project's typecheck, focused ESLint and Events test suite. No live socket call has been made by this implementation.
