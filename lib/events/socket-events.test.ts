@@ -75,7 +75,7 @@ describe("Events realtime cache handlers", () => {
   it("invalidates only the current account/session event and My Events for availability updates", () => {
     const client = createClient()
     const manager = new FakeManager()
-    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
     const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
 
     manager.emit("event:live-session:available", availablePayload())
@@ -102,7 +102,7 @@ describe("Events realtime cache handlers", () => {
   it("ignores malformed payloads and does not accept an HTTP envelope as a socket event", () => {
     const client = createClient()
     const manager = new FakeManager()
-    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
     const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
 
     manager.emit("event:live-session:available", { success: true, data: availablePayload() })
@@ -126,7 +126,7 @@ describe("Events realtime cache handlers", () => {
     const client = createClient()
     const manager = new FakeManager()
     client.setQueryData(eventKeys.liveSession(42, 7, eventId), liveState(99, eventId))
-    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
     const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
 
     manager.emit("live:session:ended", { session_id: 99, ended_at: "2026-10-30T09:00:00Z" })
@@ -155,7 +155,7 @@ describe("Events realtime cache handlers", () => {
     const client = createClient()
     const manager = new FakeManager()
     client.setQueryData(eventKeys.liveSession(42, 7, eventId), liveState(99, eventId))
-    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
     const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
 
     manager.emit(eventName, { session_id: 99 })
@@ -167,7 +167,7 @@ describe("Events realtime cache handlers", () => {
 
   it("reconciles only this account/login session's event queries after reconnect", async () => {
     const client = createClient()
-    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
     await invalidateEventsAfterSocketReconnect(client, scope)
 
     expect(invalidate).toHaveBeenCalledTimes(1)
