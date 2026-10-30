@@ -13,6 +13,8 @@ export type EventsSocketStatus =
   | "disconnected"
   | "error"
 
+export type EventsRoomStatus = "idle" | "joining" | "joined" | "rejoining" | "not_admitted" | "error"
+
 export interface EventsSocketAuthProvider {
   getAuth(): Promise<Record<string, string>>
 }
@@ -22,6 +24,7 @@ export interface EventsSocketOptions {
   authProvider: EventsSocketAuthProvider
   onStatusChange?: (status: EventsSocketStatus, error?: string) => void
   onRoomError?: (sessionId: number, error: Error) => void
+  onRoomStatusChange?: (sessionId: number, status: EventsRoomStatus, error?: string) => void
 }
 
 type Handler<T = unknown> = (payload: T) => void
@@ -59,6 +62,7 @@ export class EventsSocketManager {
   private restorePromise: Promise<void> | null = null
   private listeners = new Map<string, Set<Handler>>()
   private roomMemberships = new Map<number, RoomMembership>()
+  private roomStatuses = new Map<number, EventsRoomStatus>()
   private joinedRooms = new Set<number>()
   private roomJoinPromises = new Map<number, Promise<void>>()
   private roomVersions = new Map<number, number>()
@@ -68,15 +72,23 @@ export class EventsSocketManager {
   private readonly authProvider: EventsSocketAuthProvider
   private readonly onStatusChange?: EventsSocketOptions["onStatusChange"]
   private readonly onRoomError?: EventsSocketOptions["onRoomError"]
+  private readonly onRoomStatusChange?: EventsSocketOptions["onRoomStatusChange"]
 
   constructor(options: EventsSocketOptions) {
     this.url = options.url ?? process.env.NEXT_PUBLIC_EVENTS_SOCKET_URL ?? "https://socket.appscombo.com"
     this.authProvider = options.authProvider
     this.onStatusChange = options.onStatusChange
     this.onRoomError = options.onRoomError
+    this.onRoomStatusChange = options.onRoomStatusChange
   }
 
   getStatus(): EventsSocketStatus { return this.status }
+  getRoomStatus(sessionId: number): EventsRoomStatus { return this.roomStatuses.get(sessionId) ?? "idle" }
+
+  private setRoomStatus(sessionId: number, status: EventsRoomStatus, error?: string): void {
+    this.roomStatuses.set(sessionId, status)
+    this.onRoomStatusChange?.(sessionId, status, error)
+  }
 
   private setStatus(status: EventsSocketStatus, error?: string): void {
     this.status = status
@@ -185,6 +197,7 @@ export class EventsSocketManager {
     const generation = this.generation
     const version = (this.roomVersions.get(sessionId) ?? 0) + 1
     this.roomVersions.set(sessionId, version)
+    this.setRoomStatus(sessionId, "joining")
     const pending = this.emitRoomJoin(socket, sessionId, generation).then(() => {
       if (
         generation === this.generation &&
@@ -193,7 +206,15 @@ export class EventsSocketManager {
       ) {
         this.roomMemberships.set(sessionId, { revalidate })
         this.joinedRooms.add(sessionId)
+        this.setRoomStatus(sessionId, "joined")
       }
+    }).catch((error: unknown) => {
+      if (generation === this.generation && this.roomVersions.get(sessionId) === version) {
+        const roomError = asError(error)
+        const unauthorized = error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized"
+        this.setRoomStatus(sessionId, unauthorized ? "not_admitted" : "error", roomError.message)
+      }
+      throw error
     }).finally(() => {
       if (this.roomJoinPromises.get(sessionId) === pending) this.roomJoinPromises.delete(sessionId)
     })
@@ -210,6 +231,8 @@ export class EventsSocketManager {
     this.roomVersions.set(sessionId, (this.roomVersions.get(sessionId) ?? 0) + 1)
     this.roomMemberships.delete(sessionId)
     this.joinedRooms.delete(sessionId)
+    this.roomJoinPromises.delete(sessionId)
+    this.setRoomStatus(sessionId, "idle")
     if (!this.socket?.connected) return false
     this.socket.emit("live:leave", { sessionId })
     return true
@@ -234,12 +257,15 @@ export class EventsSocketManager {
       if (generation !== this.generation || socket !== this.socket || !socket.connected) return
       if (this.roomMemberships.get(sessionId) !== membership) continue
       this.joinedRooms.delete(sessionId)
+      this.setRoomStatus(sessionId, "rejoining")
 
       let authorized: boolean
       try {
         authorized = await membership.revalidate()
       } catch (error) {
-        this.onRoomError?.(sessionId, asError(error))
+        const roomError = asError(error)
+        this.setRoomStatus(sessionId, "error", roomError.message)
+        this.onRoomError?.(sessionId, roomError)
         continue
       }
 
@@ -247,6 +273,7 @@ export class EventsSocketManager {
       if (this.roomMemberships.get(sessionId) !== membership) continue
       if (!authorized) {
         this.roomMemberships.delete(sessionId)
+        this.setRoomStatus(sessionId, "not_admitted")
         continue
       }
 
@@ -259,12 +286,18 @@ export class EventsSocketManager {
           this.roomMemberships.get(sessionId) === membership
         ) {
           this.joinedRooms.add(sessionId)
+          this.setRoomStatus(sessionId, "joined")
         }
       } catch (error) {
-        if (error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized") {
+        const roomError = asError(error)
+        const unauthorized = error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized"
+        if (unauthorized) {
           this.roomMemberships.delete(sessionId)
+          this.setRoomStatus(sessionId, "not_admitted", roomError.message)
+        } else {
+          this.setRoomStatus(sessionId, "error", roomError.message)
         }
-        this.onRoomError?.(sessionId, asError(error))
+        this.onRoomError?.(sessionId, roomError)
       }
     }
   }
@@ -305,6 +338,8 @@ export class EventsSocketManager {
     this.generation += 1
     this.roomMemberships.clear()
     this.joinedRooms.clear()
+    for (const sessionId of this.roomStatuses.keys()) this.setRoomStatus(sessionId, "idle")
+    this.roomStatuses.clear()
     this.roomVersions.clear()
     this.roomJoinPromises.clear()
     this.restorePromise = null
