@@ -98,6 +98,29 @@ function invalidateEventDetailsAndLiveSession(
 }
 
 /**
+ * Missed lifecycle events are not documented as replayed after reconnect.
+ * Mark this account/session's active event details, My Events and live-session
+ * queries stale so their normal HTTP reads reconcile authoritative state.
+ */
+export function invalidateEventsAfterSocketReconnect(
+  client: QueryClient,
+  scope: EventsRealtimeScope,
+): Promise<void> {
+  if (scope.accountId === null) return Promise.resolve()
+  const roots = new Set(["detail", "my-events", "live-session"])
+  return client.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey
+      return (
+        key[0] === eventKeys.all[0] &&
+        roots.has(key[1] as string) &&
+        keyBelongsTo(key, scope.accountId, scope.sessionGeneration)
+      )
+    },
+  })
+}
+
+/**
  * Register the documented raw /live lifecycle events. The event-level
  * availability event is expected in the backend's personal user room; this
  * function deliberately does not invent a client-side personal-room join.
