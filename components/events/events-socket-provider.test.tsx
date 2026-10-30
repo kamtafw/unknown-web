@@ -11,7 +11,6 @@ vi.mock("@/lib/events/socket-manager", () => ({
 		getStatus = vi.fn().mockReturnValue("connected")
 		constructor(options: { onStatusChange: (status: string) => void }) {
 			harness.instances.push(this)
-			options.onStatusChange("connected")
 		}
 	},
 }))
