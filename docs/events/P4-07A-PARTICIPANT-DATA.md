@@ -1,6 +1,6 @@
 # P4-07A — Live participant data layer
 
-**Status:** implemented on `feat/events-p4-07a-participant-data`; owner-run checks and live-backend verification pending.
+**Status:** implemented on `feat/events-p4-07a-participant-data`; owner confirmed focused tests, TypeScript, ESLint and the Events regression suite all passed on 2026-10-30. Live-backend verification remains pending.
 
 ## Contract source
 
@@ -44,4 +44,4 @@ The connected GitHub installation available during this task exposed `kamtafw/un
 
 ## Verification status
 
-Automated tests have been added for BFF validation and forwarding, response minimization, malformed-response handling, normalization, pagination, API-client behavior, and account/session-scoped query keys. They have **not** been executed in this environment, and no request has been made to the deployed backend. Run the commands in the P4-07A closeout message from the repository root before accepting this task.
+Automated tests cover BFF validation and forwarding, response minimization, malformed-response handling, normalization, pagination, API-client behavior, and account/session-scoped query keys. The owner reports the focused tests, TypeScript, ESLint and Events regression suite all passed on 2026-10-30. No request has been made to the deployed backend, so live contract verification remains pending.
