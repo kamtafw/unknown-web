@@ -102,6 +102,12 @@ vi.mock("socket.io-client", () => ({
 
 import { EventsSocketManager, EventsSocketRoomJoinError } from "./socket-manager"
 
+const roomDescriptor = (sessionId: number) => ({
+  namespace: "/live",
+  joinEvent: "live:join",
+  sessionId,
+} as const)
+
 async function connectManager(options: {
   getAuth?: ReturnType<typeof vi.fn>
   onRoomError?: ReturnType<typeof vi.fn>
@@ -213,7 +219,7 @@ describe("EventsSocketManager", () => {
   it("joins only with a positive session id and a matching successful acknowledgement", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
-    const joined = manager.joinRoom(55, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(55), revalidate)
 
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     expect(socket.emitted.at(-1)).toEqual({ event: "live:join", payload: { sessionId: 55 } })
@@ -223,21 +229,21 @@ describe("EventsSocketManager", () => {
     await expect(joined).resolves.toBeUndefined()
     expect(manager.getRoomStatus(55)).toBe("joined")
 
-    await expect(manager.joinRoom(55, revalidate)).resolves.toBeUndefined()
+    await expect(manager.joinRoom(roomDescriptor(55), revalidate)).resolves.toBeUndefined()
     expect(socket.acknowledgements).toHaveLength(0)
-    await expect(manager.joinRoom(0, revalidate)).rejects.toBeInstanceOf(EventsSocketRoomJoinError)
+    await expect(manager.joinRoom(roomDescriptor(0), revalidate)).rejects.toBeInstanceOf(EventsSocketRoomJoinError)
   })
 
   it("rejects unauthorized or malformed room acknowledgements without retaining membership", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
-    const unauthorized = manager.joinRoom(56, revalidate)
+    const unauthorized = manager.joinRoom(roomDescriptor(56), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: false, sessionId: 56, code: "live_room_unauthorized" })
     await expect(unauthorized).rejects.toMatchObject({ code: "live_room_unauthorized", sessionId: 56 })
     expect(manager.getRoomStatus(56)).toBe("not_admitted")
 
-    const malformed = manager.joinRoom(57, revalidate)
+    const malformed = manager.joinRoom(roomDescriptor(57), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 999 })
     await expect(malformed).rejects.toThrow("acknowledgement was invalid")
@@ -247,12 +253,12 @@ describe("EventsSocketManager", () => {
     const manager = new EventsSocketManager({
       authProvider: { getAuth: vi.fn().mockResolvedValue({ token: "x" }) },
     })
-    await expect(manager.joinRoom(58, vi.fn().mockResolvedValue(true))).rejects.toThrow("not connected")
+    await expect(manager.joinRoom(roomDescriptor(58), vi.fn().mockResolvedValue(true))).rejects.toThrow("not connected")
   })
 
   it("leaves the socket room without invoking event leave", async () => {
     const { manager, socket } = await connectManager()
-    const joined = manager.joinRoom(59, vi.fn().mockResolvedValue(true))
+    const joined = manager.joinRoom(roomDescriptor(59), vi.fn().mockResolvedValue(true))
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 59 })
     await joined
@@ -266,7 +272,7 @@ describe("EventsSocketManager", () => {
   it("revalidates membership before rejoining after a transport reconnect", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
-    const joined = manager.joinRoom(60, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(60), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 60 })
     await joined
@@ -290,7 +296,7 @@ describe("EventsSocketManager", () => {
     const { manager, socket } = await connectManager()
     let resolveRevalidation!: (allowed: boolean) => void
     const revalidate = vi.fn(() => new Promise<boolean>((resolve) => { resolveRevalidation = resolve }))
-    const joined = manager.joinRoom(65, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(65), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 65 })
     await joined
@@ -302,7 +308,7 @@ describe("EventsSocketManager", () => {
     await vi.waitFor(() => expect(revalidate).toHaveBeenCalledTimes(1))
 
     // A second caller must share the recovery operation, not issue a new join.
-    const recovering = manager.joinRoom(65, revalidate)
+    const recovering = manager.joinRoom(roomDescriptor(65), revalidate)
     expect(socket.emitted.filter((item) => item.event === "live:join")).toHaveLength(1)
     resolveRevalidation(true)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
@@ -314,7 +320,7 @@ describe("EventsSocketManager", () => {
   it("does not rejoin when the HTTP-backed membership check says access was lost", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
-    const joined = manager.joinRoom(61, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(61), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 61 })
     await joined
@@ -336,7 +342,7 @@ describe("EventsSocketManager", () => {
     const onRoomError = vi.fn()
     const { manager, socket } = await connectManager({ onRoomError })
     const revalidate = vi.fn().mockResolvedValue(true)
-    const joined = manager.joinRoom(62, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(62), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 62 })
     await joined
@@ -359,7 +365,7 @@ describe("EventsSocketManager", () => {
   it("does not replay membership after explicit disconnect", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
-    const joined = manager.joinRoom(63, revalidate)
+    const joined = manager.joinRoom(roomDescriptor(63), revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: true, sessionId: 63 })
     await joined
@@ -371,7 +377,7 @@ describe("EventsSocketManager", () => {
 
   it("does not retain a room join that was explicitly left while its acknowledgement was pending", async () => {
     const { manager, socket } = await connectManager()
-    const joined = manager.joinRoom(64, vi.fn().mockResolvedValue(true))
+    const joined = manager.joinRoom(roomDescriptor(64), vi.fn().mockResolvedValue(true))
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     expect(manager.leaveRoom(64)).toBe(true)
     socket.acknowledgeNext({ ok: true, sessionId: 64 })
