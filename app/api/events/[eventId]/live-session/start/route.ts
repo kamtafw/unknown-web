@@ -7,11 +7,7 @@ import { NextRequest } from "next/server"
 
 type Ctx = { params: Promise<{ eventId: string }> }
 
-/**
- * Start the attached event live session (guide §4.20). This endpoint is intentionally present for
- * the lifecycle API, but the web UI does not invoke it until browser publishing is supported:
- * setting the event live without a usable web host media path would mislead attendees.
- */
+/** Start the attached event live session (guide §4.20) for a browser host with a LiveKit publishing path. */
 export async function POST(_req: NextRequest, { params }: Ctx) {
 	const token = await getAccessToken()
 	if (!token) return unauthenticated()

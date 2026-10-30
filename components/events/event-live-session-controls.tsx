@@ -17,6 +17,7 @@ import {
 	AlertDialogTrigger,
 } from "../ui/alert-dialog"
 import { secondaryButton } from "./event-list"
+import { EventLiveAudioPublisher } from "./event-live-audio-publisher"
 
 export function EventLiveSessionControls({
 	details,
@@ -61,8 +62,8 @@ export function EventLiveSessionControls({
 			{createAvailable ? (
 				<>
 					<p className="text-[12.5px] leading-relaxed text-muted-foreground">
-						Create a waiting session. Web broadcasting is not available yet, so start the session
-						from the mobile client for now.
+						Create a waiting session, then start it and grant microphone access to broadcast from
+						this browser.
 					</p>
 					<button
 						type="button"
@@ -83,17 +84,12 @@ export function EventLiveSessionControls({
 					<p role="status" className="text-[12.5px] text-foreground">
 						Session status: <span className="font-semibold">{session.status}</span>
 					</p>
-					{session.status === "waiting" && (
-						<p className="text-[12.5px] leading-relaxed text-muted-foreground">
-							This session is waiting. Starting from the web is disabled until browser audio
-							publishing is supported. Start it from the mobile client for now.
-						</p>
-					)}
-					{session.status === "live" && (
-						<p className="text-[12.5px] leading-relaxed text-muted-foreground">
-							This session is live, but web audio publishing is not supported yet. If the host is
-							broadcasting from another device, you can end the session here.
-						</p>
+					{(session.status === "waiting" || session.status === "live") && (
+						<EventLiveAudioPublisher
+							sessionId={session.id}
+							sessionStatus={session.status}
+							onStart={session.status === "waiting" ? controls.start : undefined}
+						/>
 					)}
 					{(session.status === "ended" || session.status === "cancelled") && (
 						<p className="text-[12.5px] leading-relaxed text-muted-foreground">

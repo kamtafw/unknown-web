@@ -18,6 +18,14 @@ const credentials = {
 		token: "issued-livekit-token",
 		room: "event-room-72",
 		identity: "viewer-9",
+		permissions: {
+			can_subscribe: true,
+			can_publish_microphone: true,
+			can_publish_screen_share: false,
+			can_publish_camera: false,
+			can_publish_data: false,
+			room_admin: true,
+		},
 	},
 }
 const reply = (body: unknown, status = 200) =>
@@ -82,9 +90,10 @@ describe("POST /api/events/live-sessions/[sessionId]/media-credentials", () => {
 				success: true,
 				data: {
 					server_url: "wss://media.example.test",
-					token: "",
+					token: "token",
 					room: "room",
 					identity: "viewer",
+					permissions: { can_subscribe: true, can_publish_microphone: true },
 				},
 			}),
 		)
