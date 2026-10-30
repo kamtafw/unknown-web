@@ -65,6 +65,11 @@ export function EventLiveAudioPublisher({
 	const [isBusy, setIsBusy] = useState(false)
 	const roomRef = useRef<LiveKitRoom | null>(null)
 	const generation = useRef(0)
+	const sessionEnded = useRef(false)
+
+	useEffect(() => {
+		sessionEnded.current = false
+	}, [sessionId])
 
 	useEffect(() => {
 		if (sessionStatus === "live") setHasStarted(true)
@@ -72,6 +77,7 @@ export function EventLiveAudioPublisher({
 
 	useEffect(() => {
 		return () => {
+			sessionEnded.current = true
 			generation.current += 1
 			const room = roomRef.current
 			roomRef.current = null
@@ -112,7 +118,7 @@ export function EventLiveAudioPublisher({
 	}
 
 	async function connectAndPublish() {
-		if (isBusy || roomRef.current) return
+		if (sessionEnded.current || isBusy || roomRef.current) return
 		setIsBusy(true)
 		const current = ++generation.current
 		let room: LiveKitRoom | null = null
@@ -200,7 +206,7 @@ export function EventLiveAudioPublisher({
 			setIsBusy(true)
 			const started = await onStart()
 			setIsBusy(false)
-			if (!started) return
+			if (!started || sessionEnded.current) return
 			setHasStarted(true)
 		}
 		await connectAndPublish()
