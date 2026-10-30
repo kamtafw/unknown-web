@@ -117,11 +117,13 @@ async function connectManager(
 	options: {
 		getAuth?: ReturnType<typeof vi.fn>
 		onRoomError?: ReturnType<typeof vi.fn>
+		onReconnect?: ReturnType<typeof vi.fn>
 	} = {},
 ) {
 	const manager = new EventsSocketManager({
 		authProvider: { getAuth: options.getAuth ?? vi.fn().mockResolvedValue({ token: "x" }) },
 		onRoomError: options.onRoomError,
+		onReconnect: options.onReconnect,
 	})
 	const connecting = manager.connect()
 	await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
@@ -165,6 +167,39 @@ describe("EventsSocketManager", () => {
 		await expect(connecting).resolves.toBeUndefined()
 		expect(manager.getStatus()).toBe("connected")
 		expect(getAuth).toHaveBeenCalledTimes(1)
+	})
+
+	it("signals only successful transport reconnections, not the initial connect", async () => {
+		const onReconnect = vi.fn()
+		const { socket } = await connectManager({ onReconnect })
+		expect(onReconnect).not.toHaveBeenCalled()
+
+		socket.connected = false
+		socket.trigger("disconnect", "transport close")
+		socket.connected = true
+		socket.trigger("connect")
+
+		expect(onReconnect).toHaveBeenCalledTimes(1)
+	})
+
+	it("reconciles when the first successful connection follows a retry attempt", async () => {
+		const onReconnect = vi.fn()
+		const manager = new EventsSocketManager({
+			authProvider: { getAuth: vi.fn().mockResolvedValue({ token: "x" }) },
+			onReconnect,
+		})
+		const connecting = manager.connect()
+		await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
+		const socket = socketHarness.sockets[0]
+		const failure = new Error("temporary connection failure")
+		socket.trigger("connect_error", failure)
+		await expect(connecting).rejects.toBe(failure)
+
+		socket.io.trigger("reconnect_attempt")
+		socket.connected = true
+		socket.trigger("connect")
+
+		expect(onReconnect).toHaveBeenCalledTimes(1)
 	})
 
 	it("attaches listeners registered before connect and supports unsubscribe", async () => {

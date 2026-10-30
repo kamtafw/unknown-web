@@ -2,8 +2,9 @@
 
 import type { Room as LiveKitRoom } from "livekit-client"
 import { useEffect, useRef, useState } from "react"
+import { useEventsSocket } from "./events-socket-provider"
 
-type PublisherStatus = "idle" | "connecting" | "publishing" | "muted" | "error"
+type PublisherStatus = "idle" | "connecting" | "publishing" | "muted" | "error" | "ended"
 
 type Credentials = {
 	server_url: string
@@ -56,6 +57,7 @@ export function EventLiveAudioPublisher({
 	sessionStatus: "waiting" | "live"
 	onStart?: () => Promise<boolean>
 }) {
+	const { manager } = useEventsSocket()
 	const [status, setStatus] = useState<PublisherStatus>("idle")
 	const [message, setMessage] = useState(
 		sessionStatus === "waiting"
@@ -66,6 +68,7 @@ export function EventLiveAudioPublisher({
 	const [isBusy, setIsBusy] = useState(false)
 	const roomRef = useRef<LiveKitRoom | null>(null)
 	const generation = useRef(0)
+	const sessionEnded = useRef(false)
 
 	useEffect(() => {
 		if (sessionStatus === "live") setHasStarted(true)
@@ -73,12 +76,44 @@ export function EventLiveAudioPublisher({
 
 	useEffect(() => {
 		return () => {
+			sessionEnded.current = true
 			generation.current += 1
 			const room = roomRef.current
 			roomRef.current = null
 			if (room) void room.disconnect()
 		}
 	}, [])
+
+	useEffect(() => {
+		if (!manager) return
+		const stopForServerEnd = (message: string) => (payload: unknown) => {
+			if (!payload || typeof payload !== "object" || Array.isArray(payload)) return
+			if ((payload as Record<string, unknown>).session_id !== sessionId) return
+
+			// Invalidate in-flight credential/connect work as well as disconnecting
+			// an established LiveKit room before the HTTP state refetch completes.
+			sessionEnded.current = true
+			generation.current += 1
+			const room = roomRef.current
+			roomRef.current = null
+			setIsBusy(false)
+			setStatus("ended")
+			setMessage(message)
+			if (room) void room.disconnect()
+		}
+		const offEnded = manager.on(
+			"live:session:ended",
+			stopForServerEnd("The live session has ended."),
+		)
+		const offCancelled = manager.on(
+			"live:session:cancelled",
+			stopForServerEnd("The live session was cancelled."),
+		)
+		return () => {
+			offEnded()
+			offCancelled()
+		}
+	}, [manager, sessionId])
 
 	async function disconnect() {
 		const room = roomRef.current
@@ -89,7 +124,7 @@ export function EventLiveAudioPublisher({
 	}
 
 	async function connectAndPublish() {
-		if (isBusy || roomRef.current) return
+		if (sessionEnded.current || isBusy || roomRef.current) return
 		setIsBusy(true)
 		const current = ++generation.current
 		let room: LiveKitRoom | null = null
@@ -190,7 +225,7 @@ export function EventLiveAudioPublisher({
 			setIsBusy(true)
 			const started = await onStart()
 			setIsBusy(false)
-			if (!started) return
+			if (!started || sessionEnded.current) return
 			setHasStarted(true)
 		}
 		await connectAndPublish()
@@ -210,7 +245,7 @@ export function EventLiveAudioPublisher({
 				{message}
 			</p>
 			<div className="flex flex-wrap gap-2">
-				{status === "publishing" || status === "muted" ? (
+				{status === "ended" ? null : status === "publishing" || status === "muted" ? (
 					<>
 						<button
 							type="button"

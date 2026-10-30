@@ -24,6 +24,7 @@ export interface EventsSocketOptions {
   url?: string
   authProvider: EventsSocketAuthProvider
   onStatusChange?: (status: EventsSocketStatus, error?: string) => void
+  onReconnect?: () => void
   onRoomError?: (sessionId: number, error: Error) => void
   onRoomStatusChange?: (sessionId: number, status: EventsRoomStatus, error?: string) => void
 }
@@ -69,9 +70,12 @@ export class EventsSocketManager {
   private roomVersions = new Map<number, number>()
   private status: EventsSocketStatus = "idle"
   private generation = 0
+  private hasConnected = false
+  private reconnectAttempted = false
   private readonly url: string
   private readonly authProvider: EventsSocketAuthProvider
   private readonly onStatusChange?: EventsSocketOptions["onStatusChange"]
+  private readonly onReconnect?: EventsSocketOptions["onReconnect"]
   private readonly onRoomError?: EventsSocketOptions["onRoomError"]
   private readonly onRoomStatusChange?: EventsSocketOptions["onRoomStatusChange"]
 
@@ -79,6 +83,7 @@ export class EventsSocketManager {
     this.url = options.url ?? process.env.NEXT_PUBLIC_EVENTS_SOCKET_URL ?? "https://socket.appscombo.com"
     this.authProvider = options.authProvider
     this.onStatusChange = options.onStatusChange
+    this.onReconnect = options.onReconnect
     this.onRoomError = options.onRoomError
     this.onRoomStatusChange = options.onRoomStatusChange
   }
@@ -129,7 +134,11 @@ export class EventsSocketManager {
 
     socket.on("connect", () => {
       if (generation !== this.generation || this.socket !== socket) return
+      const reconnected = this.hasConnected || this.reconnectAttempted
+      this.hasConnected = true
+      this.reconnectAttempted = false
       this.setStatus("connected")
+      if (reconnected) this.onReconnect?.()
       // A transport reconnect restores only memberships that still pass the
       // caller's HTTP-backed admission check. Never replay a room blindly.
       void this.rejoinRooms()
@@ -162,7 +171,10 @@ export class EventsSocketManager {
       this.onRoomError?.(sessionId, new EventsSocketRoomJoinError(message, sessionId, code))
     })
     socket.io.on("reconnect_attempt", () => {
-      if (generation === this.generation && this.socket === socket) this.setStatus("reconnecting")
+      if (generation === this.generation && this.socket === socket) {
+        this.reconnectAttempted = true
+        this.setStatus("reconnecting")
+      }
     })
     socket.on("connect_error", async (error) => {
       if (generation !== this.generation || this.socket !== socket) return
@@ -385,6 +397,8 @@ export class EventsSocketManager {
 
   disconnect(): void {
     this.generation += 1
+    this.hasConnected = false
+    this.reconnectAttempted = false
     this.roomMemberships.clear()
     this.joinedRooms.clear()
     for (const sessionId of this.roomStatuses.keys()) this.setRoomStatus(sessionId, "idle")

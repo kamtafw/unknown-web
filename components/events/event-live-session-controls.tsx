@@ -86,6 +86,7 @@ export function EventLiveSessionControls({
 					</p>
 					{(session.status === "waiting" || session.status === "live") && (
 						<EventLiveAudioPublisher
+							key={session.id}
 							sessionId={session.id}
 							sessionStatus={session.status}
 							onStart={session.status === "waiting" ? controls.start : undefined}
