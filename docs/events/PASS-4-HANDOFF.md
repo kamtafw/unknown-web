@@ -394,3 +394,18 @@ npx vitest run app/api/events components/events
 ### P4-04A implementation update — provider lifecycle
 
 The Events route group now mounts an independent `EventsSocketProvider`. It owns one manager for the current authenticated account and session generation, and tears it down on logout, account switch or route-group unmount. Consumers can access its status and manager via `useEventsSocket`. The provider accepts an injected `EventsSocketAuthProvider`; the app currently does **not** inject one, so the provider stays inert. This is intentional: the backend's browser handshake authentication contract is still unconfirmed. Do not copy Messenger's temporary query-string token flow or activate a guessed credential endpoint. Provider lifecycle tests cover inert mode, connect, account switching and logout. This code has not yet been run in the owner's environment; see `PROGRESS.md` for the validation gate.
+
+
+## L. P4-04C Events socket authentication and activation (2026-10-30)
+
+**Implemented on `feat/events-p4-04c-socket-auth`.** The deployed-backend guide (§6) specifies the browser-compatible contract: connect to the configured socket origin's `/live` namespace and send the normal access JWT in Socket.IO handshake `auth.token`. The prior J/K notes that called this contract unresolved are superseded by this section; the backend guide was the evidence source and no new auth payload or endpoint was invented.
+
+- Added `GET /api/events/socket-credential`: reads the existing httpOnly access cookie server-side and returns `{ success: true, data: { token } }` to the authenticated same-origin app. Responses are `private, no-store`, `Pragma: no-cache`, and `Vary: Cookie`; unauthenticated callers receive 401. This is a narrow BFF bridge for the guide's documented normal-JWT handshake, **not** a minted ticket or a new backend endpoint.
+- Added `lib/events/socket-auth.ts`: obtains a fresh token on demand with `cache: no-store`, returns only `{ token }` for Socket.IO handshake auth, and does not persist or log it.
+- Updated `EventsSocketManager` to connect to `<configured-origin>/live` with `path: /socket.io`, WebSocket transport and handshake `auth`. It remains separate from Messenger.
+- Wired the Events route-group provider to connect for an authenticated account and to tear down on logout, account change or unmount.
+- Added tests for the BFF credential bridge, auth provider, provider lifecycle and `/live` namespace construction.
+
+**Security boundary:** this follows the guide literally, but the normal access JWT is necessarily exposed to same-origin application JavaScript in memory for the handshake. It is not placed in a URL, local/session storage, logs or a cache. A backend-issued short-lived socket ticket would be a stronger future design, but no such endpoint is documented, so none was invented here. Keep this distinction visible in any security review.
+
+**Still unverified:** actual `/live` connection against the deployed socket server; whether the deployed server accepts the configured web origin; token expiry/reconnect against a refreshed cookie; multi-tab behavior; and delivery of any Events events. The owner must run focused tests, typecheck, ESLint, then a real browser connection check. Room admission and subscriptions remain P4-05/P4-06 and are not part of this task.
