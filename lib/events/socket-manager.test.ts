@@ -108,6 +108,7 @@ describe("EventsSocketManager", () => {
     )
 
     await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
@@ -124,6 +125,7 @@ describe("EventsSocketManager", () => {
     const unsubscribe = manager.on("live:updated", handler)
 
     const connecting = manager.connect()
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
@@ -149,6 +151,7 @@ describe("EventsSocketManager", () => {
       authProvider: { getAuth: vi.fn().mockResolvedValue({ token: "x" }) },
     })
     const connecting = manager.connect()
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
@@ -169,6 +172,7 @@ describe("EventsSocketManager", () => {
       authProvider: { getAuth },
     })
     const connecting = manager.connect()
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
 
     socket.trigger("connect_error", new Error("expired"))
@@ -186,6 +190,7 @@ describe("EventsSocketManager", () => {
       onStatusChange,
     })
     const connecting = manager.connect()
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
