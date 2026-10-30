@@ -108,7 +108,6 @@ describe("EventsSocketManager", () => {
     )
 
     await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
-    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
     const socket = socketHarness.sockets[0]
     socket.connected = true
     socket.trigger("connect")
