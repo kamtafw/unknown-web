@@ -5,12 +5,7 @@ import { EVENTS_PAGE_SIZE } from "@/lib/events/constants"
 import { describeEventError, type EventErrorKind } from "@/lib/events/errors"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type {
-  EventLiveSessionState,
-  LiveParticipant,
-  LiveParticipantRole,
-  LiveParticipantsPage,
-} from "@/types/events/api"
+import type { EventLiveSessionState, LiveParticipant, LiveParticipantRole, LiveParticipantsPage } from "@/types/events/api"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 
@@ -20,9 +15,7 @@ function statusOf(error: unknown): number | null {
 }
 
 /** Keep the first occurrence of each user and preserve backend page/order semantics. */
-export function flattenLiveParticipantPages(
-  pages: LiveParticipantsPage[] | undefined,
-): LiveParticipant[] {
+export function flattenLiveParticipantPages(pages: LiveParticipantsPage[] | undefined): LiveParticipant[] {
   const seen = new Set<number>()
   const out: LiveParticipant[] = []
   for (const page of pages ?? []) {
@@ -36,14 +29,7 @@ export function flattenLiveParticipantPages(
   return out
 }
 
-/**
- * Canonical HTTP roster for one live session. The hook is disabled unless the caller has a
- * readable live-session state, the session is live, and the current account is known.
- *
- * Pages are fetched only when the backend's next link says another page exists. The role filter
- * and page size are query scope; page number is a pageParam. HTTP remains canonical: socket
- * participant events invalidate this query rather than inserting incomplete socket snapshots.
- */
+/** HTTP is canonical; socket presence events invalidate these pages instead of inserting partial rows. */
 export function useEventLiveParticipants(
   liveState: EventLiveSessionState | null,
   role: LiveParticipantRole | null = null,
@@ -90,6 +76,7 @@ export function useEventLiveParticipants(
         : "refresh"
 
   return {
+    enabled,
     participants,
     hasLoaded,
     isInitialLoading: enabled && !hasLoaded && !query.isError,
