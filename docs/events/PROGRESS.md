@@ -7,6 +7,7 @@
 **P4-06 implementation is on `feat/events-p4-06-session-updates` (current branch), based on P4-05.** It registers raw `event:live-session:available`, `live:session:started`, `live:session:ended`, and `live:session:cancelled` handlers; invalidates only the current account/login session's relevant event detail and live-session queries, and My Events for the personal availability event; deduplicates repeated lifecycle messages; leaves ended/cancelled socket rooms; and disconnects the host LiveKit publisher on session end/cancellation. Since missed-event replay is not documented, active detail/My Events/live-session queries are invalidated after a transport reconnect for HTTP reconciliation. Ended-session detail refetch supports the full-to-preview access transition.
 
 **D4-7 remains unresolved:** the guide says `event:live-session:available` is sent to personal `/live` user rooms, but does not specify whether authenticated sockets are automatically placed in those rooms or require a client subscription. No guessed personal-room join has been added. The event handler is implemented, but delivery of that event cannot be claimed until backend confirms the subscription mechanism. Owner-run P4-06 validation is pending; no live lifecycle-event delivery has yet been verified.
+
 ## A. Repository state (verified 2026-10-22)
 
 | Item | Value |
