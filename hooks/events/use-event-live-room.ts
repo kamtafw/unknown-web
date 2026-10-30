@@ -19,6 +19,7 @@ export function useEventLiveRoom(liveState: EventLiveSessionState | null): void 
   const eligible =
     liveState?.session.status === "live" &&
     liveState.session.isJoined &&
+    eventId !== null &&
     sessionId !== null &&
     descriptor !== null &&
     descriptor.namespace === "/live" &&
@@ -37,5 +38,5 @@ export function useEventLiveRoom(liveState: EventLiveSessionState | null): void 
     return () => {
       if (manager.getRoomStatus(sessionId) !== "idle") manager.leaveRoom(sessionId)
     }
-  }, [manager, eligible, sessionId, descriptor?.namespace, descriptor?.joinEvent, descriptor?.sessionId])
+  }, [manager, eligible, eventId, sessionId, descriptor?.namespace, descriptor?.joinEvent, descriptor?.sessionId])
 }
