@@ -516,8 +516,10 @@ export function normalizeLiveSession(data: unknown): EventLiveSessionState | nul
  */
 export function normalizeLiveParticipant(raw: unknown): LiveParticipant | null {
 	if (!isRecord(raw) || !isRecord(raw.user)) return null
-	const id = positiveInteger(raw.id)
-	const userId = positiveInteger(raw.user.pkid)
+	const id = Number.isSafeInteger(raw.id) && (raw.id as number) > 0 ? (raw.id as number) : null
+	const userId = Number.isSafeInteger(raw.user.pkid) && (raw.user.pkid as number) > 0
+		? (raw.user.pkid as number)
+		: null
 	const userUuid = text(raw.user.id)
 	const username = text(raw.user.username)
 	const name = [text(raw.user.first_name), text(raw.user.last_name)].filter(Boolean).join(" ") || username
