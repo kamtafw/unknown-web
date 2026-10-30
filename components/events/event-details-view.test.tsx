@@ -286,7 +286,7 @@ describe("EventDetailsView sections (P3-03)", () => {
 			/>,
 		)
 		const details = screen.getByRole("tab", { name: "Details" })
-		details.focus()
+		act(() => details.focus())
 		fireEvent.keyDown(details, { key: "ArrowRight" })
 		await waitFor(() => expect(screen.getByRole("tab", { name: "Comments" })).toHaveFocus())
 		expect(onTabChange).toHaveBeenCalledWith("comments")
