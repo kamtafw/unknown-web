@@ -111,10 +111,12 @@ const roomDescriptor = (sessionId: number) => ({
 async function connectManager(options: {
   getAuth?: ReturnType<typeof vi.fn>
   onRoomError?: ReturnType<typeof vi.fn>
+  onReconnect?: ReturnType<typeof vi.fn>
 } = {}) {
   const manager = new EventsSocketManager({
     authProvider: { getAuth: options.getAuth ?? vi.fn().mockResolvedValue({ token: "x" }) },
     onRoomError: options.onRoomError,
+    onReconnect: options.onReconnect,
   })
   const connecting = manager.connect()
   await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
@@ -158,6 +160,19 @@ describe("EventsSocketManager", () => {
     await expect(connecting).resolves.toBeUndefined()
     expect(manager.getStatus()).toBe("connected")
     expect(getAuth).toHaveBeenCalledTimes(1)
+  })
+
+  it("signals only successful transport reconnections, not the initial connect", async () => {
+    const onReconnect = vi.fn()
+    const { socket } = await connectManager({ onReconnect })
+    expect(onReconnect).not.toHaveBeenCalled()
+
+    socket.connected = false
+    socket.trigger("disconnect", "transport close")
+    socket.connected = true
+    socket.trigger("connect")
+
+    expect(onReconnect).toHaveBeenCalledTimes(1)
   })
 
   it("attaches listeners registered before connect and supports unsubscribe", async () => {
