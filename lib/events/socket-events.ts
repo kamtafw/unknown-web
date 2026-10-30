@@ -242,17 +242,29 @@ export function attachEventsRealtimeHandlers(
       if (!payload || scope.accountId === null) return
 
       const eventIds = findCachedEventIdsForLiveSession(client, scope, payload.sessionId)
-      // A session id alone is insufficient: the event must belong to this account/login epoch.
-      if (eventIds.length === 0) return
+      // Participant events are valid only while this session is still live in this account's cache.
+      const activeEventIds = eventIds.filter((eventId) => {
+        const state = client.getQueryData<EventLiveSessionState>(
+          eventKeys.liveSession(scope.accountId!, scope.sessionGeneration, eventId),
+        )
+        return state?.session.id === payload.sessionId && state.session.status === "live"
+      })
+      if (activeEventIds.length === 0) return
+
+      // The guide supplies no event id/sequence. An inverse transition clears the prior tuple for
+      // this user so a legitimate leave-and-rejoin at the same count is not suppressed forever.
+      const inverseName = joined ? "live:participant:left" : "live:participant:joined"
+      const inversePrefix = `participant:${inverseName}:${payload.sessionId}:${payload.userId}:`
+      for (const key of seen) if (key.startsWith(inversePrefix)) seen.delete(key)
 
       const dedupeKey = `participant:${eventName}:${payload.sessionId}:${payload.userId}:${payload.participantCount}`
       if (!remember(dedupeKey)) return
 
       applyAuthoritativeParticipantCount(
-        client, scope, eventIds, payload.sessionId, payload.participantCount, joined ? "joined" : "left",
+        client, scope, activeEventIds, payload.sessionId, payload.participantCount, joined ? "joined" : "left",
       )
       void Promise.all([
-        ...eventIds.map((eventId) =>
+        ...activeEventIds.map((eventId) =>
           client.invalidateQueries({
             queryKey: eventKeys.liveSession(scope.accountId!, scope.sessionGeneration, eventId),
             exact: true,
