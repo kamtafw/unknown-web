@@ -139,6 +139,26 @@ export class EventsSocketManager {
       for (const sessionId of this.roomMemberships.keys()) this.setRoomStatus(sessionId, "rejoining")
       this.setStatus(reason === "io client disconnect" ? "disconnected" : "reconnecting")
     })
+    socket.on("live:error", (payload: unknown) => {
+      if (generation !== this.generation || this.socket !== socket || !isRecord(payload)) return
+      const sessionId = payload.sessionId
+      const code = typeof payload.code === "string" ? payload.code : null
+      if (typeof sessionId !== "number" || !Number.isSafeInteger(sessionId) || sessionId <= 0) return
+
+      const unauthorized = code === "live_room_unauthorized"
+      const message = unauthorized
+        ? "You are no longer authorized to join this live session"
+        : "The live session reported a room error"
+      if (unauthorized) {
+        this.roomMemberships.delete(sessionId)
+        this.joinedRooms.delete(sessionId)
+        this.roomVersions.set(sessionId, (this.roomVersions.get(sessionId) ?? 0) + 1)
+        this.setRoomStatus(sessionId, "not_admitted", message)
+      } else {
+        this.setRoomStatus(sessionId, "error", message)
+      }
+      this.onRoomError?.(sessionId, new EventsSocketRoomJoinError(message, sessionId, code))
+    })
     socket.io.on("reconnect_attempt", () => {
       if (generation === this.generation && this.socket === socket) this.setStatus("reconnecting")
     })
