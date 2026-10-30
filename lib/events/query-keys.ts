@@ -91,6 +91,23 @@ export const eventKeys = {
 	liveSessionRoot: () => [...eventKeys.all, "live-session"] as const,
 	liveSession: (accountId: number | null, sessionGeneration: number | null, eventId: string) =>
 		[...eventKeys.liveSessionRoot(), accountId, sessionGeneration, eventId] as const,
+
+	/** infinite live roster; page is a pageParam and role/limit define the query scope */
+	liveParticipantsRoot: () => [...eventKeys.all, "live-participants"] as const,
+	liveParticipants: (
+		accountId: number | null,
+		sessionGeneration: number | null,
+		sessionId: number,
+		limit: number,
+		role: string | null = null,
+	) =>
+		[
+			...eventKeys.liveParticipantsRoot(),
+			accountId,
+			sessionGeneration,
+			sessionId,
+			{ limit, role },
+		] as const,
 }
 
 /** the per-event Pass 3 roots, for cache helpers that act on all of them */
