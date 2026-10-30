@@ -4,6 +4,7 @@
  * handshake auth.token. Authentication is injected for lifecycle testability.
  */
 import { io, type Socket } from "socket.io-client"
+import type { LiveSocketDescriptor } from "@/types/events/api"
 
 export type EventsSocketStatus =
   | "idle"
@@ -179,13 +180,22 @@ export class EventsSocketManager {
 
   /**
    * Join a live room only after the caller has completed HTTP event admission.
-   * The callback is retained for reconnects and must re-check that the viewer
-   * remains an active participant (normally via GET event live-session and
-   * the session's isJoined field). It is never called before the initial join.
+   * The validated backend descriptor is required: a session id alone is not
+   * enough to invent a socket room. The callback is retained for reconnects
+   * and must re-check active participation. It is never called before the
+   * initial join.
    */
-  joinRoom(sessionId: number, revalidate: EventsRoomRevalidator): Promise<void> {
-    if (!Number.isSafeInteger(sessionId) || sessionId <= 0) {
-      return Promise.reject(new EventsSocketRoomJoinError("Invalid live session id", sessionId))
+  joinRoom(descriptor: LiveSocketDescriptor, revalidate: EventsRoomRevalidator): Promise<void> {
+    const sessionId = descriptor?.sessionId
+    if (
+      !descriptor ||
+      descriptor.namespace !== "/live" ||
+      descriptor.joinEvent !== "live:join" ||
+      typeof sessionId !== "number" ||
+      !Number.isSafeInteger(sessionId) ||
+      sessionId <= 0
+    ) {
+      return Promise.reject(new EventsSocketRoomJoinError("Invalid live socket descriptor", typeof sessionId === "number" ? sessionId : 0))
     }
     const socket = this.socket
     if (!socket?.connected) {
