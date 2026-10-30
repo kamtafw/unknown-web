@@ -5,6 +5,7 @@ import { EventLiveSessionControls } from "./event-live-session-controls"
 
 const create = vi.fn()
 const end = vi.fn()
+const start = vi.fn()
 const clearError = vi.fn()
 const useEventLiveSessionControls = vi.fn()
 const useEventLiveSession = vi.fn()
@@ -43,9 +44,11 @@ const details: EventFullDetails = {
 beforeEach(() => {
 	create.mockReset()
 	end.mockReset()
+	start.mockReset()
 	clearError.mockReset()
 	useEventLiveSessionControls.mockReset().mockReturnValue({
 		create,
+		start,
 		end,
 		isPending: false,
 		errorMessage: null,
@@ -67,7 +70,7 @@ describe("EventLiveSessionControls", () => {
 		expect(create).toHaveBeenCalledOnce()
 	})
 
-	it("does not offer web Start while browser audio publishing is unavailable", () => {
+	it("offers browser start and microphone publishing to the host for a waiting session", () => {
 		useEventLiveSession.mockReturnValue({
 			status: "ready",
 			state: {
@@ -79,8 +82,7 @@ describe("EventLiveSessionControls", () => {
 		})
 		render(<EventLiveSessionControls details={{ ...details, liveSessionId: 71 }} isHost />)
 
-		expect(screen.getByText(/starting from the web is disabled/i)).toBeInTheDocument()
-		expect(screen.queryByRole("button", { name: /start/i })).not.toBeInTheDocument()
+		expect(screen.getByRole("button", { name: "Start session and go live" })).toBeInTheDocument()
 		expect(screen.getByRole("button", { name: "End live session" })).toBeInTheDocument()
 	})
 
