@@ -76,6 +76,10 @@ describe("sanitizeLiveParticipantsPayload", () => {
 		expect(result.data.results).toEqual([])
 	})
 
+	it("rejects a success-shaped page when the envelope explicitly reports failure", () => {
+		expect(sanitizeLiveParticipantsPayload({ success: false, data: { results: [participant()] } })).toBeNull()
+	})
+
 	it("does not mutate input and fails closed for malformed page or participant rows", () => {
 		const input = page()
 		const copy = structuredClone(input)
