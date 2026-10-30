@@ -82,10 +82,13 @@ describe("EventLiveParticipantsSection", () => {
     fireEvent.click(screen.getByRole("button", { name: /try again/i }))
     expect(refetch).toHaveBeenCalledTimes(1)
 
-    useEventLiveParticipants.mockReturnValue(baseQuery({ participants: [ada], error: "server" }))
+    const refresh = vi.fn()
+    useEventLiveParticipants.mockReturnValue(baseQuery({ participants: [ada], error: "server", refetch: refresh }))
     rerender(<EventLiveParticipantsSection liveState={liveState} />)
     expect(screen.getByText("Ada Obi")).toBeInTheDocument()
     expect(screen.getByRole("alert")).toHaveTextContent(/previously loaded participants are still shown/i)
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }))
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it("loads more only when the backend reports another page", () => {
