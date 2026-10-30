@@ -98,7 +98,7 @@ describe("EventsSocketManager", () => {
     expect(manager.getStatus()).toBe("connecting")
     await vi.waitFor(() => expect(socketHarness.io).toHaveBeenCalled())
     expect(socketHarness.io).toHaveBeenCalledWith(
-      "https://events.example.test",
+      "https://events.example.test/live",
       expect.objectContaining({
         path: "/socket.io",
         transports: ["websocket"],
