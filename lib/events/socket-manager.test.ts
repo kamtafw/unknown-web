@@ -219,6 +219,10 @@ describe("EventsSocketManager", () => {
   it("joins only with a positive session id and a matching successful acknowledgement", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
+    await expect(
+      manager.joinRoom({ ...roomDescriptor(55), namespace: "/chat" } as never, revalidate),
+    ).rejects.toThrow("Invalid live socket descriptor")
+    expect(socket.emitted).toHaveLength(0)
     const joined = manager.joinRoom(roomDescriptor(55), revalidate)
 
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
