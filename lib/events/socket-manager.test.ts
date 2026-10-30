@@ -286,6 +286,31 @@ describe("EventsSocketManager", () => {
     expect(manager.getRoomStatus(60)).toBe("joined")
   })
 
+  it("does not let a caller bypass revalidation while a retained room is recovering", async () => {
+    const { manager, socket } = await connectManager()
+    let resolveRevalidation!: (allowed: boolean) => void
+    const revalidate = vi.fn(() => new Promise<boolean>((resolve) => { resolveRevalidation = resolve }))
+    const joined = manager.joinRoom(65, vi.fn().mockResolvedValue(true))
+    await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
+    socket.acknowledgeNext({ ok: true, sessionId: 65 })
+    await joined
+
+    socket.connected = false
+    socket.trigger("disconnect", "transport close")
+    socket.connected = true
+    socket.trigger("connect")
+    await vi.waitFor(() => expect(revalidate).not.toHaveBeenCalled())
+    // The stored validator is the one supplied on the successful initial join.
+    // A caller cannot issue a second live:join while it is still resolving.
+    const recovering = manager.joinRoom(65, revalidate)
+    await vi.waitFor(() => expect(socket.emitted.filter((item) => item.event === "live:join")).toHaveLength(1))
+    resolveRevalidation(true)
+    await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
+    socket.acknowledgeNext({ ok: true, sessionId: 65 })
+    await expect(recovering).resolves.toBeUndefined()
+    expect(manager.getRoomStatus(65)).toBe("joined")
+  })
+
   it("does not rejoin when the HTTP-backed membership check says access was lost", async () => {
     const { manager, socket } = await connectManager()
     const revalidate = vi.fn().mockResolvedValue(true)
