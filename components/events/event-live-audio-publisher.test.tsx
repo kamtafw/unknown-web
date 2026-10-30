@@ -135,6 +135,7 @@ describe("EventLiveAudioPublisher", () => {
 			expect(mocks.room.disconnect).toHaveBeenCalled()
 			expect(screen.getByText("The live session has ended.")).toBeInTheDocument()
 		})
+		expect(screen.queryByRole("button", { name: "Connect microphone" })).not.toBeInTheDocument()
 		expect(socketHarness.instances[0].leaveRoom).toHaveBeenCalledWith(71)
 	})
 
