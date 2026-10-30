@@ -1,7 +1,11 @@
 import { QueryClient, QueryObserver } from "@tanstack/react-query"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import type { EventsSocketManager } from "./socket-manager"
-import { attachEventsRealtimeHandlers, findCachedEventIdsForLiveSession } from "./socket-events"
+import {
+  attachEventsRealtimeHandlers,
+  findCachedEventIdsForLiveSession,
+  invalidateEventsAfterSocketReconnect,
+} from "./socket-events"
 import { eventKeys } from "./query-keys"
 import type { EventDetails, EventLiveSessionState } from "@/types/events/api"
 
@@ -142,6 +146,25 @@ describe("Events realtime cache handlers", () => {
     expect(invalidate).toHaveBeenCalledTimes(2)
     expect(manager.leaveRoom).toHaveBeenCalledTimes(1)
     detach()
+  })
+
+  it("reconciles only this account/login session's event queries after reconnect", async () => {
+    const client = createClient()
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue()
+    await invalidateEventsAfterSocketReconnect(client, scope)
+
+    expect(invalidate).toHaveBeenCalledTimes(1)
+    const predicate = invalidate.mock.calls[0][0]?.predicate
+    expect(predicate).toBeTypeOf("function")
+    const matches = (key: readonly unknown[]) => predicate?.({ queryKey: key } as never)
+
+    expect(matches(eventKeys.detail(42, 7, eventId))).toBe(true)
+    expect(matches(eventKeys.liveSession(42, 7, eventId))).toBe(true)
+    expect(matches([...eventKeys.myEventsRoot(), 42, 7, { search: "", limit: 20 }])).toBe(true)
+    expect(matches(eventKeys.detail(84, 7, eventId))).toBe(false)
+    expect(matches(eventKeys.detail(42, 6, eventId))).toBe(false)
+    expect(matches(eventKeys.resources(42, 7, eventId))).toBe(false)
+    expect(matches(eventKeys.nearby(42, 7, { latitude: 1, longitude: 2 }, 25, 20))).toBe(false)
   })
 
   it("refetches ended-event details so a former full viewer can become a restricted preview", async () => {
