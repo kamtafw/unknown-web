@@ -135,6 +135,7 @@ export class EventsSocketManager {
     socket.on("disconnect", (reason) => {
       if (generation !== this.generation || this.socket !== socket) return
       this.joinedRooms.clear()
+      for (const sessionId of this.roomMemberships.keys()) this.setRoomStatus(sessionId, "rejoining")
       this.setStatus(reason === "io client disconnect" ? "disconnected" : "reconnecting")
     })
     socket.io.on("reconnect_attempt", () => {
@@ -263,6 +264,7 @@ export class EventsSocketManager {
       try {
         authorized = await membership.revalidate()
       } catch (error) {
+        if (generation !== this.generation || socket !== this.socket) return
         const roomError = asError(error)
         this.setRoomStatus(sessionId, "error", roomError.message)
         this.onRoomError?.(sessionId, roomError)
@@ -289,6 +291,7 @@ export class EventsSocketManager {
           this.setRoomStatus(sessionId, "joined")
         }
       } catch (error) {
+        if (generation !== this.generation || socket !== this.socket) return
         const roomError = asError(error)
         const unauthorized = error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized"
         if (unauthorized) {
