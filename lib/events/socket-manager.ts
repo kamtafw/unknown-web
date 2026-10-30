@@ -40,6 +40,7 @@ export class EventsSocketManager {
   private connectPromise: Promise<void> | null = null
   private listeners = new Map<string, Set<Handler>>()
   private status: EventsSocketStatus = "idle"
+  private generation = 0
 
   private readonly url: string
   private readonly authProvider: EventsSocketAuthProvider
@@ -67,15 +68,19 @@ export class EventsSocketManager {
     if (this.socket?.connected) return Promise.resolve()
     if (this.connectPromise) return this.connectPromise
 
-    this.connectPromise = this.openSocket().finally(() => {
+    const generation = this.generation
+    this.connectPromise = this.openSocket(generation).finally(() => {
       this.connectPromise = null
     })
     return this.connectPromise
   }
 
-  private async openSocket(): Promise<void> {
+  private async openSocket(generation: number): Promise<void> {
     this.setStatus("connecting")
     const auth = await this.authProvider.getAuth()
+    // A logout/account switch may happen while credentials are being fetched.
+    // Do not let that stale attempt create a socket for the previous account.
+    if (generation !== this.generation) return
     const socket = io(this.url, {
       path: "/socket.io",
       transports: ["websocket"],
@@ -140,6 +145,7 @@ export class EventsSocketManager {
 
   /** Full connection teardown for logout or account switching. */
   disconnect(): void {
+    this.generation += 1
     this.socket?.removeAllListeners()
     this.socket?.disconnect()
     this.socket = null
