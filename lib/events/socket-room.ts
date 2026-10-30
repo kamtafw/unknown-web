@@ -22,13 +22,15 @@ export function createEventRoomRevalidator(
       throw error
     }
 
+    const descriptor = state.socket
     return (
       state.session.id === sessionId &&
       state.session.status === "live" &&
       state.session.isJoined &&
-      state.socket?.namespace === "/live" &&
-      state.socket.joinEvent === "live:join" &&
-      state.socket.sessionId === sessionId
+      descriptor !== null &&
+      descriptor.namespace === "/live" &&
+      descriptor.joinEvent === "live:join" &&
+      descriptor.sessionId === sessionId
     )
   }
 }
