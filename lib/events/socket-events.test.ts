@@ -190,13 +190,13 @@ describe("Events realtime cache handlers", () => {
     const detailKey = eventKeys.detail(42, 7, eventId)
     const full = {
       id: eventId,
-      kind: "full",
+      kind: "full" as const,
       liveSessionId: 99,
       isLive: true,
     } as EventDetails
     const preview = {
       id: eventId,
-      kind: "preview",
+      kind: "preview" as const,
       liveSessionId: 99,
       isLive: false,
     } as EventDetails
