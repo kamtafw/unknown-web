@@ -537,3 +537,40 @@ export function sanitizeLiveSessionPayload(json: unknown): unknown | null {
 		data: { ...pick(data, ["event_id"]), live_session: session, socket },
 	}
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-07A): minimise live participant responses                       */
+/* -------------------------------------------------------------------------- */
+
+const LIVE_PARTICIPANT_KEYS = [
+	"id",
+	"role",
+	"is_active",
+	"is_muted",
+	"media_connected",
+	"microphone_published",
+	"camera_published",
+	"joined_at",
+] as const
+const LIVE_PARTICIPANT_USER_KEYS = [
+	"id",
+	"pkid",
+	"username",
+	"first_name",
+	"last_name",
+	"profile_photo",
+] as const
+
+/**
+ * GET /live/sessions/{id}/participants (guide §5.1, §5.3). Retain only the documented roster
+ * fields and minimal user snapshot. In particular, email, phone, permissions, media credentials,
+ * invite/scheduling data and arbitrary future fields never cross the BFF boundary.
+ */
+export function sanitizeLiveParticipantsPayload(json: unknown): unknown | null {
+	return sanitizePaged(json, (item) => {
+		const row = pick(item, LIVE_PARTICIPANT_KEYS)
+		if (isPlainRecord(item.user)) row.user = pick(item.user, LIVE_PARTICIPANT_USER_KEYS)
+		return row
+	})
+}
