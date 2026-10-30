@@ -571,6 +571,7 @@ export function sanitizeLiveParticipantsPayload(json: unknown): unknown | null {
 	if (
 		!isPlainRecord(json) ||
 		!isPlainRecord(json.data) ||
+		json.success !== true ||
 		!Array.isArray(json.data.results) ||
 		!json.data.results.every((item) => isPlainRecord(item) && isPlainRecord(item.user))
 	) return null
