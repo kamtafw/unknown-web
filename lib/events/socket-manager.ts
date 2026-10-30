@@ -69,10 +69,12 @@ export class EventsSocketManager {
     if (this.connectPromise) return this.connectPromise
 
     const generation = this.generation
-    this.connectPromise = this.openSocket(generation).finally(() => {
-      this.connectPromise = null
+    const pending = this.openSocket(generation).finally(() => {
+      // An older, cancelled attempt must not clear a newer connection attempt.
+      if (this.connectPromise === pending) this.connectPromise = null
     })
-    return this.connectPromise
+    this.connectPromise = pending
+    return pending
   }
 
   private async openSocket(generation: number): Promise<void> {
