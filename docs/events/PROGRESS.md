@@ -246,3 +246,6 @@ Earlier checkpoint (before this task): lint failed with 10 errors; tsc passed; v
 - Credentials BFF now preserves the backend permission object after strict validation.
 - Owner confirmed the backend supports LiveKit microphone publishing for a host on a web-created and web-started session.
 - **Not yet verified locally or against live media:** focused Vitest, TypeScript, ESLint, and a real web-host-to-second-client audio test are required.
+
+
+**P4-04A provider integration (2026-10-30; implementation pushed, owner validation pending).** Added `components/events/events-socket-provider.tsx` and mounted it inside the Events route-group layout. The provider owns an EventsSocketManager per authenticated account/session generation, disconnects on logout/unmount/account switch, and exposes manager/status through `useEventsSocket`. Added provider lifecycle tests for inert-without-auth-provider, authenticated connect, account switch and logout. **The provider is deliberately inert in the current application integration** because the backend has not confirmed the browser Socket.IO handshake authentication mechanism; no credential route, query-string token, or Messenger socket auth is reused. This is an architecture/lifecycle integration only, not a live connection rollout. Owner must run the focused test, typecheck, ESLint and Events suite before further work.
