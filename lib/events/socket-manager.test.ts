@@ -217,9 +217,11 @@ describe("EventsSocketManager", () => {
 
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     expect(socket.emitted.at(-1)).toEqual({ event: "live:join", payload: { sessionId: 55 } })
+    expect(manager.getRoomStatus(55)).toBe("joining")
     expect(revalidate).not.toHaveBeenCalled()
     socket.acknowledgeNext({ ok: true, sessionId: 55 })
     await expect(joined).resolves.toBeUndefined()
+    expect(manager.getRoomStatus(55)).toBe("joined")
 
     await expect(manager.joinRoom(55, revalidate)).resolves.toBeUndefined()
     expect(socket.acknowledgements).toHaveLength(0)
@@ -233,6 +235,7 @@ describe("EventsSocketManager", () => {
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     socket.acknowledgeNext({ ok: false, sessionId: 56, code: "live_room_unauthorized" })
     await expect(unauthorized).rejects.toMatchObject({ code: "live_room_unauthorized", sessionId: 56 })
+    expect(manager.getRoomStatus(56)).toBe("not_admitted")
 
     const malformed = manager.joinRoom(57, revalidate)
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
@@ -255,6 +258,7 @@ describe("EventsSocketManager", () => {
     await joined
 
     expect(manager.leaveRoom(59)).toBe(true)
+    expect(manager.getRoomStatus(59)).toBe("idle")
     expect(socket.emitted.at(-1)).toEqual({ event: "live:leave", payload: { sessionId: 59 } })
     expect(manager.leaveRoom(0)).toBe(false)
   })
@@ -273,10 +277,12 @@ describe("EventsSocketManager", () => {
     socket.trigger("connect")
 
     await vi.waitFor(() => expect(revalidate).toHaveBeenCalledTimes(1))
+    expect(manager.getRoomStatus(60)).toBe("rejoining")
     await vi.waitFor(() => expect(socket.acknowledgements).toHaveLength(1))
     expect(socket.emitted.at(-1)).toEqual({ event: "live:join", payload: { sessionId: 60 } })
     socket.acknowledgeNext({ ok: true, sessionId: 60 })
     await manager.rejoinRooms()
+    expect(manager.getRoomStatus(60)).toBe("joined")
   })
 
   it("does not rejoin when the HTTP-backed membership check says access was lost", async () => {
@@ -296,6 +302,7 @@ describe("EventsSocketManager", () => {
     await manager.rejoinRooms()
 
     expect(socket.emitted.filter((item) => item.event === "live:join")).toHaveLength(1)
+    expect(manager.getRoomStatus(61)).toBe("not_admitted")
     expect(revalidate).toHaveBeenCalledTimes(1)
   })
 
