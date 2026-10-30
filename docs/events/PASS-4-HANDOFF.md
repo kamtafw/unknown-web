@@ -363,3 +363,29 @@ The manager provides:
 4. Confirm whether missed lifecycle events are replayed or must be recovered through an HTTP read after reconnect.
 
 **Validation still required:** add unit tests for listener registration/removal, connection/reconnection auth refresh, status transitions, emit while disconnected, and disconnect. Then run the project's typecheck, focused ESLint and Events test suite. No live socket call has been made by this implementation.
+
+
+## K. P4-04A socket-manager test coverage and account-switch safety (2026-10-30)
+
+The isolated Events socket manager now has focused unit coverage in `lib/events/socket-manager.test.ts` for:
+
+- Dedicated Socket.IO construction, WebSocket-only transport, and injected handshake auth.
+- Event listeners registered before connection and their unsubscribe behavior.
+- Emission being rejected while disconnected and accepted while connected.
+- Refreshing the handshake auth object after a connection error.
+- Explicit disconnect and status reporting.
+- Cancelling a connection attempt when logout/account switching occurs during the asynchronous auth lookup.
+- Preventing a cancelled, older attempt from clearing a newer in-flight connection attempt.
+
+The implementation now uses a monotonically increasing generation to invalidate auth lookups that belong to a previous account. The pending-promise cleanup is identity-checked so an older attempt cannot clear the current attempt's promise.
+
+**Validation status:** tests have been authored and pushed, but have not been executed in a local project environment. TypeScript, ESLint, the Events test suite, and live socket connectivity are therefore still unverified for this task. Run the exact commands below from the repository root:
+
+```bash
+npx vitest run lib/events/socket-manager.test.ts
+npx tsc --noEmit
+npx eslint lib/events/socket-manager.ts lib/events/socket-manager.test.ts
+npx vitest run app/api/events components/events
+```
+
+**Integration remains deliberately blocked:** no application component or hook instantiates this manager yet. The backend must confirm how a browser authenticates its Socket.IO handshake and whether the configured browser origins are allowed. Once that contract is known, the next implementation step is an Events-owned lifecycle provider that creates one manager per authenticated account, connects only while the account is authenticated, and disconnects on logout/account switch. Room joins and event subscriptions must remain a separate follow-up after their exact message contracts are verified.
