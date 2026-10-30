@@ -192,6 +192,20 @@ export class EventsSocketManager {
       return Promise.reject(new EventsSocketRoomJoinError("Events socket is not connected", sessionId))
     }
     if (this.joinedRooms.has(sessionId) && this.roomMemberships.has(sessionId)) return Promise.resolve()
+    const existingMembership = this.roomMemberships.get(sessionId)
+    if (existingMembership) {
+      // A room retained across a transport loss must pass its revalidator
+      // before any caller can cause another live:join emission.
+      return this.rejoinRooms().then(() => {
+        if (this.joinedRooms.has(sessionId)) return
+        const unauthorized = this.getRoomStatus(sessionId) === "not_admitted"
+        throw new EventsSocketRoomJoinError(
+          unauthorized ? "You are not authorized to join this live session" : "Live room membership has not been restored",
+          sessionId,
+          unauthorized ? "live_room_unauthorized" : null,
+        )
+      })
+    }
     const pendingJoin = this.roomJoinPromises.get(sessionId)
     if (pendingJoin) return pendingJoin
 
