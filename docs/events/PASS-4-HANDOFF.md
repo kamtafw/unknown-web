@@ -389,3 +389,8 @@ npx vitest run app/api/events components/events
 ```
 
 **Integration remains deliberately blocked:** no application component or hook instantiates this manager yet. The backend must confirm how a browser authenticates its Socket.IO handshake and whether the configured browser origins are allowed. Once that contract is known, the next implementation step is an Events-owned lifecycle provider that creates one manager per authenticated account, connects only while the account is authenticated, and disconnects on logout/account switch. Room joins and event subscriptions must remain a separate follow-up after their exact message contracts are verified.
+
+
+### P4-04A implementation update — provider lifecycle
+
+The Events route group now mounts an independent `EventsSocketProvider`. It owns one manager for the current authenticated account and session generation, and tears it down on logout, account switch or route-group unmount. Consumers can access its status and manager via `useEventsSocket`. The provider accepts an injected `EventsSocketAuthProvider`; the app currently does **not** inject one, so the provider stays inert. This is intentional: the backend's browser handshake authentication contract is still unconfirmed. Do not copy Messenger's temporary query-string token flow or activate a guessed credential endpoint. Provider lifecycle tests cover inert mode, connect, account switching and logout. This code has not yet been run in the owner's environment; see `PROGRESS.md` for the validation gate.
