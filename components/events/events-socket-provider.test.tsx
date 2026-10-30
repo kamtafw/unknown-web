@@ -64,6 +64,11 @@ describe("EventsSocketProvider", () => {
     expect(harness.instances).toHaveLength(1)
     expect(harness.instances[0].connect).toHaveBeenCalledTimes(1)
     expect(harness.instances[0].on).toHaveBeenCalledTimes(4)
+    expect(
+      harness.instances[0].on.mock.invocationCallOrder.every(
+        (order: number) => order < harness.instances[0].connect.mock.invocationCallOrder[0],
+      ),
+    ).toBe(true)
   })
 
   it("disconnects the previous account manager when the account generation changes", () => {
