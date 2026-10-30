@@ -15,6 +15,8 @@ import type {
 	EventDetails,
 	EventGuestsPage,
 	EventLiveSessionState,
+	LiveParticipantRole,
+	LiveParticipantsPage,
 	EventResources,
 	EventRsvpStatus,
 	EventsPage,
@@ -29,6 +31,7 @@ import {
 	normalizeGuestsPage,
 	normalizeListData,
 	normalizeLiveSession,
+	normalizeLiveParticipantsPage,
 	normalizeNearbyData,
 	normalizeResources,
 	normalizeRsvpResult,
@@ -264,6 +267,27 @@ export const eventsApi = {
 			throw new EventPayloadError()
 		}
 		return state
+	},
+
+	/**
+	 * One page of live-session participants. This is the live roster, not the event guest list.
+	 * The backend's next link controls pagination; participant_count remains the session-level
+	 * authoritative count and is not inferred from this page.
+	 */
+	getLiveParticipantsPage: async (
+		params: { sessionId: number; page: number; limit: number; role?: LiveParticipantRole },
+		signal?: AbortSignal,
+	): Promise<LiveParticipantsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(
+			"/api/events/live-sessions/" + params.sessionId + "/participants",
+			{
+				params: { page: params.page, limit: params.limit, role: params.role },
+				signal,
+			},
+		)
+		const page = normalizeLiveParticipantsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
 	},
 
 	/** Create a waiting live session for this event (host only; no request body). */
