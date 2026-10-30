@@ -157,4 +157,20 @@ describe("participant presence socket reconciliation", () => {
     expect(matches(eventKeys.liveParticipants(84, 7, 55, 20, null))).toBe(false)
     expect(matches(eventKeys.liveParticipants(42, 6, 55, 20, null))).toBe(false)
   })
+  it("allows a later rejoin by the same user even when the server count repeats", () => {
+    const client = createClient()
+    const manager = new FakeManager()
+    client.setQueryData(eventKeys.liveSession(42, 7, eventId), liveState(55, 2))
+    const invalidate = vi.spyOn(client, "invalidateQueries").mockResolvedValue(undefined)
+    const detach = attachEventsRealtimeHandlers(manager as unknown as EventsSocketManager, client, scope)
+
+    manager.emit("live:participant:joined", joined({ participant_count: 3 }))
+    manager.emit("live:participant:left", left({ participant_count: 2 }))
+    manager.emit("live:participant:joined", joined({ participant_count: 3 }))
+
+    expect(client.getQueryData<EventLiveSessionState>(eventKeys.liveSession(42, 7, eventId))?.session.participantCount).toBe(3)
+    expect(invalidate.mock.calls.filter(([arg]) => arg?.queryKey?.[1] === "live-session")).toHaveLength(3)
+    detach()
+  })
+
 })
