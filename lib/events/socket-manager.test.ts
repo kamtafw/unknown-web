@@ -222,4 +222,35 @@ describe("EventsSocketManager", () => {
     expect(socketHarness.io).not.toHaveBeenCalled()
     expect(manager.getStatus()).toBe("disconnected")
   })
+
+  it("does not let a cancelled attempt clear a newer in-flight connection", async () => {
+    const resolvers: Array<(value: Record<string, string>) => void> = []
+    const getAuth = vi.fn(
+      () =>
+        new Promise<Record<string, string>>((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+    const manager = new EventsSocketManager({
+      authProvider: { getAuth },
+    })
+
+    const oldAttempt = manager.connect()
+    manager.disconnect()
+    const currentAttempt = manager.connect()
+
+    resolvers[0]({ token: "old-account" })
+    await oldAttempt
+    expect(socketHarness.io).not.toHaveBeenCalled()
+
+    resolvers[1]({ token: "current-account" })
+    await vi.waitFor(() => expect(socketHarness.sockets).toHaveLength(1))
+    const socket = socketHarness.sockets[0]
+    socket.connected = true
+    socket.trigger("connect")
+    await currentAttempt
+
+    expect(socket.auth).toEqual({ token: "current-account" })
+    expect(manager.getStatus()).toBe("connected")
+  })
 })
