@@ -5,7 +5,11 @@ import { EventsSocketProvider } from "./events-socket-provider"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useAuthStore } from "@/stores/auth-store"
 
-const socketHarness = vi.hoisted(() => ({ instances: [] as Array<any> }))
+type FakeEventsSocket = {
+	trigger(event: string, payload: unknown): void
+	leaveRoom: ReturnType<typeof vi.fn>
+}
+const socketHarness = vi.hoisted(() => ({ instances: [] as FakeEventsSocket[] }))
 const mocks = vi.hoisted(() => ({
 	setMicrophoneEnabled: vi.fn(),
 	connect: vi.fn(),
