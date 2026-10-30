@@ -1,5 +1,6 @@
 import { TopBar } from "@/components/dashboard/top-bar"
 import { EventsShell } from "@/components/events/events-shell"
+import { EventsSocketProvider } from "@/components/events/events-socket-provider"
 import { DashboardAuthBootstrap } from "@/providers/dashboard-auth-bootstrap"
 import { ReactNode } from "react"
 
@@ -18,7 +19,9 @@ export default function EventsLayout({ children }: { children: ReactNode }) {
 			<TopBar />
 
 			<main className="flex flex-1 min-h-0 overflow-hidden px-3 pt-4 pb-4 sm:px-6 lg:px-9 lg:pt-6 lg:pb-8">
-				<EventsShell>{children}</EventsShell>
+				<EventsSocketProvider>
+					<EventsShell>{children}</EventsShell>
+				</EventsSocketProvider>
 			</main>
 		</div>
 	)
