@@ -141,6 +141,7 @@ export class EventsSocketManager {
     })
     socket.on("live:error", (payload: unknown) => {
       if (generation !== this.generation || this.socket !== socket || !isRecord(payload)) return
+      if (payload.event !== "live:join") return
       const sessionId = payload.sessionId
       const code = typeof payload.code === "string" ? payload.code : null
       if (typeof sessionId !== "number" || !Number.isSafeInteger(sessionId) || sessionId <= 0) return
