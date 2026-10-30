@@ -255,3 +255,14 @@ Earlier checkpoint (before this task): lint failed with 10 errors; tsc passed; v
 
 
 **P4-04A provider integration (2026-10-30; implementation pushed, owner validation pending).** Added `components/events/events-socket-provider.tsx` and mounted it inside the Events route-group layout. The provider owns an EventsSocketManager per authenticated account/session generation, disconnects on logout/unmount/account switch, and exposes manager/status through `useEventsSocket`. Added provider lifecycle tests for inert-without-auth-provider, authenticated connect, account switch and logout. **The provider is deliberately inert in the current application integration** because the backend has not confirmed the browser Socket.IO handshake authentication mechanism; no credential route, query-string token, or Messenger socket auth is reused. This is an architecture/lifecycle integration only, not a live connection rollout. Owner must run the focused test, typecheck, ESLint and Events suite before further work.
+
+
+## P4-07A — live participant data layer (2026-10-30)
+
+Implemented on `feat/events-p4-07a-participant-data`: added the authenticated live-session participants BFF route, strict role/session-id validation, page/limit forwarding, a response allow-list for participant and user snapshot fields, domain types and a fail-closed normalizer, the API client method, and account/login-session/session/limit/role-scoped query keys. The new contract note is `docs/events/P4-07A-PARTICIPANT-DATA.md`.
+
+The layer keeps live participants distinct from event guests and media connections. It preserves the backend's oldest-first order and uses only the backend `next` link for pagination. It does not infer the session count from page length; the canonical live-session `participant_count` remains authoritative. Hook integration, socket join/left reconciliation, deduplication and UI are out of scope for P4-07A.
+
+The supplied backend guide (§5.1, §5.3) is the source. The mobile repository was not available in the connected GitHub installation, so mobile implementation parity was not asserted. D4-7 remains separately unresolved and does not block this HTTP read.
+
+**Verification pending:** focused tests, TypeScript, ESLint and the Events regression suite have not been executed here; no live-backend request has been made. See the P4-07A contract note and branch closeout for exact commands.
