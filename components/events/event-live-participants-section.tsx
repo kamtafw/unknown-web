@@ -1,6 +1,7 @@
 "use client"
 
 import { useEventLiveParticipants } from "@/hooks/events/use-event-live-participants"
+import { useEventLiveRoom } from "@/hooks/events/use-event-live-room"
 import type { EventLiveSessionState, LiveParticipant } from "@/types/events/api"
 import Image from "next/image"
 import { RetryButton } from "./event-list"
@@ -45,6 +46,7 @@ function ParticipantRow({ participant }: { participant: LiveParticipant }) {
 
 /** Read-only live roster. It never substitutes event guests or media connections for app presence. */
 export function EventLiveParticipantsSection({ liveState }: { liveState: EventLiveSessionState }) {
+  useEventLiveRoom(liveState)
   const query = useEventLiveParticipants(liveState)
 
   if (liveState.session.status !== "live" || !query.enabled) return null
