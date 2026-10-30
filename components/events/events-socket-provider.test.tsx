@@ -58,7 +58,7 @@ describe("EventsSocketProvider", () => {
 
   it("connects once for an authenticated account", () => {
     authenticated(42)
-    render(<EventsSocketProvider><Consumer /></EventsSocketProvider>)
+    renderProvider()
     expect(harness.instances).toHaveLength(1)
     expect(harness.instances[0].connect).toHaveBeenCalledTimes(1)
     expect(harness.instances[0].on).toHaveBeenCalledTimes(4)
@@ -66,10 +66,10 @@ describe("EventsSocketProvider", () => {
 
   it("disconnects the previous account manager when the account generation changes", () => {
     authenticated(42)
-    const { rerender } = render(<EventsSocketProvider><Consumer /></EventsSocketProvider>)
+    const { rerender } = renderProvider()
     const previous = harness.instances[0]
     act(() => authenticated(84, 2))
-    rerender(<EventsSocketProvider><Consumer /></EventsSocketProvider>)
+    rerenderProvider()
     expect(previous.disconnect).toHaveBeenCalledTimes(1)
     expect(harness.unsubscribers.slice(0, 4).every((unsubscribe) => unsubscribe.mock.calls.length === 1)).toBe(true)
     expect(harness.instances).toHaveLength(2)
@@ -77,10 +77,10 @@ describe("EventsSocketProvider", () => {
 
   it("disconnects on logout", () => {
     authenticated(42)
-    const { rerender } = render(<EventsSocketProvider><Consumer /></EventsSocketProvider>)
+    const { rerender } = renderProvider()
     const manager = harness.instances[0]
     act(() => useAuthStore.setState({ user: null, isAuthenticated: false, sessionGeneration: 2 }))
-    rerender(<EventsSocketProvider><Consumer /></EventsSocketProvider>)
+    rerenderProvider()
     expect(manager.disconnect).toHaveBeenCalledTimes(1)
   })
 })
