@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query"
-import type { EventDetails, EventLiveSessionState } from "@/types/events/api"
+import type { EventDetails, EventLiveSessionState, LiveParticipantRole } from "@/types/events/api"
 import { isEventId } from "./server"
 import { eventKeys, keyBelongsTo, keyEventId } from "./query-keys"
 import type { EventsSocketManager } from "./socket-manager"
@@ -17,6 +17,14 @@ interface LiveSessionAvailablePayload {
   is_live: boolean
   recipient_ids: unknown[]
 }
+
+interface ParticipantPresencePayload {
+  sessionId: number
+  userId: number
+  participantCount: number
+}
+
+const LIVE_ROLES = new Set<LiveParticipantRole>(["host", "co_host", "speaker", "listener"])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -43,6 +51,19 @@ function parseAvailablePayload(value: unknown): LiveSessionAvailablePayload | nu
 
 function parseSessionId(value: unknown): number | null {
   return isRecord(value) && isPositiveSessionId(value.session_id) ? value.session_id : null
+}
+
+/** Only the documented identity/count fields are consumed; socket snapshots are not roster rows. */
+function parseParticipantPresence(value: unknown, joined: boolean): ParticipantPresencePayload | null {
+  if (!isRecord(value) || !isPositiveSessionId(value.session_id) || !isRecord(value.user)) return null
+  const userId = value.user.pkid
+  const participantCount = value.participant_count
+  if (
+    typeof userId !== "number" || !Number.isSafeInteger(userId) || userId <= 0 ||
+    typeof participantCount !== "number" || !Number.isSafeInteger(participantCount) || participantCount < 0
+  ) return null
+  if (joined && (typeof value.role !== "string" || !LIVE_ROLES.has(value.role as LiveParticipantRole))) return null
+  return { sessionId: value.session_id, userId, participantCount }
 }
 
 /**
@@ -97,17 +118,61 @@ function invalidateEventDetailsAndLiveSession(
   ])
 }
 
+function applyAuthoritativeParticipantCount(
+  client: QueryClient,
+  scope: EventsRealtimeScope,
+  eventIds: string[],
+  sessionId: number,
+  participantCount: number,
+  direction: "joined" | "left",
+): void {
+  if (scope.accountId === null) return
+  for (const eventId of eventIds) {
+    const key = eventKeys.liveSession(scope.accountId, scope.sessionGeneration, eventId)
+    const current = client.getQueryData<EventLiveSessionState>(key)
+    if (!current || current.session.id !== sessionId) continue
+    const previous = current.session.participantCount
+    // A delayed join must not roll the count backwards; a delayed leave must not roll it forwards.
+    // Ambiguous ordering is resolved by the subsequent canonical HTTP refetch.
+    const directionIsPlausible =
+      previous === null || (direction === "joined" ? participantCount >= previous : participantCount <= previous)
+    if (directionIsPlausible && previous !== participantCount) {
+      client.setQueryData<EventLiveSessionState>(key, {
+        ...current,
+        session: { ...current.session, participantCount },
+      })
+    }
+  }
+}
+
+function invalidateLiveParticipantQueries(
+  client: QueryClient,
+  scope: EventsRealtimeScope,
+  sessionId: number,
+): Promise<void> {
+  return client.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey
+      return (
+        key[0] === eventKeys.all[0] &&
+        key[1] === "live-participants" &&
+        keyBelongsTo(key, scope.accountId, scope.sessionGeneration) &&
+        key[4] === sessionId
+      )
+    },
+  })
+}
+
 /**
- * Missed lifecycle events are not documented as replayed after reconnect.
- * Mark this account/session's active event details, My Events and live-session
- * queries stale so their normal HTTP reads reconcile authoritative state.
+ * Missed events are not documented as replayed after reconnect. Mark this account/session's active
+ * event details, My Events, live-session and participant queries stale for HTTP reconciliation.
  */
 export function invalidateEventsAfterSocketReconnect(
   client: QueryClient,
   scope: EventsRealtimeScope,
 ): Promise<void> {
   if (scope.accountId === null) return Promise.resolve()
-  const roots = new Set(["detail", "my-events", "live-session"])
+  const roots = new Set(["detail", "my-events", "live-session", "live-participants"])
   return client.invalidateQueries({
     predicate: (query) => {
       const key = query.queryKey
@@ -121,9 +186,9 @@ export function invalidateEventsAfterSocketReconnect(
 }
 
 /**
- * Register the documented raw /live lifecycle events. The event-level
- * availability event is expected in the backend's personal user room; this
- * function deliberately does not invent a client-side personal-room join.
+ * Register the documented raw /live lifecycle and participant events. The event-level availability
+ * event is expected in the backend's personal user room; this function deliberately does not
+ * invent a client-side personal-room join.
  */
 export function attachEventsRealtimeHandlers(
   manager: EventsSocketManager,
@@ -170,15 +235,46 @@ export function attachEventsRealtimeHandlers(
       }
     })
 
+  const attachParticipantEvent = (eventName: "live:participant:joined" | "live:participant:left") =>
+    manager.on(eventName, (raw: unknown) => {
+      const joined = eventName === "live:participant:joined"
+      const payload = parseParticipantPresence(raw, joined)
+      if (!payload || scope.accountId === null) return
+
+      const eventIds = findCachedEventIdsForLiveSession(client, scope, payload.sessionId)
+      // A session id alone is insufficient: the event must belong to this account/login epoch.
+      if (eventIds.length === 0) return
+
+      const dedupeKey = `participant:${eventName}:${payload.sessionId}:${payload.userId}:${payload.participantCount}`
+      if (!remember(dedupeKey)) return
+
+      applyAuthoritativeParticipantCount(
+        client, scope, eventIds, payload.sessionId, payload.participantCount, joined ? "joined" : "left",
+      )
+      void Promise.all([
+        ...eventIds.map((eventId) =>
+          client.invalidateQueries({
+            queryKey: eventKeys.liveSession(scope.accountId!, scope.sessionGeneration, eventId),
+            exact: true,
+          }),
+        ),
+        invalidateLiveParticipantQueries(client, scope, payload.sessionId),
+      ])
+    })
+
   const offStarted = attachSessionEvent("live:session:started")
   const offEnded = attachSessionEvent("live:session:ended")
   const offCancelled = attachSessionEvent("live:session:cancelled")
+  const offParticipantJoined = attachParticipantEvent("live:participant:joined")
+  const offParticipantLeft = attachParticipantEvent("live:participant:left")
 
   return () => {
     offAvailable()
     offStarted()
     offEnded()
     offCancelled()
+    offParticipantJoined()
+    offParticipantLeft()
     seen.clear()
   }
 }
