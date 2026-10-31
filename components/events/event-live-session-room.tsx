@@ -28,7 +28,8 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
   const sessionId = session?.id ?? 0
   const admitted = status === "ready" && !!session?.isJoined && session.status === "live"
   const descriptor = state?.socket ?? null
-  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)\n  const [joinAttempt, setJoinAttempt] = useState(0)
+  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)
+  const [joinAttempt, setJoinAttempt] = useState(0)
   const activeRoomError = roomError?.sessionId === sessionId ? roomError.message : null
   const comments = useLiveSessionComments(admitted ? sessionId : 0)
   const posting = usePostLiveSessionComment(admitted ? sessionId : 0)
@@ -143,7 +144,11 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       </div>
 
       {activeRoomError ? (
-        <p role="alert" className="text-[12px] text-destructive">Live updates are unavailable: {activeRoomError}</p>
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-[12px] text-destructive">
+          <span>Live updates are unavailable: {activeRoomError}</span>
+          <button type="button" className={secondaryButton}
+            onClick={() => { setRoomError(null); setJoinAttempt((value) => value + 1) }}>Reconnect</button>
+        </div>
       ) : admitted && !descriptor ? (
         <p role="note" className="text-[12px] text-muted-foreground">Realtime updates are not available for this session. Comments can still be refreshed from the server.</p>
       ) : null}
