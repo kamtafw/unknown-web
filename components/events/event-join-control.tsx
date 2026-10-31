@@ -2,7 +2,9 @@
 
 import { useJoinEvent } from "@/hooks/events/use-join-event"
 import { useLeaveEvent } from "@/hooks/events/use-leave-event"
+import { useEventGuests } from "@/hooks/events/use-event-guests"
 import { useEventLiveSession } from "@/hooks/events/use-event-live-session"
+import { EVENTS_PAGE_SIZE } from "@/lib/events/constants"
 import type { EventDetails } from "@/types/events/api"
 import { EventLiveAudioListener } from "./event-live-audio-listener"
 import { useState } from "react"
@@ -19,11 +21,20 @@ export function EventJoinControl({
   const [leftLocally, setLeftLocally] = useState(false)
   const [localSessionId, setLocalSessionId] = useState<number | null>(null)
   const liveSession = useEventLiveSession(details)
+  // The guest-list endpoint is available only to hosts and viewers with a persistent guest row.
+  // A successful read therefore confirms membership even when no live session is active.
+  const guestList = useEventGuests(eventId, EVENTS_PAGE_SIZE, details.kind === "full")
+  const hasGuestRecord = details.kind === "full" && guestList.hasLoaded && guestList.error !== "forbidden"
   const sessionId = localSessionId ?? (
     liveSession.state?.session.isJoined ? liveSession.state.session.id : null
   )
-  const isJoined = !leftLocally && (
-    joinedLocally || liveSession.state?.session.isJoined === true
+  const isLiveEvent = details.isLive || (
+    details.kind === "full" && details.liveSessionStatus === "live"
+  )
+  const canLeave = !leftLocally && (
+    joinedLocally ||
+    liveSession.state?.session.isJoined === true ||
+    hasGuestRecord
   )
   const { join, isPending: isJoining, errorMessage: joinError, clearError: clearJoinError } = useJoinEvent(eventId)
   const {
@@ -56,18 +67,15 @@ export function EventJoinControl({
     }
   }
 
-  if (isJoined) {
+  if (canLeave) {
     return (
       <div className="flex flex-col gap-3">
         <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
-          You&apos;ve joined the event. Connecting to live audio…
+          {sessionId !== null
+            ? "You've joined the event. Connecting to live audio…"
+            : "You're on the guest list for this event."}
         </p>
         {sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
-        {sessionId === null && (
-          <p className="text-[12px] text-muted-foreground">
-            You were admitted, but the live audio session could not be found. Refresh the event and try again.
-          </p>
-        )}
         {leaveError && <p role="alert" className="text-[12px] text-destructive">{leaveError}</p>}
         <button type="button" onClick={() => void submitLeave()} disabled={isLeaving} className={secondaryButton}>
           {isLeaving ? "Leaving…" : "Leave event"}
@@ -75,6 +83,8 @@ export function EventJoinControl({
       </div>
     )
   }
+
+  if (!isLiveEvent) return null
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border border-border p-3.5">
