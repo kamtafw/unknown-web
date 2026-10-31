@@ -77,12 +77,17 @@ export const marketplaceApi = {
 				ApiResponse<{ checked: number; pending: number; status: string | null }>
 			>(`${root}/seller/payouts/reconcile`, {})
 			.then((r) => r.data.data),
-	requestPayout: (expected_amount: string) =>
+	requestPayout: (payload: {
+		expected_amount: string
+		expected_settlement_date: string
+	}) =>
 		apiClient
-			.post<ApiResponse<Record<string, never>>>(`${root}/seller/payouts`, {
-				expected_amount,
-			})
+			.post<ApiResponse<{ detail: string; scheduled_for: string }>>(
+				`${root}/seller/payouts`,
+				payload,
+			)
 			.then((r) => r.data.data),
+
 	alerts: () => options<SellerAlert>("seller/alerts"),
 	readAlert: (id: number) =>
 		apiClient

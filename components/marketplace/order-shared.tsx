@@ -5,10 +5,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, PackageCheck, Truck } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog"
 import { marketplaceApi, marketplaceError } from "@/lib/marketplace/api"
-import { nextOrderStatus, orderKeys, orderStatuses } from "@/lib/marketplace/orders"
-import type { OrderStatus, SellerOrder, SellerOrderItem } from "@/types/marketplace"
+import {
+	nextOrderStatus,
+	orderKeys,
+	orderStatuses,
+} from "@/lib/marketplace/orders"
+import type {
+	OrderStatus,
+	SellerOrder,
+	SellerOrderItem,
+} from "@/types/marketplace"
 import { cn } from "@/lib/utils"
 import { money, ProductImage } from "./shared"
 
@@ -55,7 +68,14 @@ export function OrderStatusAction({
 	const [target, setTarget] = useState<"shipped" | "delivered" | null>(null)
 	const [error, setError] = useState("")
 	const client = useQueryClient()
-	const next = nextOrderStatus(order.status)
+	const alreadyShipped = order.tracking_events?.some(
+		(event) =>
+			event.checkpoint === "collected" && event.status === "successful",
+	)
+	const next =
+		order.delivery_verified_at || alreadyShipped
+			? null
+			: nextOrderStatus(order.status)
 	const mutation = useMutation({
 		mutationFn: (status: "shipped" | "delivered") =>
 			marketplaceApi.updateOrderStatus(order.id, status),
@@ -90,7 +110,8 @@ export function OrderStatusAction({
 					setOpen(true)
 				}}
 			>
-				{next === "shipped" ? <Truck size={14} /> : <PackageCheck size={14} />}Mark as {next}
+				{next === "shipped" ? <Truck size={14} /> : <PackageCheck size={14} />}
+				Mark as {next}
 			</Button>
 			<Dialog
 				open={open}
@@ -100,7 +121,11 @@ export function OrderStatusAction({
 			>
 				<DialogContent className="rounded-2xl p-7">
 					<div className="mb-1 inline-flex w-fit rounded-xl bg-primary/10 p-3 text-primary">
-						{target === "shipped" ? <Truck size={24} /> : <PackageCheck size={24} />}
+						{target === "shipped" ? (
+							<Truck size={24} />
+						) : (
+							<PackageCheck size={24} />
+						)}
 					</div>
 					<DialogTitle>
 						Mark order #{order.id} as {target}?
@@ -112,7 +137,8 @@ export function OrderStatusAction({
 					</DialogDescription>
 					<div className="rounded-xl bg-muted/50 p-4">
 						<p className="text-xs text-muted-foreground">
-							{order.items.length} {order.items.length === 1 ? "product" : "products"} ·{" "}
+							{order.items.length}{" "}
+							{order.items.length === 1 ? "product" : "products"} ·{" "}
 							{order.shipping_address?.full_name || "Customer"}
 						</p>
 						<p className="mt-2 text-lg font-semibold">{money(order.total)}</p>
@@ -123,7 +149,11 @@ export function OrderStatusAction({
 						</p>
 					)}
 					<div className="flex justify-end gap-2">
-						<Button variant="outline" disabled={mutation.isPending} onClick={() => setOpen(false)}>
+						<Button
+							variant="outline"
+							disabled={mutation.isPending}
+							onClick={() => setOpen(false)}
+						>
 							Cancel
 						</Button>
 						<Button
@@ -132,7 +162,9 @@ export function OrderStatusAction({
 								if (target) mutation.mutate(target)
 							}}
 						>
-							{mutation.isPending && <Loader2 size={14} className="animate-spin" />}
+							{mutation.isPending && (
+								<Loader2 size={14} className="animate-spin" />
+							)}
 							{mutation.isPending ? "Updating…" : `Confirm ${target}`}
 						</Button>
 					</div>

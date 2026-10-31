@@ -75,6 +75,12 @@ describe("AppsCombo approval before Stripe verification", () => {
 		expect(marketplaceApi.verificationLink).toHaveBeenCalledTimes(1)
 	})
 
+    it("accepts payout-enabled recipient accounts without requiring card charges", () => {
+        show({ ...account, approval_status: "approved", has_payment_account: true, stripe_payouts_enabled: true })
+        expect(screen.getByText("Your account is verified")).toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "Verify account" })).not.toBeInTheDocument()
+    })
+
 	it("does not substitute an existing verified Stripe account for AppsCombo approval", () => {
 		show({
 			...account,

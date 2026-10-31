@@ -14,6 +14,7 @@ import {
 import { marketplaceApi, marketplaceError } from "@/lib/marketplace/api"
 import type { PayoutSettings } from "@/types/marketplace"
 import { ErrorState, LoadingState, money } from "./shared"
+import { walletDate } from "@/lib/marketplace/wallet"
 
 export function PayoutControls({
 	verified,
@@ -65,7 +66,7 @@ export function PayoutControls({
 		mutationFn: marketplaceApi.requestPayout,
 		onSuccess: () => {
 			setPayoutOpen(false)
-			toast.success("Payout initiated successfully")
+			toast.success("Withdrawal scheduled for settlement")
 			for (const key of [
 				"wallet",
 				"wallet-transactions",
@@ -110,10 +111,11 @@ export function PayoutControls({
 				Request payout
 			</Button>
 			<Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-				<DialogContent className="rounded-2xl p-7">
+				<DialogContent className="max-h-[90dvh] w-[calc(100vw_-_2rem)] max-w-lg overflow-y-auto rounded-2xl p-5 sm:p-7">
 					<DialogTitle>Payout settings</DialogTitle>
 					<DialogDescription>
-						Choose your payout frequency and minimum amount.
+						Withdrawals settle monthly on the 25th. Choose your minimum request
+						amount.
 					</DialogDescription>
 					{settings.isPending ? (
 						<LoadingState />
@@ -136,11 +138,12 @@ export function PayoutControls({
 					if (!payout.isPending) setPayoutOpen(open)
 				}}
 			>
-				<DialogContent className="rounded-2xl p-7">
+				<DialogContent className="max-h-[90dvh] w-[calc(100vw_-_2rem)] max-w-lg overflow-y-auto rounded-2xl p-5 sm:p-7">
 					<DialogTitle>Review your payout</DialogTitle>
 					<DialogDescription>
-						Your eligible earnings will be transferred to your verified payment
-						account. Wallet top-ups are excluded.
+						Only earnings from verified deliveries are cashable. Requests before
+						the 25th join that month’s settlement; requests on or after the 25th
+						join next month’s settlement. Wallet top-ups are excluded.
 					</DialogDescription>
 					{quote.isPending ? (
 						<LoadingState />
@@ -155,6 +158,9 @@ export function PayoutControls({
 								</p>
 								<p className="mt-2 text-xs text-muted-foreground">
 									Minimum payout: {money(quote.data.minimum_payout_amount)}
+									{quote.data.scheduled_for && (
+										<> · Settlement: {walletDate(quote.data.scheduled_for)}</>
+									)}
 								</p>
 							</div>
 							{!quote.data.eligible && (
@@ -167,7 +173,7 @@ export function PayoutControls({
 									{error}
 								</p>
 							)}
-							<div className="mt-5 flex justify-end gap-3">
+							<div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
 								<Button
 									variant="outline"
 									disabled={payout.isPending}
@@ -181,7 +187,10 @@ export function PayoutControls({
 									}
 									onClick={() => {
 										setError("")
-										payout.mutate(quote.data.amount)
+										payout.mutate({
+											expected_amount: quote.data.amount,
+											expected_settlement_date: quote.data.scheduled_for,
+										})
 									}}
 								>
 									{payout.isPending && (
@@ -207,7 +216,10 @@ function SettingsForm({
 	settings: PayoutSettings
 	close: () => void
 }) {
-	const [values, setValues] = useState(settings)
+	const [values, setValues] = useState({
+		...settings,
+		payout_frequency: "monthly" as const,
+	})
 	const [error, setError] = useState("")
 	const client = useQueryClient()
 	const save = useMutation({
@@ -224,32 +236,16 @@ function SettingsForm({
 		"mt-2 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm focus-visible:outline-primary"
 	return (
 		<form
-			className="mt-4 space-y-5"
+			className="mt-4 min-w-0 space-y-5"
 			onSubmit={(event) => {
 				event.preventDefault()
 				setError("")
 				save.mutate(values)
 			}}
 		>
-			<label className="block text-sm font-medium">
-				Payout frequency
-				<select
-					aria-label="Payout frequency"
-					className={input}
-					value={values.payout_frequency}
-					onChange={(event) =>
-						setValues({
-							...values,
-							payout_frequency: event.target
-								.value as PayoutSettings["payout_frequency"],
-						})
-					}
-				>
-					<option value="daily">Daily</option>
-					<option value="weekly">Weekly</option>
-					<option value="manual">Manual</option>
-				</select>
-			</label>
+			<p className="rounded-xl bg-muted/50 p-4 text-sm">
+				Settlement day: <strong>25th of every month</strong> (WAT)
+			</p>
 			<label className="block text-sm font-medium">
 				Minimum payout amount (₦)
 				<input
@@ -280,7 +276,7 @@ function SettingsForm({
 					{error}
 				</p>
 			)}
-			<div className="flex justify-end gap-3">
+			<div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
 				<Button
 					type="button"
 					variant="outline"

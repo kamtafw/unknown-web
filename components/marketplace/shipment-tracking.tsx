@@ -19,7 +19,7 @@ import type {
 	TrackingCheckpoint,
 	TrackingUpdate,
 } from "@/types/marketplace"
-import { dateLabel, Panel } from "./shared"
+import { dateLabel, money, Panel } from "./shared"
 
 export const checkpointLabels: Record<TrackingCheckpoint, string> = {
 	created: "Order created",
@@ -33,11 +33,53 @@ export const checkpointLabels: Record<TrackingCheckpoint, string> = {
 const field =
 	"mt-2 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm focus-visible:outline-primary"
 
-export function ShipmentTracking({ order }: { order: SellerOrder }) {
-	const [mode, setMode] = useState<"shipment" | "tracking" | null>(null)
-	const [shipment, setShipment] = useState<ShipmentDetails>(
-		order.shipment || {},
+function BuyerDeliveryChoices({ order }: { order: SellerOrder }) {
+	const selections = order.delivery_selections || []
+	return (
+		<div className="mt-5 rounded-xl bg-muted/50 p-4">
+			<h3 className="text-xs font-semibold">Buyer’s delivery choice</h3>
+			{selections.length ? (
+				<ul className="mt-3 space-y-3 text-xs">
+					{selections.map((selection) => (
+						<li
+							key={`${selection.product_id}-${selection.delivery_option_id}`}
+							className="flex items-start justify-between gap-3"
+						>
+							<div className="min-w-0 break-words">
+								<p className="font-medium">{selection.name}</p>
+								<p className="mt-1 text-muted-foreground">
+									{order.items.find(
+										(item) => item.product === selection.product_id,
+									)?.product_name || `Product #${selection.product_id}`}
+								</p>
+							</div>
+							<span className="shrink-0">{money(selection.price)}</span>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="mt-2 text-xs text-muted-foreground">
+					No delivery choice recorded for this order.
+				</p>
+			)}
+		</div>
 	)
+}
+
+export function ShipmentTracking({ order }: { order: SellerOrder }) {
+	const selectedCarriers = Array.from(
+		new Set(
+			(order.delivery_selections || []).map((selection) => selection.name),
+		),
+	)
+	const shipmentDetails: ShipmentDetails = {
+		...order.shipment,
+		carrier:
+			order.shipment?.carrier ||
+			(selectedCarriers.length === 1 ? selectedCarriers[0] : ""),
+	}
+	const [mode, setMode] = useState<"shipment" | "tracking" | null>(null)
+	const [shipment, setShipment] = useState<ShipmentDetails>(shipmentDetails)
 	const [tracking, setTracking] = useState<TrackingUpdate>({
 		checkpoint: order.status === "paid" ? "preparing" : "in_transit",
 		status: "successful",
@@ -73,11 +115,12 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 					<Truck size={17} className="text-primary" />
 					Shipment details
 				</h2>
+				<BuyerDeliveryChoices order={order} />
 				<dl className="mt-5 space-y-4 text-xs">
 					<div>
 						<dt className="text-muted-foreground">Carrier</dt>
 						<dd className="mt-1 font-medium">
-							{order.shipment?.carrier || "Not provided"}
+							{shipmentDetails.carrier || "Not provided"}
 						</dd>
 					</div>
 					<div>
@@ -101,7 +144,7 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 							variant="outline"
 							className="rounded-full text-xs"
 							onClick={() => {
-								setShipment(order.shipment || {})
+								setShipment(shipmentDetails)
 								setError("")
 								setMode("shipment")
 							}}
@@ -173,9 +216,10 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 					</DialogTitle>
 					<DialogDescription>
 						{mode === "shipment"
-							? "Share the carrier, tracking reference, and estimated delivery date."
+							? "Add the tracking number and estimated delivery date for the buyer’s chosen delivery company."
 							: "Record the actual progress of this order. Each update is saved with its time."}
 					</DialogDescription>
+					{mode === "shipment" && <BuyerDeliveryChoices order={order} />}
 					<form
 						className="mt-3 space-y-4"
 						onSubmit={(event) => {
@@ -190,14 +234,46 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 							<>
 								<label className="block text-sm font-medium">
 									Carrier
-									<input
-										className={field}
-										maxLength={100}
-										value={shipment.carrier || ""}
-										onChange={(event) =>
-											setShipment({ ...shipment, carrier: event.target.value })
-										}
-									/>
+									{selectedCarriers.length > 1 ? (
+										<select
+											className={field}
+											required
+											value={shipment.carrier || ""}
+											onChange={(event) =>
+												setShipment({
+													...shipment,
+													carrier: event.target.value,
+												})
+											}
+										>
+											<option value="" disabled>
+												Choose the carrier for this shipment
+											</option>
+											{order.shipment?.carrier &&
+												!selectedCarriers.includes(order.shipment.carrier) && (
+													<option value={order.shipment.carrier}>
+														{order.shipment.carrier} (current)
+													</option>
+												)}
+											{selectedCarriers.map((carrier) => (
+												<option key={carrier} value={carrier}>
+													{carrier}
+												</option>
+											))}
+										</select>
+									) : (
+										<input
+											className={field}
+											maxLength={100}
+											value={shipment.carrier || ""}
+											onChange={(event) =>
+												setShipment({
+													...shipment,
+													carrier: event.target.value,
+												})
+											}
+										/>
+									)}
 								</label>
 								<label className="block text-sm font-medium">
 									Tracking number
@@ -247,7 +323,7 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 										{Object.entries(checkpointLabels)
 											.filter(
 												([key]) =>
-													!["created", "paid"].includes(key) &&
+													!["created", "paid", "delivered"].includes(key) &&
 													(order.status === "shipped" || key === "preparing"),
 											)
 											.map(([key, label]) => (
@@ -297,12 +373,6 @@ export function ShipmentTracking({ order }: { order: SellerOrder }) {
 										}
 									/>
 								</label>
-								{tracking.checkpoint === "delivered" &&
-									tracking.status === "successful" && (
-										<p className="text-xs text-muted-foreground">
-											This update will also mark the order as delivered.
-										</p>
-									)}
 							</>
 						)}
 						{error && (
