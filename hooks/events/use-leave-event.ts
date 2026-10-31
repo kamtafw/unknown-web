@@ -44,7 +44,9 @@ export function useLeaveEvent(eventId: string, sessionId: number | null) {
       if (accountId !== null) {
         const belongsToSession = (query: { queryKey: readonly unknown[] }) =>
           query.queryKey[2] === accountId && query.queryKey[3] === sessionGeneration
-        await Promise.all([
+        // Mark affected views stale and let them reconcile in the background. Do not keep the
+        // LiveKit listener mounted while waiting for those reads to finish.
+        void Promise.all([
           client.invalidateQueries({
             queryKey: eventKeys.detail(accountId, sessionGeneration, eventId),
             exact: true,
