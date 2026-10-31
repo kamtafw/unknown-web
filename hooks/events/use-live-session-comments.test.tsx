@@ -205,7 +205,7 @@ describe("usePostLiveSessionComment", () => {
 		client.setQueryData(originalKey, { pages: [page(1, [1], false)], pageParams: [1] })
 		client.setQueryData(otherKey, { pages: [page(1, [9], false)], pageParams: [1] })
 		let release: (value: LiveSessionComment) => void = () => {}
-		postComment.mockImplementation(() => new Promise((resolve) => { release = resolve }))
+		postComment.mockImplementation(() => new Promise<LiveSessionComment>((resolve) => { release = resolve }))
 		const { result } = renderHook(() => usePostLiveSessionComment(SESSION), { wrapper })
 		let first: Promise<boolean> = Promise.resolve(false)
 		act(() => { first = result.current.post("hello") })
