@@ -5,7 +5,8 @@ import { LIVE_SESSION_COMMENTS_PAGE_SIZE, liveSessionApi } from "@/lib/events/li
 import { liveSessionKeys } from "@/lib/events/live-query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import type { LiveSessionComment, LiveSessionCommentsPage } from "@/types/events/live"
-import { InfiniteData, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import type { InfiniteData } from "@tanstack/react-query"
 import { useMemo, useRef } from "react"
 
 function isValidSessionId(value: number): boolean {
@@ -94,6 +95,8 @@ export function useLiveSessionComments(
 
 interface PostVariables {
 	content: string
+	sessionId: number
+	limit: number
 	accountId: number
 	sessionGeneration: number | null
 }
@@ -112,17 +115,16 @@ export function usePostLiveSessionComment(
 	const accountId = useAuthStore((state) => state.user?.pkid ?? null)
 	const sessionGeneration = useAuthStore((state) => state.sessionGeneration)
 	const inFlight = useRef(false)
-	const queryKey = liveSessionKeys.comments(accountId, sessionGeneration, sessionId, limit)
-
 	const mutation = useMutation({
-		mutationFn: ({ content }: PostVariables) => liveSessionApi.postComment(sessionId, { content }),
+		mutationFn: (variables: PostVariables) =>
+			liveSessionApi.postComment(variables.sessionId, { content: variables.content }),
 		gcTime: 0,
 		onSuccess: (comment, variables) => {
 			const key = liveSessionKeys.comments(
 				variables.accountId,
 				variables.sessionGeneration,
-				sessionId,
-				limit,
+				variables.sessionId,
+				variables.limit,
 			)
 			client.setQueryData<InfiniteData<LiveSessionCommentsPage, number>>(key, (old) => {
 				if (!old || old.pages.length === 0) return old
@@ -148,7 +150,7 @@ export function usePostLiveSessionComment(
 		}
 		inFlight.current = true
 		try {
-			await mutateAsync({ content, accountId, sessionGeneration })
+			await mutateAsync({ content, sessionId, limit, accountId, sessionGeneration })
 			reset()
 			return true
 		} catch {
