@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { eventsApi } from "@/lib/events/api"
 import { attachLiveSessionSocketHandlers } from "@/lib/events/live-socket-events"
@@ -28,7 +28,8 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
   const sessionId = session?.id ?? 0
   const admitted = status === "ready" && !!session?.isJoined && session.status === "live"
   const descriptor = state?.socket ?? null
-  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)\n  const activeRoomError = roomError?.sessionId === sessionId ? roomError.message : null
+  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)
+  const activeRoomError = roomError?.sessionId === sessionId ? roomError.message : null
   const comments = useLiveSessionComments(admitted ? sessionId : 0)
   const posting = usePostLiveSessionComment(admitted ? sessionId : 0)
   const reactions = useLiveSessionReactions(admitted ? sessionId : 0)
@@ -37,14 +38,20 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
   useEffect(() => {
     if (!admitted || !manager || !descriptor || accountId === null) return
     let active = true
-    setRoomError(null)
     const revalidate = async () => {
       const latest = await eventsApi.getEventLiveSession(details.id)
       return latest.eventId === details.id && latest.session.id === sessionId && latest.session.isJoined
     }
-    void manager.connect().then(() => manager.joinRoom(descriptor, revalidate)).catch((error: unknown) => {
-      if (active) setRoomError({ sessionId, message: error instanceof Error ? error.message : "Could not join the live room." })
-    })
+    void manager.connect()
+      .then(() => manager.joinRoom(descriptor, revalidate))
+      .catch((error: unknown) => {
+        if (active) {
+          setRoomError({
+            sessionId,
+            message: error instanceof Error ? error.message : "Could not join the live room.",
+          })
+        }
+      })
     return () => {
       active = false
       manager.leaveRoom(sessionId)
@@ -57,11 +64,6 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       accountId, sessionGeneration, sessionId,
     })
   }, [admitted, manager, client, accountId, sessionGeneration, sessionId])
-
-  const orderedReactions = useMemo(
-    () => LIVE_REACTION_EMOJIS.map((emoji) => ({ emoji, count: reactions.reactionCounts[emoji] ?? 0 })),
-    [reactions.reactionCounts],
-  )
 
   if (status === "loading") return null
   if (status !== "ready" || !session || session.status !== "live") return null
@@ -90,14 +92,17 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       </div>
 
       <div className="flex flex-wrap gap-2" aria-label="Send a reaction">
-        {orderedReactions.map(({ emoji, count }) => (
-          <button key={emoji} type="button" onClick={() => reactions.sendReaction(emoji)}
-            disabled={reactions.isSending || !!activeRoomError}
-            aria-label={`React with ${emoji}; ${count} total`}
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[13px] disabled:opacity-50">
-            <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{count}</span>
-          </button>
-        ))}
+        {LIVE_REACTION_EMOJIS.map((emoji) => {
+          const count = reactions.reactionCounts[emoji] ?? 0
+          return (
+            <button key={emoji} type="button" onClick={() => reactions.sendReaction(emoji)}
+              disabled={reactions.isSending || !!activeRoomError}
+              aria-label={`React with ${emoji}; ${count} total`}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[13px] disabled:opacity-50">
+              <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{count}</span>
+            </button>
+          )
+        })}
       </div>
       {reactions.error && <p role="alert" className="text-[12px] text-destructive">{reactions.error}</p>}
 
@@ -137,7 +142,11 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
         )}
       </div>
 
-      {activeRoomError ? <p role="alert" className="text-[12px] text-destructive">Live updates are unavailable: {activeRoomError}</p> : admitted && !descriptor ? <p role="note" className="text-[12px] text-muted-foreground">Realtime updates are not available for this session. Comments can still be refreshed from the server.</p> : null}
+      {activeRoomError ? (
+        <p role="alert" className="text-[12px] text-destructive">Live updates are unavailable: {activeRoomError}</p>
+      ) : admitted && !descriptor ? (
+        <p role="note" className="text-[12px] text-muted-foreground">Realtime updates are not available for this session. Comments can still be refreshed from the server.</p>
+      ) : null}
       <form onSubmit={(event) => void submit(event)} className="flex items-end gap-2">
         <label className="sr-only" htmlFor={`live-comment-${sessionId}`}>Write a live comment</label>
         <textarea id={`live-comment-${sessionId}`} value={content} onChange={(event) => setContent(event.target.value)}
