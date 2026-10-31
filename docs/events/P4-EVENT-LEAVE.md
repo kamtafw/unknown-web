@@ -31,7 +31,7 @@ Code and focused tests have been added, but no local test run or live-backend ve
 Run from the repository root:
 
 ```powershell
-npx vitest run "app/api/events/[eventId]/leave/route.test.ts" hooks/events/use-leave-event.test.tsx components/events/event-join-control.test.tsx components/events/event-details-view.test.tsx hooks/events/use-event-guests.test.tsx hooks/events/use-join-event.test.tsx
+npx vitest run "app/api/events/[eventId]/leave/route.test.ts" hooks/events/use-leave-event.test.tsx components/events/event-join-control.test.tsx components/events/event-details-view.test.tsx hooks/events/use-event-guests.test.tsx
 npx tsc --noEmit
 npx eslint "app/api/events/[eventId]/leave/route.ts" "app/api/events/[eventId]/leave/route.test.ts" components/events/event-join-control.tsx components/events/event-join-control.test.tsx components/events/event-details-view.tsx components/events/event-details-view.test.tsx hooks/events/use-leave-event.ts hooks/events/use-leave-event.test.tsx hooks/events/use-event-guests.ts hooks/events/use-join-event.ts
 ```
