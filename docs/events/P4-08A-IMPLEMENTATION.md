@@ -16,7 +16,7 @@ All routes require the existing httpOnly-cookie access token and forward it serv
 ## Implemented behavior
 
 - Session IDs are accepted only as positive safe integers. Invalid route IDs are rejected before an upstream request.
-- Comment list forwards only validated/defaulted `page` and `limit`; the shared pagination parser clamps limit to the existing maximum of 100.
+- Comment list forwards only validated/defaulted `page` and `limit`; the shared pagination parser clamps limit to the existing maximum of 100. The client exports a 50-row default to match mobile.
 - Comment create accepts only `content`, trims it and rejects blank content. No maximum length is imposed or claimed; the mobile client has no local cap and backend enforcement/Unicode semantics remain unresolved.
 - Reaction create accepts only the six mobile-observed values: `👍 ❤️ 😂 😮 👏 🔥`.
 - Successful comment and reaction responses are fail-closed: an unreadable documented shape becomes a controlled 502, not a false success.
