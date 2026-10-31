@@ -1,6 +1,6 @@
 # P4-08B — Live Comment Query and Submit Hooks
 
-**Status:** Implemented on `feat/events-p4-08-live-comments-reactions`; owner-side verification pending.  
+**Status:** Implemented and owner-verified on `feat/events-p4-08-live-comments-reactions` (2026-10-31). The owner reports the focused hook tests, TypeScript, touched-file ESLint and diff check passed.  
 **Scope:** React Query infinite-read hook, page flattening/deduplication, and create-comment mutation/cache insertion. No socket integration, reaction cache handling, or UI is included.
 
 ## Read hook
