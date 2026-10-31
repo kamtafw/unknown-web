@@ -24,5 +24,5 @@
 ## Remaining limitations
 
 - Exact server payload samples have not been verified against the dev backend. The parser follows the mobile client's session-ID and reaction-envelope behavior.
-- There is no confirmed HTTP endpoint for fetching an initial reaction aggregate in the reviewed mobile contract. Counts therefore begin at zero in this web view and become authoritative as server reaction events or successful reaction responses arrive; this is not a historical total.
+- The mobile client also reads `GET live/sessions/{sessionId}` (`useGetLiveRoom`), whose `LiveRoom` model includes `reaction_counts`. The P4-08A web layer did not yet expose that room-summary read, so this UI currently starts counts at zero and becomes authoritative as server reaction events or successful reaction responses arrive. This is a known integration gap, not evidence that the backend has no aggregate endpoint.
 - Comment ordering, reaction event-ID uniqueness, rate-limit thresholds and ended-session error semantics remain unverified.
