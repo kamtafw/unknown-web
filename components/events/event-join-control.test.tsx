@@ -1,6 +1,6 @@
 import type { EventFullDetails } from "@/types/events/api"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { EventJoinControl } from "./event-join-control"
 
 const join = vi.fn()
