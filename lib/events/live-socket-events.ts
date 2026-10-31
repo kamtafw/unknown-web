@@ -72,7 +72,7 @@ export function attachLiveSessionSocketHandlers(
   const roomKey = liveSessionKeys.room(scope.accountId, scope.sessionGeneration, scope.sessionId)
   const seen = new Set<string>()
 
-  const offComment = manager.on("live:comment", (raw: unknown) => {
+  const offConnect = manager.on("connect", () => {\n    void client.invalidateQueries({ queryKey: key })\n  })\n\n  const offComment = manager.on("live:comment", (raw: unknown) => {
     if (parseLiveSessionId(raw) !== scope.sessionId) return
     void client.invalidateQueries({ queryKey: key })
   })
