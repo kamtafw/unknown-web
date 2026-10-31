@@ -223,6 +223,11 @@ export const eventsApi = {
 			: null
 	},
 
+	/** Persist the current viewer's departure; this does not end the live broadcast. */
+	leaveEvent: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/leave`, undefined, { signal })
+	},
+
 	/**
 	 * Removes a guest record (host only; the backend decides). `userId` is the guest's numeric
 	 * `pkid`. Success is a 200 with no data. The backend also deletes that guest's comments in this
