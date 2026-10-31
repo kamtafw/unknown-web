@@ -34,7 +34,7 @@ export function EventJoinControl({
   const canLeave = !leftLocally && (
     joinedLocally ||
     liveSession.state?.session.isJoined === true ||
-    hasGuestRecord
+    (hasGuestRecord && !isLiveEvent)
   )
   const { join, isPending: isJoining, errorMessage: joinError, clearError: clearJoinError } = useJoinEvent(eventId)
   const {
