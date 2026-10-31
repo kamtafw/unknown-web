@@ -274,3 +274,34 @@ Reference repository: `kamtafw/unknown`, `main`. Reviewed the mobile HTTP calls,
 Detailed evidence, confidence levels, unresolved questions and web guardrails: `docs/events/P4-08-MOBILE-CONTRACT-REVIEW.md`.
 
 **Unresolved contract items:** exact `live:comment` payload; exact backend comment length enforcement and Unicode counting; ended-session error codes; rate-limit thresholds; reaction `event_id` uniqueness domain; and server comment ordering. These are logged, not guessed. Proceed with the documented mobile behavior where safe and verify uncertain points against the dev backend before treating them as backend guarantees.
+
+
+### P4-08A — HTTP data layer (2026-10-31)
+
+Implemented on `feat/events-p4-08-live-comments-reactions`: authenticated BFF routes for live-session comment listing, comment creation and reaction creation; request validation and response allowlisting; mobile-wire normalisers; `liveSessionApi`; and account/login-generation/session/page-size-scoped live-session query keys. Live comments remain separate from Pass 3 event discussion comments. No hooks, socket subscriptions or UI were included.
+
+The owner reports the P4-08A focused Vitest suite, `npx tsc --noEmit`, touched-file ESLint and `git diff --check` all passed. This is local/mock verification; the dev backend contract has not yet been smoke-tested.
+
+### P4-08B — Live comment query and submit hooks (2026-10-31)
+
+Implemented on the same P4-08 branch; owner-side checks pending.
+
+- `hooks/events/use-live-session-comments.ts` provides `useLiveSessionComments` and `usePostLiveSessionComment`.
+- The read hook uses an infinite query with the mobile page-size default (50), account/login-generation/session/page-size isolation, and the backend `next` signal as the only continuation rule. Empty pages can still have a next page. Loaded comments preserve backend order and are flattened with duplicate IDs removed; the client does not sort by timestamps.
+- Initial, next-page and refresh failures remain distinguishable; loaded pages remain visible after later-page failures. 401/403/404/429 are not automatically retried.
+- The submit hook trims and rejects blank input, prevents overlapping submissions from one hook instance, and inserts only the canonical server response into the last loaded page. It does not invent an optimistic comment, refetch, or create a cache entry when the thread has not loaded. Existing IDs are not inserted twice.
+- Mutation cache scope is captured when posting begins, so an account switch during the request cannot write the response into the newly active account's cache.
+- No character cap is assumed. Socket refresh and reaction handling remain P4-08C; UI remains P4-08D.
+
+Focused hook tests cover pagination, empty pages with next links, order/deduplication, failure retention, account scoping, canonical response insertion, duplicate prevention, no-cache behavior, concurrent-submit protection and account switching during an in-flight request.
+
+Owner verification required:
+
+```powershell
+npx vitest run hooks/events/use-live-session-comments.test.tsx
+npx tsc --noEmit
+npx eslint hooks/events/use-live-session-comments.ts hooks/events/use-live-session-comments.test.tsx
+git diff --check
+```
+
+No test execution is claimed by the authoring environment.
