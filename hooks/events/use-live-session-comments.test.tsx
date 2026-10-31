@@ -188,7 +188,7 @@ describe("usePostLiveSessionComment", () => {
 
 	it("does not allow concurrent submissions from the same hook instance", async () => {
 		let release: (value: LiveSessionComment) => void = () => {}
-		postComment.mockImplementation(() => new Promise((resolve) => { release = resolve }))
+		postComment.mockImplementation(() => new Promise<LiveSessionComment>((resolve) => { release = resolve }))
 		const { result } = renderHook(() => usePostLiveSessionComment(SESSION), { wrapper })
 		let first: Promise<boolean> = Promise.resolve(false)
 		act(() => { first = result.current.post("first") })
