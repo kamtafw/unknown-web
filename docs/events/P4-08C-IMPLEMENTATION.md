@@ -1,6 +1,6 @@
 # P4-08C — Live Comments and Reactions Realtime
 
-**Status:** Implemented; owner-side checks pending.  
+**Status:** Implemented; owner reports focused tests, TypeScript, ESLint and `git diff --check` all pass (2026-10-31). Live backend/browser verification remains pending.  
 **Branch:** `feat/events-p4-08-live-comments-reactions`
 
 ## Behavior
