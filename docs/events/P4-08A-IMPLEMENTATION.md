@@ -49,7 +49,7 @@ The exact `live:comment` socket payload, comment ordering, comment maximum lengt
 
 ## Verification gate
 
-The authoring environment committed files through the GitHub repository API and did not execute the project. Owner-side checks are still required:
+The authoring environment committed files through the GitHub repository API and did not execute the project. The owner reported that all four local checks below passed on 2026-10-31. A dev-backend smoke test remains outstanding:
 
 ```powershell
 npx vitest run app/api/events/live-sessions/routes.test.ts lib/events/live-normalize.test.ts lib/events/live-server.test.ts lib/events/live-api.test.ts lib/events/live-query-keys.test.ts
