@@ -255,3 +255,22 @@ Earlier checkpoint (before this task): lint failed with 10 errors; tsc passed; v
 
 
 **P4-04A provider integration (2026-10-30; implementation pushed, owner validation pending).** Added `components/events/events-socket-provider.tsx` and mounted it inside the Events route-group layout. The provider owns an EventsSocketManager per authenticated account/session generation, disconnects on logout/unmount/account switch, and exposes manager/status through `useEventsSocket`. Added provider lifecycle tests for inert-without-auth-provider, authenticated connect, account switch and logout. **The provider is deliberately inert in the current application integration** because the backend has not confirmed the browser Socket.IO handshake authentication mechanism; no credential route, query-string token, or Messenger socket auth is reused. This is an architecture/lifecycle integration only, not a live connection rollout. Owner must run the focused test, typecheck, ESLint and Events suite before further work.
+
+
+## P4-08 — Live Comments and Reactions: contract discovery
+
+**Mobile contract reviewed; web implementation not yet started.**
+
+Reference repository: `kamtafw/unknown`, `main`. Reviewed the mobile HTTP calls, TypeScript response/request types, socket handlers, and Events live-room usage.
+
+- Comments: `GET live/sessions/{sessionId}/comments/list?page=&limit=`; `POST live/sessions/{sessionId}/comments` with `{ content }`; response contains `data.comment` with `id,user,content,created_at`. Pagination continues through `data.next`.
+- Reactions: `POST live/sessions/{sessionId}/reactions` with `{ emoji }`; response contains `data.session_id` and `data.reaction`. The reaction carries `event_id,emoji,user,emoji_count,created_at`.
+- Socket: `live:comment` invalidates/refetches comments after session filtering. Mobile does not consume a comment object from this event. `live:reaction` is parsed, session-validated, and applies the server's `emoji_count`; `event_id` deduplicates reaction animation.
+- Allowed mobile reaction enum: `👍 ❤️ 😂 😮 👏 🔥`.
+- Mobile handles reaction HTTP 429 with a specific rate-limit message. Comment errors are generic in the reviewed mutation.
+- The reviewed mobile composer does not enforce a local 1,000-character limit. Backend enforcement and length semantics remain unconfirmed.
+- Mobile's live event implementation uses the Messenger live socket. Web must preserve its independent Events socket architecture and port only the observed event semantics.
+
+Detailed evidence, confidence levels, unresolved questions and web guardrails: `docs/events/P4-08-MOBILE-CONTRACT-REVIEW.md`.
+
+**Unresolved contract items:** exact `live:comment` payload; exact backend comment length enforcement and Unicode counting; ended-session error codes; rate-limit thresholds; reaction `event_id` uniqueness domain; and server comment ordering. These are logged, not guessed. Proceed with the documented mobile behavior where safe and verify uncertain points against the dev backend before treating them as backend guarantees.
