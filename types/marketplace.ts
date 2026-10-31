@@ -147,7 +147,14 @@ export interface SellerOrderItem {
 	quantity: number
 	price: string
 }
+export interface OrderDeliverySelection {
+	product_id: number
+	delivery_option_id: number
+	name: string
+	price: string
+}
 export interface SellerOrder {
+	delivery_verified_at?: string | null
 	id: number
 	buyer_id: string
 	seller: number
@@ -168,6 +175,7 @@ export interface SellerOrder {
 	status: OrderStatus
 	created_at: string
 	items: SellerOrderItem[]
+	delivery_selections?: OrderDeliverySelection[]
 	shipment?: ShipmentDetails
 	tracking_events?: TrackingEvent[]
 }
@@ -214,11 +222,13 @@ export interface SellerAlert {
 	} | null
 }
 export interface PayoutSettings {
-	payout_frequency: "daily" | "weekly" | "manual"
+	payout_frequency: "monthly"
 	minimum_payout_amount: string
 	enabled: boolean
 }
 export interface PayoutQuote {
+	scheduled_for: string
+	settlement_timezone: string
 	amount: string
 	currency: "NGN"
 	eligible: boolean
@@ -227,6 +237,10 @@ export interface PayoutQuote {
 }
 
 export interface SellerWallet {
+	book_balance: string
+	cashable_balance: string
+	awaiting_delivery_balance: string
+	withdrawal_pending_balance: string
 	seller_id: number
 	available_balance: string
 	pending_balance: string
@@ -236,9 +250,10 @@ export interface SellerWallet {
 	updated_at: string
 }
 export interface SellerPayout {
+	scheduled_for?: string | null
 	id: number
 	amount: string
-	status: "pending" | "paid" | "failed"
+	status: "queued" | "pending" | "paid" | "failed"
 	requested_at: string
 	processed_at: string | null
 }

@@ -6,15 +6,17 @@ export interface WalletHistoryRow {
 	reference: string
 	amount: string
 	kind: "payout" | "credit" | "debit"
-	status: "pending" | "paid" | "failed" | "recorded"
+	status: "queued" | "pending" | "paid" | "failed" | "recorded"
 	date: string
+	scheduledFor?: string | null
 	processedAt: string | null
 	orderId: number | null
 }
 
 export const payoutLabels = {
+	queued: "Scheduled",
 	pending: "Pending",
-	paid: "Successful",
+	paid: "Transferred to Stripe",
 	failed: "Failed",
 	recorded: "Recorded",
 }
@@ -38,11 +40,14 @@ export function payoutRows(payouts: SellerPayout[]): WalletHistoryRow[] {
 		status: payout.status,
 		date: payout.requested_at,
 		processedAt: payout.processed_at,
+		scheduledFor: payout.scheduled_for,
 		orderId: null,
 	}))
 }
 
-export function transactionRows(transactions: WalletTransaction[]): WalletHistoryRow[] {
+export function transactionRows(
+	transactions: WalletTransaction[],
+): WalletHistoryRow[] {
 	return transactions.map((transaction) => ({
 		id: `transaction-${transaction.id}`,
 		label: transaction.transaction_type === "credit" ? "Credit" : "Debit",
@@ -56,7 +61,11 @@ export function transactionRows(transactions: WalletTransaction[]): WalletHistor
 	}))
 }
 
-export function filterWalletHistory(rows: WalletHistoryRow[], search: string, filter: string) {
+export function filterWalletHistory(
+	rows: WalletHistoryRow[],
+	search: string,
+	filter: string,
+) {
 	const query = search.trim().toLowerCase()
 	const amountQuery = query.replace(/[₦,\s]/g, "")
 	const matchesAmount = (amount: string) =>

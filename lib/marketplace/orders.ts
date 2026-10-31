@@ -4,13 +4,19 @@ export const orderKeys = {
 	all: ["marketplace", "orders"] as const,
 	detail: (id: number) => ["marketplace", "order", id] as const,
 }
-export const orderStatuses: Record<OrderStatus, { label: string; color: string }> = {
+export const orderStatuses: Record<
+	OrderStatus,
+	{ label: string; color: string }
+> = {
 	pending: {
 		label: "Awaiting payment",
 		color: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
 	},
 	paid: { label: "To ship", color: "bg-primary/10 text-primary" },
-	shipped: { label: "Shipped", color: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+	shipped: {
+		label: "Shipped",
+		color: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
+	},
 	delivered: {
 		label: "Delivered",
 		color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
@@ -23,8 +29,8 @@ export const orderStatuses: Record<OrderStatus, { label: string; color: string }
 	},
 }
 
-export function nextOrderStatus(status: OrderStatus): "shipped" | "delivered" | null {
-	return status === "paid" ? "shipped" : status === "shipped" ? "delivered" : null
+export function nextOrderStatus(status: OrderStatus): "shipped" | null {
+	return status === "paid" || status === "partially_refunded" ? "shipped" : null
 }
 
 export function orderMatches(order: SellerOrder, search: string) {
@@ -51,13 +57,14 @@ export function orderActivity(order: SellerOrder) {
 			return {
 				title: `Order #${order.id} is on its way`,
 				description:
-					"This order is marked as shipped. Update its status when delivery is complete.",
+					"This order is shipped and awaiting independent delivery verification.",
 				kind: "shipped",
 			}
 		case "delivered":
 			return {
 				title: `Order #${order.id} has been delivered`,
-				description: "This order is marked as delivered. View the order details and items.",
+				description:
+					"This order is marked as delivered. View the order details and items.",
 				kind: "delivered",
 			}
 		default:
@@ -73,8 +80,21 @@ export function orderActivity(order: SellerOrder) {
 }
 
 export function fulfilmentSteps(order: SellerOrder) {
-	const progress = ["pending", "paid", "shipped", "delivered"].indexOf(order.status)
-	const timestamp = (checkpoint: string) => order.tracking_events?.find((event) => event.checkpoint === checkpoint && event.status === "successful")?.occurred_at || null
+	const progress = order.delivery_verified_at
+		? 3
+		: order.status === "partially_refunded"
+			? order.tracking_events?.some(
+					(event) =>
+						event.checkpoint === "collected" && event.status === "successful",
+				)
+				? 2
+				: 1
+			: ["pending", "paid", "shipped", "delivered"].indexOf(order.status)
+	const timestamp = (checkpoint: string) =>
+		order.tracking_events?.find(
+			(event) =>
+				event.checkpoint === checkpoint && event.status === "successful",
+		)?.occurred_at || null
 	return [
 		{
 			title: "Order created",
@@ -107,8 +127,8 @@ export function fulfilmentSteps(order: SellerOrder) {
 			title: "Delivery successful",
 			description:
 				progress >= 3
-					? "The seller has marked this order as delivered."
-					: "Mark as delivered once the order reaches the customer.",
+					? "Delivery has been independently verified."
+					: "AppsCombo verifies delivery before earnings become cashable.",
 			completed: progress >= 3,
 			current: progress === 3,
 			timestamp: timestamp("delivered"),

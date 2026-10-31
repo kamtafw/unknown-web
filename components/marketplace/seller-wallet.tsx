@@ -6,13 +6,9 @@ import { useQuery } from "@tanstack/react-query"
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
-	BadgeCheck,
 	ChevronRight,
-	Clock3,
-	Info,
 	RefreshCw,
 	Search,
-	TrendingUp,
 	Wallet,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -46,6 +42,7 @@ import { isSellerVerified, SellerVerification } from "./seller-verification"
 import { PayoutControls } from "./payout-controls"
 
 const statusColors = {
+	queued: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
 	paid: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
 	failed: "bg-destructive/10 text-destructive",
 	pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
@@ -138,98 +135,69 @@ export function SellerWalletPage() {
 					</>
 				}
 			/>
-			<div className="mb-7 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-				<div className="min-w-0">
-					{account.isPending ? (
-						<div
-							role="status"
-							aria-label="Loading verification status"
-							className="h-48 animate-pulse rounded-2xl bg-muted"
-						/>
-					) : account.isError ? (
-						<Panel className="h-full">
-							<Info size={22} className="mb-3 text-muted-foreground" />
-							<h2 className="text-sm font-semibold">
-								Verification status unavailable
-							</h2>
-							<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-								Your wallet history is still available. Try again to check your
-								account verification.
-							</p>
-							<Button
-								variant="outline"
-								className="mt-4 rounded-full text-xs"
-								onClick={() => account.refetch()}
-							>
-								Retry verification status
-							</Button>
-						</Panel>
-					) : ready ? (
-						<section className="relative flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-primary p-7 text-primary-foreground">
-							<div
-								aria-hidden="true"
-								className="pointer-events-none absolute -top-16 -right-10 size-72 rounded-full"
-								style={{ boxShadow: "inset 0 0 0 34px rgb(255 255 255 / .07)" }}
-							/>
-							<div className="relative flex items-start justify-between gap-4">
-								<div className="flex items-center gap-3">
-									<div className="rounded-xl bg-white/15 p-3">
-										<Wallet size={25} />
-									</div>
-									<div>
-										<h2 className="text-sm font-medium">Available balance</h2>
-										<p className="mt-1 text-[11px] opacity-80">
-											Current balance available for payouts
-										</p>
-									</div>
-								</div>
-								<span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1.5 text-[10px]">
-									<BadgeCheck size={12} />
-									Verified
-								</span>
-							</div>
-							<p className="relative mt-6 break-words text-3xl font-semibold tracking-tight sm:text-4xl">
-								{money(wallet.data.available_balance)}
-							</p>
-							<p className="relative mt-4 text-[10px] opacity-80">
-								Last updated {walletDate(wallet.data.updated_at)} ·{" "}
-								{walletTime(wallet.data.updated_at)}
-							</p>
-						</section>
-					) : account.data ? (
-						<SellerVerification account={account.data} />
-					) : null}
+			{!ready && account.data && (
+				<div className="mb-5">
+					<SellerVerification account={account.data} />
 				</div>
-				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-					<Panel className="flex items-center gap-4 p-5">
-						<div className="rounded-xl bg-amber-500/10 p-3 text-amber-600">
-							<Clock3 size={21} />
-						</div>
-						<div className="min-w-0">
-							<h2 className="text-xs text-muted-foreground">Pending balance</h2>
-							<p className="mt-1 break-words text-xl font-semibold">
-								{money(wallet.data.pending_balance)}
-							</p>
-							<p className="mt-1 text-[10px] text-muted-foreground">
-								Funds not yet available for payouts
-							</p>
-						</div>
-					</Panel>
-					<Panel className="flex items-center gap-4 p-5">
-						<div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600">
-							<TrendingUp size={21} />
-						</div>
-						<div className="min-w-0">
-							<h2 className="text-xs text-muted-foreground">Total earned</h2>
-							<p className="mt-1 break-words text-xl font-semibold">
-								{money(wallet.data.total_earned)}
-							</p>
-							<p className="mt-1 text-[10px] text-muted-foreground">
-								Lifetime earnings recorded in your wallet
-							</p>
-						</div>
-					</Panel>
-				</div>
+			)}
+			{account.isError && (
+				<Panel className="mb-5">
+					<h2 className="text-sm font-semibold">
+						Verification status unavailable
+					</h2>
+					<p className="mt-2 text-sm text-muted-foreground">
+						Balances and wallet history remain available.
+					</p>
+					<Button
+						variant="outline"
+						className="mt-4 rounded-full"
+						onClick={() => account.refetch()}
+					>
+						Retry verification status
+					</Button>
+				</Panel>
+			)}
+			<div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<Panel className="bg-primary text-primary-foreground">
+					<h2 className="text-sm font-medium">Cashable balance</h2>
+					<p className="mt-4 break-words text-3xl font-semibold">
+						{money(wallet.data.cashable_balance)}
+					</p>
+					<p className="mt-3 text-xs opacity-80">
+						Verified delivery earnings available to request for withdrawal.
+					</p>
+				</Panel>
+				<Panel>
+					<h2 className="text-sm text-muted-foreground">Book balance</h2>
+					<p className="mt-4 break-words text-3xl font-semibold">
+						{money(wallet.data.book_balance)}
+					</p>
+					<p className="mt-3 text-xs text-muted-foreground">
+						All unpaid wallet funds, including unverified deliveries and
+						reserved withdrawals.
+					</p>
+				</Panel>
+				<Panel>
+					<h2 className="text-sm text-muted-foreground">
+						Awaiting delivery verification
+					</h2>
+					<p className="mt-4 break-words text-2xl font-semibold">
+						{money(wallet.data.awaiting_delivery_balance)}
+					</p>
+					<p className="mt-3 text-xs text-muted-foreground">
+						Becomes cashable after independent delivery verification.
+					</p>
+				</Panel>
+				<Panel>
+					<h2 className="text-sm text-muted-foreground">Withdrawal requests</h2>
+					<p className="mt-4 break-words text-2xl font-semibold">
+						{money(wallet.data.withdrawal_pending_balance)}
+					</p>
+					<p className="mt-3 text-xs text-muted-foreground">
+						Reserved for settlement on the scheduled 25th. Bank processing time
+						applies.
+					</p>
+				</Panel>
 			</div>
 			<div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_280px]">
 				<Panel className="min-w-0 p-0">
@@ -309,8 +277,9 @@ export function SellerWalletPage() {
 								</option>
 								{tab === "withdrawals" ? (
 									<>
-										<option value="paid">Successful</option>
+										<option value="paid">Transferred to Stripe</option>
 										<option value="failed">Failed</option>
+										<option value="queued">Scheduled</option>
 										<option value="pending">Pending</option>
 									</>
 								) : (
@@ -366,7 +335,7 @@ export function SellerWalletPage() {
 						/>
 					) : (
 						<>
-							<div className="overflow-x-auto">
+							<div className="relative overflow-x-auto">
 								<table
 									aria-label="Wallet history"
 									className="w-full min-w-[600px] text-left"
@@ -481,15 +450,18 @@ export function SellerWalletPage() {
 						<h2 className="mb-5 text-sm font-semibold">About your balances</h2>
 						<dl className="space-y-4 text-xs">
 							<div>
-								<dt className="font-medium">Available balance</dt>
+								<dt className="font-medium">Cashable balance</dt>
 								<dd className="mt-1.5 leading-relaxed text-muted-foreground">
-									The current amount available in your seller wallet.
+									Verified delivery earnings that are available for withdrawal
+									requests.
 								</dd>
 							</div>
 							<div>
-								<dt className="font-medium">Pending balance</dt>
+								<dt className="font-medium">Book balance</dt>
 								<dd className="mt-1.5 leading-relaxed text-muted-foreground">
-									The amount recorded as pending, separate from available funds.
+									All unpaid funds, including orders awaiting delivery
+									verification. Requests made on or after the 25th settle next
+									month.
 								</dd>
 							</div>
 							<div className="border-t border-border pt-4">
@@ -563,6 +535,14 @@ export function SellerWalletPage() {
 										{walletDate(selected.date)} · {walletTime(selected.date)}
 									</dd>
 								</div>
+								{selected.scheduledFor && (
+									<div className="flex justify-between gap-4">
+										<dt className="text-muted-foreground">
+											Scheduled settlement
+										</dt>
+										<dd>{walletDate(selected.scheduledFor)}</dd>
+									</div>
+								)}
 								{selected.kind === "payout" && (
 									<div className="flex justify-between gap-4">
 										<dt className="text-muted-foreground">Processed</dt>

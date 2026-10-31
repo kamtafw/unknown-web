@@ -17,7 +17,7 @@ import { Panel } from "./shared"
 
 export const isSellerVerified = (account: SellerAccount) =>
 	account.approval_status === "approved" &&
-	account.stripe_onboarding_completed &&
+	account.has_payment_account &&
 	account.stripe_payouts_enabled
 
 export function SellerVerification({ account }: { account: SellerAccount }) {

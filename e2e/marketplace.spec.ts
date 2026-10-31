@@ -406,7 +406,7 @@ test("seller catalogue, details, reviews, and date-filtered tracking", async ({
 	await page.screenshot({ path: "/tmp/marketplace-sales.png" })
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 })
@@ -448,7 +448,7 @@ test("editor suggests reusable specifications and saves selected names and value
 	await page.getByRole("button", { name: "Save changes", exact: true }).first().click()
 	await expect.poll(() => writes.length).toBe(1)
 	expect(writes[0].body.specifications).toContainEqual({ "Battery capacity": "5000 mAh" })
-	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
 })
 
 test("editor validates discounts and sends category, specs, delivery, and image changes", async ({
@@ -633,7 +633,7 @@ test("uploads images, enforces the six-image limit, and fits a smaller desktop",
 	expect(uploads).toBe(1)
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 	await page.screenshot({ path: "/tmp/marketplace-editor-desktop.png" })
@@ -838,7 +838,7 @@ test("orders filters include later API pages and link to tracking", async ({
 	await page.screenshot({ path: "/tmp/marketplace-tracking.png" })
 })
 
-test("paid orders require confirmation before shipping and delivery", async ({
+test("paid orders require shipping confirmation and independent delivery verification", async ({
 	page,
 }) => {
 	const { writes } = await setupOrders(page)
@@ -857,26 +857,9 @@ test("paid orders require confirmation before shipping and delivery", async ({
 	await page
 		.getByRole("button", { name: "Confirm shipped", exact: true })
 		.click()
-	await expect(
-		page.getByRole("button", { name: "Mark as delivered", exact: true }),
-	).toBeVisible()
-	expect(writes).toEqual([{ id: 1001, status: "shipped" }])
-	await page
-		.getByRole("button", { name: "Mark as delivered", exact: true })
-		.click()
-	await page
-		.getByRole("button", { name: "Confirm delivered", exact: true })
-		.click()
-	await expect(
-		page.getByText("This order has been marked as delivered."),
-	).toBeVisible()
-	expect(writes).toEqual([
-		{ id: 1001, status: "shipped" },
-		{ id: 1001, status: "delivered" },
-	])
-	await expect(
-		page.getByRole("button", { name: "Mark as delivered", exact: true }),
-	).toHaveCount(0)
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Mark as delivered", exact: true })).toHaveCount(0)
+    expect(writes).toEqual([{ id: 1001, status: "shipped" }])
 	await page.goto("/market-vendor/orders/1004")
 	await expect(page.getByRole("button", { name: /Mark as/ })).toHaveCount(0)
 	await page.goto("/market-vendor/orders/1005")
@@ -919,7 +902,7 @@ test("alerts show order activity, support search, and open the correct order", a
 	await page.setViewportSize({ width: 1100, height: 900 })
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 	await page.goto("/market-vendor/orders/9999")
@@ -1054,7 +1037,7 @@ test("verified account hides verification prompt and switches to buyer browsing"
 	await page.setViewportSize({ width: 1100, height: 900 })
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 })
@@ -1172,6 +1155,7 @@ test("missing account offers seller setup and sends the completed form", async (
 
 async function setupWallet(page: Page, verified = true) {
 	await setupAccount(page, verified)
+    if (test.info().project.use.isMobile) await page.setViewportSize({ width: 393, height: 851 })
 	const requestedPages: number[] = []
 	const payouts = Array.from({ length: 12 }, (_, index) => ({
 		id: 901 + index,
@@ -1185,6 +1169,10 @@ async function setupWallet(page: Page, verified = true) {
 			json: envelope({
 				seller_id: 7,
 				available_balance: "300550000.00",
+                cashable_balance: "300550000.00",
+                book_balance: "300675000.00",
+                awaiting_delivery_balance: "0.00",
+                withdrawal_pending_balance: "125000.00",
 				pending_balance: "125000.00",
 				total_earned: "350000000.00",
 				total_refunded: "15000.00",
@@ -1245,7 +1233,7 @@ test("verified wallet shows balances, filters every payout page, and opens recor
 		page.getByRole("heading", { name: "Wallet", exact: true }),
 	).toBeVisible()
 	await expect(
-		page.getByRole("heading", { name: "Available balance", exact: true }),
+		page.getByRole("heading", { name: "Cashable balance", exact: true }),
 	).toBeVisible()
 	await expect(page.getByText("₦300,550,000.00", { exact: true })).toBeVisible()
 	await expect(
@@ -1266,7 +1254,7 @@ test("verified wallet shows balances, filters every payout page, and opens recor
 	await page
 		.getByRole("button", { name: "View Payout #911", exact: true })
 		.click()
-	await expect(page.getByRole("dialog")).toContainText("Successful")
+	await expect(page.getByRole("dialog")).toContainText("Transferred to Stripe")
 	await expect(page.getByRole("dialog")).toContainText("₦275,000.00")
 	await page.keyboard.press("Escape")
 	await page
@@ -1303,8 +1291,8 @@ test("unverified wallet shows verification and keeps transaction records separat
 		page.getByRole("button", { name: "Verify account", exact: true }),
 	).toBeVisible()
 	await expect(
-		page.getByRole("heading", { name: "Available balance", exact: true }),
-	).toHaveCount(0)
+		page.getByRole("heading", { name: "Cashable balance", exact: true }),
+	).toBeVisible()
 	await page
 		.getByRole("button", { name: "Verify account", exact: true })
 		.click()
@@ -1322,7 +1310,7 @@ test("unverified wallet shows verification and keeps transaction records separat
 	await expect(
 		page
 			.getByRole("table", { name: "Wallet history" })
-			.getByText("Successful", { exact: true }),
+			.getByText("Transferred to Stripe", { exact: true }),
 	).toHaveCount(0)
 	await page
 		.getByRole("combobox", { name: "Filter transaction type" })
@@ -1344,7 +1332,7 @@ test("unverified wallet shows verification and keeps transaction records separat
 	await page.setViewportSize({ width: 1100, height: 900 })
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 })
@@ -1649,7 +1637,7 @@ test("insufficient balance prevents payment and changed pricing requires a new r
 	await page.setViewportSize({ width: 1100, height: 900 })
 	expect(
 		await page.evaluate(
-			() => document.documentElement.scrollWidth <= innerWidth,
+			() => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
 		),
 	).toBe(true)
 })
@@ -1661,7 +1649,7 @@ test("payout settings persist and changed payout amounts require a fresh confirm
 	const settingsWrites: Record<string, unknown>[] = []
 	const payoutWrites: Record<string, unknown>[] = []
 	let settings = {
-		payout_frequency: "weekly",
+		payout_frequency: "monthly",
 		minimum_payout_amount: "5000.00",
 		enabled: true,
 	}
@@ -1684,6 +1672,8 @@ test("payout settings persist and changed payout amounts require a fresh confirm
 				eligible: true,
 				currency: "NGN",
 				minimum_payout_amount: settings.minimum_payout_amount,
+                scheduled_for: "2026-11-25",
+                settlement_timezone: "Africa/Lagos",
 				reason: null,
 			}),
 		}),
@@ -1708,9 +1698,7 @@ test("payout settings persist and changed payout amounts require a fresh confirm
 	await page
 		.getByRole("button", { name: "Payout settings", exact: true })
 		.click()
-	await page
-		.getByLabel("Payout frequency", { exact: true })
-		.selectOption("manual")
+    await expect(page.getByText("25th of every month", { exact: true })).toBeVisible()
 	await page
 		.getByLabel("Minimum payout amount (₦)", { exact: true })
 		.fill("7500")
@@ -1719,7 +1707,7 @@ test("payout settings persist and changed payout amounts require a fresh confirm
 		.click()
 	await expect(page.getByRole("dialog")).toHaveCount(0)
 	expect(settingsWrites[0]).toMatchObject({
-		payout_frequency: "manual",
+		payout_frequency: "monthly",
 		minimum_payout_amount: "7500",
 	})
 	await page
@@ -1744,8 +1732,8 @@ test("payout settings persist and changed payout amounts require a fresh confirm
 		.click()
 	await expect(page.getByRole("dialog")).toHaveCount(0)
 	expect(payoutWrites).toEqual([
-		{ expected_amount: "250000.00" },
-		{ expected_amount: "275000.00" },
+		{ expected_amount: "250000.00", expected_settlement_date: "2026-11-25" },
+		{ expected_amount: "275000.00", expected_settlement_date: "2026-11-25" },
 	])
 })
 
@@ -1784,7 +1772,18 @@ test("shipment details and checkpoint history are saved and displayed", async ({
 	page,
 }) => {
 	const fixture = await setupOrders(page)
-	let order = fixture.getOrders()[1]
+    if (test.info().project.use.isMobile) await page.setViewportSize({ width: 393, height: 851 })
+	let order: SellerOrder = {
+		...fixture.getOrders()[1],
+		delivery_selections: [
+			{
+				product_id: fixture.getOrders()[1].items[0].product,
+				delivery_option_id: 9,
+				name: "UPS",
+				price: "2500.00",
+			},
+		],
+	}
 	const writes: Record<string, unknown>[] = []
 	await page.route("**/api/marketplace/seller/orders/1002", (route) =>
 		route.fulfill({ json: envelope(order) }),
@@ -1813,8 +1812,14 @@ test("shipment details and checkpoint history are saved and displayed", async ({
 		},
 	)
 	await page.goto("/market-vendor/orders/1002")
+	await expect(
+		page.getByRole("heading", { name: "Buyer’s delivery choice" }),
+	).toBeVisible()
+	await expect(
+		page.getByRole("listitem").filter({ hasText: "UPS" }),
+	).toContainText("₦2,500.00")
 	await page.getByRole("button", { name: "Edit shipment", exact: true }).click()
-	await page.getByLabel("Carrier", { exact: true }).fill("UPS")
+	await expect(page.getByLabel("Carrier", { exact: true })).toHaveValue("UPS")
 	await page.getByLabel("Tracking number", { exact: true }).fill("ABC123")
 	await page
 		.getByLabel("Estimated delivery date", { exact: true })
@@ -1917,6 +1922,10 @@ test("pending payout recovery refreshes wallet balances and payout history", asy
 			json: envelope({
 				seller_id: 7,
 				available_balance: "0.00",
+                cashable_balance: "0.00",
+                book_balance: recovered ? "0.00" : "100.00",
+                awaiting_delivery_balance: "0.00",
+                withdrawal_pending_balance: recovered ? "0.00" : "100.00",
 				pending_balance: recovered ? "0.00" : "100.00",
 				total_earned: "100.00",
 				total_refunded: "0.00",
@@ -1937,7 +1946,7 @@ test("pending payout recovery refreshes wallet balances and payout history", asy
 	)
 	await page.goto("/market-vendor/wallet")
 	const pendingCard = page
-		.getByRole("heading", { name: "Pending balance", exact: true })
+		.getByRole("heading", { name: "Withdrawal requests", exact: true })
 		.locator("..")
 	await expect(pendingCard.getByText("₦100.00", { exact: true })).toBeVisible()
 	await page
@@ -1948,4 +1957,51 @@ test("pending payout recovery refreshes wallet balances and payout history", asy
 		page.getByRole("button", { name: "Check pending payouts", exact: true }),
 	).toHaveCount(0)
 	expect(checks).toBe(1)
+})
+
+
+test("monthly withdrawals show cashable and book balances and reserve the reviewed amount", async ({ page }) => {
+    await setupWallet(page)
+    let requested = false
+    const writes: unknown[] = []
+    await page.route("**/api/marketplace/seller/wallet", route => route.fulfill({json: envelope({
+        seller_id: 7, available_balance: requested ? "0.00" : "9700.00",
+        cashable_balance: requested ? "0.00" : "9700.00", book_balance: "19400.00",
+        awaiting_delivery_balance: "9700.00", withdrawal_pending_balance: requested ? "9700.00" : "0.00",
+        pending_balance: requested ? "9700.00" : "0.00", total_earned: "19400.00", total_refunded: "0.00",
+        created_at: "2026-10-01T10:00:00Z", updated_at: "2026-10-23T10:00:00Z",
+    })}))
+    await page.route("**/api/marketplace/seller/payouts/history**", route => route.fulfill({json: envelope(paginate(requested ? [{
+        id: 990, amount: "9700.00", status: "queued", scheduled_for: "2026-11-25",
+        requested_at: "2026-10-25T10:00:00Z", processed_at: null,
+    }] : []))}))
+    await page.route("**/api/marketplace/seller/payouts/preview", route => route.fulfill({json: envelope({
+        amount: "9700.00", currency: "NGN", eligible: true, reason: null,
+        minimum_payout_amount: "5000.00", scheduled_for: "2026-11-25", settlement_timezone: "Africa/Lagos",
+    })}))
+    await page.route("**/api/marketplace/seller/payouts", async route => {
+        writes.push(route.request().postDataJSON())
+        requested = true
+        await route.fulfill({status: 202, json: envelope({detail: "Withdrawal scheduled", scheduled_for: "2026-11-25"})})
+    })
+    await page.goto("/market-vendor/wallet")
+    const cashable = page.getByRole("heading", {name: "Cashable balance", exact: true}).locator("..")
+    const book = page.getByRole("heading", {name: "Book balance", exact: true}).locator("..")
+    await expect(cashable.getByText("₦9,700.00", {exact: true})).toBeVisible()
+    await expect(book.getByText("₦19,400.00", {exact: true})).toBeVisible()
+    await page.getByRole("button", {name: "Request payout", exact: true}).click()
+    await expect(page.getByRole("dialog")).toContainText("25 Nov 2026")
+    await expect(page.getByRole("dialog")).toContainText("requests on or after the 25th")
+    expect(writes).toEqual([])
+    await page.getByRole("button", {name: "Confirm payout ₦9,700.00", exact: true}).click()
+    await expect(cashable.getByText("₦0.00", {exact: true})).toBeVisible()
+    await expect(book.getByText("₦19,400.00", {exact: true})).toBeVisible()
+    await expect(page.getByRole("table").getByText("Scheduled", {exact: true})).toBeVisible()
+    await page.getByRole("button", {name: "View Payout #990", exact: true}).click()
+    await expect(page.getByRole("dialog")).toContainText("25 Nov 2026")
+    await page.keyboard.press("Escape")
+    expect(writes).toEqual([{expected_amount: "9700.00", expected_settlement_date: "2026-11-25"}])
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({path: `/private/tmp/monthly-wallet-${test.info().project.name.replace(/\s/g, "-")}.png`, fullPage: false})
 })
