@@ -88,6 +88,18 @@ describe("EventJoinControl leave flow", () => {
     expect(screen.getByRole("button", { name: "Leave event" })).toBeInTheDocument()
   })
 
+
+  it("offers rejoin rather than a second leave while a live session is active but the guest is inactive", () => {
+    useEventLiveSession.mockReturnValue({
+      status: "ready",
+      state: { session: { id: 55, isJoined: false } },
+    })
+    useEventGuests.mockReturnValue({ hasLoaded: true, error: null })
+    render(<EventJoinControl details={details} />)
+    expect(screen.getByRole("button", { name: "Join event" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Leave event" })).not.toBeInTheDocument()
+  })
+
   it("offers join when the canonical session read says the viewer is not joined", () => {
     useEventLiveSession.mockReturnValue({
       status: "ready",
