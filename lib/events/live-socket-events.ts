@@ -29,6 +29,7 @@ function positiveId(...values: unknown[]): number | null {
   return null
 }
 
+/** Mirrors the mobile getLiveSessionId field aliases, without its P2P missing-id exception. */
 export function parseLiveSessionId(value: unknown): number | null {
   const records = rootAndData(value)
   if (!records) return null
@@ -72,15 +73,19 @@ export function attachLiveSessionSocketHandlers(
   const roomKey = liveSessionKeys.room(scope.accountId, scope.sessionGeneration, scope.sessionId)
   const seen = new Set<string>()
 
-  const offConnect = manager.on("connect", () => {\n    void client.invalidateQueries({ queryKey: key })\n  })\n\n  const offComment = manager.on("live:comment", (raw: unknown) => {
+  const offConnect = manager.on("connect", () => {
+    void client.invalidateQueries({ queryKey: key })
+  })
+
+  const offComment = manager.on("live:comment", (raw: unknown) => {
     if (parseLiveSessionId(raw) !== scope.sessionId) return
     void client.invalidateQueries({ queryKey: key })
   })
 
   const offReaction = manager.on("live:reaction", (raw: unknown) => {
-    const payload = sessionPayload(raw)
-    if (!payload || payload.session_id !== scope.sessionId) return
-    const reaction = normalizeLiveSessionReaction(payload.reaction)
+    const records = rootAndData(raw)
+    if (!records || parseLiveSessionId(raw) !== scope.sessionId) return
+    const reaction = normalizeLiveSessionReaction(records.data.reaction)
     if (!reaction || seen.has(reaction.eventId)) return
     seen.add(reaction.eventId)
     if (seen.size > 300) seen.delete(seen.values().next().value as string)
@@ -90,6 +95,7 @@ export function attachLiveSessionSocketHandlers(
   })
 
   return () => {
+    offConnect()
     offComment()
     offReaction()
     seen.clear()
