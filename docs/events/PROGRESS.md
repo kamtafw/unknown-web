@@ -329,4 +329,4 @@ Implemented and mounted `EventLiveSessionRoom` in full event details. It appears
 
 The reaction mutation uses the canonical response and displays the backend's count; 429 gets explicit rate-limit feedback. No unverified comment length limit or optimistic reaction increment is introduced. No dedicated Figma frame was identified for this surface, so the implementation follows existing Events styles.
 
-Details and limitations: `docs/events/P4-08D-IMPLEMENTATION.md`. Reaction counts are not historical totals because the reviewed mobile contract exposed no initial aggregate read. Live backend and browser verification remain outstanding.
+Details and limitations: `docs/events/P4-08D-IMPLEMENTATION.md`. Reaction counts are not historical totals yet: the mobile client reads `GET live/sessions/{sessionId}` and its `LiveRoom` model includes `reaction_counts`, but this web implementation has not wired that room-summary read into the view. Displayed counts start at zero and update from server events/responses. Live backend and browser verification remain outstanding.
