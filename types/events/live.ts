@@ -5,44 +5,51 @@ export type LiveReactionEmoji = (typeof LIVE_REACTION_EMOJIS)[number]
 
 /** Minimal public author projection; contact and presence fields are never retained. */
 export interface LiveSessionUser {
-	id: string
-	pkid: number
-	firstName: string
-	lastName: string
-	username: string
-	photo: string | null
+  id: string
+  pkid: number
+  firstName: string
+  lastName: string
+  username: string
+  photo: string | null
 }
 
 export interface LiveSessionComment {
-	id: number
-	user: LiveSessionUser
-	content: string
-	createdAt: string
+  id: number
+  user: LiveSessionUser
+  content: string
+  createdAt: string
 }
 
 export interface LiveSessionCommentsPage {
-	comments: LiveSessionComment[]
-	page: number
-	hasNext: boolean
+  comments: LiveSessionComment[]
+  page: number
+  hasNext: boolean
 }
 
 export interface LiveSessionReaction {
-	eventId: string
-	emoji: LiveReactionEmoji
-	user: LiveSessionUser
-	emojiCount: number
-	createdAt: string
+  eventId: string
+  emoji: LiveReactionEmoji
+  user: LiveSessionUser
+  emojiCount: number
+  createdAt: string
 }
 
 export interface LiveSessionReactionResult {
-	sessionId: number
-	reaction: LiveSessionReaction
+  sessionId: number
+  reaction: LiveSessionReaction
+}
+
+export interface LiveSessionRoomState {
+  /** Server-reported totals; never incremented locally. */
+  reactionCounts: Partial<Record<LiveReactionEmoji, number>>
+  /** Bounded recent event stream for deduplication/display. */
+  recentReactions: LiveSessionReaction[]
 }
 
 export interface CreateLiveSessionCommentInput {
-	content: string
+  content: string
 }
 
 export interface CreateLiveSessionReactionInput {
-	emoji: LiveReactionEmoji
+  emoji: LiveReactionEmoji
 }
