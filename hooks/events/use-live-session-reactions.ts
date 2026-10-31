@@ -45,6 +45,10 @@ export function useLiveSessionReactions(sessionId: number) {
       mutation.mutate(emoji)
     },
     isSending: mutation.isPending,
-    error: mutation.isError ? "Your reaction could not be sent. Please try again." : null,
+    error: mutation.isError
+      ? (mutation.error as { response?: { status?: number } })?.response?.status === 429
+        ? "You're reacting too quickly. Please wait a moment and try again."
+        : "Your reaction could not be sent. Please try again."
+      : null,
   }
 }
