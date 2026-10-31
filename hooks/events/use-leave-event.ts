@@ -66,7 +66,9 @@ export function useLeaveEvent(eventId: string, sessionId: number | null) {
               query.queryKey[1] === "live-participants" &&
               query.queryKey[4] === sessionId,
           }),
-        ])
+        ]).catch(() => {
+          // The persistent leave and local media teardown have already succeeded.
+        })
       }
       return true
     } catch {
