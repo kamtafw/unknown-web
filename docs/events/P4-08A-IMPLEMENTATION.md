@@ -1,6 +1,6 @@
 # P4-08A — Live Comments and Reactions HTTP Data Layer
 
-**Status:** Implemented on `feat/events-p4-08-live-comments-reactions`; local verification and owner review pending.  
+**Status:** Implemented and owner-verified on `feat/events-p4-08-live-comments-reactions` (2026-10-31). The owner reports all listed focused Vitest, TypeScript, ESLint and diff checks passed.  
 **Scope:** HTTP BFF routes, request/response sanitisation, web view models, normalisers, API client methods and isolated query keys. No hooks, socket subscriptions, cache mutations or UI are included in P4-08A.
 
 ## Route mapping
