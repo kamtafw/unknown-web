@@ -22,13 +22,22 @@ The live-session read distinguishes an active live participant from an event gue
 
 ## Important backend consequence
 
-The documented leave operation retains the guest record and therefore does not remove the event from My Events. The guest-list endpoint also does not expose an online/offline field to this client. The UI suppresses the leave control for the current mounted view after a confirmed leave. After a reload of an ended event, the retained guest record can make the idempotent leave control appear again. This is consistent with the available API contract, but the post-leave presentation should be confirmed with the PM. Do not infer that the guest record was deleted.
+The documented leave operation retains the guest record and therefore does not remove the event from My Events. The guest-list endpoint also does not expose an online/offline field to this client. The UI suppresses the leave control for the current mounted view after a confirmed leave. After a reload of an ended event, the retained guest record can make the idempotent leave control appear again. Development-backend smoke testing confirmed that a viewer who never joined cannot leave, the host never sees the guest leave control, and the network-failure path reports that the action could not be completed. Do not infer that the guest record was deleted.
 
 ## Validation status
 
-Code and focused tests have been added, but no local test run or live-backend verification is claimed from this branch.
+**Verification complete on the development backend.** The implementer reports that the focused Vitest suite, TypeScript check, and ESLint check all passed after resolving failures. The live smoke test also passed:
 
-Run from the repository root:
+- Joined guest successfully left; LiveKit audio disconnected.
+- Host broadcast remained live.
+- Guest record remained in My Events.
+- Repeated leave after the event ended behaved as expected.
+- A viewer who never joined did not receive the leave control and could not leave.
+- Host did not receive the guest leave control.
+- Network interruption produced a failure message; the UI did not claim success.
+- Socket cleanup did not disrupt unrelated Events activity.
+
+The commands below are retained for reproducibility. Run from the repository root:
 
 ```powershell
 npx vitest run "app/api/events/[eventId]/leave/route.test.ts" hooks/events/use-leave-event.test.tsx components/events/event-join-control.test.tsx components/events/event-details-view.test.tsx hooks/events/use-event-guests.test.tsx
