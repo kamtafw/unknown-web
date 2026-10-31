@@ -170,7 +170,7 @@ export function EventDetailsView({
 				</p>
 			)}
 
-			{(details.isLive || full?.liveSessionStatus === "live") && !isHost && (
+			{!isHost && (full !== null || details.isLive) && (
 				<EventJoinControl details={details} />
 			)}
 
