@@ -44,7 +44,7 @@ export function flattenGuestPages(pages: EventGuestsPage[] | undefined): EventGu
  * `forbidden`, never as an empty list. Failures keep what was already loaded; `phase` says whether
  * it was the first load or a later page.
  */
-export function useEventGuests(eventId: string, limit = EVENTS_PAGE_SIZE) {
+export function useEventGuests(eventId: string, limit = EVENTS_PAGE_SIZE, enabled = true) {
 	const accountId = useAuthStore((s) => s.user?.pkid ?? null)
 	const sessionGeneration = useAuthStore((s) => s.sessionGeneration)
 
@@ -56,7 +56,7 @@ export function useEventGuests(eventId: string, limit = EVENTS_PAGE_SIZE) {
 			eventsApi.getEventGuestsPage({ eventId, page: pageParam, limit }, signal),
 		initialPageParam: 1,
 		getNextPageParam: (last) => (last.hasNext ? last.page + 1 : undefined),
-		enabled: valid && accountId !== null,
+		enabled: enabled && valid && accountId !== null,
 		staleTime: 30_000,
 		// a refusal or a missing page will not change on retry
 		retry: (count, error) => {
