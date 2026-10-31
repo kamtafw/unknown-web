@@ -1,5 +1,5 @@
 import { getAccessToken } from "@/lib/cookies"
-import { fetchSanitizedGet, unauthenticated } from "@/lib/events/bff"
+import { envelope, fetchSanitizedGet, unauthenticated } from "@/lib/events/bff"
 import { parsePageParams } from "@/lib/events/server"
 import { isLiveSessionId, sanitizeLiveSessionCommentsPayload } from "@/lib/events/live-server"
 import { DJANGO_API_URL } from "@/lib/server-config"
@@ -8,7 +8,7 @@ import { NextRequest } from "next/server"
 type Ctx = { params: Promise<{ sessionId: string }> }
 
 function parseSessionId(value: string): number | null {
-	if (!/^\\d+$/.test(value)) return null
+	if (!/^\d+$/.test(value)) return null
 	const id = Number(value)
 	return isLiveSessionId(id) ? id : null
 }
@@ -20,10 +20,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 	const { sessionId: rawId } = await params
 	const sessionId = parseSessionId(rawId)
-	if (sessionId === null) return Response.json(
-		{ success: false, status_code: 404, message: "Live session not found", code: "not_found", errors: null },
-		{ status: 404 },
-	)
+	if (sessionId === null) return envelope(404, "Live session not found", "not_found")
 
 	const { page, limit } = parsePageParams(req.nextUrl.searchParams)
 	return fetchSanitizedGet(
