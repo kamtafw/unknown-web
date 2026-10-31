@@ -28,7 +28,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
   const sessionId = session?.id ?? 0
   const admitted = status === "ready" && !!session?.isJoined && session.status === "live"
   const descriptor = state?.socket ?? null
-  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)
+  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)\n  const [joinAttempt, setJoinAttempt] = useState(0)
   const activeRoomError = roomError?.sessionId === sessionId ? roomError.message : null
   const comments = useLiveSessionComments(admitted ? sessionId : 0)
   const posting = usePostLiveSessionComment(admitted ? sessionId : 0)
@@ -56,7 +56,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       active = false
       manager.leaveRoom(sessionId)
     }
-  }, [admitted, manager, descriptor, accountId, sessionGeneration, details.id, sessionId])
+  }, [admitted, manager, descriptor, accountId, sessionGeneration, details.id, sessionId, joinAttempt])
 
   useEffect(() => {
     if (!admitted || !manager || accountId === null) return
@@ -96,7 +96,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
           const count = reactions.reactionCounts[emoji] ?? 0
           return (
             <button key={emoji} type="button" onClick={() => reactions.sendReaction(emoji)}
-              disabled={reactions.isSending || !!activeRoomError}
+              disabled={reactions.isSending}
               aria-label={`React with ${emoji}; ${count} total`}
               className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[13px] disabled:opacity-50">
               <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{count}</span>
