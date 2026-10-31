@@ -23,7 +23,6 @@ export async function POST(_req: Request, { params }: Ctx) {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
-      "Content-Type": "application/json",
     },
     cache: "no-store",
   })
