@@ -33,7 +33,7 @@ function managerHarness() {
 describe("live session socket events", () => {
   it("accepts only positive numeric session identifiers from root or data envelopes", () => {
     expect(parseLiveSessionId({ session_id: 12 })).toBe(12)
-    expect(parseLiveSessionId({ data: { session_id: 13 } })).toBe(13)
+    expect(parseLiveSessionId({ data: { session_id: 13 } })).toBe(13)\n    expect(parseLiveSessionId({ sessionId: "14" })).toBe(14)\n    expect(parseLiveSessionId({ room_id: 15 })).toBe(15)
     expect(parseLiveSessionId({ session_id: "12" })).toBeNull()
     expect(parseLiveSessionId({ session_id: 0 })).toBeNull()
     expect(parseLiveSessionId({})).toBeNull()
