@@ -19,6 +19,11 @@ vi.mock("./event-resources-section", () => ({
 		<div data-testid="resources-stub" data-event={p.eventId} data-host={String(p.isHost)} />
 	),
 }))
+vi.mock("./event-join-control", () => ({
+	EventJoinControl: (p: { details: { id: string } }) => (
+		<div data-testid="event-participation-stub" data-event={p.details.id} />
+	),
+}))
 vi.mock("./event-live-session-status", () => ({
 	EventLiveSessionStatus: (p: { details: { id: string; kind: string } }) => (
 		<div data-testid="live-status-stub" data-event={p.details.id} data-kind={p.details.kind} />

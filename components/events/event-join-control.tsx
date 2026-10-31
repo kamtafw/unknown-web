@@ -1,44 +1,90 @@
 "use client"
 
 import { useJoinEvent } from "@/hooks/events/use-join-event"
+import { useLeaveEvent } from "@/hooks/events/use-leave-event"
+import { useEventGuests } from "@/hooks/events/use-event-guests"
+import { useEventLiveSession } from "@/hooks/events/use-event-live-session"
+import { EVENTS_PAGE_SIZE } from "@/lib/events/constants"
+import type { EventDetails } from "@/types/events/api"
 import { EventLiveAudioListener } from "./event-live-audio-listener"
 import { useState } from "react"
 import { secondaryButton } from "./event-list"
 
 export function EventJoinControl({
-  eventId,
-  isLocked,
+  details,
 }: {
-  eventId: string
-  isLocked: boolean
+  details: EventDetails
 }) {
+  const eventId = details.id
   const [passcode, setPasscode] = useState("")
-  const [joined, setJoined] = useState(false)
-  const [sessionId, setSessionId] = useState<number | null>(null)
-  const { join, isPending, errorMessage, clearError } = useJoinEvent(eventId)
+  const [joinedLocally, setJoinedLocally] = useState(false)
+  const [leftLocally, setLeftLocally] = useState(false)
+  const [localSessionId, setLocalSessionId] = useState<number | null>(null)
+  const liveSession = useEventLiveSession(details)
+  // The guest-list endpoint is available only to hosts and viewers with a persistent guest row.
+  // A successful read therefore confirms membership even when no live session is active.
+  const guestList = useEventGuests(eventId, EVENTS_PAGE_SIZE, details.kind === "full")
+  const hasGuestRecord = details.kind === "full" && guestList.hasLoaded && guestList.error !== "forbidden"
+  const sessionId = localSessionId ?? (
+    liveSession.state?.session.isJoined ? liveSession.state.session.id : null
+  )
+  const isLiveEvent = details.isLive || (
+    details.kind === "full" && details.liveSessionStatus === "live"
+  )
+  const canLeave = !leftLocally && (
+    joinedLocally ||
+    liveSession.state?.session.isJoined === true ||
+    (hasGuestRecord && !isLiveEvent)
+  )
+  const { join, isPending: isJoining, errorMessage: joinError, clearError: clearJoinError } = useJoinEvent(eventId)
+  const {
+    leave,
+    isPending: isLeaving,
+    errorMessage: leaveError,
+    clearError: clearLeaveError,
+  } = useLeaveEvent(eventId, sessionId)
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    clearError()
-    const result = await join(isLocked ? passcode : undefined)
+    clearJoinError()
+    const result = await join(details.isLocked ? passcode : undefined)
     if (result !== false) {
       setPasscode("")
-      setJoined(true)
-      setSessionId(result)
+      setLeftLocally(false)
+      setJoinedLocally(true)
+      setLocalSessionId(result)
     }
   }
 
-  if (joined) {
+  async function submitLeave() {
+    clearLeaveError()
+    const success = await leave()
+    if (success) {
+      // The audio listener unmounts immediately; the backend leave has already succeeded.
+      setJoinedLocally(false)
+      setLocalSessionId(null)
+      setLeftLocally(true)
+    }
+  }
+
+  if (canLeave) {
     return (
       <div className="flex flex-col gap-3">
         <p role="status" className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground">
-          You&apos;ve joined the event. Connecting to live audio…
+          {sessionId !== null
+            ? "You've joined the event. Connecting to live audio…"
+            : "You're on the guest list for this event."}
         </p>
         {sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
-        {sessionId === null && <p className="text-[12px] text-muted-foreground">You were admitted, but the live audio session could not be found. Refresh the event and try again.</p>}
+        {leaveError && <p role="alert" className="text-[12px] text-destructive">{leaveError}</p>}
+        <button type="button" onClick={() => void submitLeave()} disabled={isLeaving} className={secondaryButton}>
+          {isLeaving ? "Leaving…" : "Leave event"}
+        </button>
       </div>
     )
   }
+
+  if (!isLiveEvent) return null
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border border-border p-3.5">
@@ -48,7 +94,7 @@ export function EventJoinControl({
           Join the event before connecting to live audio.
         </p>
       </div>
-      {isLocked && (
+      {details.isLocked && (
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`event-${eventId}-passcode`} className="text-[12px] font-medium text-foreground">
             Four-digit passcode
@@ -66,17 +112,17 @@ export function EventJoinControl({
             value={passcode}
             onChange={(event) => {
               setPasscode(event.target.value.replace(/[^0-9]/g, "").slice(0, 4))
-              if (errorMessage) clearError()
+              if (joinError) clearJoinError()
             }}
-            aria-invalid={Boolean(errorMessage)}
+            aria-invalid={Boolean(joinError)}
             className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
             placeholder="0000"
           />
         </div>
       )}
-      {errorMessage && <p role="alert" className="text-[12px] text-destructive">{errorMessage}</p>}
-      <button type="submit" disabled={isPending || (isLocked && !/^\d{4}$/.test(passcode))} className={secondaryButton}>
-        {isPending ? "Joining…" : "Join event"}
+      {joinError && <p role="alert" className="text-[12px] text-destructive">{joinError}</p>}
+      <button type="submit" disabled={isJoining || (details.isLocked && !/^\d{4}$/.test(passcode))} className={secondaryButton}>
+        {isJoining ? "Joining…" : "Join event"}
       </button>
     </form>
   )

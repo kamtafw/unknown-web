@@ -274,3 +274,20 @@ The supplied backend guide (§5.1, §5.3) is the source. The mobile repository w
 
 
 **P4-07C room-membership integration follow-up (2026-10-30).** The P4-05 `socket-room.ts` revalidator and manager `joinRoom` API were present, but no consumer was found in the participant surface. Added `hooks/events/use-event-live-room.ts`, mounted by the roster section. It joins only when the canonical session read confirms a live session, `is_joined`, and the exact validated `/live` / `live:join` descriptor; reconnect authorization uses the existing HTTP-backed `createEventRoomRevalidator`. Temporary transport status changes do not run room cleanup, preserving the manager's reconnect/revalidation path. Added room-hook tests and updated the provider listener-count test for the two participant event subscriptions.
+
+
+## P4 follow-up — Event Leave (2026-10-31)
+
+**Implemented and verified on `feat/events-event-leave`; owner-reported local checks and development-backend smoke test passed.** This is the event-level leave operation, separate from the P4-05 socket-room `live:leave`.
+
+- BFF route: `POST /api/events/{eventId}/leave`; authenticated cookie forwarding, UUID validation, bodyless upstream request and strict success-envelope validation.
+- Client mutation: `useLeaveEvent`; backend confirmation precedes socket-room departure and local LiveKit listener teardown. A failed or ambiguous request does not optimistically report success.
+- Guest UI: admitted guests can leave; never-joined viewers do not see the leave action; hosts never see the guest leave control. Inactive guests during a live session retain the join path.
+- Cache reconciliation is scoped to the current account/login session and relevant event, participant and list queries.
+- The backend retains the guest record, so leaving does not remove the event from My Events. The UI suppresses the action for the current mounted view after success; an ended event may show an idempotent leave action again after reload.
+- Owner reports focused Vitest tests, `tsc --noEmit`, and ESLint passed. Development-backend smoke test confirmed successful guest departure and audio teardown, host broadcast continuity, retained My Events membership, repeated leave after session end, host/non-guest control visibility, network-failure messaging, and no disruption to unrelated Events socket activity.
+- Full implementation and verification notes: `docs/events/P4-EVENT-LEAVE.md`.
+
+**Closeout:** Event Leave is ready to merge into its immediate parent branch, `feat/events-p4-07a-participant-data`. This does not close P4-07 or claim P4-07B–D acceptance.
+
+**Next task:** P4-08 (4C live comments and reactions), which depends on P4-05 room membership rather than P4-07 participant-state UI. P4-07 participant state remains parked pending PM clarification; do not silently treat it as accepted or make it a prerequisite for P4-08.
