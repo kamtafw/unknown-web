@@ -56,7 +56,7 @@ describe("useLeaveEvent", () => {
 
     expect(succeeded).toBe(false)
     expect(leaveRoom).not.toHaveBeenCalled()
-    expect(result.current.errorMessage).toMatch(/couldn't leave/i)
+    expect(result.current.errorMessage).toMatch(/couldn't confirm that you left/i)
   })
 
   it("does not convert a confirmed backend leave into failure if socket cleanup throws", async () => {
