@@ -28,7 +28,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
   const sessionId = session?.id ?? 0
   const admitted = status === "ready" && !!session?.isJoined && session.status === "live"
   const descriptor = state?.socket ?? null
-  const [roomError, setRoomError] = useState<string | null>(null)
+  const [roomError, setRoomError] = useState<{ sessionId: number; message: string } | null>(null)\n  const activeRoomError = roomError?.sessionId === sessionId ? roomError.message : null
   const comments = useLiveSessionComments(admitted ? sessionId : 0)
   const posting = usePostLiveSessionComment(admitted ? sessionId : 0)
   const reactions = useLiveSessionReactions(admitted ? sessionId : 0)
@@ -43,7 +43,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       return latest.eventId === details.id && latest.session.id === sessionId && latest.session.isJoined
     }
     void manager.connect().then(() => manager.joinRoom(descriptor, revalidate)).catch((error: unknown) => {
-      if (active) setRoomError(error instanceof Error ? error.message : "Could not join the live room.")
+      if (active) setRoomError({ sessionId, message: error instanceof Error ? error.message : "Could not join the live room." })
     })
     return () => {
       active = false
@@ -92,7 +92,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       <div className="flex flex-wrap gap-2" aria-label="Send a reaction">
         {orderedReactions.map(({ emoji, count }) => (
           <button key={emoji} type="button" onClick={() => reactions.sendReaction(emoji)}
-            disabled={reactions.isSending || !!roomError}
+            disabled={reactions.isSending || !!activeRoomError}
             aria-label={`React with ${emoji}; ${count} total`}
             className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[13px] disabled:opacity-50">
             <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{count}</span>
@@ -137,7 +137,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
         )}
       </div>
 
-      {roomError && <p role="alert" className="text-[12px] text-destructive">Live updates are unavailable: {roomError}</p>}
+      {activeRoomError ? <p role="alert" className="text-[12px] text-destructive">Live updates are unavailable: {activeRoomError}</p> : admitted && !descriptor ? <p role="note" className="text-[12px] text-muted-foreground">Realtime updates are not available for this session. Comments can still be refreshed from the server.</p> : null}
       <form onSubmit={(event) => void submit(event)} className="flex items-end gap-2">
         <label className="sr-only" htmlFor={`live-comment-${sessionId}`}>Write a live comment</label>
         <textarea id={`live-comment-${sessionId}`} value={content} onChange={(event) => setContent(event.target.value)}
