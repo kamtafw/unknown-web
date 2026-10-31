@@ -14,16 +14,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-function sessionPayload(value: unknown): Record<string, unknown> | null {
+function rootAndData(value: unknown): { root: Record<string, unknown>; data: Record<string, unknown> } | null {
   if (!isRecord(value)) return null
-  if (typeof value.session_id === "number") return value
-  return isRecord(value.data) ? value.data : null
+  return { root: value, data: isRecord(value.data) ? value.data : value }
+}
+
+function positiveId(...values: unknown[]): number | null {
+  for (const value of values) {
+    const number = typeof value === "number" || (typeof value === "string" && value.trim())
+      ? Number(value)
+      : NaN
+    if (Number.isSafeInteger(number) && number > 0) return number
+  }
+  return null
 }
 
 export function parseLiveSessionId(value: unknown): number | null {
-  const payload = sessionPayload(value)
-  const id = payload?.session_id
-  return typeof id === "number" && Number.isSafeInteger(id) && id > 0 ? id : null
+  const records = rootAndData(value)
+  if (!records) return null
+  const { root, data } = records
+  return positiveId(
+    data.session_id, data.sessionId, data.room_id, data.roomId,
+    root.session_id, root.sessionId, root.room_id, root.roomId,
+  )
 }
 
 /** Applies only authoritative server counts. eventId deduplication is session-local. */
