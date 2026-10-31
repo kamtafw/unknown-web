@@ -11,7 +11,7 @@ import { NextRequest } from "next/server"
 type Ctx = { params: Promise<{ sessionId: string }> }
 
 function parseSessionId(value: string): number | null {
-	if (!/^\\d+$/.test(value)) return null
+	if (!/^\d+$/.test(value)) return null
 	const id = Number(value)
 	return isLiveSessionId(id) ? id : null
 }
