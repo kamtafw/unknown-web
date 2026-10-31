@@ -77,7 +77,7 @@ export function useLeaveEvent(eventId: string, sessionId: number | null) {
   }
 
   const errorMessage = mutation.isError
-    ? "We couldn't leave this event. Your membership has not been changed in the app. Please check your connection and try again."
+    ? "We couldn't confirm that you left this event. Check your connection and try again."
     : null
 
   return { leave, isPending: mutation.isPending, errorMessage, clearError: mutation.reset }
