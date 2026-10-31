@@ -1,6 +1,7 @@
 "use client"
 
 import { eventsApi } from "@/lib/events/api"
+import { EVENTS_PAGE_SIZE } from "@/lib/events/constants"
 import { eventKeys } from "@/lib/events/query-keys"
 import { useAuthStore } from "@/stores/auth-store"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -39,6 +40,10 @@ export function useJoinEvent(eventId: string) {
         await Promise.all([
           client.invalidateQueries({ queryKey: eventKeys.detail(accountId, sessionGeneration, eventId), exact: true }),
           client.invalidateQueries({ queryKey: eventKeys.liveSession(accountId, sessionGeneration, eventId), exact: true }),
+          client.invalidateQueries({
+            queryKey: eventKeys.guests(accountId, sessionGeneration, eventId, EVENTS_PAGE_SIZE),
+            exact: true,
+          }),
           client.invalidateQueries({
             predicate: (query) =>
               belongsToSession(query) &&
