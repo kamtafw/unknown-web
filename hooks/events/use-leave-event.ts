@@ -33,7 +33,13 @@ export function useLeaveEvent(eventId: string, sessionId: number | null) {
       mutation.reset()
 
       // This only exits the transient socket room. The HTTP leave above is the persistent action.
-      if (sessionId !== null) manager?.leaveRoom(sessionId)
+      if (sessionId !== null) {
+        try {
+          manager?.leaveRoom(sessionId)
+        } catch {
+          // A socket cleanup failure must not reverse a confirmed backend leave.
+        }
+      }
 
       if (accountId !== null) {
         const belongsToSession = (query: { queryKey: readonly unknown[] }) =>
