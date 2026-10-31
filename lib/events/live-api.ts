@@ -13,6 +13,9 @@ import {
 	normalizeLiveSessionComment,
 } from "./live-normalize"
 
+/** Matches the mobile live-comments query default. */
+export const LIVE_SESSION_COMMENTS_PAGE_SIZE = 50
+
 export interface LiveSessionPageParams {
 	sessionId: number
 	page: number
