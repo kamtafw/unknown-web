@@ -42,7 +42,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
       const latest = await eventsApi.getEventLiveSession(details.id)
       return latest.eventId === details.id && latest.session.id === sessionId && latest.session.isJoined
     }
-    void manager.joinRoom(descriptor, revalidate).catch((error: unknown) => {
+    void manager.connect().then(() => manager.joinRoom(descriptor, revalidate)).catch((error: unknown) => {
       if (active) setRoomError(error instanceof Error ? error.message : "Could not join the live room.")
     })
     return () => {
@@ -126,7 +126,7 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
         {comments.hasNextPage && (
           <button type="button" className={secondaryButton} disabled={comments.isFetchingNextPage}
             onClick={() => void comments.fetchNextPage()}>
-            {comments.isFetchingNextPage ? "Loading…" : "Load older comments"}
+            {comments.isFetchingNextPage ? "Loading…" : "Load more comments"}
           </button>
         )}
         {comments.error && (
