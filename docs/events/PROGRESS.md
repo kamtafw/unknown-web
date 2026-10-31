@@ -305,3 +305,28 @@ git diff --check
 ```
 
 No test execution is claimed by the authoring environment.
+
+
+### P4-08B — Owner verification (2026-10-31)
+
+The owner reports the focused hook tests, `npx tsc --noEmit`, touched-file ESLint and `git diff --check` all passed. P4-08B is verified locally against mocked transport; no dev-backend smoke test is claimed.
+
+### P4-08C — Live comments and reactions realtime (2026-10-31)
+
+Implemented on `feat/events-p4-08-live-comments-reactions`. The active live-discussion surface subscribes through the independent EventsSocketManager only after the event-specific session read confirms an active participant and supplies a valid socket descriptor. It waits for the Events transport to connect, joins through the existing acknowledged room API, and retains the existing HTTP-backed revalidation on reconnect.
+
+- `live:comment` validates the session identifier and invalidates the canonical HTTP comments query; the socket comment body is deliberately not trusted or inserted.
+- `live:reaction` validates the session and reaction shape, deduplicates `event_id` within the active session, and applies the server-provided `emoji_count` without incrementing locally.
+- Session-ID parsing follows the mobile helper's accepted root/data aliases (`session_id`, `sessionId`, `room_id`, `roomId`).
+- Initial and reconnect socket connections invalidate the comments query to reconcile missed comment events.
+- Focused tests cover session parsing, mismatched-session rejection, comment invalidation, reaction count replacement and event-ID deduplication.
+
+Details and limitations: `docs/events/P4-08C-IMPLEMENTATION.md`. The exact socket payloads and reaction-ID uniqueness domain still require dev-backend verification.
+
+### P4-08D — Live comments and reactions UI (2026-10-31)
+
+Implemented and mounted `EventLiveSessionRoom` in full event details. It appears only for a confirmed live session. Active participants receive the paginated live comment feed, composer and six mobile-observed reaction controls; viewers who have not joined receive a join prompt and no comment/reaction controls. Live discussion remains separate from Pass 3 event comments.
+
+The reaction mutation uses the canonical response and displays the backend's count; 429 gets explicit rate-limit feedback. No unverified comment length limit or optimistic reaction increment is introduced. No dedicated Figma frame was identified for this surface, so the implementation follows existing Events styles.
+
+Details and limitations: `docs/events/P4-08D-IMPLEMENTATION.md`. Reaction counts are not historical totals because the reviewed mobile contract exposed no initial aggregate read. Live backend and browser verification remain outstanding.
