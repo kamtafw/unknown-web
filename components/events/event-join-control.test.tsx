@@ -6,11 +6,15 @@ import { EventJoinControl } from "./event-join-control"
 const join = vi.fn()
 const leave = vi.fn()
 const useEventLiveSession = vi.fn()
+const useEventGuests = vi.fn()
 vi.mock("@/hooks/events/use-join-event", () => ({
   useJoinEvent: () => ({ join, isPending: false, errorMessage: null, clearError: vi.fn() }),
 }))
 vi.mock("@/hooks/events/use-leave-event", () => ({
   useLeaveEvent: () => ({ leave, isPending: false, errorMessage: null, clearError: vi.fn() }),
+}))
+vi.mock("@/hooks/events/use-event-guests", () => ({
+  useEventGuests: (...args: unknown[]) => useEventGuests(...args),
 }))
 vi.mock("@/hooks/events/use-event-live-session", () => ({
   useEventLiveSession: (...args: unknown[]) => useEventLiveSession(...args),
@@ -47,6 +51,8 @@ describe("EventJoinControl leave flow", () => {
     join.mockReset()
     leave.mockReset()
     useEventLiveSession.mockReset()
+    useEventGuests.mockReset()
+    useEventGuests.mockReturnValue({ hasLoaded: false, error: "forbidden" })
     useEventLiveSession.mockReturnValue({
       status: "ready",
       state: { session: { id: 55, isJoined: true } },
@@ -71,6 +77,15 @@ describe("EventJoinControl leave flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Leave event" }))
     await waitFor(() => expect(leave).toHaveBeenCalledTimes(1))
     expect(screen.getByTestId("audio")).toBeInTheDocument()
+  })
+
+
+  it("offers leave to a persistent guest even when the live session is no longer active", () => {
+    useEventLiveSession.mockReturnValue({ status: "ready", state: null })
+    useEventGuests.mockReturnValue({ hasLoaded: true, error: null })
+    render(<EventJoinControl details={{ ...details, isLive: false, liveSessionStatus: "ended" }} />)
+    expect(screen.getByText("You're on the guest list for this event.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Leave event" })).toBeInTheDocument()
   })
 
   it("offers join when the canonical session read says the viewer is not joined", () => {
