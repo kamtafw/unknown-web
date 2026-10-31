@@ -18,10 +18,10 @@
 - `components/events/event-live-session-room.tsx`
 - `components/events/event-details-view.tsx`
 - `hooks/events/use-live-session-reactions.ts`
-- `hooks/events/use-live-session-reactions.test.tsx`
+- `hooks/events/use-live-session-reactions.test.tsx`\n- `components/events/event-live-session-room.test.tsx`
 
 ## Design and verification notes
 
 No dedicated Figma frame for this live discussion surface was identified in the reviewed scope; the UI is a restrained implementation consistent with existing Events panel styles.
 
-No live backend/browser smoke test is claimed. Reaction totals are not historical totals: the reviewed mobile contract supplied no initial aggregate read for this feature, so the web view can only show counts received during the active client session.
+No live backend/browser smoke test is claimed. Reaction totals are not historical totals yet: the mobile client reads `GET live/sessions/{sessionId}` and its `LiveRoom` model includes `reaction_counts`, but this web implementation has not wired that room-summary read into the view. The displayed count starts at zero and updates from server events/responses.
