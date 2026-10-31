@@ -31,10 +31,12 @@ function managerHarness() {
 }
 
 describe("live session socket events", () => {
-  it("accepts only positive numeric session identifiers from root or data envelopes", () => {
+  it("accepts the mobile session-id aliases from root or data envelopes", () => {
     expect(parseLiveSessionId({ session_id: 12 })).toBe(12)
-    expect(parseLiveSessionId({ data: { session_id: 13 } })).toBe(13)\n    expect(parseLiveSessionId({ sessionId: "14" })).toBe(14)\n    expect(parseLiveSessionId({ room_id: 15 })).toBe(15)
-    expect(parseLiveSessionId({ session_id: "12" })).toBeNull()
+    expect(parseLiveSessionId({ data: { session_id: 13 } })).toBe(13)
+    expect(parseLiveSessionId({ sessionId: "14" })).toBe(14)
+    expect(parseLiveSessionId({ room_id: 15 })).toBe(15)
+    expect(parseLiveSessionId({ session_id: "not-a-number" })).toBeNull()
     expect(parseLiveSessionId({ session_id: 0 })).toBeNull()
     expect(parseLiveSessionId({})).toBeNull()
   })
@@ -49,7 +51,7 @@ describe("live session socket events", () => {
     expect(updated.recentReactions.map((item) => item.eventId)).toEqual(["evt-1", "evt-2"])
   })
 
-  it("invalidates comments only for the active session and applies valid reactions only for that session", async () => {
+  it("invalidates comments only for the active session and applies valid reactions only for that session", () => {
     const client = new QueryClient()
     const scope = { accountId: 7, sessionGeneration: 2, sessionId: 12 }
     const key = liveSessionKeys.comments(7, 2, 12, 50)
@@ -62,18 +64,24 @@ describe("live session socket events", () => {
     handlers.get("live:comment")?.({ data: { session_id: 12 } })
     expect(client.getQueryState(key)?.isInvalidated).toBe(true)
 
-    const payload = { session_id: 12, reaction: {
-      event_id: "r-1", emoji: "👏", emoji_count: 3,
-      user: { id: "u1", pkid: 1, first_name: "Test", last_name: "User", username: "test" },
-      created_at: "2026-10-31T10:00:00Z",
-    } }
+    const payload = {
+      session_id: 12,
+      reaction: {
+        event_id: "r-1",
+        emoji: "👏",
+        emoji_count: 3,
+        user: { id: "u1", pkid: 1, first_name: "Test", last_name: "User", username: "test" },
+        created_at: "2026-10-31T10:00:00Z",
+      },
+    }
     handlers.get("live:reaction")?.({ ...payload, session_id: 99 })
     expect(client.getQueryData(liveSessionKeys.room(7, 2, 12))).toBeUndefined()
     handlers.get("live:reaction")?.(payload)
     handlers.get("live:reaction")?.(payload)
-    const room = client.getQueryData<{ reactionCounts: Record<string, number>; recentReactions: unknown[] }>(
-      liveSessionKeys.room(7, 2, 12),
-    )
+    const room = client.getQueryData<{
+      reactionCounts: Record<string, number>
+      recentReactions: unknown[]
+    }>(liveSessionKeys.room(7, 2, 12))
     expect(room?.reactionCounts["👏"]).toBe(3)
     expect(room?.recentReactions).toHaveLength(1)
 
