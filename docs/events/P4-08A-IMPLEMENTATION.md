@@ -35,7 +35,7 @@ All routes require the existing httpOnly-cookie access token and forward it serv
 - `app/api/events/live-sessions/[sessionId]/comments/list/route.ts`
 - `app/api/events/live-sessions/[sessionId]/comments/route.ts`
 - `app/api/events/live-sessions/[sessionId]/reactions/route.ts`
-- Focused tests for normalisation, request validation/sanitisation, API methods and query keys.
+- Focused tests for the three BFF routes, normalisation, request validation/sanitisation, API methods and query keys.
 
 ## Explicitly not implemented in P4-08A
 
@@ -52,7 +52,7 @@ The exact `live:comment` socket payload, comment ordering, comment maximum lengt
 The authoring environment committed files through the GitHub repository API and did not execute the project. Owner-side checks are still required:
 
 ```powershell
-npx vitest run lib/events/live-normalize.test.ts lib/events/live-server.test.ts lib/events/live-api.test.ts lib/events/live-query-keys.test.ts
+npx vitest run app/api/events/live-sessions/routes.test.ts lib/events/live-normalize.test.ts lib/events/live-server.test.ts lib/events/live-api.test.ts lib/events/live-query-keys.test.ts
 npx tsc --noEmit
 npx eslint types/events/live.ts lib/events/live-normalize.ts lib/events/live-server.ts lib/events/live-query-keys.ts lib/events/live-api.ts app/api/events/live-sessions
 git diff --check
