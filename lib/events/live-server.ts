@@ -84,3 +84,24 @@ export function sanitizeLiveSessionReactionPayload(json: unknown): unknown | nul
 	if (!isLiveSessionId(sessionId) || !reaction) return null
 	return { ...pick(json, ENVELOPE_KEYS), data: { session_id: sessionId, reaction } }
 }
+
+/**
+ * GET live/sessions/{id} exposes a full LiveRoom object on mobile. The web only needs
+ * the room id and authoritative reaction aggregates; all participant/media/invite fields
+ * are intentionally removed before the response reaches the browser.
+ */
+export function sanitizeLiveSessionRoomPayload(json: unknown): unknown | null {
+	if (!isPlainRecord(json) || !isPlainRecord(json.data)) return null
+	const { id, reaction_counts: rawCounts } = json.data
+	if (!isLiveSessionId(id) || !isPlainRecord(rawCounts)) return null
+	const reactionCounts: Record<string, number> = {}
+	for (const emoji of LIVE_REACTION_EMOJIS) {
+		const count = rawCounts[emoji]
+		if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) return null
+		reactionCounts[emoji] = count
+	}
+	return {
+		...pick(json, ENVELOPE_KEYS),
+		data: { id, reaction_counts: reactionCounts },
+	}
+}
