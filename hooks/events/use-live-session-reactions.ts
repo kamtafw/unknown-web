@@ -31,13 +31,14 @@ export function useLiveSessionReactions(sessionId: number) {
 	const queryKey = liveSessionKeys.room(accountId, sessionGeneration, sessionId)
 	const query = useQuery({
 		queryKey,
-		queryFn: async (): Promise<LiveSessionRoomState> => ({
-			reactionCounts: {},
-			recentReactions: [],
-		}),
+		queryFn: ({ signal }) => liveSessionApi.getRoom(sessionId, signal),
 		enabled,
-		initialData: { reactionCounts: {}, recentReactions: [] },
-		staleTime: Infinity,
+		staleTime: 30_000,
+		refetchOnMount: "always",
+		retry: (count, error) => {
+			const status = (error as { response?: { status?: number } })?.response?.status
+			return status !== 401 && status !== 403 && status !== 404 && count < 1
+		},
 	})
 	const mutation = useMutation<LiveSessionReactionResult, unknown, ReactionVariables>({
 		mutationFn: ({ emoji, sessionId: targetSessionId }) =>
@@ -59,8 +60,11 @@ export function useLiveSessionReactions(sessionId: number) {
 		},
 	})
 	return {
-		reactionCounts: query.data.reactionCounts,
-		recentReactions: query.data.recentReactions,
+		reactionCounts: query.data?.reactionCounts ?? {},
+		recentReactions: query.data?.recentReactions ?? [],
+		isLoadingCounts: query.isLoading,
+		countsError: query.isError,
+		refetchCounts: query.refetch,
 		sendReaction: (emoji: LiveReactionEmoji) => {
 			if (
 				!enabled ||

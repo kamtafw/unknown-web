@@ -5,6 +5,7 @@ import type {
 	LiveSessionCommentsPage,
 	LiveSessionReaction,
 	LiveSessionReactionResult,
+	LiveSessionRoomState,
 	LiveSessionUser,
 } from "@/types/events/live"
 import { LIVE_REACTION_EMOJIS } from "@/types/events/live"
@@ -100,4 +101,24 @@ export function normalizeLiveSessionReactionResult(
 	const reaction = normalizeLiveSessionReaction(data.reaction)
 	if (sessionId === null || !reaction) return null
 	return { sessionId, reaction }
+}
+
+/** Normalises only the aggregate fields retained by the live-room BFF. */
+export function normalizeLiveSessionRoom(
+	data: unknown,
+	expectedSessionId: number,
+): LiveSessionRoomState | null {
+	if (
+		!isRecord(data) ||
+		positiveInteger(data.id) !== expectedSessionId ||
+		!isRecord(data.reaction_counts)
+	)
+		return null
+	const reactionCounts: Partial<Record<LiveReactionEmoji, number>> = {}
+	for (const emoji of LIVE_REACTION_EMOJIS) {
+		const count = data.reaction_counts[emoji]
+		if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) return null
+		reactionCounts[emoji] = count
+	}
+	return { reactionCounts, recentReactions: [] }
 }

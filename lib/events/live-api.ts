@@ -4,6 +4,7 @@ import type {
 	CreateLiveSessionReactionInput,
 	LiveSessionCommentsPage,
 	LiveSessionReactionResult,
+	LiveSessionRoomState,
 } from "@/types/events/live"
 import { apiClient } from "../axios"
 import { EventPayloadError } from "./api"
@@ -11,9 +12,10 @@ import {
 	normalizeLiveSessionComment,
 	normalizeLiveSessionCommentsPage,
 	normalizeLiveSessionReactionResult,
+	normalizeLiveSessionRoom,
 } from "./live-normalize"
 
-/** Matches the mobile live-comments query default. */
+// Matches the mobile live-comments query default.
 export const LIVE_SESSION_COMMENTS_PAGE_SIZE = 50
 
 export interface LiveSessionPageParams {
@@ -25,6 +27,13 @@ export interface LiveSessionPageParams {
 const sessionPath = (sessionId: number) => `/api/events/live-sessions/${sessionId}`
 
 export const liveSessionApi = {
+	getRoom: async (sessionId: number, signal?: AbortSignal): Promise<LiveSessionRoomState> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(sessionPath(sessionId), { signal })
+		const room = normalizeLiveSessionRoom(res.data.data, sessionId)
+		if (!room) throw new EventPayloadError()
+		return room
+	},
+
 	getCommentsPage: async (
 		params: LiveSessionPageParams,
 		signal?: AbortSignal,

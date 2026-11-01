@@ -6,6 +6,7 @@ import {
 	sanitizeLiveSessionCommentCreatePayload,
 	sanitizeLiveSessionCommentsPayload,
 	sanitizeLiveSessionReactionPayload,
+	sanitizeLiveSessionRoomPayload,
 } from "./live-server"
 
 const user = {
@@ -116,5 +117,39 @@ describe("live session BFF sanitizers", () => {
 		expect(sanitizeLiveSessionCommentsPayload({ data: { results: "bad" } })).toBeNull()
 		expect(sanitizeLiveSessionCommentCreatePayload({ data: { comment: null } })).toBeNull()
 		expect(sanitizeLiveSessionReactionPayload({ data: { session_id: "12", reaction } })).toBeNull()
+	})
+})
+
+describe("sanitizeLiveSessionRoomPayload", () => {
+	it("keeps only the room id and all six authoritative reaction aggregates", () => {
+		const counts = { "👍": 1, "❤️": 2, "😂": 3, "😮": 4, "👏": 5, "🔥": 6 }
+		const out = sanitizeLiveSessionRoomPayload({
+			success: true,
+			status_code: 200,
+			message: "ok",
+			data: {
+				id: 12,
+				reaction_counts: counts,
+				participants: [{ email: "private@example.com" }],
+				invite_code: "secret",
+				media: { token: "secret" },
+			},
+		}) as { data: Record<string, unknown> }
+		expect(out.data).toEqual({ id: 12, reaction_counts: counts })
+		expect(JSON.stringify(out)).not.toMatch(/private@example|invite_code|secret|participants|media/)
+	})
+	it("rejects incomplete or invalid aggregate maps", () => {
+		expect(
+			sanitizeLiveSessionRoomPayload({ data: { id: 12, reaction_counts: { "👍": 1 } } }),
+		).toBeNull()
+		expect(
+			sanitizeLiveSessionRoomPayload({
+				data: {
+					id: 12,
+					reaction_counts: { "👍": -1, "❤️": 0, "😂": 0, "😮": 0, "👏": 0, "🔥": 0 },
+				},
+			}),
+		).toBeNull()
+		expect(sanitizeLiveSessionRoomPayload({ data: { id: "12", reaction_counts: {} } })).toBeNull()
 	})
 })

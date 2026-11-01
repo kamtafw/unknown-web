@@ -1,6 +1,6 @@
 import { liveSessionKeys } from "@/lib/events/live-query-keys"
 import { useAuthStore } from "@/stores/auth-store"
-import type { LiveSessionReactionResult } from "@/types/events/live"
+import type { LiveSessionReactionResult, LiveSessionRoomState } from "@/types/events/live"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, renderHook, waitFor } from "@testing-library/react"
 import type { ReactNode } from "react"
@@ -8,8 +8,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useLiveSessionReactions } from "./use-live-session-reactions"
 
 const postReaction = vi.fn()
+const getRoom = vi.fn()
 vi.mock("@/lib/events/live-api", () => ({
 	liveSessionApi: {
+		getRoom: (...args: unknown[]) => getRoom(...args),
 		postReaction: (...args: unknown[]) => postReaction(...args),
 	},
 }))
@@ -17,6 +19,10 @@ const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }
 const wrapper = ({ children }: { children: ReactNode }) => (
 	<QueryClientProvider client={client}>{children}</QueryClientProvider>
 )
+const initialRoom: LiveSessionRoomState = {
+	reactionCounts: { "👍": 1, "❤️": 4, "😂": 0, "😮": 0, "👏": 0, "🔥": 2 },
+	recentReactions: [],
+}
 const result: LiveSessionReactionResult = {
 	sessionId: 12,
 	reaction: {
@@ -31,13 +37,25 @@ const result: LiveSessionReactionResult = {
 beforeEach(() => {
 	vi.clearAllMocks()
 	client.clear()
+	getRoom.mockResolvedValue(initialRoom)
 	useAuthStore.setState({ user: { pkid: 7 } as never, sessionGeneration: 2 })
 })
 
 describe("useLiveSessionReactions", () => {
-	it("posts an allowed reaction and stores the canonical server count", async () => {
+	it("loads authoritative aggregate counts from the room summary", async () => {
+		const { result: hook } = renderHook(() => useLiveSessionReactions(12), { wrapper })
+		await waitFor(() => expect(getRoom).toHaveBeenCalledWith(12, expect.anything()))
+		await waitFor(() => expect(hook.current.reactionCounts["❤️"]).toBe(4))
+		expect(hook.current.reactionCounts["🔥"]).toBe(2)
+		expect(client.getQueryData(liveSessionKeys.room(7, 2, 12))).toMatchObject({
+			reactionCounts: { "❤️": 4, "🔥": 2 },
+		})
+	})
+
+	it("posts an allowed reaction and replaces the count with the canonical server count", async () => {
 		postReaction.mockResolvedValue(result)
 		const { result: hook } = renderHook(() => useLiveSessionReactions(12), { wrapper })
+		await waitFor(() => expect(hook.current.reactionCounts["❤️"]).toBe(4))
 		act(() => hook.current.sendReaction("❤️"))
 		await waitFor(() => expect(postReaction).toHaveBeenCalledWith(12, { emoji: "❤️" }))
 		await waitFor(() => expect(hook.current.reactionCounts["❤️"]).toBe(5))
@@ -53,5 +71,6 @@ describe("useLiveSessionReactions", () => {
 		const { result: anonymous } = renderHook(() => useLiveSessionReactions(12), { wrapper })
 		act(() => anonymous.current.sendReaction("👍"))
 		expect(postReaction).not.toHaveBeenCalled()
+		expect(getRoom).not.toHaveBeenCalled()
 	})
 })

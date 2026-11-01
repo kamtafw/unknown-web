@@ -51,6 +51,23 @@ describe("live session socket events", () => {
 		expect(updated.recentReactions.map((item) => item.eventId)).toEqual(["evt-1", "evt-2"])
 	})
 
+	it("reconciles the room summary after the socket reconnects", () => {
+		const client = new QueryClient()
+		const roomKey = liveSessionKeys.room(7, 2, 12)
+		client.setQueryData(roomKey, { reactionCounts: { "👍": 1 }, recentReactions: [] })
+		const { manager, handlers } = managerHarness()
+		const off = attachLiveSessionSocketHandlers(manager as never, client, {
+			accountId: 7,
+			sessionGeneration: 2,
+			sessionId: 12,
+		})
+		expect(client.getQueryState(roomKey)?.isInvalidated).toBe(false)
+		handlers.get("connect")?.({})
+		expect(client.getQueryState(roomKey)?.isInvalidated).toBe(true)
+		off()
+		client.clear()
+	})
+
 	it("invalidates comments only for the active session and applies valid reactions only for that session", () => {
 		const client = new QueryClient()
 		const scope = { accountId: 7, sessionGeneration: 2, sessionId: 12 }

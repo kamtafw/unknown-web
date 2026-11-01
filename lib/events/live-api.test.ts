@@ -30,6 +30,19 @@ const reaction = {
 beforeEach(() => vi.clearAllMocks())
 
 describe("liveSessionApi", () => {
+	it("reads and normalizes the authoritative room reaction aggregates", async () => {
+		const reactionCounts = { "👍": 1, "❤️": 2, "😂": 3, "😮": 4, "👏": 5, "🔥": 6 }
+		getMock.mockResolvedValue({
+			data: { data: { id: ID, reaction_counts: reactionCounts, invite_code: "drop" } },
+		})
+		const signal = new AbortController().signal
+		const room = await liveSessionApi.getRoom(ID, signal)
+		expect(getMock.mock.calls[0][0]).toBe("/api/events/live-sessions/12")
+		expect(getMock.mock.calls[0][1]).toMatchObject({ signal })
+		expect(room.reactionCounts).toEqual(reactionCounts)
+		getMock.mockResolvedValue({ data: { data: { id: 13, reaction_counts: reactionCounts } } })
+		await expect(liveSessionApi.getRoom(ID)).rejects.toBeInstanceOf(EventPayloadError)
+	})
 	it("reads the comments list through its BFF route with only page and limit", async () => {
 		getMock.mockResolvedValue({ data: { data: { next: "next", results: [comment] } } })
 		const signal = new AbortController().signal
