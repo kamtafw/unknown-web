@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	return proxyJson(`${DJANGO_API_URL}/users/unfollow`, {
+	return proxyJson(`${DJANGO_API_URL}/users/follow`, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${accessToken}`,

@@ -8,6 +8,7 @@ export interface ActionDropdownItem {
 	icon: ReactNode
 	onSelect?: () => void
 	destructive?: boolean
+	disabled?: boolean
 }
 
 interface ActionDropdownProps {
@@ -30,6 +31,7 @@ export function ActionDropdown({ trigger, items, clsName, onOpenChange }: Action
 			<DropdownMenu.Trigger asChild>
 				<button
 					className={clsName}
+					aria-label="More options"
 					onPointerDown={(e) => e.preventDefault()}
 					onClick={() => handleOpenChange(!open)}
 				>
@@ -53,7 +55,8 @@ export function ActionDropdown({ trigger, items, clsName, onOpenChange }: Action
 						<DropdownMenu.Item
 							key={item.label}
 							onSelect={item.onSelect}
-							className={`flex items-center justify-between gap-1 px-3.5 py-2 rounded-xl text-sm font-medium cursor-pointer outline-none select-none transition-colors
+							disabled={item.disabled}
+							className={`flex items-center justify-between gap-1 px-3.5 py-2 rounded-xl text-sm font-medium cursor-pointer outline-none select-none transition-colors data-disabled:opacity-50 data-disabled:pointer-events-none
 									${item.destructive ? "text-destructive data-highlighted:bg-destructive/10" : "text-foreground data-highlighted:bg-accent"}`}
 						>
 							<span>{item.label}</span>

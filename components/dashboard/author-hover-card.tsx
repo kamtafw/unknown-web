@@ -17,7 +17,7 @@ interface AuthorHoverCardProps {
 	children: ReactNode
 }
 
-export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCardProps) {
+export function AuthorHoverCard({ id, fallback, children }: AuthorHoverCardProps) {
 	const router = useRouter()
 	const currentUser = useAuthStore((s) => s.user)
 	const isOwnProfile = id === currentUser?.id
@@ -40,8 +40,8 @@ export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCar
 	const handleFollowToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation()
 		e.preventDefault()
-		if (isFollowed) unfollowUser.mutate(pkid)
-		else followUser.mutate(pkid)
+		if (isFollowed) unfollowUser.mutate(id)
+		else followUser.mutate(id)
 	}
 
 	return (
@@ -110,7 +110,7 @@ export function AuthorHoverCard({ id, pkid, fallback, children }: AuthorHoverCar
 										isFollowed={isFollowed}
 										followsYou={profile.is_following_you}
 										onClick={handleFollowToggle}
-										disabled={followUser.isPending || unfollowUser.isPending}
+										disabled={isLoading || followUser.isPending || unfollowUser.isPending}
 									/>
 								)}
 							</div>

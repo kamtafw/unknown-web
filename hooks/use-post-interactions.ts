@@ -97,7 +97,7 @@ export function useNotInterested() {
 
 export function useRequestCommunityNote() {
 	return useMutation({
-		mutationFn: (payload: { post: string; reason?: string }) =>
+		mutationFn: (payload: { post: string; reason: string; description: string; evidence_urls?: string[] }) =>
 			socialApi.requestCommunityNote(payload),
 		onError: (error) => {
 			showMutationErrorToast(error, "Couldn't submit your request. Please try again.")
