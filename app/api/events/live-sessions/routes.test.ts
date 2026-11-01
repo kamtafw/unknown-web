@@ -15,6 +15,7 @@ vi.mock("@/lib/server-fetch", () => ({
 }))
 
 import { GET as getComments } from "./[sessionId]/comments/list/route"
+import { GET as getRoom } from "./[sessionId]/route"
 import { POST as postComment } from "./[sessionId]/comments/route"
 import { POST as postReaction } from "./[sessionId]/reactions/route"
 import { UpstreamError } from "@/lib/server-fetch"
@@ -104,5 +105,35 @@ describe("live-session reaction BFF", () => {
 		fetchJson.mockRejectedValue(new UpstreamError("Too many requests", 429))
 		const limited = await postReaction(json("/", { emoji: "🔥" }), ctx())
 		expect(limited.status).toBe(429)
+	})
+})
+
+ 
+describe("live-session room summary BFF", () => {
+	it("requires authentication and validates the session id", async () => {
+		getAccessToken.mockResolvedValueOnce(undefined)
+		expect((await getRoom(req("/"), ctx())).status).toBe(401)
+		expect(fetchJson).not.toHaveBeenCalled()
+		expect((await getRoom(req("/"), ctx("12x"))).status).toBe(404)
+		expect(fetchJson).not.toHaveBeenCalled()
+	})
+	it("forwards the room read and exposes only id plus reaction aggregates", async () => {
+		const reactionCounts = { "👍": 1, "❤️": 2, "😂": 3, "😮": 4, "👏": 5, "🔥": 6 }
+		fetchJson.mockResolvedValue(ok({
+			id: 12, reaction_counts: reactionCounts,
+			participants: [{ user: { email: "private@example.com" } }],
+			invite_code: "secret", media: { token: "secret" },
+		}))
+		const res = await getRoom(req("/"), ctx())
+		const [url, init] = fetchJson.mock.calls[0]
+		expect(url).toContain("/live/sessions/12")
+		expect(init.headers.Authorization).toBe("Bearer token")
+		expect((await res.json()).data).toEqual({ id: 12, reaction_counts: reactionCounts })
+		expect(JSON.stringify(await res.json())).not.toMatch(/private@example|invite_code|secret|participants|media/)
+	})
+	it("rejects an incomplete reaction aggregate response", async () => {
+		fetchJson.mockResolvedValue(ok({ id: 12, reaction_counts: { "👍": 1 } }))
+		const res = await getRoom(req("/"), ctx())
+		expect(res.status).toBe(502)
 	})
 })
