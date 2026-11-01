@@ -19,6 +19,10 @@
 
 ## Files
 
+- `app/api/events/live-sessions/[sessionId]/route.ts` (sanitized room-summary GET)
+- `lib/events/live-server.ts` (`sanitizeLiveSessionRoomPayload`)
+- `lib/events/live-normalize.ts` (`normalizeLiveSessionRoom`)
+- `lib/events/live-api.ts` (`getRoom`)
 - `lib/events/live-socket-events.ts`
 - `lib/events/live-socket-events.test.ts`
 - `types/events/live.ts` (`LiveSessionRoomState`)
