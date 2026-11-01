@@ -4,6 +4,7 @@ import {
 	normalizeLiveSessionCommentsPage,
 	normalizeLiveSessionReaction,
 	normalizeLiveSessionReactionResult,
+	normalizeLiveSessionRoom,
 } from "./live-normalize"
 
 const user = {
@@ -96,5 +97,20 @@ describe("normalizeLiveSessionReactionResult", () => {
 	it("requires the response session id to be a positive integer", () => {
 		expect(normalizeLiveSessionReactionResult({ session_id: 12, reaction })).toMatchObject({ sessionId: 12 })
 		expect(normalizeLiveSessionReactionResult({ session_id: "12", reaction })).toBeNull()
+	})
+})
+
+describe("normalizeLiveSessionRoom", () => {
+	it("normalizes the complete server aggregate map for the requested session", () => {
+		const counts = { "👍": 1, "❤️": 2, "😂": 3, "😮": 4, "👏": 5, "🔥": 6 }
+		expect(normalizeLiveSessionRoom({ id: 12, reaction_counts: counts, invite_code: "drop" }, 12)).toEqual({
+			reactionCounts: counts,
+			recentReactions: [],
+		})
+	})
+	it("rejects a mismatched session id or malformed aggregate map", () => {
+		const counts = { "👍": 1, "❤️": 2, "😂": 3, "😮": 4, "👏": 5, "🔥": 6 }
+		expect(normalizeLiveSessionRoom({ id: 13, reaction_counts: counts }, 12)).toBeNull()
+		expect(normalizeLiveSessionRoom({ id: 12, reaction_counts: { "👍": 1 } }, 12)).toBeNull()
 	})
 })
