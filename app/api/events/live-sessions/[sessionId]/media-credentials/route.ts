@@ -1,0 +1,191 @@
+import { getAccessToken } from "@/lib/cookies"
+import { DJANGO_API_URL } from "@/lib/server-config"
+import { NextResponse } from "next/server"
+
+type Ctx = { params: Promise<{ sessionId: string }> }
+type MediaCredentials = {
+	server_url: string
+	token: string
+	room: string
+	identity: string
+	permissions: {
+		can_subscribe: boolean
+		can_publish_microphone: boolean
+		can_publish_screen_share: boolean
+		can_publish_camera: boolean
+		can_publish_data: boolean
+		room_admin: boolean
+	}
+}
+
+function isSessionId(value: string): boolean {
+	return /^[A-Za-z0-9_-]{1,128}$/.test(value)
+}
+
+function safeUpstreamDiagnostic(value: unknown): string {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return "non-JSON error response"
+	const body = value as Record<string, unknown>
+	const fields = ["message", "detail", "code", "error"]
+	const safe: Record<string, string> = {}
+	for (const field of fields) {
+		const candidate = body[field]
+		if (typeof candidate !== "string") continue
+		// Never log likely credentials, JWTs, or long opaque values from an upstream error.
+		const redacted = candidate
+			.replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+			.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[REDACTED_JWT]")
+			.replace(/(token|secret|password|authorization)\s*[:=]\s*[^,;\s]+/gi, "$1=[REDACTED]")
+			.slice(0, 240)
+		safe[field] = redacted
+	}
+	return Object.keys(safe).length ? JSON.stringify(safe) : "no safe diagnostic fields"
+}
+
+function describeResponseShape(value: unknown, depth = 0): unknown {
+	if (value === null) return "null"
+	if (Array.isArray(value)) {
+		return {
+			type: "array",
+			length: value.length,
+			...(value.length > 0 && depth < 2
+				? { firstItem: describeResponseShape(value[0], depth + 1) }
+				: {}),
+		}
+	}
+	if (typeof value !== "object") return typeof value
+	const body = value as Record<string, unknown>
+	return {
+		type: "object",
+		fields: Object.fromEntries(
+			Object.entries(body).map(([key, fieldValue]) => [
+				key,
+				fieldValue !== null && typeof fieldValue === "object" && depth < 2
+					? describeResponseShape(fieldValue, depth + 1)
+					: fieldValue === null
+						? "null"
+						: Array.isArray(fieldValue)
+							? "array"
+							: typeof fieldValue,
+			]),
+		),
+	}
+}
+
+function credentialsFrom(value: unknown): MediaCredentials | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null
+	const envelope = value as Record<string, unknown>
+	if (
+		envelope.success !== true ||
+		!envelope.data ||
+		typeof envelope.data !== "object" ||
+		Array.isArray(envelope.data)
+	) {
+		return null
+	}
+	const data = envelope.data as Record<string, unknown>
+	if (
+		typeof data.server_url !== "string" ||
+		!/^wss?:\/\//i.test(data.server_url) ||
+		typeof data.token !== "string" ||
+		!data.token ||
+		typeof data.room !== "string" ||
+		!data.room ||
+		typeof data.identity !== "string" ||
+		!data.identity ||
+		!data.permissions ||
+		typeof data.permissions !== "object" ||
+		Array.isArray(data.permissions)
+	)
+		return null
+	const permissions = data.permissions as Record<string, unknown>
+	const permissionKeys = [
+		"can_subscribe",
+		"can_publish_microphone",
+		"can_publish_screen_share",
+		"can_publish_camera",
+		"can_publish_data",
+		"room_admin",
+	] as const
+	if (permissionKeys.some((key) => typeof permissions[key] !== "boolean")) return null
+	return {
+		server_url: data.server_url,
+		token: data.token,
+		room: data.room,
+		identity: data.identity,
+		permissions: Object.fromEntries(
+			permissionKeys.map((key) => [key, permissions[key]]),
+		) as MediaCredentials["permissions"],
+	}
+}
+
+/** Authenticated bridge to the backend-issued media credentials; never create or join a session here. */
+export async function POST(_request: Request, { params }: Ctx) {
+	const token = await getAccessToken()
+	if (!token) return NextResponse.json({ message: "Not authenticated" }, { status: 401 })
+	const { sessionId } = await params
+	if (!isSessionId(sessionId))
+		return NextResponse.json({ message: "Invalid session ID" }, { status: 400 })
+
+	let upstream: Response
+	try {
+		upstream = await fetch(
+			`${DJANGO_API_URL}/live/sessions/${encodeURIComponent(sessionId)}/media/credentials`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: "application/json",
+					"X-Platform": "web",
+					"X-App-Version": "1.0.0",
+				},
+				cache: "no-store",
+			},
+		)
+	} catch {
+		return NextResponse.json({ message: "Unable to retrieve media credentials" }, { status: 502 })
+	}
+	if (!upstream.ok) {
+		let diagnostic = "unreadable error response"
+		try {
+			const body: unknown = await upstream.clone().json()
+			diagnostic = safeUpstreamDiagnostic(body)
+		} catch {
+			// Do not log raw upstream text; it may contain sensitive data.
+		}
+		if (process.env.NODE_ENV !== "production")
+			console.warn("[events-media-credentials] Upstream failure", {
+				sessionId,
+				status: upstream.status,
+				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+				diagnostic,
+			})
+
+		return NextResponse.json(
+			{ message: upstream.status === 403 ? "Access denied" : "Media credentials request failed" },
+			{ status: upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502 },
+		)
+	}
+	let json: unknown
+	try {
+		json = await upstream.json()
+	} catch {
+		if (process.env.NODE_ENV !== "production")
+			console.warn("[events-media-credentials] Response was not valid JSON", {
+				sessionId,
+				contentType: upstream.headers.get("content-type")?.slice(0, 100) ?? null,
+			})
+		return NextResponse.json({ message: "Invalid media credentials response" }, { status: 502 })
+	}
+	// Development diagnostics expose response shape only, never credential values.
+	if (process.env.NODE_ENV !== "production") {
+		console.info("[events-media-credentials] Response shape", {
+			sessionId,
+			status: upstream.status,
+			shape: JSON.stringify(describeResponseShape(json)),
+		})
+	}
+	const credentials = credentialsFrom(json)
+	if (!credentials)
+		return NextResponse.json({ message: "Invalid media credentials response" }, { status: 502 })
+	return NextResponse.json(credentials, { headers: { "Cache-Control": "no-store, max-age=0" } })
+}

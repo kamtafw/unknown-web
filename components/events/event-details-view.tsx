@@ -10,7 +10,11 @@ import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
+import { EventJoinControl } from "./event-join-control"
 import { secondaryButton } from "./event-list"
+import { EventLiveSessionControls } from "./event-live-session-controls"
+import { EventLiveSessionRoom } from "./event-live-session-room"
+import { EventLiveSessionStatus } from "./event-live-session-status"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
 
@@ -101,9 +105,9 @@ function HostRow({ host }: { host: EventHost }) {
  * A full event has sections (Details, Comments, Links and docs, Guests), selected by `tab` and
  * held in the URL by the caller (A-16). Details, Links and docs (P3-04), Comments (P3-05, P3-06)
  * and Guests (P3-07, read-only) each have their own content, fetched only while that section is
- * active. A restricted preview has no sections and ignores `tab`, so a
- * link with `&tab=` cannot reach one. Joining is a later pass, so a live event only gets a "Live
- * now" mark and a note. Host controls are shown by a UUID match and the server stays authoritative.
+ * active. A restricted preview has no sections and ignores `tab`, so a link with `&tab=` cannot
+ * reach one. Live-session host controls are separate from event edit/delete controls. The backend
+ * remains authoritative for every lifecycle mutation.
  */
 export function EventDetailsView({
 	details,
@@ -164,9 +168,11 @@ export function EventDetailsView({
 
 			{details.isLive && (
 				<p className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-					This event is live. Joining live events isn&apos;t available in the web app yet.
+					This event is live. Join to request access to live audio.
 				</p>
 			)}
+
+			{!isHost && (full !== null || details.isLive) && <EventJoinControl details={details} />}
 
 			{full ? (
 				full.hosts.length > 0 && (
@@ -238,6 +244,10 @@ export function EventDetailsView({
 					</div>
 				)}
 			</header>
+
+			{full && <EventLiveSessionStatus details={full} />}
+			{full && <EventLiveSessionControls details={full} isHost={isHost} />}
+			{full && <EventLiveSessionRoom details={full} />}
 
 			{full ? (
 				<Tabs.Root

@@ -102,3 +102,35 @@ describe("Pass 3 sub-resource keys", () => {
 		for (const root of eventSubResourceRoots) expect(existing).not.toContain(root[1])
 	})
 })
+
+describe("live-session keys (P4-01)", () => {
+	const E = "3f9c1c2e-8d0a-4c53-9f3b-1b2a6a0c7d11"
+
+	it("isolate by account, login session and event", () => {
+		const base = eventKeys.liveSession(1, 0, E)
+		expect(base).not.toEqual(eventKeys.liveSession(2, 0, E))
+		expect(base).not.toEqual(eventKeys.liveSession(1, 1, E))
+		expect(base).not.toEqual(eventKeys.liveSession(1, 0, "other"))
+	})
+
+	it("sit under their own root, with account, session and event in the standard slots", () => {
+		const key = eventKeys.liveSession(1, 0, E)
+		expect(key.slice(0, 2)).toEqual(eventKeys.liveSessionRoot())
+		expect(keyBelongsTo(key, 1, 0)).toBe(true)
+		expect(keyBelongsTo(key, 2, 0)).toBe(false)
+		expect(keyBelongsTo(key, 1, 1)).toBe(false)
+		expect(keyEventId(key)).toBe(E)
+	})
+
+	it("do not collide with any other Events root", () => {
+		const others = [
+			eventKeys.nearbyRoot(),
+			eventKeys.myEventsRoot(),
+			eventKeys.addressRoot(),
+			eventKeys.detailRoot(),
+			eventKeys.rsvpRoot(),
+			...eventSubResourceRoots,
+		].map((r) => r[1])
+		expect(others).not.toContain(eventKeys.liveSessionRoot()[1])
+	})
+})

@@ -14,10 +14,13 @@ import type {
 	EventCommentsPage,
 	EventDetails,
 	EventGuestsPage,
+	EventLiveSessionState,
 	EventResources,
 	EventRsvpStatus,
 	EventsPage,
 	EventSubmission,
+	LiveParticipantRole,
+	LiveParticipantsPage,
 	RsvpResult,
 } from "@/types/events/api"
 import { apiClient } from "../axios"
@@ -27,6 +30,8 @@ import {
 	normalizeEventDetails,
 	normalizeGuestsPage,
 	normalizeListData,
+	normalizeLiveParticipantsPage,
+	normalizeLiveSession,
 	normalizeNearbyData,
 	normalizeResources,
 	normalizeRsvpResult,
@@ -204,6 +209,25 @@ export const eventsApi = {
 		await apiClient.post(`${eventPath(eventId)}/comments`, { message: message.trim() }, { signal })
 	},
 
+	/** Join an event before requesting media credentials. Passcodes remain write-only. */
+	joinEvent: async (eventId: string, passcode?: string): Promise<number | null> => {
+		const res = await apiClient.post<ApiResponse<unknown>>(
+			`${eventPath(eventId)}/join`,
+			passcode === undefined ? {} : { passcode },
+		)
+		const data = res.data.data
+		if (!data || typeof data !== "object" || Array.isArray(data)) return null
+		const sessionId = (data as Record<string, unknown>).live_session_id
+		return typeof sessionId === "number" && Number.isSafeInteger(sessionId) && sessionId > 0
+			? sessionId
+			: null
+	},
+
+	/** Persist the current viewer's departure; this does not end the live broadcast. */
+	leaveEvent: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/leave`, undefined, { signal })
+	},
+
 	/**
 	 * Removes a guest record (host only; the backend decides). `userId` is the guest's numeric
 	 * `pkid`. Success is a 200 with no data. The backend also deletes that guest's comments in this
@@ -229,5 +253,60 @@ export const eventsApi = {
 		const page = normalizeGuestsPage(res.data.data, params.page)
 		if (!page) throw new EventPayloadError()
 		return page
+	},
+
+	/**
+	 * The attached live session of an event, read only. A body that is not the documented shape, or
+	 * that answers for another event, throws `EventPayloadError`. A 404 can mean the event is gone or
+	 * that it has no session; the caller tells them apart (see `classifyLiveSessionError`).
+	 */
+	getEventLiveSession: async (
+		eventId: string,
+		signal?: AbortSignal,
+	): Promise<EventLiveSessionState> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/live-session`, {
+			signal,
+		})
+		const state = normalizeLiveSession(res.data.data)
+		if (!state || state.eventId.toLowerCase() !== eventId.toLowerCase()) {
+			throw new EventPayloadError()
+		}
+		return state
+	},
+
+	/**
+	 * One page of live-session participants. This is the live roster, not the event guest list.
+	 * The backend's next link controls pagination; participant_count remains the session-level
+	 * authoritative count and is not inferred from this page.
+	 */
+	getLiveParticipantsPage: async (
+		params: { sessionId: number; page: number; limit: number; role?: LiveParticipantRole },
+		signal?: AbortSignal,
+	): Promise<LiveParticipantsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(
+			"/api/events/live-sessions/" + params.sessionId + "/participants",
+			{
+				params: { page: params.page, limit: params.limit, role: params.role },
+				signal,
+			},
+		)
+		const page = normalizeLiveParticipantsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
+	},
+
+	/** Create a waiting live session for this event (host only; no request body). */
+	createEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session`, undefined, { signal })
+	},
+
+	/** Start is not idempotent. The host UI calls this before requesting browser media credentials. */
+	startEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session/start`, undefined, { signal })
+	},
+
+	/** End a waiting or live session (host only; no request body). */
+	endEventLiveSession: async (eventId: string, signal?: AbortSignal): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/live-session/end`, undefined, { signal })
 	},
 }
