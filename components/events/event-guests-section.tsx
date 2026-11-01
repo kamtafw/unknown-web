@@ -5,7 +5,8 @@ import type { EventGuest } from "@/types/events/api"
 import { Loader2, Lock, Search, ShieldAlert, Users, WifiOff } from "lucide-react"
 import { Avatar } from "radix-ui"
 import { useId, useMemo, useState } from "react"
-import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RetryButton, StateMessage } from "./event-list"
+import { StatusPill, avatarShell, secondaryButton, sectionHeading } from "./event-ui"
 import { RemoveGuestDialog } from "./remove-guest-dialog"
 
 /** the contextual 403 text; the backend's own wording is never shown */
@@ -31,8 +32,8 @@ function GuestRow({
 }) {
 	const initial = guest.name.trim().charAt(0).toUpperCase() || "?"
 	return (
-		<li className="flex items-center gap-3">
-			<Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[13px] font-semibold text-primary">
+		<li className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/50">
+			<Avatar.Root className={`${avatarShell} size-10 text-[14px]`}>
 				{guest.photo && (
 					<Avatar.Image src={guest.photo} alt="" className="size-full object-cover" />
 				)}
@@ -44,9 +45,7 @@ function GuestRow({
 						{guest.name}
 					</span>
 					{guest.role === "host" && (
-						<span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-							Host
-						</span>
+						<StatusPill className="bg-primary/10 text-primary">Host</StatusPill>
 					)}
 				</span>
 				{guest.username && guest.username !== guest.name && (
@@ -74,7 +73,7 @@ function Skeleton() {
 }
 
 /**
- * The "Guests" section of a full event: a read-only, paginated guest list (P3-07). Shows name,
+ * The "Guests" section of a full event: a paginated guest list. Shows name,
  * `@username`, a `Host` badge for role `host` and an avatar with an initial fallback. RSVP
  * status, join date, contact details and online status are neither fetched into view nor shown
  * (A-17). "Search guest" filters only the rows loaded so far; it never makes a request, and while
@@ -162,7 +161,7 @@ export function EventGuestsSection({
 
 	return (
 		<section aria-labelledby="guests-heading" className="flex flex-col gap-4">
-			<h2 id="guests-heading" className="text-[13px] font-bold text-foreground">
+			<h2 id="guests-heading" className={sectionHeading}>
 				Guests
 			</h2>
 
@@ -182,7 +181,7 @@ export function EventGuestsSection({
 					onChange={(e) => setTerm(e.target.value)}
 					placeholder="Search guest"
 					autoComplete="off"
-					className="h-9 w-full rounded-full border border-border bg-card pl-9 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+					className="h-10 w-full rounded-full border border-border bg-card pl-9 pr-3 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary"
 				/>
 			</div>
 
@@ -203,7 +202,7 @@ export function EventGuestsSection({
 			)}
 
 			{visible.length > 0 ? (
-				<ul aria-label="Event guests" className="flex flex-col gap-3.5">
+				<ul aria-label="Event guests" className="-mx-2 flex flex-col">
 					{visible.map((guest) => (
 						<GuestRow key={guest.userId} guest={guest} eventId={eventId} canRemove={isHost} />
 					))}

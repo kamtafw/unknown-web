@@ -5,10 +5,20 @@ import { useEventLiveSession } from "@/hooks/events/use-event-live-session"
 import { useJoinEvent } from "@/hooks/events/use-join-event"
 import { useLeaveEvent } from "@/hooks/events/use-leave-event"
 import { EVENTS_PAGE_SIZE } from "@/lib/events/constants"
+import { cn } from "@/lib/utils"
 import type { EventDetails } from "@/types/events/api"
+import { CheckCircle2, Loader2, LogOut, Radio } from "lucide-react"
 import { useState } from "react"
-import { secondaryButton } from "./event-list"
 import { EventLiveAudioListener } from "./event-live-audio-listener"
+import {
+	IconBadge,
+	buttonLarge,
+	fieldInput,
+	panel,
+	primaryButton,
+	secondaryButton,
+	sectionHeading,
+} from "./event-ui"
 
 export function EventJoinControl({ details }: { details: EventDetails }) {
 	const eventId = details.id
@@ -70,28 +80,40 @@ export function EventJoinControl({ details }: { details: EventDetails }) {
 	if (canLeave) {
 		return (
 			<div className="flex flex-col gap-3">
-				<p
+				<div
 					role="status"
-					className="rounded-xl border border-border px-3.5 py-3 text-[13px] text-foreground"
+					className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-[13px] text-foreground"
 				>
-					{sessionId !== null
-						? "You've joined the event. Connecting to live audio…"
-						: "You're on the guest list for this event."}
-				</p>
+					<IconBadge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+						<CheckCircle2 size={17} />
+					</IconBadge>
+					<p className="leading-snug">
+						{sessionId !== null
+							? "You've joined the event. Connecting to live audio…"
+							: "You're on the guest list for this event."}
+					</p>
+				</div>
 				{sessionId !== null && <EventLiveAudioListener sessionId={sessionId} />}
 				{leaveError && (
 					<p role="alert" className="text-[12px] text-destructive">
 						{leaveError}
 					</p>
 				)}
-				<button
-					type="button"
-					onClick={() => void submitLeave()}
-					disabled={isLeaving}
-					className={secondaryButton}
-				>
-					{isLeaving ? "Leaving…" : "Leave event"}
-				</button>
+				<div>
+					<button
+						type="button"
+						onClick={() => void submitLeave()}
+						disabled={isLeaving}
+						className={secondaryButton}
+					>
+						{isLeaving ? (
+							<Loader2 size={13} className="animate-spin" aria-hidden />
+						) : (
+							<LogOut size={13} aria-hidden />
+						)}
+						{isLeaving ? "Leaving…" : "Leave event"}
+					</button>
+				</div>
 			</div>
 		)
 	}
@@ -99,18 +121,23 @@ export function EventJoinControl({ details }: { details: EventDetails }) {
 	if (!isLiveEvent) return null
 
 	return (
-		<form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border border-border p-3.5">
-			<div>
-				<h2 className="text-[13px] font-semibold text-foreground">Join this live event</h2>
-				<p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-					Join the event before connecting to live audio.
-				</p>
+		<form onSubmit={submit} className={cn(panel, "flex flex-col gap-4")}>
+			<div className="flex items-center gap-3">
+				<IconBadge tone="danger">
+					<Radio size={16} />
+				</IconBadge>
+				<div className="min-w-0">
+					<h2 className={sectionHeading}>Join this live event</h2>
+					<p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+						Join the event before connecting to live audio.
+					</p>
+				</div>
 			</div>
 			{details.isLocked && (
 				<div className="flex flex-col gap-1.5">
 					<label
 						htmlFor={`event-${eventId}-passcode`}
-						className="text-[12px] font-medium text-foreground"
+						className="text-[12.5px] font-semibold text-foreground"
 					>
 						Four-digit passcode
 					</label>
@@ -130,7 +157,7 @@ export function EventJoinControl({ details }: { details: EventDetails }) {
 							if (joinError) clearJoinError()
 						}}
 						aria-invalid={Boolean(joinError)}
-						className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+						className={cn(fieldInput, "w-36 text-center text-[15px] tracking-[0.45em]")}
 						placeholder="0000"
 					/>
 				</div>
@@ -143,8 +170,9 @@ export function EventJoinControl({ details }: { details: EventDetails }) {
 			<button
 				type="submit"
 				disabled={isJoining || (details.isLocked && !/^\d{4}$/.test(passcode))}
-				className={secondaryButton}
+				className={cn(primaryButton, buttonLarge, "w-full sm:w-auto sm:self-start")}
 			>
+				{isJoining && <Loader2 size={14} className="animate-spin" aria-hidden />}
 				{isJoining ? "Joining…" : "Join event"}
 			</button>
 		</form>

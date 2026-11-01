@@ -16,7 +16,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "../ui/alert-dialog"
-import { secondaryButton } from "./event-list"
+import { destructiveButton, ghostDestructiveButton, secondaryButton } from "./event-ui"
 
 /** local wording; the shared error helper maps every 404 to "event gone" and is left unchanged */
 export function removeGuestErrorText(kind: EventErrorKind): string {
@@ -39,7 +39,7 @@ export function removeGuestErrorText(kind: EventErrorKind): string {
 }
 
 /**
- * Host-only "Remove" action for one guest row, with a confirmation (P3-08A). `isHost` only decides
+ * Host-only "Remove" action for one guest row, with a confirmation. `isHost` only decides
  * whether the button is shown; the server stays authoritative. Cancel sends nothing. While the
  * request is pending the dialog cannot be dismissed and confirm is disabled.
  */
@@ -70,12 +70,12 @@ export function RemoveGuestDialog({ eventId, guest }: { eventId: string; guest: 
 				<button
 					type="button"
 					aria-label={`Remove ${guest.name}`}
-					className="shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+					className={ghostDestructiveButton}
 				>
 					Remove
 				</button>
 			</AlertDialogTrigger>
-			<AlertDialogContent>
+			<AlertDialogContent className="rounded-2xl">
 				<AlertDialogHeader>
 					<AlertDialogTitle>Remove {guest.name}?</AlertDialogTitle>
 					<AlertDialogDescription>
@@ -96,7 +96,7 @@ export function RemoveGuestDialog({ eventId, guest }: { eventId: string; guest: 
 						type="button"
 						onClick={() => void confirm()}
 						disabled={isPending}
-						className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive px-4 text-[13px] font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:opacity-60"
+						className={destructiveButton}
 					>
 						{isPending && <Loader2 size={13} aria-hidden className="animate-spin" />}
 						{isPending ? "Removing…" : error ? "Try again" : "Remove guest"}

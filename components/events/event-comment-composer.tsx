@@ -5,7 +5,7 @@ import type { EventErrorKind } from "@/lib/events/errors"
 import { normalizeCommentMessage } from "@/lib/events/validation"
 import { Loader2, Send } from "lucide-react"
 import { useId, useState } from "react"
-import { primaryButton } from "./event-list"
+import { fieldTextarea, primaryButton } from "./event-ui"
 
 /**
  * What a rejected post means, in this flow's own words (EV-033). The backend reuses live-session
@@ -19,7 +19,7 @@ function failureText(kind: EventErrorKind): string {
 		case "forbidden":
 			return "You don't have permission to comment on this event."
 		case "not_found":
-			return "Only people who have joined this event can post comments"
+			return "Only people who have joined this event can post comments."
 		case "too_large":
 			return "Your comment was too large to send. Your text is still here."
 		case "unauthorized":
@@ -77,7 +77,7 @@ export function EventCommentComposer({ eventId }: { eventId: string }) {
 				placeholder="Write a comment…"
 				aria-invalid={problem ? true : undefined}
 				aria-describedby={problem ? messageId : undefined}
-				className="w-full resize-y rounded-xl border border-border bg-card px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+				className={fieldTextarea}
 			/>
 			{problem && (
 				<p id={messageId} role="alert" className="text-[12.5px] text-destructive">

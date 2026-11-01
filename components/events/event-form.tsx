@@ -33,9 +33,8 @@ type Props =
 	  }
 
 /**
- * Create / edit. The shape of the form follows the Create event frame's metadata (thumbnail,
- * location, name, duration, links and documents); privacy, passcode, tags and the shape of the
- * edit flow are assumptions (A-10…A-12). All validation lives in `lib/events/validation` and
+ * Create / edit (thumbnail, location, name, duration, privacy, passcode, tags, links and
+ * documents). All validation lives in `lib/events/validation` and
  * all request building in `lib/events/request`, so the rules exist once; the backend's own 400
  * is always shown too, and the user's input is kept after any failure.
  */
@@ -112,7 +111,7 @@ export function EventForm(props: Props) {
 			onSubmit={onSubmit}
 			noValidate
 			aria-label={title}
-			className="mx-auto flex w-full max-w-[400px] flex-col gap-6 px-4 py-6 sm:px-0"
+			className="mx-auto flex w-full max-w-[400px] flex-col gap-6 px-4 pt-2 sm:px-0"
 		>
 			<h1 className="text-xl font-bold text-foreground">{title}</h1>
 
@@ -120,7 +119,7 @@ export function EventForm(props: Props) {
 				<p
 					role="alert"
 					tabIndex={-1}
-					className="rounded-xl bg-destructive/10 px-3.5 py-2.5 text-[13px] font-medium text-destructive"
+					className="rounded-xl bg-destructive/10 px-3.5 py-2.5 text-[13px] font-medium text-destructive outline-none"
 				>
 					{summary}
 				</p>
@@ -194,7 +193,7 @@ export function EventForm(props: Props) {
 					/>
 				</div>
 				<p className="text-[12px] leading-relaxed text-muted-foreground">
-					Times are saved exactly as you enter them. Events don&apos;t store a timezone yet.
+					Times are saved exactly as you enter them. Events don&apos;t store a timezone.
 				</p>
 			</fieldset>
 
@@ -242,7 +241,7 @@ export function EventForm(props: Props) {
 				</div>
 			)}
 
-			<div className="flex items-center justify-end gap-2.5 border-t border-muted pt-5">
+			<div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2.5 border-t border-border bg-card/95 px-4 py-4 backdrop-blur sm:mx-0 sm:px-0">
 				<button type="button" onClick={onCancel} disabled={pending} className={secondaryButton}>
 					Cancel
 				</button>

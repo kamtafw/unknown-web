@@ -13,8 +13,7 @@ const PRIVACY: { value: EventPrivacy; label: string; description: string }[] = [
 	{
 		value: "friends",
 		label: "Friends",
-		description:
-			"People who aren't admitted see limited details. Friend-only access isn't enforced yet.",
+		description: "People who aren't admitted see limited details.",
 	},
 	{
 		value: "private",
@@ -24,7 +23,7 @@ const PRIVACY: { value: EventPrivacy; label: string; description: string }[] = [
 ]
 
 /**
- * Privacy and passcode (no design: assumption A-11). A passcode makes the event private, so the
+ * Privacy and passcode. A passcode makes the event private, so the
  * privacy choice only applies when there is none. The passcode is four digits and always a string
  * ("0042" stays "0042"); it lives only in form state and the request body, never in a URL, storage
  * or the query cache. On an edit of an already-locked event an empty field keeps the current code.

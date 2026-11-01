@@ -34,7 +34,7 @@ export function EventsTabs() {
 						href={href}
 						aria-current={active ? "page" : undefined}
 						className={cn(
-							"flex h-7 flex-1 items-center justify-center rounded-full text-[12px] font-medium transition-colors",
+							"flex h-8 flex-1 items-center justify-center rounded-full text-[12.5px] font-medium transition-colors",
 							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 							active
 								? "bg-card text-foreground shadow-sm"

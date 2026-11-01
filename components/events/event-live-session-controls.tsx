@@ -4,7 +4,7 @@ import { useEventLiveSession } from "@/hooks/events/use-event-live-session"
 import { useEventLiveSessionControls } from "@/hooks/events/use-event-live-session-controls"
 import { toast } from "@/lib/toast"
 import type { EventFullDetails } from "@/types/events/api"
-import { Loader2, Radio } from "lucide-react"
+import { Loader2, Radio, RefreshCw, Square } from "lucide-react"
 import { useState } from "react"
 import {
 	AlertDialog,
@@ -16,8 +16,18 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "../ui/alert-dialog"
-import { secondaryButton } from "./event-list"
 import { EventLiveAudioPublisher } from "./event-live-audio-publisher"
+import { LIVE_SESSION_STATUS_LABEL } from "./event-live-session-status"
+import {
+	IconBadge,
+	StatusPill,
+	destructiveButton,
+	destructiveOutlineButton,
+	panel,
+	primaryButton,
+	secondaryButton,
+	sectionHeading,
+} from "./event-ui"
 
 export function EventLiveSessionControls({
 	details,
@@ -50,30 +60,42 @@ export function EventLiveSessionControls({
 	}
 
 	return (
-		<section
-			aria-label="Live session controls"
-			className="flex flex-col gap-3 rounded-xl border border-border p-3.5"
-		>
-			<div className="flex items-center gap-2">
-				<Radio size={15} className="text-primary" aria-hidden />
-				<h2 className="text-[13px] font-bold text-foreground">Host live session</h2>
+		<section aria-label="Live session controls" className={`${panel} flex flex-col gap-3.5`}>
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<IconBadge>
+						<Radio size={16} />
+					</IconBadge>
+					<h2 className={sectionHeading}>Host live session</h2>
+				</div>
+				{status === "ready" && session && (
+					<StatusPill
+						tone={session.status === "live" ? "live" : "neutral"}
+						dot={session.status === "live"}
+						pulse={session.status === "live"}
+					>
+						{LIVE_SESSION_STATUS_LABEL[session.status]}
+					</StatusPill>
+				)}
 			</div>
 
 			{createAvailable ? (
 				<>
 					<p className="text-[12.5px] leading-relaxed text-muted-foreground">
-						Create a waiting session, then start it and grant microphone access to broadcast from
-						this browser.
+						Set up a live session for this event, then go live from this browser with your
+						microphone.
 					</p>
-					<button
-						type="button"
-						onClick={() => void createSession()}
-						disabled={controls.isPending}
-						className={secondaryButton}
-					>
-						{controls.isPending && <Loader2 size={13} className="animate-spin" aria-hidden />}
-						Create live session
-					</button>
+					<div>
+						<button
+							type="button"
+							onClick={() => void createSession()}
+							disabled={controls.isPending}
+							className={secondaryButton}
+						>
+							{controls.isPending && <Loader2 size={13} className="animate-spin" aria-hidden />}
+							Create live session
+						</button>
+					</div>
 				</>
 			) : status === "loading" ? (
 				<p role="status" aria-busy="true" className="text-[12.5px] text-muted-foreground">
@@ -81,8 +103,8 @@ export function EventLiveSessionControls({
 				</p>
 			) : status === "ready" && session ? (
 				<>
-					<p role="status" className="text-[12.5px] text-foreground">
-						Session status: <span className="font-semibold">{session.status}</span>
+					<p role="status" className="sr-only">
+						Session status: {LIVE_SESSION_STATUS_LABEL[session.status]}
 					</p>
 					{(session.status === "waiting" || session.status === "live") && (
 						<EventLiveAudioPublisher
@@ -94,8 +116,9 @@ export function EventLiveSessionControls({
 					)}
 					{(session.status === "ended" || session.status === "cancelled") && (
 						<p className="text-[12.5px] leading-relaxed text-muted-foreground">
-							This session cannot be restarted. The backend does not recreate an ended attached
-							session; a new-session workflow needs separate support.
+							{session.status === "ended"
+								? "This live session has ended and can't be restarted."
+								: "This live session was cancelled and can't be restarted."}
 						</p>
 					)}
 					{canEnd && (
@@ -107,20 +130,23 @@ export function EventLiveSessionControls({
 								if (!next) controls.clearError()
 							}}
 						>
-							<AlertDialogTrigger asChild>
-								<button
-									type="button"
-									disabled={controls.isPending}
-									className={`${secondaryButton} border-destructive/40 text-destructive hover:bg-destructive/10`}
-								>
-									End live session
-								</button>
-							</AlertDialogTrigger>
-							<AlertDialogContent>
+							<div className="border-t border-border pt-3.5">
+								<AlertDialogTrigger asChild>
+									<button
+										type="button"
+										disabled={controls.isPending}
+										className={destructiveOutlineButton}
+									>
+										<Square size={12} aria-hidden className="fill-current" />
+										End live session
+									</button>
+								</AlertDialogTrigger>
+							</div>
+							<AlertDialogContent className="rounded-2xl">
 								<AlertDialogHeader>
 									<AlertDialogTitle>End this live session?</AlertDialogTitle>
 									<AlertDialogDescription>
-										This ends the session for everyone. The attached session cannot be restarted.
+										This ends the session for everyone. It can&apos;t be restarted afterwards.
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								{controls.errorMessage && (
@@ -136,7 +162,7 @@ export function EventLiveSessionControls({
 										type="button"
 										onClick={() => void endSession()}
 										disabled={controls.isPending}
-										className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive px-4 text-[12.5px] font-semibold text-white transition-all hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive disabled:opacity-60"
+										className={destructiveButton}
 									>
 										{controls.isPending && (
 											<Loader2 size={13} className="animate-spin" aria-hidden />
@@ -149,18 +175,20 @@ export function EventLiveSessionControls({
 					)}
 				</>
 			) : status === "error" || status === "unavailable" || status === "not_admitted" ? (
-				<div className="flex flex-wrap items-center gap-3">
-					<p role="alert" className="text-[12.5px] text-muted-foreground">
-						We couldn&apos;t confirm the live session state. No lifecycle action is available until
-						the state can be checked.
+				<div role="alert" className="flex flex-col gap-3">
+					<p className="text-[12.5px] leading-relaxed text-muted-foreground">
+						We couldn&apos;t check the live session. Try again to see what you can do.
 					</p>
-					<button type="button" onClick={() => void refetch()} className={secondaryButton}>
-						Retry
-					</button>
+					<div>
+						<button type="button" onClick={() => void refetch()} className={primaryButton}>
+							<RefreshCw size={12} aria-hidden />
+							Retry
+						</button>
+					</div>
 				</div>
 			) : (
 				<p className="text-[12.5px] text-muted-foreground">
-					No live-session controls are available for the current event state.
+					Live sessions aren&apos;t available for this event right now.
 				</p>
 			)}
 

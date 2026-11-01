@@ -1,10 +1,40 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import type { Room as LiveKitRoom } from "livekit-client"
+import { Loader2, Mic, MicOff, PhoneOff } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import {
+	StatusPill,
+	buttonLarge,
+	destructiveOutlineButton,
+	primaryButton,
+	secondaryButton,
+} from "./event-ui"
 import { useEventsSocket } from "./events-socket-provider"
 
 type PublisherStatus = "idle" | "connecting" | "publishing" | "muted" | "error" | "ended"
+
+const PUBLISHER_LABEL: Record<PublisherStatus, string> = {
+	idle: "Not connected",
+	connecting: "Connecting",
+	publishing: "On air",
+	muted: "Muted",
+	error: "Couldn't connect",
+	ended: "Ended",
+}
+
+const PUBLISHER_TONE: Record<
+	PublisherStatus,
+	"neutral" | "live" | "success" | "warning" | "danger"
+> = {
+	idle: "neutral",
+	connecting: "warning",
+	publishing: "live",
+	muted: "warning",
+	error: "danger",
+	ended: "neutral",
+}
 
 type Credentials = {
 	server_url: string
@@ -146,12 +176,11 @@ export function EventLiveAudioPublisher({
 				if (response.status === 401) throw new Error("Sign in again to broadcast.")
 				if (response.status === 403)
 					throw new Error("You are not currently admitted to this live session.")
-				if (response.status === 400)
-					throw new Error("This session is not configured for LiveKit audio.")
+				if (response.status === 400) throw new Error("Live audio isn't set up for this session.")
 				throw new Error("Could not retrieve live audio permissions. Try again.")
 			}
 			const credentials = parseCredentials(body?.data ?? body)
-			if (!credentials) throw new Error("The live audio credentials response was incomplete.")
+			if (!credentials) throw new Error("Couldn't start live audio. Please try again.")
 			if (!credentials.permissions.can_publish_microphone) {
 				throw new Error(
 					"Your current live-session role does not have microphone publishing permission.",
@@ -179,7 +208,7 @@ export function EventLiveAudioPublisher({
 				room.name !== credentials.room ||
 				room.localParticipant.identity !== credentials.identity
 			) {
-				throw new Error("The connected room did not match the host credentials.")
+				throw new Error("Couldn't connect to the live audio room. Please try again.")
 			}
 			await room.localParticipant.setMicrophoneEnabled(true)
 			if (current !== generation.current) {
@@ -231,16 +260,34 @@ export function EventLiveAudioPublisher({
 		await connectAndPublish()
 	}
 
+	const busy = isBusy || status === "connecting"
+	const on = status === "publishing"
+
 	return (
-		<div className="flex flex-col gap-2 rounded-lg bg-muted/60 p-3">
+		<div className="flex flex-col gap-3 rounded-xl bg-muted/60 p-3.5">
 			<div className="flex items-center justify-between gap-3">
-				<span className="text-[12px] font-semibold text-foreground">Host microphone</span>
-				<span className="text-[11px] capitalize text-muted-foreground">{status}</span>
+				<div className="flex items-center gap-2.5">
+					<span
+						aria-hidden
+						className={cn(
+							"flex size-8 items-center justify-center rounded-full",
+							on
+								? "bg-destructive/10 text-destructive"
+								: "bg-card text-muted-foreground shadow-xs ring-1 ring-border",
+						)}
+					>
+						{status === "muted" ? <MicOff size={15} /> : <Mic size={15} />}
+					</span>
+					<span className="text-[13px] font-semibold text-foreground">Host microphone</span>
+				</div>
+				<StatusPill tone={PUBLISHER_TONE[status]} dot={on} pulse={on}>
+					{PUBLISHER_LABEL[status]}
+				</StatusPill>
 			</div>
 			<p
 				role="status"
 				aria-live="polite"
-				className="text-[12px] leading-relaxed text-muted-foreground"
+				className="text-[12.5px] leading-relaxed text-muted-foreground"
 			>
 				{message}
 			</p>
@@ -251,16 +298,22 @@ export function EventLiveAudioPublisher({
 							type="button"
 							onClick={() => void toggleMicrophone()}
 							disabled={isBusy}
-							className="rounded-full border border-border px-3 py-2 text-[12px] font-medium text-foreground disabled:opacity-60"
+							className={secondaryButton}
 						>
+							{status === "muted" ? (
+								<Mic size={13} aria-hidden />
+							) : (
+								<MicOff size={13} aria-hidden />
+							)}
 							{status === "muted" ? "Unmute microphone" : "Mute microphone"}
 						</button>
 						<button
 							type="button"
 							onClick={() => void disconnect()}
 							disabled={isBusy}
-							className="rounded-full border border-border px-3 py-2 text-[12px] font-medium text-foreground disabled:opacity-60"
+							className={destructiveOutlineButton}
 						>
+							<PhoneOff size={13} aria-hidden />
 							Disconnect
 						</button>
 					</>
@@ -268,14 +321,15 @@ export function EventLiveAudioPublisher({
 					<button
 						type="button"
 						onClick={() => void handleStart()}
-						disabled={isBusy || status === "connecting"}
-						className="rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground disabled:opacity-60"
+						disabled={busy}
+						className={cn(primaryButton, buttonLarge)}
 					>
-						{isBusy || status === "connecting"
-							? "Connecting…"
-							: hasStarted
-								? "Connect microphone"
-								: "Start session and go live"}
+						{busy ? (
+							<Loader2 size={14} className="animate-spin" aria-hidden />
+						) : (
+							<Mic size={14} aria-hidden />
+						)}
+						{busy ? "Connecting…" : hasStarted ? "Connect microphone" : "Start session and go live"}
 					</button>
 				)}
 			</div>
