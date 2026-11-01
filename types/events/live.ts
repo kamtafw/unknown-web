@@ -39,6 +39,13 @@ export interface LiveSessionReactionResult {
 	reaction: LiveSessionReaction
 }
 
+export interface LiveSessionRoomState {
+	/** Server-reported totals; never incremented locally. */
+	reactionCounts: Partial<Record<LiveReactionEmoji, number>>
+	/** Bounded recent event stream for deduplication/display. */
+	recentReactions: LiveSessionReaction[]
+}
+
 export interface CreateLiveSessionCommentInput {
 	content: string
 }

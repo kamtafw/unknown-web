@@ -13,6 +13,7 @@ import { EventGuestsSection } from "./event-guests-section"
 import { EventJoinControl } from "./event-join-control"
 import { secondaryButton } from "./event-list"
 import { EventLiveSessionControls } from "./event-live-session-controls"
+import { EventLiveSessionRoom } from "./event-live-session-room"
 import { EventLiveSessionStatus } from "./event-live-session-status"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
@@ -246,6 +247,7 @@ export function EventDetailsView({
 
 			{full && <EventLiveSessionStatus details={full} />}
 			{full && <EventLiveSessionControls details={full} isHost={isHost} />}
+			{full && <EventLiveSessionRoom details={full} />}
 
 			{full ? (
 				<Tabs.Root
