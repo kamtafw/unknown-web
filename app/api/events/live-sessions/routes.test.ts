@@ -128,8 +128,9 @@ describe("live-session room summary BFF", () => {
 		const [url, init] = fetchJson.mock.calls[0]
 		expect(url).toContain("/live/sessions/12")
 		expect(init.headers.Authorization).toBe("Bearer token")
-		expect((await res.json()).data).toEqual({ id: 12, reaction_counts: reactionCounts })
-		expect(JSON.stringify(await res.json())).not.toMatch(/private@example|invite_code|secret|participants|media/)
+		const body = await res.json()
+		expect(body.data).toEqual({ id: 12, reaction_counts: reactionCounts })
+		expect(JSON.stringify(body)).not.toMatch(/private@example|invite_code|secret|participants|media/)
 	})
 	it("rejects an incomplete reaction aggregate response", async () => {
 		fetchJson.mockResolvedValue(ok({ id: 12, reaction_counts: { "👍": 1 } }))
