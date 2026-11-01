@@ -94,17 +94,24 @@ export function EventLiveSessionRoom({ details }: { details: EventFullDetails })
 
       <div className="flex flex-wrap gap-2" aria-label="Send a reaction">
         {LIVE_REACTION_EMOJIS.map((emoji) => {
-          const count = reactions.reactionCounts[emoji] ?? 0
+          const count = reactions.reactionCounts[emoji]
+          const countLabel = typeof count === "number" ? count : reactions.isLoadingCounts ? "…" : "—"
           return (
             <button key={emoji} type="button" onClick={() => reactions.sendReaction(emoji)}
               disabled={reactions.isSending}
-              aria-label={`React with ${emoji}; ${count} total`}
+              aria-label={`React with ${emoji}; ${typeof count === "number" ? `${count} total` : "count unavailable"}`}
               className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[13px] disabled:opacity-50">
-              <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{count}</span>
+              <span>{emoji}</span><span className="text-[11px] text-muted-foreground">{countLabel}</span>
             </button>
           )
         })}
       </div>
+      {reactions.countsError && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-[12px] text-destructive">
+          <span>Could not load current reaction totals.</span>
+          <button type="button" className={secondaryButton} onClick={() => void reactions.refetchCounts()}>Retry</button>
+        </div>
+      )}
       {reactions.error && <p role="alert" className="text-[12px] text-destructive">{reactions.error}</p>}
 
       <div className="flex flex-col gap-3">
