@@ -75,6 +75,8 @@ export function attachLiveSessionSocketHandlers(
 
   const offConnect = manager.on("connect", () => {
     void client.invalidateQueries({ queryKey: key })
+    // Reconcile aggregate counts after a disconnect so reactions missed offline are recovered.
+    void client.invalidateQueries({ queryKey: roomKey })
   })
 
   const offComment = manager.on("live:comment", (raw: unknown) => {
