@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/stores/auth-store"
 import { showMutationErrorToast } from "@/lib/api-error"
 import { socialsApi } from "@/lib/socials/api"
 import {
@@ -48,13 +49,17 @@ function patchIsPinned(
 	old: FeedCache | undefined,
 	id: string,
 	pinned: boolean,
+	authorId?: string,
 ): FeedCache | undefined {
 	if (!old) return old
 	return {
 		...old,
 		pages: old.pages.map((page) => ({
 			...page,
-			posts: page.posts.map((p) => (p.id === id ? applyContentPatch(p, { flags: { pinned } }) : p)),
+			posts: page.posts.map((p) => {
+				if (p.id === id) return applyContentPatch(p, { flags: { pinned } })
+				return pinned && p.user.id === authorId ? applyContentPatch(p, { flags: { pinned: false } }) : p
+			}),
 		})),
 	}
 }
@@ -160,7 +165,8 @@ export function useTogglePinnedPost() {
 			if (!res.success) return
 			const { is_pinned, message } = res.data
 
-			const applyPatch = (old: FeedCache | undefined) => patchIsPinned(old, id, is_pinned)
+			const authorId = findEngagementEntityAnywhere(qc, id)?.user.id ?? useAuthStore.getState().user?.id
+			const applyPatch = (old: FeedCache | undefined) => patchIsPinned(old, id, is_pinned, authorId)
 			qc.setQueryData<FeedCache>(feedKeys.forYou(), applyPatch)
 			qc.setQueryData<FeedCache>(feedKeys.following(), applyPatch)
 			qc.setQueryData<FeedCache>(feedKeys.bookmarks(), applyPatch)
@@ -172,7 +178,7 @@ export function useTogglePinnedPost() {
 			})
 
 			qc.setQueriesData<SocialContent>({ queryKey: contentKeys.details() }, (old) =>
-				old && old.id === id ? applyContentPatch(old, { flags: { pinned: is_pinned } }) : old,
+				old && (old.id === id || (is_pinned && old.user.id === authorId)) ? applyContentPatch(old, { flags: { pinned: old.id === id && is_pinned } }) : old,
 			)
 
 			toast.success(

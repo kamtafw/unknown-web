@@ -1,4 +1,6 @@
 "use client"
+import { useTimezonePreference } from "@/hooks/use-timezone"
+import { formatMessageTime } from "@/lib/message-time"
 
 import { MediaGallery } from "@/components/messenger/media/media-gallery"
 import { isOptimisticMessage } from "@/lib/messenger/optimistic"
@@ -71,9 +73,7 @@ interface MessageBubbleProps {
 	onOpenThread?: (message: Message) => void
 }
 
-function formatTime(iso: string): string {
-	return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-}
+
 
 function StatusTick({ status }: { status: Message["status"] }) {
 	switch (status) {
@@ -240,6 +240,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 	},
 	ref,
 ) {
+	const { data: timezonePreference } = useTimezonePreference()
 	const forwarded = Boolean(message.forwarded_from)
 	const failed = message.status === "failed"
 	const deleted = message.is_deleted_for_all || message.is_hidden_by_me
@@ -388,7 +389,7 @@ export const MessageBubble = forwardRef<HTMLDivElement, MessageBubbleProps>(func
 
 				<div className="mt-1 flex items-center gap-1 px-1 select-none">
 					<span className="text-[10px] leading-3 text-muted-foreground">
-						{formatTime(message.created_at)}
+						{formatMessageTime(message.created_at, timezonePreference?.data.timezone)}
 					</span>
 					{isOwn && <StatusTick status={message.status} />}
 					{message.is_pinned && (

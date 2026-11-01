@@ -12,7 +12,7 @@ import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Avatar, ScrollArea } from "radix-ui"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { FollowButton } from "../shared/follow-button"
 
 function flattenSuggestions(users: SuggestionUser[]) {
@@ -41,7 +41,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 	const followUser = useFollowUser()
 	const unfollowUser = useUnfollowUser()
 
-	const [isFollowed, setIsFollowed] = useState(user.youFollowThisUser)
+	const isFollowed = user.youFollowThisUser
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(
@@ -53,11 +53,9 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 	const handleFollow = () => {
 		if (isFollowed) return
-		setIsFollowed(true)
-		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.pkid), 5_000)
-		followUser.mutate(user.pkid, {
+		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.id), 5_000)
+		followUser.mutate(user.id, {
 			onError: () => {
-				setIsFollowed(user.youFollowThisUser)
 				if (timerRef.current) {
 					clearTimeout(timerRef.current)
 					timerRef.current = null
@@ -68,16 +66,11 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 
 	const handleUnfollow = () => {
 		if (!isFollowed) return
-		setIsFollowed(false)
 		if (timerRef.current) {
 			clearTimeout(timerRef.current)
 			timerRef.current = null
 		}
-		unfollowUser.mutate(user.pkid, {
-			onError: () => {
-				setIsFollowed(user.youFollowThisUser)
-			},
-		})
+		unfollowUser.mutate(user.id)
 	}
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -119,6 +112,7 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 			</button>
 
 			<FollowButton
+				disabled={followUser.isPending || unfollowUser.isPending}
 				isFollowed={isFollowed}
 				onClick={isFollowed ? handleUnfollow : handleFollow}
 				className="min-w-22 py-1.5"
@@ -140,14 +134,14 @@ function SkeletonRow() {
 	)
 }
 
-export function FriendSuggestions() {
+export function FriendSuggestions({ inline = false }: { inline?: boolean }) {
 	const { data, isLoading } = useFriendSuggestions()
 	const users = flattenSuggestions(data?.data.results ?? [])
 
 	return (
-		<aside className="w-md shrink-0 flex flex-col bg-card rounded-t-2xl overflow-hidden border border-border">
+		<aside aria-label="Who to follow" className={inline ? "flex flex-col bg-card border-y border-border" : "w-md shrink-0 flex flex-col bg-card rounded-t-2xl overflow-hidden border border-border"}>
 			<div className="px-4 pt-4 pb-3 shrink-0">
-				<h2 className="font-bold text-foreground text-sm">Friend suggestions</h2>
+				<h2 className="font-bold text-foreground text-sm">Who to follow</h2>
 			</div>
 
 			<div className="mx-4 border-t border-border shrink-0" />
