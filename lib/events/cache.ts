@@ -1,6 +1,6 @@
 import type { EventCard, EventRsvpStatus, EventsPage } from "@/types/events/api"
 import type { InfiniteData, QueryClient } from "@tanstack/react-query"
-import { eventKeys, keyBelongsTo } from "./query-keys"
+import { eventKeys, eventSubResourceRoots, keyBelongsTo, keyEventId } from "./query-keys"
 
 /**
  * The viewer's RSVP as already seen in a list the same account and login session loaded for the
@@ -28,4 +28,101 @@ export function findCachedRsvp(
 		}
 	}
 	return null
+}
+
+export type EventSubResource = "resources" | "comments" | "guests"
+
+const SUB_RESOURCE_ROOT: Record<EventSubResource, string> = {
+	resources: eventSubResourceRoots[0][1],
+	comments: eventSubResourceRoots[1][1],
+	guests: eventSubResourceRoots[2][1],
+}
+
+const ALL_SUB_RESOURCES = ["resources", "comments", "guests"] as const
+
+/** matches this event's entries for this account and login session, never anyone else's */
+function subResourcePredicate(
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+	parts: readonly EventSubResource[],
+) {
+	const roots = new Set(parts.map((p) => SUB_RESOURCE_ROOT[p]))
+	return (query: { queryKey: readonly unknown[] }): boolean => {
+		const key = query.queryKey
+		return (
+			accountId !== null &&
+			key[0] === eventKeys.all[0] &&
+			roots.has(key[1] as string) &&
+			keyBelongsTo(key, accountId, sessionGeneration) &&
+			keyEventId(key) === eventId
+		)
+	}
+}
+
+/**
+ * Drops the cached resources, comments and guests of one event (it was deleted, or a section
+ * answered 404). The account and login session must match, so another account's entries stay.
+ */
+export function removeEventSubResources(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+): void {
+	if (accountId === null) return
+	client.removeQueries({
+		predicate: subResourcePredicate(accountId, sessionGeneration, eventId, ALL_SUB_RESOURCES),
+	})
+}
+
+/** marks the named sections (default: all three) of one event stale so they refetch */
+export function invalidateEventSubResources(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+	parts: readonly EventSubResource[] = ALL_SUB_RESOURCES,
+): Promise<void> {
+	if (accountId === null) return Promise.resolve()
+	return client.invalidateQueries({
+		predicate: subResourcePredicate(accountId, sessionGeneration, eventId, parts),
+	})
+}
+
+/**
+ * Keep only page 1 of this event's cached thread or list for the named sections (comments and/or
+ * guests) and refetch it. Later pages shift, or stop existing, once something was posted or
+ * removed, so they are dropped and re-loaded on demand instead of refetched by page number (which
+ * could 404 on a page that no longer exists). Only this account's and login session's entries for
+ * this event are touched; nothing is inserted or removed by hand.
+ */
+export function refreshFromFirstPage(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+	parts: readonly EventSubResource[],
+): Promise<void> {
+	if (accountId === null) return Promise.resolve()
+	const predicate = subResourcePredicate(accountId, sessionGeneration, eventId, parts)
+	client.setQueriesData<InfiniteData<unknown>>({ predicate }, (old) =>
+		old && old.pages.length > 1
+			? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
+			: old,
+	)
+	return client.invalidateQueries({ predicate })
+}
+
+/**
+ * After the viewer posts a comment (P3-06): refetch page 1 of this event's thread. The new comment
+ * then appears through the normal read path, newest first.
+ */
+export function refreshCommentsFromFirstPage(
+	client: QueryClient,
+	accountId: number | null,
+	sessionGeneration: number | null,
+	eventId: string,
+): Promise<void> {
+	return refreshFromFirstPage(client, accountId, sessionGeneration, eventId, ["comments"])
 }

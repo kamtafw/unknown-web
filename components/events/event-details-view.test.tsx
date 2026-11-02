@@ -1,8 +1,23 @@
 import type { EventFullDetails, EventPreviewDetails } from "@/types/events/api"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { EventDetailsView } from "./event-details-view"
 
+vi.mock("./event-guests-section", () => ({
+	EventGuestsSection: (p: { eventId: string }) => (
+		<div data-testid="guests-stub" data-event={p.eventId} />
+	),
+}))
+vi.mock("./event-comments-section", () => ({
+	EventCommentsSection: (p: { eventId: string }) => (
+		<div data-testid="comments-stub" data-event={p.eventId} />
+	),
+}))
+vi.mock("./event-resources-section", () => ({
+	EventResourcesSection: (p: { eventId: string; isHost: boolean; onEdit: () => void }) => (
+		<div data-testid="resources-stub" data-event={p.eventId} data-host={String(p.isHost)} />
+	),
+}))
 vi.mock("./rsvp-control", () => ({ RsvpControl: () => <section aria-label="rsvp-stub" /> }))
 vi.mock("./delete-event-dialog", () => ({
 	DeleteEventDialog: ({ liveBlocked }: { liveBlocked: boolean }) => (
@@ -101,5 +116,229 @@ describe("EventDetailsView", () => {
 		)
 		expect(screen.getByTestId("delete")).toHaveAttribute("data-live-blocked", "true")
 		expect(screen.queryByRole("button", { name: /join/i })).not.toBeInTheDocument()
+	})
+})
+
+describe("EventDetailsView sections (P3-03)", () => {
+	const names = ["Details", "Comments", "Links and docs", "Guests"]
+	const panelFor = (tab: HTMLElement) =>
+		document.getElementById(tab.getAttribute("aria-controls") ?? "")
+
+	it("a full event has an accessible tab list with the four sections, on Details by default", () => {
+		render(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		expect(screen.getByRole("tablist", { name: "Event sections" })).toBeInTheDocument()
+		const tabs = screen.getAllByRole("tab")
+		expect(tabs.map((t) => t.textContent)).toEqual(names)
+		expect(screen.getByRole("tab", { name: "Details" })).toHaveAttribute("aria-selected", "true")
+		for (const name of names.slice(1)) {
+			expect(screen.getByRole("tab", { name })).toHaveAttribute("aria-selected", "false")
+		}
+	})
+
+	it("every tab controls a real panel, labelled by that tab; only the active one is shown", () => {
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
+		for (const tab of screen.getAllByRole("tab")) {
+			const panel = panelFor(tab)
+			expect(panel).not.toBeNull()
+			expect(panel).toHaveAttribute("role", "tabpanel")
+			expect(panel).toHaveAttribute("aria-labelledby", tab.id)
+			expect(panel?.hasAttribute("hidden")).toBe(tab.getAttribute("aria-selected") !== "true")
+		}
+	})
+
+	it("the guests section mounts only while Guests is active, for a full event; inactive panels are empty", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="guests"
+			/>,
+		)
+		expect(screen.getByTestId("guests-stub")).toHaveAttribute("data-event", "e1")
+		expect(panelFor(screen.getByRole("tab", { name: "Guests" }))).toContainElement(
+			screen.getByTestId("guests-stub"),
+		)
+		expect(panelFor(screen.getByRole("tab", { name: "Comments" }))).toBeEmptyDOMElement()
+		expect(panelFor(screen.getByRole("tab", { name: "Links and docs" }))).toBeEmptyDOMElement()
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
+		expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
+		expect(screen.getByTestId("comments-stub")).toBeInTheDocument()
+	})
+
+	it("the comments section mounts only while Comments is active, for a full event", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="comments" />,
+		)
+		expect(screen.getByTestId("comments-stub")).toHaveAttribute("data-event", "e1")
+		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
+		expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
+		expect(screen.getByTestId("resources-stub")).toBeInTheDocument()
+	})
+
+	it("the Links and docs section shows nothing from the event's own link and document lists (it reads the resources endpoint)", () => {
+		render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
+		expect(screen.queryByText("Secret agenda")).not.toBeInTheDocument()
+		expect(screen.queryByText("Secret.pdf")).not.toBeInTheDocument()
+		expect(screen.queryByText("https://example.com/agenda")).not.toBeInTheDocument()
+	})
+
+	it("choosing a tab reports it; choosing the current tab does not re-report", () => {
+		const onTabChange = vi.fn()
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				onTabChange={onTabChange}
+			/>,
+		)
+		fireEvent.mouseDown(screen.getByRole("tab", { name: "Links and docs" }), { button: 0 })
+		expect(onTabChange).toHaveBeenCalledWith("resources")
+		onTabChange.mockClear()
+		fireEvent.mouseDown(screen.getByRole("tab", { name: "Details" }), { button: 0 })
+		expect(onTabChange).not.toHaveBeenCalled()
+	})
+
+	it("arrow keys move between tabs (keyboard operable)", async () => {
+		const onTabChange = vi.fn()
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				onTabChange={onTabChange}
+			/>,
+		)
+		const details = screen.getByRole("tab", { name: "Details" })
+		details.focus()
+		fireEvent.keyDown(details, { key: "ArrowRight" })
+		await waitFor(() => expect(screen.getByRole("tab", { name: "Comments" })).toHaveFocus())
+		expect(onTabChange).toHaveBeenCalledWith("comments")
+	})
+
+	it("roving focus: once a tab is focused, only it is in the tab order", async () => {
+		render(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
+		const comments = screen.getByRole("tab", { name: "Comments" })
+		act(() => comments.focus())
+		await waitFor(() => expect(comments).toHaveAttribute("tabindex", "0"))
+		for (const name of ["Details", "Links and docs", "Guests"]) {
+			expect(screen.getByRole("tab", { name })).toHaveAttribute("tabindex", "-1")
+		}
+	})
+
+	it("switching sections keeps the Details content mounted (RSVP state survives)", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />,
+		)
+		const rsvp = screen.getByLabelText("rsvp-stub")
+		rerender(
+			<EventDetailsView
+				details={full}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="comments"
+			/>,
+		)
+		expect(screen.getByLabelText("rsvp-stub", { selector: "section" })).toBe(rsvp)
+		expect(rsvp.closest("[role=tabpanel]")).toHaveAttribute("hidden")
+		rerender(<EventDetailsView details={full} isHost={false} onEdit={noop} onDeleted={noop} />)
+		expect(rsvp.closest("[role=tabpanel]")).not.toHaveAttribute("hidden")
+	})
+
+	it("host controls stay above the sections and appear on every section", () => {
+		render(<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="guests" />)
+		expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument()
+		expect(screen.getByTestId("delete")).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: "Edit" }).closest("[role=tabpanel]")).toBeNull()
+	})
+
+	it.each(["comments", "resources", "guests"] as const)(
+		"a restricted preview has no sections and cannot reach %s by tab",
+		(tab) => {
+			render(
+				<EventDetailsView
+					details={preview}
+					isHost={false}
+					onEdit={noop}
+					onDeleted={noop}
+					tab={tab}
+				/>,
+			)
+			expect(screen.queryByRole("tablist")).not.toBeInTheDocument()
+			expect(screen.queryByRole("tab")).not.toBeInTheDocument()
+			expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument()
+			expect(screen.queryByTestId("comments-stub")).not.toBeInTheDocument()
+			expect(screen.queryByTestId("guests-stub")).not.toBeInTheDocument()
+			expect(screen.getByRole("note")).toHaveTextContent(/details are hidden/i)
+			expect(screen.getByLabelText("rsvp-stub")).toBeInTheDocument()
+		},
+	)
+
+	it("the resources section mounts only while Links and docs is active, for a full event", () => {
+		const { rerender } = render(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} />,
+		)
+		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
+		rerender(
+			<EventDetailsView details={full} isHost onEdit={noop} onDeleted={noop} tab="resources" />,
+		)
+		const stub = screen.getByTestId("resources-stub")
+		expect(stub).toHaveAttribute("data-event", "e1")
+		expect(stub).toHaveAttribute("data-host", "true")
+	})
+
+	it("a restricted preview never mounts the resources section, even with tab=resources", () => {
+		render(
+			<EventDetailsView
+				details={preview}
+				isHost={false}
+				onEdit={noop}
+				onDeleted={noop}
+				tab="resources"
+			/>,
+		)
+		expect(screen.queryByTestId("resources-stub")).not.toBeInTheDocument()
 	})
 })

@@ -11,7 +11,10 @@
 import type { ApiResponse } from "@/types/api"
 import type {
 	Coordinates,
+	EventCommentsPage,
 	EventDetails,
+	EventGuestsPage,
+	EventResources,
 	EventRsvpStatus,
 	EventsPage,
 	EventSubmission,
@@ -20,9 +23,12 @@ import type {
 import { apiClient } from "../axios"
 import { EVENT_UPLOAD_TIMEOUT_MS } from "./constants"
 import {
+	normalizeCommentsPage,
 	normalizeEventDetails,
+	normalizeGuestsPage,
 	normalizeListData,
 	normalizeNearbyData,
+	normalizeResources,
 	normalizeRsvpResult,
 } from "./normalize"
 
@@ -63,6 +69,12 @@ export interface NearbyParams extends Coordinates {
 
 export interface MyEventsParams {
 	search: string
+	page: number
+	limit: number
+}
+
+export interface EventPageParams {
+	eventId: string
 	page: number
 	limit: number
 }
@@ -151,5 +163,71 @@ export const eventsApi = {
 		})
 		// a 201 means it was saved; fall back to what was asked if the body is unreadable
 		return normalizeRsvpResult(res.data.data) ?? { eventId, status }
+	},
+
+	/**
+	 * Links and documents of an event the viewer can open. A body that is not the documented
+	 * shape throws `EventPayloadError`; an empty list is a real, empty result.
+	 */
+	getEventResources: async (eventId: string, signal?: AbortSignal): Promise<EventResources> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(eventId)}/resources`, {
+			signal,
+		})
+		const resources = normalizeResources(res.data.data)
+		if (!resources) throw new EventPayloadError()
+		return resources
+	},
+
+	/** one page of event comments, newest first; `hasNext` comes from the backend `next` link */
+	getEventCommentsPage: async (
+		params: EventPageParams,
+		signal?: AbortSignal,
+	): Promise<EventCommentsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(params.eventId)}/comments`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		const page = normalizeCommentsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
+	},
+
+	/**
+	 * Posts a comment (trimmed). Success is a 201 with no comment in it (no id, author or time), so
+	 * nothing is returned: the thread is refetched. Who may post is the backend's decision.
+	 */
+	postEventComment: async (
+		eventId: string,
+		message: string,
+		signal?: AbortSignal,
+	): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/comments`, { message: message.trim() }, { signal })
+	},
+
+	/**
+	 * Removes a guest record (host only; the backend decides). `userId` is the guest's numeric
+	 * `pkid`. Success is a 200 with no data. The backend also deletes that guest's comments in this
+	 * event. This does not disconnect the guest from live media.
+	 */
+	removeEventGuest: async (
+		eventId: string,
+		userId: number,
+		signal?: AbortSignal,
+	): Promise<void> => {
+		await apiClient.post(`${eventPath(eventId)}/guests/remove`, { user_id: userId }, { signal })
+	},
+
+	/** one page of event guests, newest first. The backend answers 403 to anyone without a guest record */
+	getEventGuestsPage: async (
+		params: EventPageParams,
+		signal?: AbortSignal,
+	): Promise<EventGuestsPage> => {
+		const res = await apiClient.get<ApiResponse<unknown>>(`${eventPath(params.eventId)}/guests`, {
+			params: { page: params.page, limit: params.limit },
+			signal,
+		})
+		const page = normalizeGuestsPage(res.data.data, params.page)
+		if (!page) throw new EventPayloadError()
+		return page
 	},
 }

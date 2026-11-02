@@ -1,11 +1,17 @@
 "use client"
 
 import { formatEventSchedule } from "@/lib/events/format"
+import { EVENT_TABS, type EventTab } from "@/lib/events/selection"
+import { cn } from "@/lib/utils"
 import type { EventDetails, EventFullDetails, EventHost, EventPrivacy } from "@/types/events/api"
 import { CalendarDays, Clock, EyeOff, Lock, MapPin, Pencil, Radio } from "lucide-react"
 import Image from "next/image"
+import { Tabs } from "radix-ui"
 import { DeleteEventDialog } from "./delete-event-dialog"
+import { EventCommentsSection } from "./event-comments-section"
+import { EventGuestsSection } from "./event-guests-section"
 import { secondaryButton } from "./event-list"
+import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
 
 const PRIVACY_LABEL: Record<EventPrivacy, string> = {
@@ -32,6 +38,13 @@ function Chip({
 			{children}
 		</span>
 	)
+}
+
+const TAB_LABEL: Record<EventTab, string> = {
+	details: "Details",
+	comments: "Comments",
+	resources: "Links and docs",
+	guests: "Guests",
 }
 
 function Cover({ src }: { src: string | null }) {
@@ -82,68 +95,39 @@ function HostRow({ host }: { host: EventHost }) {
 /**
  * One event, full or restricted preview. The two are different shapes, not one with blanks: a
  * preview never shows hosts, resources or host controls, and its missing fields are "not
- * disclosed", not "empty". Links and documents are not displayed here at all (viewing them is
- * Pass 3); the full shape only carries them so a host can edit them.
+ * disclosed", not "empty". The full shape carries links and documents only so a host can edit
+ * them; this view does not display them.
  *
- * Joining, guests and comments are later passes, so a live event only gets a "Live now" mark
- * and a note. Host controls are shown by a UUID match and the server stays authoritative.
+ * A full event has sections (Details, Comments, Links and docs, Guests), selected by `tab` and
+ * held in the URL by the caller (A-16). Details, Links and docs (P3-04), Comments (P3-05, P3-06)
+ * and Guests (P3-07, read-only) each have their own content, fetched only while that section is
+ * active. A restricted preview has no sections and ignores `tab`, so a
+ * link with `&tab=` cannot reach one. Joining is a later pass, so a live event only gets a "Live
+ * now" mark and a note. Host controls are shown by a UUID match and the server stays authoritative.
  */
 export function EventDetailsView({
 	details,
 	isHost,
 	onEdit,
 	onDeleted,
+	tab = "details",
+	onTabChange,
 }: {
 	details: EventDetails
 	isHost: boolean
 	onEdit: () => void
 	onDeleted: () => void
+	/** the active section of a full event; ignored for a preview */
+	tab?: EventTab
+	onTabChange?: (tab: EventTab) => void
 }) {
 	const full: EventFullDetails | null = details.kind === "full" ? details : null
 	const schedule = formatEventSchedule(details)
 	const liveBlocked = details.isLive || full?.liveSessionStatus === "live"
 
-	return (
-		<article
-			aria-label={details.name}
-			className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8"
-		>
-			<Cover src={details.coverImage} />
-
-			<header className="flex flex-col gap-3">
-				<div className="flex flex-wrap items-center gap-2">
-					{details.isLive && (
-						<Chip tone="live">
-							<Radio size={12} aria-hidden />
-							Live now
-						</Chip>
-					)}
-					{details.isLocked && (
-						<Chip>
-							<Lock size={12} aria-hidden />
-							Passcode
-						</Chip>
-					)}
-					{details.privacy && <Chip>{PRIVACY_LABEL[details.privacy]}</Chip>}
-				</div>
-				<h1 className="text-xl font-bold leading-snug text-foreground">{details.name}</h1>
-
-				{isHost && full && (
-					<div className="flex flex-wrap items-start gap-2.5">
-						<button type="button" onClick={onEdit} className={secondaryButton}>
-							<Pencil size={13} aria-hidden />
-							Edit
-						</button>
-						<DeleteEventDialog
-							eventId={details.id}
-							eventName={details.name}
-							liveBlocked={liveBlocked}
-							onDeleted={onDeleted}
-						/>
-					</div>
-				)}
-			</header>
-
+	// the Details section; a restricted preview shows only this, with no section list
+	const detailsBody = (
+		<>
 			<dl className="flex flex-col gap-2.5 text-[13px]">
 				{schedule && (
 					<div className="flex items-start gap-2.5">
@@ -211,6 +195,101 @@ export function EventDetailsView({
 			)}
 
 			<RsvpControl eventId={details.id} details={details} />
+		</>
+	)
+
+	return (
+		<article
+			aria-label={details.name}
+			className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8"
+		>
+			<Cover src={details.coverImage} />
+
+			<header className="flex flex-col gap-3">
+				<div className="flex flex-wrap items-center gap-2">
+					{details.isLive && (
+						<Chip tone="live">
+							<Radio size={12} aria-hidden />
+							Live now
+						</Chip>
+					)}
+					{details.isLocked && (
+						<Chip>
+							<Lock size={12} aria-hidden />
+							Passcode
+						</Chip>
+					)}
+					{details.privacy && <Chip>{PRIVACY_LABEL[details.privacy]}</Chip>}
+				</div>
+				<h1 className="text-xl font-bold leading-snug text-foreground">{details.name}</h1>
+
+				{isHost && full && (
+					<div className="flex flex-wrap items-start gap-2.5">
+						<button type="button" onClick={onEdit} className={secondaryButton}>
+							<Pencil size={13} aria-hidden />
+							Edit
+						</button>
+						<DeleteEventDialog
+							eventId={details.id}
+							eventName={details.name}
+							liveBlocked={liveBlocked}
+							onDeleted={onDeleted}
+						/>
+					</div>
+				)}
+			</header>
+
+			{full ? (
+				<Tabs.Root
+					value={tab}
+					onValueChange={(next) => onTabChange?.(next as EventTab)}
+					className="flex flex-col gap-5"
+				>
+					<Tabs.List
+						aria-label="Event sections"
+						className="flex gap-1 overflow-x-auto rounded-full bg-muted p-1.5"
+					>
+						{EVENT_TABS.map((value) => (
+							<Tabs.Trigger
+								key={value}
+								value={value}
+								className={cn(
+									"flex h-7 flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-[12px] font-medium text-foreground/80 transition-colors",
+									"hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+									"data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+								)}
+							>
+								{TAB_LABEL[value]}
+							</Tabs.Trigger>
+						))}
+					</Tabs.List>
+
+					{/* every panel exists so each tab's `aria-controls` resolves; only the active
+					    one renders content, and Details stays mounted so RSVP state survives a switch */}
+					{EVENT_TABS.map((value) => (
+						<Tabs.Content
+							key={value}
+							value={value}
+							forceMount
+							hidden={tab !== value}
+							className="flex flex-col gap-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary data-[state=inactive]:hidden"
+						>
+							{value === "details"
+								? detailsBody
+								: tab === value &&
+									(value === "resources" ? (
+										<EventResourcesSection eventId={details.id} isHost={isHost} onEdit={onEdit} />
+									) : value === "comments" ? (
+										<EventCommentsSection eventId={details.id} />
+									) : (
+										<EventGuestsSection eventId={details.id} isHost={isHost} />
+									))}
+						</Tabs.Content>
+					))}
+				</Tabs.Root>
+			) : (
+				detailsBody
+			)}
 		</article>
 	)
 }

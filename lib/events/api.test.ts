@@ -203,3 +203,122 @@ describe("eventsApi.setRsvp", () => {
 		expect(await eventsApi.setRsvp(ID, "interested")).toEqual({ eventId: ID, status: "interested" })
 	})
 })
+
+describe("eventsApi Pass 3 read methods", () => {
+	it("getEventResources calls the BFF resources route with no query and normalises the body", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				data: {
+					event: "Name",
+					links: [{ link_name: "L", url: "https://example.com", date_added: "01/01/2026" }],
+					documents: [],
+				},
+			},
+		})
+		const out = await eventsApi.getEventResources(ID)
+		const [url, config] = getMock.mock.calls[0]
+		expect(url).toBe(`/api/events/${ID}/resources`)
+		expect(config?.params).toBeUndefined()
+		expect(out).toEqual({ links: [{ name: "L", url: "https://example.com" }], documents: [] })
+	})
+
+	it("getEventResources throws on an unreadable body instead of returning an empty result", async () => {
+		getMock.mockResolvedValue({ data: { data: {} } })
+		await expect(eventsApi.getEventResources(ID)).rejects.toBeInstanceOf(EventPayloadError)
+		getMock.mockResolvedValue({ data: { data: null } })
+		await expect(eventsApi.getEventResources(ID)).rejects.toBeInstanceOf(EventPayloadError)
+	})
+
+	it("getEventCommentsPage sends only page and limit and reports the requested page", async () => {
+		getMock.mockResolvedValue({
+			data: { data: { next: "n", results: [{ id: "c", message: "m" }] } },
+		})
+		const out = await eventsApi.getEventCommentsPage({ eventId: ID, page: 3, limit: 10 })
+		const [url, config] = getMock.mock.calls[0]
+		expect(url).toBe(`/api/events/${ID}/comments`)
+		expect(config?.params).toEqual({ page: 3, limit: 10 })
+		expect(out).toMatchObject({ page: 3, hasNext: true, comments: [{ id: "c" }] })
+	})
+
+	it("getEventCommentsPage throws on an unreadable body but accepts an empty page", async () => {
+		getMock.mockResolvedValue({ data: { data: { results: [] } } })
+		expect(await eventsApi.getEventCommentsPage({ eventId: ID, page: 1, limit: 10 })).toEqual({
+			comments: [],
+			page: 1,
+			hasNext: false,
+		})
+		getMock.mockResolvedValue({ data: { data: { results: "x" } } })
+		await expect(
+			eventsApi.getEventCommentsPage({ eventId: ID, page: 1, limit: 10 }),
+		).rejects.toBeInstanceOf(EventPayloadError)
+	})
+
+	it("getEventGuestsPage sends only page and limit and projects the guests", async () => {
+		getMock.mockResolvedValue({
+			data: {
+				data: { next: null, results: [{ user_id: 4, user_full_name: "G", rsvp_status: "going" }] },
+			},
+		})
+		const out = await eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 })
+		const [url, config] = getMock.mock.calls[0]
+		expect(url).toBe(`/api/events/${ID}/guests`)
+		expect(config?.params).toEqual({ page: 1, limit: 20 })
+		expect(out.guests).toEqual([{ userId: 4, name: "G", username: "", photo: null, role: "guest" }])
+		expect(JSON.stringify(out)).not.toContain("going")
+	})
+
+	it("getEventGuestsPage throws on an unreadable body", async () => {
+		getMock.mockResolvedValue({ data: { data: [] } })
+		await expect(
+			eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 }),
+		).rejects.toBeInstanceOf(EventPayloadError)
+	})
+
+	it("passes an upstream 403 through as the axios error (access is not 'empty')", async () => {
+		const forbidden = { response: { status: 403, data: { message: "no" } } }
+		getMock.mockRejectedValue(forbidden)
+		await expect(eventsApi.getEventResources(ID)).rejects.toBe(forbidden)
+		await expect(eventsApi.getEventGuestsPage({ eventId: ID, page: 1, limit: 20 })).rejects.toBe(
+			forbidden,
+		)
+	})
+
+	it("encodes the event id into the path", async () => {
+		getMock.mockResolvedValue({ data: { data: { links: [], documents: [] } } })
+		await eventsApi.getEventResources("a/b")
+		expect(getMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/resources")
+	})
+})
+
+describe("eventsApi.postEventComment (P3-06)", () => {
+	it("posts only the trimmed message to the BFF comments route and returns nothing", async () => {
+		postMock.mockResolvedValue({ data: { data: { message: "hi" } } })
+		const result = await eventsApi.postEventComment(ID, "  hi  ")
+		expect(postMock.mock.calls[0][0]).toBe(`/api/events/${ID}/comments`)
+		expect(postMock.mock.calls[0][1]).toEqual({ message: "hi" })
+		expect(result).toBeUndefined()
+	})
+
+	it("lets a rejection through for the caller to describe", async () => {
+		const failure = Object.assign(new Error("x"), { response: { status: 404 } })
+		postMock.mockRejectedValue(failure)
+		await expect(eventsApi.postEventComment(ID, "hi")).rejects.toBe(failure)
+	})
+})
+
+describe("eventsApi.removeEventGuest (P3-08A)", () => {
+	it("posts only user_id to the BFF guests/remove route and returns nothing", async () => {
+		postMock.mockResolvedValue({ data: { data: {} } })
+		const result = await eventsApi.removeEventGuest(ID, 42)
+		expect(postMock.mock.calls[0][0]).toBe(`/api/events/${ID}/guests/remove`)
+		expect(postMock.mock.calls[0][1]).toEqual({ user_id: 42 })
+		expect(result).toBeUndefined()
+	})
+
+	it("encodes the event id and lets a rejection through", async () => {
+		const failure = Object.assign(new Error("x"), { response: { status: 403 } })
+		postMock.mockRejectedValue(failure)
+		await expect(eventsApi.removeEventGuest("a/b", 1)).rejects.toBe(failure)
+		expect(postMock.mock.calls[0][0]).toBe("/api/events/a%2Fb/guests/remove")
+	})
+})
