@@ -5,8 +5,8 @@ import { type FormLocationState, useFormLocation } from "@/hooks/events/use-form
 import type { Coordinates } from "@/types/events/api"
 import { Loader2, LocateFixed, MapPin } from "lucide-react"
 import { useEffect, useId, useRef } from "react"
-import { secondaryButton } from "../event-list"
 import { FieldMessages, SECTION_TITLE } from "./fields"
+import { secondaryButton } from "../event-ui"
 
 function failureMessage(status: FormLocationState["status"]): string | null {
 	switch (status) {

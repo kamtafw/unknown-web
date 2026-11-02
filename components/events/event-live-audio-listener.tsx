@@ -1,9 +1,33 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import type { Room as LiveKitRoom } from "livekit-client"
+import { Headphones, Play, RefreshCw } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import {
+	IconBadge,
+	panel,
+	primaryButton,
+	secondaryButton,
+	sectionHeading,
+	StatusPill,
+} from "./event-ui"
 
 type ListenerStatus = "connecting" | "connected" | "disconnected" | "error"
+
+const LISTENER_LABEL: Record<ListenerStatus, string> = {
+	connecting: "Connecting",
+	connected: "Connected",
+	disconnected: "Disconnected",
+	error: "Couldn't connect",
+}
+
+const LISTENER_TONE: Record<ListenerStatus, "neutral" | "warning" | "success" | "danger"> = {
+	connecting: "warning",
+	connected: "success",
+	disconnected: "neutral",
+	error: "danger",
+}
 
 export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
 	const [status, setStatus] = useState<ListenerStatus>("connecting")
@@ -65,7 +89,7 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
 					typeof credentials.room !== "string" ||
 					typeof credentials.identity !== "string"
 				) {
-					throw new Error("The live audio credentials response was incomplete.")
+					throw new Error("Couldn't start live audio. Please try again.")
 				}
 
 				const { Room, RoomEvent, Track } = await import("livekit-client")
@@ -97,7 +121,7 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
 								)
 							}
 						})
-					setMessage(`Audio track received from ${participant.identity}.`)
+					setMessage("You're listening to the live audio.")
 				})
 
 				room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
@@ -125,7 +149,7 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
 				) {
 					await room.disconnect()
 					roomRef.current = null
-					throw new Error("Connected room did not match the issued credentials.")
+					throw new Error("Couldn't connect to the live audio room. Please try again.")
 				}
 				setStatus("connected")
 				setMessage("Connected. Waiting for live audio.")
@@ -164,40 +188,51 @@ export function EventLiveAudioListener({ sessionId }: { sessionId: number }) {
 		}
 	}
 
+	const listening = status === "connected" && tracks > 0
+
 	return (
-		<section
-			aria-label="Live audio listener"
-			className="flex flex-col gap-2 rounded-xl border border-border p-3.5"
-		>
+		<section aria-label="Live audio listener" className={cn(panel, "flex flex-col gap-3")}>
 			<div className="flex items-center justify-between gap-3">
-				<h2 className="text-[13px] font-semibold text-foreground">Live audio</h2>
-				<span className="rounded-full bg-muted px-2.5 py-1 text-[11px] capitalize">{status}</span>
+				<div className="flex items-center gap-3">
+					<IconBadge>
+						<Headphones size={16} />
+					</IconBadge>
+					<h2 className={sectionHeading}>Live audio</h2>
+				</div>
+				<StatusPill
+					tone={listening ? "live" : LISTENER_TONE[status]}
+					dot={listening}
+					pulse={listening}
+				>
+					{listening ? "Listening" : LISTENER_LABEL[status]}
+				</StatusPill>
 			</div>
 			<p
 				role="status"
 				aria-live="polite"
-				className="text-[12px] leading-relaxed text-muted-foreground"
+				className="text-[12.5px] leading-relaxed text-muted-foreground"
 			>
 				{message}
 			</p>
-			<p className="text-[12px] text-muted-foreground">Audio tracks playing: {tracks}</p>
-			{playbackBlocked && (
-				<button
-					type="button"
-					onClick={() => void retryPlayback()}
-					className="self-start rounded-lg border border-border px-3 py-2 text-[12px] font-medium text-foreground"
-				>
-					Play audio
-				</button>
-			)}
-			{(status === "error" || status === "disconnected") && (
-				<button
-					type="button"
-					onClick={() => setAttempt((value) => value + 1)}
-					className="self-start rounded-lg border border-border px-3 py-2 text-[12px] font-medium text-foreground"
-				>
-					Reconnect
-				</button>
+			{(playbackBlocked || status === "error" || status === "disconnected") && (
+				<div className="flex flex-wrap gap-2">
+					{playbackBlocked && (
+						<button type="button" onClick={() => void retryPlayback()} className={primaryButton}>
+							<Play size={12} aria-hidden className="fill-current" />
+							Play audio
+						</button>
+					)}
+					{(status === "error" || status === "disconnected") && (
+						<button
+							type="button"
+							onClick={() => setAttempt((value) => value + 1)}
+							className={secondaryButton}
+						>
+							<RefreshCw size={12} aria-hidden />
+							Reconnect
+						</button>
+					)}
+				</div>
 			)}
 		</section>
 	)

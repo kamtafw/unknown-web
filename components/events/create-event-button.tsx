@@ -11,7 +11,7 @@ export function CreateEventButton() {
 			href="?create=1"
 			scroll={false}
 			aria-label="Create event"
-			className="absolute bottom-6 right-4 flex size-[52px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:bg-primary/90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:right-6"
+			className="absolute bottom-6 right-4 flex size-[52px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-xl active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:right-6"
 		>
 			<Plus size={24} aria-hidden />
 		</Link>

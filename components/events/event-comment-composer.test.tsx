@@ -89,7 +89,7 @@ describe("EventCommentComposer", () => {
 	it.each([
 		["validation", /couldn.t be posted/i],
 		["forbidden", /don.t have permission to comment/i],
-		["not_found", /^Only people who have joined this event can post comments$/],
+		["not_found", /^Only people who have joined this event can post comments\.$/],
 		["too_large", /too large to send/i],
 		["unauthorized", /session has expired/i],
 		["network", /network error/i],

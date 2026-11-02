@@ -11,12 +11,12 @@ import { DeleteEventDialog } from "./delete-event-dialog"
 import { EventCommentsSection } from "./event-comments-section"
 import { EventGuestsSection } from "./event-guests-section"
 import { EventJoinControl } from "./event-join-control"
-import { secondaryButton } from "./event-list"
 import { EventLiveSessionControls } from "./event-live-session-controls"
 import { EventLiveSessionRoom } from "./event-live-session-room"
 import { EventLiveSessionStatus } from "./event-live-session-status"
 import { EventResourcesSection } from "./event-resources-section"
 import { RsvpControl } from "./rsvp-control"
+import { StatusPill, avatarShell, panel, secondaryButton, sectionHeading } from "./event-ui"
 
 const PRIVACY_LABEL: Record<EventPrivacy, string> = {
 	public: "Public",
@@ -24,25 +24,6 @@ const PRIVACY_LABEL: Record<EventPrivacy, string> = {
 	private: "Private",
 }
 
-function Chip({
-	children,
-	tone = "muted",
-}: {
-	children: React.ReactNode
-	tone?: "muted" | "live"
-}) {
-	return (
-		<span
-			className={
-				tone === "live"
-					? "inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold uppercase text-destructive"
-					: "inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-foreground"
-			}
-		>
-			{children}
-		</span>
-	)
-}
 
 const TAB_LABEL: Record<EventTab, string> = {
 	details: "Details",
@@ -53,7 +34,7 @@ const TAB_LABEL: Record<EventTab, string> = {
 
 function Cover({ src }: { src: string | null }) {
 	return (
-		<div className="relative aspect-[16/7] w-full overflow-hidden rounded-xl bg-muted">
+		<div className="relative aspect-[16/7] w-full overflow-hidden rounded-2xl bg-muted ring-1 ring-border/60">
 			{src ? (
 				// `unoptimized`: the media host is not verified against next.config yet (EV-005)
 				<Image
@@ -77,9 +58,9 @@ function HostRow({ host }: { host: EventHost }) {
 	const initial = (host.name || host.username || "?").trim().charAt(0).toUpperCase()
 	return (
 		<li className="flex items-center gap-3">
-			<span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[13px] font-semibold text-primary">
+			<span className={`${avatarShell} relative size-10 text-[14px]`}>
 				{host.photo ? (
-					<Image src={host.photo} alt="" fill unoptimized sizes="36px" className="object-cover" />
+					<Image src={host.photo} alt="" fill unoptimized sizes="40px" className="object-cover" />
 				) : (
 					initial
 				)}
@@ -93,6 +74,32 @@ function HostRow({ host }: { host: EventHost }) {
 				)}
 			</span>
 		</li>
+	)
+}
+
+/** one labelled fact (when / where) with its icon in a tinted circle */
+function Fact({
+	label,
+	icon,
+	children,
+}: {
+	label: string
+	icon: React.ReactNode
+	children: React.ReactNode
+}) {
+	return (
+		<div className="flex items-start gap-3">
+			<span
+				aria-hidden
+				className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+			>
+				{icon}
+			</span>
+			<div className="min-w-0 pt-1">
+				<dt className="sr-only">{label}</dt>
+				<dd className="break-words text-[13px] leading-snug text-foreground">{children}</dd>
+			</div>
+		</div>
 	)
 }
 
@@ -132,24 +139,16 @@ export function EventDetailsView({
 	// the Details section; a restricted preview shows only this, with no section list
 	const detailsBody = (
 		<>
-			<dl className="flex flex-col gap-2.5 text-[13px]">
+			<dl className="flex flex-col gap-3">
 				{schedule && (
-					<div className="flex items-start gap-2.5">
-						<dt className="sr-only">When</dt>
-						<dd className="flex items-start gap-2.5 text-foreground">
-							<Clock size={15} className="mt-0.5 shrink-0 text-primary" aria-hidden />
-							<span>{schedule}</span>
-						</dd>
-					</div>
+					<Fact label="When" icon={<Clock size={15} />}>
+						{schedule}
+					</Fact>
 				)}
 				{details.address && (
-					<div className="flex items-start gap-2.5">
-						<dt className="sr-only">Where</dt>
-						<dd className="flex items-start gap-2.5 text-foreground">
-							<MapPin size={15} className="mt-0.5 shrink-0 text-primary" aria-hidden />
-							<span>{details.address}</span>
-						</dd>
-					</div>
+					<Fact label="Where" icon={<MapPin size={15} />}>
+						{details.address}
+					</Fact>
 				)}
 			</dl>
 
@@ -158,7 +157,7 @@ export function EventDetailsView({
 					{details.hashtags.map((tag) => (
 						<li
 							key={tag}
-							className="rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary"
+							className="rounded-full bg-primary/10 px-3 py-1 text-[12px] font-medium text-primary"
 						>
 							#{tag}
 						</li>
@@ -166,18 +165,12 @@ export function EventDetailsView({
 				</ul>
 			)}
 
-			{details.isLive && (
-				<p className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-					This event is live. Join to request access to live audio.
-				</p>
-			)}
-
 			{!isHost && (full !== null || details.isLive) && <EventJoinControl details={details} />}
 
 			{full ? (
 				full.hosts.length > 0 && (
-					<section aria-labelledby="hosts-heading" className="flex flex-col gap-3">
-						<h2 id="hosts-heading" className="text-[13px] font-bold text-foreground">
+					<section aria-labelledby="hosts-heading" className={`${panel} flex flex-col gap-3`}>
+						<h2 id="hosts-heading" className={sectionHeading}>
 							Hosted by
 						</h2>
 						<ul className="flex flex-col gap-3">
@@ -188,10 +181,7 @@ export function EventDetailsView({
 					</section>
 				)
 			) : (
-				<div
-					role="note"
-					className="flex items-start gap-3 rounded-xl border border-border px-3.5 py-3"
-				>
+				<div role="note" className="flex items-start gap-3 rounded-2xl bg-muted/60 px-4 py-3.5">
 					<EyeOff size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
 					<p className="text-[12.5px] leading-relaxed text-muted-foreground">
 						Some details are hidden. Hosts and resources are only shown to people who have been
@@ -207,30 +197,32 @@ export function EventDetailsView({
 	return (
 		<article
 			aria-label={details.name}
-			className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8"
+			className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pb-10 pt-4 sm:px-8"
 		>
 			<Cover src={details.coverImage} />
 
 			<header className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-center gap-2">
 					{details.isLive && (
-						<Chip tone="live">
+						<StatusPill tone="live" dot pulse className="uppercase">
 							<Radio size={12} aria-hidden />
 							Live now
-						</Chip>
+						</StatusPill>
 					)}
 					{details.isLocked && (
-						<Chip>
+						<StatusPill>
 							<Lock size={12} aria-hidden />
 							Passcode
-						</Chip>
+						</StatusPill>
 					)}
-					{details.privacy && <Chip>{PRIVACY_LABEL[details.privacy]}</Chip>}
+					{details.privacy && <StatusPill>{PRIVACY_LABEL[details.privacy]}</StatusPill>}
 				</div>
-				<h1 className="text-xl font-bold leading-snug text-foreground">{details.name}</h1>
+				<h1 className="text-[22px] font-bold leading-tight tracking-tight text-foreground">
+					{details.name}
+				</h1>
 
 				{isHost && full && (
-					<div className="flex flex-wrap items-start gap-2.5">
+					<div className="flex flex-wrap items-center gap-2.5">
 						<button type="button" onClick={onEdit} className={secondaryButton}>
 							<Pencil size={13} aria-hidden />
 							Edit
@@ -257,14 +249,14 @@ export function EventDetailsView({
 				>
 					<Tabs.List
 						aria-label="Event sections"
-						className="flex gap-1 overflow-x-auto rounded-full bg-muted p-1.5"
+						className="flex gap-1 overflow-x-auto rounded-full bg-muted p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 					>
 						{EVENT_TABS.map((value) => (
 							<Tabs.Trigger
 								key={value}
 								value={value}
 								className={cn(
-									"flex h-7 flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-[12px] font-medium text-foreground/80 transition-colors",
+									"flex h-8 flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium text-foreground/80 transition-colors",
 									"hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 									"data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm",
 								)}

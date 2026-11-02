@@ -8,8 +8,9 @@ import { CalendarX2, ChevronLeft, LinkIcon, ShieldAlert, WifiOff, X } from "luci
 import type { ReactNode } from "react"
 import { EventDetailsView } from "./event-details-view"
 import { EventForm } from "./event-form"
-import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RetryButton, StateMessage } from "./event-list"
 import { EventRoomPlaceholder } from "./event-room-placeholder"
+import { secondaryButton } from "./event-ui"
 
 /**
  * Right pane. What it shows comes from the URL (`useEventSelection`): nothing, the create form,
@@ -23,12 +24,12 @@ function PaneFrame({ onClose, children }: { onClose: () => void; children: React
 			data-event-open="true"
 			className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto border-l border-muted"
 		>
-			<div className="flex shrink-0 justify-start px-4 pt-4 sm:px-8 lg:justify-end">
+			<div className="sticky top-0 z-10 flex shrink-0 justify-start bg-card/90 px-4 py-3 backdrop-blur sm:px-8 lg:justify-end">
 				<button
 					type="button"
 					onClick={onClose}
 					aria-label="Close event"
-					className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+					className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:size-9 lg:justify-center lg:px-0"
 				>
 					<ChevronLeft size={16} aria-hidden className="lg:hidden" />
 					<span aria-hidden className="lg:hidden">
@@ -51,7 +52,7 @@ function PaneSkeleton() {
 			<p role="status" className="sr-only">
 				Loading event…
 			</p>
-			<div className="aspect-[16/7] w-full rounded-xl bg-muted" />
+			<div className="aspect-[16/7] w-full rounded-2xl bg-muted" />
 			<div className="h-6 w-2/3 rounded-full bg-muted" />
 			<div className="h-4 w-1/2 rounded-full bg-muted" />
 			<div className="h-4 w-1/3 rounded-full bg-muted" />
@@ -141,7 +142,6 @@ function EventView({ eventId, tab }: { eventId: string; tab?: EventTab }) {
 						onDeleted={close}
 						tab={tab}
 						onTabChange={(next) => go({ mode: "view", eventId, tab: next }, { replace: true })}
-						
 					/>
 				))}
 		</PaneFrame>

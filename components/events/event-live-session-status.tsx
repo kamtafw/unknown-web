@@ -18,9 +18,9 @@ export const LIVE_SESSION_NOT_ADMITTED =
 	"Live session details are available to the host and guests who are currently in the event."
 
 /**
- * One status line for the attached live session of a FULL event (P4-01): its state, and the
- * participant count while it is live. It reads only. There are no host controls and no join, leave,
- * socket or media here, and a restricted preview never mounts it (so it makes no request).
+ * One status line for the attached live session of a FULL event: its state, and the participant count
+ * while it is live. It reads only. There are no host controls and no join, leave, socket or media here,
+ * and a restricted preview never mounts it (so it makes no request).
  *
  * Quiet by design: nothing renders when no session is attached, when the viewer is not admitted to
  * a non-live event, or when the event is unavailable (the details view already handles that). A
@@ -34,7 +34,7 @@ export function EventLiveSessionStatus({ details }: { details: EventFullDetails 
 			<div
 				aria-busy="true"
 				aria-label="Checking the live session"
-				className="h-9 w-48 animate-pulse rounded-xl bg-muted"
+				className="h-10 w-48 animate-pulse rounded-full bg-muted"
 			/>
 		)
 	}
@@ -45,7 +45,7 @@ export function EventLiveSessionStatus({ details }: { details: EventFullDetails 
 		return (
 			<p
 				role="status"
-				className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-[12.5px] text-foreground"
+				className="flex items-center gap-2 self-start rounded-full bg-muted px-3.5 py-2 text-[12.5px] text-foreground"
 			>
 				<Radio
 					size={14}
@@ -70,7 +70,7 @@ export function EventLiveSessionStatus({ details }: { details: EventFullDetails 
 		return (
 			<p
 				role="note"
-				className="rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
+				className="rounded-2xl bg-muted/60 px-4 py-3 text-[12.5px] leading-relaxed text-muted-foreground"
 			>
 				{LIVE_SESSION_NOT_ADMITTED}
 			</p>
@@ -81,7 +81,7 @@ export function EventLiveSessionStatus({ details }: { details: EventFullDetails 
 		return (
 			<div
 				role="alert"
-				className="flex flex-wrap items-center gap-3 rounded-xl bg-muted px-3 py-2 text-[12px] text-muted-foreground"
+				className="flex flex-wrap items-center gap-3 rounded-2xl bg-muted/60 px-4 py-3 text-[12.5px] text-muted-foreground"
 			>
 				<span>We couldn&apos;t load the live session status.</span>
 				<RetryButton onClick={() => void refetch()} />

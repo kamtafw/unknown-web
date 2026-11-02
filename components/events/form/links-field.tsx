@@ -4,7 +4,7 @@ import { MAX_LINK_NAME_LENGTH, MAX_LINKS } from "@/lib/events/constants"
 import type { EventLink } from "@/types/events/api"
 import { Plus, Trash2 } from "lucide-react"
 import { useId } from "react"
-import { secondaryButton } from "../event-list"
+import { secondaryButton } from "../event-ui"
 import { FieldMessages, INPUT, SECTION_TITLE } from "./fields"
 
 /**
