@@ -28,16 +28,19 @@ export function RequestNoteModal({
 }) {
 	const requestNote = useRequestCommunityNote()
 	const [submitted, setSubmitted] = useState(false)
+	const [reason, setReason] = useState("")
+	const [description, setDescription] = useState("")
 
 	const handleAgree = () => {
-		requestNote.mutate({ post: postId }, { onSuccess: (res) => res.success && setSubmitted(true) })
+		if (!reason.trim() || !description.trim()) return
+		requestNote.mutate({ post: postId, reason: reason.trim(), description: description.trim(), evidence_urls: [] }, { onSuccess: (res) => res.success && setSubmitted(true) })
 	}
 
 	return (
 		<Dialog.Root
 			open={open}
 			onOpenChange={(v) => {
-				if (!v) setSubmitted(false)
+				if (!v) { setSubmitted(false); setReason(""); setDescription("") }
 				onOpenChange(v)
 			}}
 		>
@@ -62,8 +65,7 @@ export function RequestNoteModal({
 							</div>
 							<p className="font-semibold text-foreground text-[15px]">Note requested</p>
 							<p className="text-[13px] text-muted-foreground leading-relaxed max-w-72">
-								Contributors have been notified. If a helpful note is written, it&apos;ll appear on
-								this post.
+								Your community note request has been submitted for review.
 							</p>
 							<button
 								onClick={() => onOpenChange(false)}
@@ -95,13 +97,19 @@ export function RequestNoteModal({
 							<p className="text-[12px] text-muted-foreground leading-relaxed mb-1">
 								Requests are anonymized and made available to the public for transparency.
 							</p>
-							<button className="text-[12.5px] font-semibold text-primary hover:underline mb-6">
-								Learn more about community notes
-							</button>
+							<div className="my-5 space-y-4">
+                                <label className="block text-sm font-medium">Reason
+                                    <input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} className="mt-2 w-full rounded-xl border border-border bg-background p-3" placeholder="Why does this post need a note?" />
+                                </label>
+                                <label className="block text-sm font-medium">Details
+                                    <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-2 min-h-24 w-full rounded-xl border border-border bg-background p-3" placeholder="Explain what needs context or correction" />
+                                </label>
+                                {requestNote.isError && <p role="alert" className="text-sm text-destructive">Could not submit your request. Please try again.</p>}
+                            </div>
 
 							<button
 								onClick={handleAgree}
-								disabled={requestNote.isPending}
+								disabled={requestNote.isPending || !reason.trim() || !description.trim()}
 								className="w-full h-12.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/85 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
 							>
 								{requestNote.isPending ? (

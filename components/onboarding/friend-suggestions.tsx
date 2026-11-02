@@ -26,7 +26,7 @@ function UserRow({ user, index }: { user: FullUser; index: number }) {
 	const handleFollow = () => {
 		if (followed) return
 		setFollowed(true)
-		followUser.mutate(user.pkid, {
+		followUser.mutate(user.id, {
 			onError: () => setFollowed(false),
 		})
 	}
@@ -34,7 +34,7 @@ function UserRow({ user, index }: { user: FullUser; index: number }) {
 	const handleUnfollow = () => {
 		if (!followed) return
 		setFollowed(false)
-		unfollowUser.mutate(user.pkid, {
+		unfollowUser.mutate(user.id, {
 			onError: () => setFollowed(true),
 		})
 	}
@@ -64,6 +64,7 @@ function UserRow({ user, index }: { user: FullUser; index: number }) {
 			</div>
 
 			<FollowButton
+				disabled={followUser.isPending || unfollowUser.isPending}
 				isFollowed={followed}
 				onClick={followed ? handleUnfollow : handleFollow}
 				className="px-3 sm:px-4 py-1.5 h-auto"

@@ -14,13 +14,15 @@ import { usePathname, useRouter } from "next/navigation"
 import { Avatar, DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { Input } from "../ui/input"
-import { Bell, Event, Marketplace, Message, Social } from "./icons"
+import { Event, Marketplace, Message, Social } from "./icons"
+import NotificationPopover from "@/components/NotificationPopover"
+import { CreatePostModal } from "./create-post-modal"
 
 const CATEGORY_ICONS = [
 	{ label: "Social", icon: Social, href: "/home" },
 	{ label: "Messenger", icon: Message, href: "/messenger" },
 	{ label: "Events", icon: Event, href: "/events" },
-	{ label: "Marketplace", icon: Marketplace },
+	{ label: "Marketplace", icon: Marketplace, href: "/market-vendor/goods" },
 ]
 
 function LogoutDialog({
@@ -117,6 +119,7 @@ export function TopBar() {
 	const [switchingId, setSwitchingId] = useState<number | null>(null)
 
 	const [searchOpen, setSearchOpen] = useState(false)
+	const [createOpen, setCreateOpen] = useState(false)
 	const [logoutOpen, setLogoutOpen] = useState(false)
 
 	const { data: unreadCount } = useUnreadChatCount()
@@ -169,6 +172,7 @@ export function TopBar() {
 
 						<Input
 							placeholder="What are you looking for?"
+						onKeyDown={(event) => { if (event.key === "Enter" && event.currentTarget.value.trim()) { router.push(`/search?q=${encodeURIComponent(event.currentTarget.value.trim())}`); setSearchOpen(false) } }}
 							className="
 													w-full pl-9 pr-4 bg-muted text-foreground rounded-full
 													border-2 border-primary transition-all duration-150
@@ -189,13 +193,27 @@ export function TopBar() {
 					{/* Category nav */}
 					<nav className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
 						{CATEGORY_ICONS.map(({ label, icon: Icon, href }) => {
-							const isActive = href ? pathname === href || pathname.startsWith(`${href}/`) : false
+							const isActive =
+								label === "Marketplace"
+									? pathname.startsWith("/market-vendor") || pathname.startsWith("/marketplace")
+									: href
+										? pathname === href || pathname.startsWith(`${href}/`)
+										: false
 
 							return (
 								<button
 									key={label}
 									title={label}
-									onClick={href ? () => router.push(href) : undefined}
+									onClick={
+										href
+											? () =>
+													router.push(
+														label === "Marketplace" && pathname.startsWith("/marketplace")
+															? "/marketplace/homes"
+															: href,
+													)
+											: undefined
+									}
 									className={cn(
 										"relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all duration-150",
 										isActive
@@ -218,9 +236,8 @@ export function TopBar() {
 
 					{/* Right actions */}
 					<div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-						<button className="relative w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors">
-							<Bell size={19} />
-						</button>
+						<button aria-label="Create Post" className="flex h-9 w-9 items-center justify-center rounded-full text-primary hover:bg-accent lg:hidden" onClick={() => setCreateOpen(true)}><Plus size={20} /></button>
+						<NotificationPopover />
 
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger asChild>
@@ -379,6 +396,7 @@ export function TopBar() {
 						<input
 							type="text"
 							placeholder="What are you looking for?"
+						onKeyDown={(event) => { if (event.key === "Enter" && event.currentTarget.value.trim()) { router.push(`/search?q=${encodeURIComponent(event.currentTarget.value.trim())}`); setSearchOpen(false) } }}
 							autoFocus
 							className="flex-1 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
 						/>
@@ -392,6 +410,7 @@ export function TopBar() {
 				)}
 			</header>
 
+			<CreatePostModal open={createOpen} onOpenChange={setCreateOpen} />
 			<LogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
 		</>
 	)

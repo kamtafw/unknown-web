@@ -569,8 +569,8 @@ export function UserProfileView({ id }: { id: string }) {
 	const isMuted = profile.is_muted
 
 	const handleFollowToggle = () => {
-		if (isFollowed) unfollowUser.mutate(profile.pkid)
-		else followUser.mutate(profile.pkid)
+		if (isFollowed) unfollowUser.mutate(profile.id)
+		else followUser.mutate(profile.id)
 	}
 
 	const handleMuteToggle = () => {

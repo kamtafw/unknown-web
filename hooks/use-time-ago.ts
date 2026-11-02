@@ -29,15 +29,10 @@ export function formatTimeAgo(date: string | number | Date) {
 }
 
 export function useTimeAgo(date: Date | string | number) {
-	const [time, setTime] = useState(formatTimeAgo(date))
-
-	useEffect(() => {
-		const interval = setInterval(() => {
-			setTime(formatTimeAgo(date))
-		}, 60_000)
-
-		return () => clearInterval(interval)
-	}, [date])
-
-	return time
+    const [, refresh] = useState(0)
+    useEffect(() => {
+        const interval = setInterval(() => refresh((tick) => tick + 1), 60_000)
+        return () => clearInterval(interval)
+    }, [])
+    return formatTimeAgo(date)
 }

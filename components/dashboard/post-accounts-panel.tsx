@@ -50,18 +50,18 @@ function AccountCard({
 	const followsYou = profile?.is_following_you ?? user.thisUserFollowsYou ?? false
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
-	const busy = followUser.isPending || unfollowUser.isPending || unblockUsers.isPending
+	const busy = isLoading || followUser.isPending || unfollowUser.isPending || unblockUsers.isPending
 
 	const handleAction = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		if (isBlocked) unblockUsers.mutate([user.pkid])
-		else if (isFollowed) unfollowUser.mutate(user.pkid)
-		else followUser.mutate(user.pkid)
+		else if (isFollowed) unfollowUser.mutate(user.id)
+		else followUser.mutate(user.id)
 	}
 
 	return (
 		<div
-			onClick={() => router.push(`/profile/${user.pkid}`)}
+			onClick={() => router.push(`/profile/${user.id}`)}
 			className={cn(
 				"group flex items-start gap-3 py-3.5 cursor-pointer",
 				nested && "border-primary/15",
