@@ -9,7 +9,7 @@ import {
 import type { DocumentsChange, EventDocument } from "@/types/events/api"
 import { FileText, Plus, Trash2 } from "lucide-react"
 import { useId, useRef } from "react"
-import { secondaryButton } from "../event-list"
+import { secondaryButton } from "../event-ui"
 import { FieldMessages, INPUT, SECTION_TITLE } from "./fields"
 
 function sizeLabel(bytes: number): string {

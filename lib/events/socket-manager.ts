@@ -1,0 +1,415 @@
+/**
+ * Events owns a dedicated Socket.IO connection, independent of Messenger.
+ * The Events guide specifies namespace /live and the access JWT in
+ * handshake auth.token. Authentication is injected for lifecycle testability.
+ */
+import { io, type Socket } from "socket.io-client"
+import type { LiveSocketDescriptor } from "@/types/events/api"
+
+export type EventsSocketStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected"
+  | "error"
+
+export type EventsRoomStatus = "idle" | "joining" | "joined" | "rejoining" | "not_admitted" | "error"
+
+export interface EventsSocketAuthProvider {
+  getAuth(): Promise<Record<string, string>>
+}
+
+export interface EventsSocketOptions {
+  url?: string
+  authProvider: EventsSocketAuthProvider
+  onStatusChange?: (status: EventsSocketStatus, error?: string) => void
+  onReconnect?: () => void
+  onRoomError?: (sessionId: number, error: Error) => void
+  onRoomStatusChange?: (sessionId: number, status: EventsRoomStatus, error?: string) => void
+}
+
+type Handler<T = unknown> = (payload: T) => void
+
+export type EventsRoomRevalidator = () => Promise<boolean>
+
+export class EventsSocketRoomJoinError extends Error {
+  constructor(
+    message: string,
+    readonly sessionId: number,
+    readonly code: string | null = null,
+  ) {
+    super(message)
+    this.name = "EventsSocketRoomJoinError"
+  }
+}
+
+interface RoomMembership {
+  revalidate: EventsRoomRevalidator
+}
+
+const ROOM_ACK_TIMEOUT_MS = 10_000
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error ? value : new Error("Events room membership could not be restored")
+}
+
+export class EventsSocketManager {
+  private socket: Socket | null = null
+  private connectPromise: Promise<void> | null = null
+  private restorePromise: Promise<void> | null = null
+  private listeners = new Map<string, Set<Handler>>()
+  private roomMemberships = new Map<number, RoomMembership>()
+  private roomStatuses = new Map<number, EventsRoomStatus>()
+  private joinedRooms = new Set<number>()
+  private roomJoinPromises = new Map<number, Promise<void>>()
+  private roomVersions = new Map<number, number>()
+  private status: EventsSocketStatus = "idle"
+  private generation = 0
+  private hasConnected = false
+  private reconnectAttempted = false
+  private readonly url: string
+  private readonly authProvider: EventsSocketAuthProvider
+  private readonly onStatusChange?: EventsSocketOptions["onStatusChange"]
+  private readonly onReconnect?: EventsSocketOptions["onReconnect"]
+  private readonly onRoomError?: EventsSocketOptions["onRoomError"]
+  private readonly onRoomStatusChange?: EventsSocketOptions["onRoomStatusChange"]
+
+  constructor(options: EventsSocketOptions) {
+    this.url = options.url ?? process.env.NEXT_PUBLIC_EVENTS_SOCKET_URL ?? "https://socket.appscombo.com"
+    this.authProvider = options.authProvider
+    this.onStatusChange = options.onStatusChange
+    this.onReconnect = options.onReconnect
+    this.onRoomError = options.onRoomError
+    this.onRoomStatusChange = options.onRoomStatusChange
+  }
+
+  getStatus(): EventsSocketStatus { return this.status }
+  getRoomStatus(sessionId: number): EventsRoomStatus { return this.roomStatuses.get(sessionId) ?? "idle" }
+
+  private setRoomStatus(sessionId: number, status: EventsRoomStatus, error?: string): void {
+    if (status === "idle") this.roomStatuses.delete(sessionId)
+    else this.roomStatuses.set(sessionId, status)
+    this.onRoomStatusChange?.(sessionId, status, error)
+  }
+
+  private setStatus(status: EventsSocketStatus, error?: string): void {
+    this.status = status
+    this.onStatusChange?.(status, error)
+  }
+
+  connect(): Promise<void> {
+    if (this.socket?.connected) return Promise.resolve()
+    if (this.connectPromise) return this.connectPromise
+    const generation = this.generation
+    const pending = this.openSocket(generation).finally(() => {
+      if (this.connectPromise === pending) this.connectPromise = null
+    })
+    this.connectPromise = pending
+    return pending
+  }
+
+  private async openSocket(generation: number): Promise<void> {
+    this.setStatus("connecting")
+    const auth = await this.authProvider.getAuth()
+    if (generation !== this.generation) return
+
+    const socket = io(`${this.url.replace(/\/+$/, "")}/live`, {
+      path: "/socket.io",
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      auth,
+    })
+    this.socket = socket
+    for (const [event, handlers] of this.listeners) {
+      for (const handler of handlers) socket.on(event, handler)
+    }
+
+    socket.on("connect", () => {
+      if (generation !== this.generation || this.socket !== socket) return
+      const reconnected = this.hasConnected || this.reconnectAttempted
+      this.hasConnected = true
+      this.reconnectAttempted = false
+      this.setStatus("connected")
+      if (reconnected) this.onReconnect?.()
+      // A transport reconnect restores only memberships that still pass the
+      // caller's HTTP-backed admission check. Never replay a room blindly.
+      void this.rejoinRooms()
+    })
+    socket.on("disconnect", (reason) => {
+      if (generation !== this.generation || this.socket !== socket) return
+      this.joinedRooms.clear()
+      for (const sessionId of this.roomMemberships.keys()) this.setRoomStatus(sessionId, "rejoining")
+      this.setStatus(reason === "io client disconnect" ? "disconnected" : "reconnecting")
+    })
+    socket.on("live:error", (payload: unknown) => {
+      if (generation !== this.generation || this.socket !== socket || !isRecord(payload)) return
+      if (payload.event !== "live:join") return
+      const sessionId = payload.sessionId
+      const code = typeof payload.code === "string" ? payload.code : null
+      if (typeof sessionId !== "number" || !Number.isSafeInteger(sessionId) || sessionId <= 0) return
+
+      const unauthorized = code === "live_room_unauthorized"
+      const message = unauthorized
+        ? "You are no longer authorized to join this live session"
+        : "The live session reported a room error"
+      if (unauthorized) {
+        this.roomMemberships.delete(sessionId)
+        this.joinedRooms.delete(sessionId)
+        this.roomVersions.set(sessionId, (this.roomVersions.get(sessionId) ?? 0) + 1)
+        this.setRoomStatus(sessionId, "not_admitted", message)
+      } else {
+        this.setRoomStatus(sessionId, "error", message)
+      }
+      this.onRoomError?.(sessionId, new EventsSocketRoomJoinError(message, sessionId, code))
+    })
+    socket.io.on("reconnect_attempt", () => {
+      if (generation === this.generation && this.socket === socket) {
+        this.reconnectAttempted = true
+        this.setStatus("reconnecting")
+      }
+    })
+    socket.on("connect_error", async (error) => {
+      if (generation !== this.generation || this.socket !== socket) return
+      this.setStatus("error", error.message)
+      try {
+        socket.auth = await this.authProvider.getAuth()
+      } catch (authError) {
+        if (generation === this.generation && this.socket === socket) {
+          this.setStatus("error", authError instanceof Error ? authError.message : "Unable to refresh Events socket authentication")
+        }
+      }
+    })
+
+    await new Promise<void>((resolve, reject) => {
+      socket.once("connect", () => resolve())
+      socket.once("connect_error", reject)
+    })
+  }
+
+  on<T = unknown>(event: string, handler: Handler<T>): () => void {
+    const typedHandler = handler as Handler
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set())
+    this.listeners.get(event)!.add(typedHandler)
+    this.socket?.on(event, typedHandler)
+    return () => {
+      this.listeners.get(event)?.delete(typedHandler)
+      this.socket?.off(event, typedHandler)
+      if (this.listeners.get(event)?.size === 0) this.listeners.delete(event)
+    }
+  }
+
+  emit(event: string, payload?: unknown): boolean {
+    if (!this.socket?.connected) return false
+    this.socket.emit(event, payload)
+    return true
+  }
+
+  /**
+   * Join a live room only after the caller has completed HTTP event admission.
+   * The validated backend descriptor is required: a session id alone is not
+   * enough to invent a socket room. The callback is retained for reconnects
+   * and must re-check active participation. It is never called before the
+   * initial join.
+   */
+  joinRoom(descriptor: LiveSocketDescriptor, revalidate: EventsRoomRevalidator): Promise<void> {
+    const sessionId = descriptor?.sessionId
+    if (
+      !descriptor ||
+      descriptor.namespace !== "/live" ||
+      descriptor.joinEvent !== "live:join" ||
+      typeof sessionId !== "number" ||
+      !Number.isSafeInteger(sessionId) ||
+      sessionId <= 0
+    ) {
+      return Promise.reject(new EventsSocketRoomJoinError("Invalid live socket descriptor", typeof sessionId === "number" ? sessionId : 0))
+    }
+    const socket = this.socket
+    if (!socket?.connected) {
+      return Promise.reject(new EventsSocketRoomJoinError("Events socket is not connected", sessionId))
+    }
+    if (this.joinedRooms.has(sessionId) && this.roomMemberships.has(sessionId)) return Promise.resolve()
+    const existingMembership = this.roomMemberships.get(sessionId)
+    if (existingMembership) {
+      // A room retained across a transport loss must pass its revalidator
+      // before any caller can cause another live:join emission.
+      return this.rejoinRooms().then(() => {
+        if (this.joinedRooms.has(sessionId)) return
+        const unauthorized = this.getRoomStatus(sessionId) === "not_admitted"
+        throw new EventsSocketRoomJoinError(
+          unauthorized ? "You are not authorized to join this live session" : "Live room membership has not been restored",
+          sessionId,
+          unauthorized ? "live_room_unauthorized" : null,
+        )
+      })
+    }
+    const pendingJoin = this.roomJoinPromises.get(sessionId)
+    if (pendingJoin) return pendingJoin
+
+    const generation = this.generation
+    const version = (this.roomVersions.get(sessionId) ?? 0) + 1
+    this.roomVersions.set(sessionId, version)
+    this.setRoomStatus(sessionId, "joining")
+    const pending = this.emitRoomJoin(socket, sessionId, generation).then(() => {
+      if (
+        generation === this.generation &&
+        socket === this.socket &&
+        this.roomVersions.get(sessionId) === version
+      ) {
+        this.roomMemberships.set(sessionId, { revalidate })
+        this.joinedRooms.add(sessionId)
+        this.setRoomStatus(sessionId, "joined")
+      }
+    }).catch((error: unknown) => {
+      if (generation === this.generation && this.roomVersions.get(sessionId) === version) {
+        const roomError = asError(error)
+        const unauthorized = error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized"
+        this.setRoomStatus(sessionId, unauthorized ? "not_admitted" : "error", roomError.message)
+      }
+      throw error
+    }).finally(() => {
+      if (this.roomJoinPromises.get(sessionId) === pending) this.roomJoinPromises.delete(sessionId)
+    })
+    this.roomJoinPromises.set(sessionId, pending)
+    return pending
+  }
+
+  /**
+   * Leave the socket room only. This does not call the HTTP event-leave route
+   * and does not persist guest departure. The caller owns that separate action.
+   */
+  leaveRoom(sessionId: number): boolean {
+    if (!Number.isSafeInteger(sessionId) || sessionId <= 0) return false
+    this.roomVersions.set(sessionId, (this.roomVersions.get(sessionId) ?? 0) + 1)
+    this.roomMemberships.delete(sessionId)
+    this.joinedRooms.delete(sessionId)
+    this.roomJoinPromises.delete(sessionId)
+    this.setRoomStatus(sessionId, "idle")
+    if (!this.socket?.connected) return false
+    this.socket.emit("live:leave", { sessionId })
+    return true
+  }
+
+  /** Retry pending room recovery after a transient revalidation or ack failure. */
+  rejoinRooms(): Promise<void> {
+    if (this.restorePromise) return this.restorePromise
+    const generation = this.generation
+    const pending = this.restoreRoomMemberships(generation).finally(() => {
+      if (this.restorePromise === pending) this.restorePromise = null
+    })
+    this.restorePromise = pending
+    return pending
+  }
+
+  private async restoreRoomMemberships(generation: number): Promise<void> {
+    const socket = this.socket
+    if (!socket?.connected) return
+
+    for (const [sessionId, membership] of [...this.roomMemberships.entries()]) {
+      if (generation !== this.generation || socket !== this.socket || !socket.connected) return
+      if (this.roomMemberships.get(sessionId) !== membership) continue
+      this.joinedRooms.delete(sessionId)
+      this.setRoomStatus(sessionId, "rejoining")
+
+      let authorized: boolean
+      try {
+        authorized = await membership.revalidate()
+      } catch (error) {
+        if (generation !== this.generation || socket !== this.socket) return
+        const roomError = asError(error)
+        this.setRoomStatus(sessionId, "error", roomError.message)
+        this.onRoomError?.(sessionId, roomError)
+        continue
+      }
+
+      if (generation !== this.generation || socket !== this.socket || !socket.connected) return
+      if (this.roomMemberships.get(sessionId) !== membership) continue
+      if (!authorized) {
+        this.roomMemberships.delete(sessionId)
+        this.setRoomStatus(sessionId, "not_admitted")
+        continue
+      }
+
+      try {
+        await this.emitRoomJoin(socket, sessionId, generation)
+        if (
+          generation === this.generation &&
+          socket === this.socket &&
+          socket.connected &&
+          this.roomMemberships.get(sessionId) === membership
+        ) {
+          this.joinedRooms.add(sessionId)
+          this.setRoomStatus(sessionId, "joined")
+        }
+      } catch (error) {
+        if (generation !== this.generation || socket !== this.socket) return
+        const roomError = asError(error)
+        const unauthorized = error instanceof EventsSocketRoomJoinError && error.code === "live_room_unauthorized"
+        if (unauthorized) {
+          this.roomMemberships.delete(sessionId)
+          this.setRoomStatus(sessionId, "not_admitted", roomError.message)
+        } else {
+          this.setRoomStatus(sessionId, "error", roomError.message)
+        }
+        this.onRoomError?.(sessionId, roomError)
+      }
+    }
+  }
+
+  private async emitRoomJoin(socket: Socket, sessionId: number, generation: number): Promise<void> {
+    if (generation !== this.generation || socket !== this.socket || !socket.connected) {
+      throw new EventsSocketRoomJoinError("Events socket is not connected", sessionId)
+    }
+
+    const acknowledgement = await new Promise<unknown>((resolve, reject) => {
+      socket.timeout(ROOM_ACK_TIMEOUT_MS).emit(
+        "live:join",
+        { sessionId },
+        (error: Error | null, response: unknown) => {
+          if (error) reject(error)
+          else resolve(response)
+        },
+      )
+    })
+
+    if (generation !== this.generation || socket !== this.socket) {
+      throw new EventsSocketRoomJoinError("Events socket changed during room admission", sessionId)
+    }
+    if (!isRecord(acknowledgement) || acknowledgement.sessionId !== sessionId || typeof acknowledgement.ok !== "boolean") {
+      throw new EventsSocketRoomJoinError("Events room acknowledgement was invalid", sessionId)
+    }
+    if (acknowledgement.ok !== true) {
+      const code = typeof acknowledgement.code === "string" ? acknowledgement.code : null
+      throw new EventsSocketRoomJoinError(
+        code === "live_room_unauthorized" ? "You are not authorized to join this live session" : "Events room admission was rejected",
+        sessionId,
+        code,
+      )
+    }
+  }
+
+  disconnect(): void {
+    this.generation += 1
+    this.hasConnected = false
+    this.reconnectAttempted = false
+    this.roomMemberships.clear()
+    this.joinedRooms.clear()
+    for (const sessionId of this.roomStatuses.keys()) this.setRoomStatus(sessionId, "idle")
+    this.roomStatuses.clear()
+    this.roomVersions.clear()
+    this.roomJoinPromises.clear()
+    this.restorePromise = null
+    this.socket?.removeAllListeners()
+    this.socket?.disconnect()
+    this.socket = null
+    this.connectPromise = null
+    this.setStatus("disconnected")
+  }
+}

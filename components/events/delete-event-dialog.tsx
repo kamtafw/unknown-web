@@ -3,7 +3,7 @@
 import { useDeleteEvent } from "@/hooks/events/use-event-mutations"
 import { describeEventError } from "@/lib/events/errors"
 import { toast } from "@/lib/toast"
-import { Loader2, Trash2 } from "lucide-react"
+import { Info, Loader2, Trash2 } from "lucide-react"
 import { useState } from "react"
 import {
 	AlertDialog,
@@ -15,16 +15,15 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "../ui/alert-dialog"
-import { secondaryButton } from "./event-list"
+import { destructiveButton, destructiveOutlineButton, IconBadge, secondaryButton } from "./event-ui"
 
 export const LIVE_DELETE_MESSAGE =
-	"This event is live, so it can't be deleted. Ending a live session isn't available in the web app yet."
+	"This event is live, so it can't be deleted until its live session has ended."
 
 /**
- * Host-only delete with confirmation (no design exists: assumption A-14). A live event, or one
- * whose session is live, cannot be deleted from here. That is a courtesy, not a security
- * boundary: the BFF repeats the check, but the backend itself does not refuse a live delete
- * (EV-025). Ending a session is Pass 4, so the message says it is not available yet.
+ * Host-only delete with confirmation. A live event, or one whose session is live, cannot be
+ * deleted from here. That is a courtesy, not a security boundary: the BFF repeats the check,
+ * but the backend itself does not refuse a live delete.
  */
 export function DeleteEventDialog({
 	eventId,
@@ -44,8 +43,9 @@ export function DeleteEventDialog({
 		return (
 			<p
 				role="note"
-				className="max-w-xs rounded-xl bg-muted px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
+				className="flex max-w-xs items-start gap-2 rounded-xl bg-muted/60 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
 			>
+				<Info size={14} aria-hidden className="mt-0.5 shrink-0" />
 				{LIVE_DELETE_MESSAGE}
 			</p>
 		)
@@ -80,16 +80,16 @@ export function DeleteEventDialog({
 			}}
 		>
 			<AlertDialogTrigger asChild>
-				<button
-					type="button"
-					className={`${secondaryButton} border-destructive/40 text-destructive hover:bg-destructive/10`}
-				>
+				<button type="button" className={destructiveOutlineButton}>
 					<Trash2 size={13} aria-hidden />
 					Delete
 				</button>
 			</AlertDialogTrigger>
-			<AlertDialogContent>
+			<AlertDialogContent className="rounded-2xl">
 				<AlertDialogHeader>
+					<IconBadge tone="danger" className="mb-1 size-11 self-center sm:self-start">
+						<Trash2 size={18} />
+					</IconBadge>
 					<AlertDialogTitle>Delete this event?</AlertDialogTitle>
 					<AlertDialogDescription>
 						“{eventName}” will be permanently deleted for everyone. This can&apos;t be undone.
@@ -108,7 +108,7 @@ export function DeleteEventDialog({
 						type="button"
 						onClick={confirm}
 						disabled={del.isPending}
-						className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive px-4 text-[12.5px] font-semibold text-white transition-all hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive disabled:opacity-60"
+						className={destructiveButton}
 					>
 						{del.isPending && <Loader2 size={13} className="animate-spin" aria-hidden />}
 						Delete event

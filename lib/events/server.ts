@@ -485,3 +485,99 @@ export function sanitizeGuestRemovePayload(json: unknown): unknown | null {
 	if (!isPlainRecord(json) || json.success !== true) return null
 	return { ...pick(json, ENVELOPE_KEYS), data: {} }
 }
+
+/* -------------------------------------------------------------------------------------------
+ * Pass 4 (P4-01): the event-specific live-session read
+ * ----------------------------------------------------------------------------------------- */
+
+const LIVE_SESSION_KEYS = [
+	"id",
+	"title",
+	"status",
+	"session_type",
+	"participant_count",
+	"started_at",
+	"ended_at",
+	"current_user_role",
+	"is_joined",
+	"media_provider",
+	"media_status",
+] as const
+const LIVE_MEDIA_KEYS = ["provider", "status"] as const
+
+/**
+ * `GET live-session` success (guide §4.18, §5.1). The full session also carries the live host, every
+ * participant, the invite code, the media room name, webhook times, permissions, reactions and
+ * scheduling data; none of that is needed for the status read, and other people's data must not
+ * reach the browser, so it is removed HERE. Kept: the event id, the session's status-level fields,
+ * the media provider and status, and the documented socket descriptor (`namespace`, `join_event`,
+ * `join_payload.sessionId`). Returns a NEW object, or `null` when `data` has no `live_session`
+ * object: the route answers 502 instead of forwarding a body it cannot vouch for.
+ */
+export function sanitizeLiveSessionPayload(json: unknown): unknown | null {
+	if (!isPlainRecord(json) || !isPlainRecord(json.data)) return null
+	const { data } = json
+	if (!isPlainRecord(data.live_session)) return null
+
+	const session = pick(data.live_session, LIVE_SESSION_KEYS)
+	if (isPlainRecord(data.live_session.media)) {
+		session.media = pick(data.live_session.media, LIVE_MEDIA_KEYS)
+	}
+
+	let socket: Record<string, unknown> | null = null
+	if (isPlainRecord(data.socket)) {
+		socket = pick(data.socket, ["namespace", "join_event"])
+		if (isPlainRecord(data.socket.join_payload)) {
+			socket.join_payload = pick(data.socket.join_payload, ["sessionId"])
+		}
+	}
+
+	return {
+		...pick(json, ENVELOPE_KEYS),
+		data: { ...pick(data, ["event_id"]), live_session: session, socket },
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pass 4 (P4-07A): minimise live participant responses                       */
+/* -------------------------------------------------------------------------- */
+
+const LIVE_PARTICIPANT_KEYS = [
+	"id",
+	"role",
+	"is_active",
+	"is_muted",
+	"media_connected",
+	"microphone_published",
+	"camera_published",
+	"joined_at",
+] as const
+const LIVE_PARTICIPANT_USER_KEYS = [
+	"id",
+	"pkid",
+	"username",
+	"first_name",
+	"last_name",
+	"profile_photo",
+] as const
+
+/**
+ * GET /live/sessions/{id}/participants (guide §5.1, §5.3). Retain only the documented roster
+ * fields and minimal user snapshot. In particular, email, phone, permissions, media credentials,
+ * invite/scheduling data and arbitrary future fields never cross the BFF boundary.
+ */
+export function sanitizeLiveParticipantsPayload(json: unknown): unknown | null {
+	if (
+		!isPlainRecord(json) ||
+		!isPlainRecord(json.data) ||
+		json.success !== true ||
+		!Array.isArray(json.data.results) ||
+		!json.data.results.every((item) => isPlainRecord(item) && isPlainRecord(item.user))
+	)
+		return null
+	return sanitizePaged(json, (item) => {
+		const row = pick(item, LIVE_PARTICIPANT_KEYS)
+		row.user = pick(item.user, LIVE_PARTICIPANT_USER_KEYS)
+		return row
+	})
+}

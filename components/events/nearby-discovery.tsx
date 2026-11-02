@@ -15,11 +15,11 @@ import {
 	EventListSkeleton,
 	RetryButton,
 	StateMessage,
-	secondaryButton,
 } from "./event-list"
 import { EventsPane } from "./events-pane"
 import { LocationRow } from "./location-row"
 import { LocationState } from "./location-state"
+import { secondaryButton } from "./event-ui"
 
 /**
  * Nearby-only discovery. The states are deliberately distinct:
