@@ -3,7 +3,7 @@ import { DJANGO_API_URL } from "@/lib/server-config"
 import { proxyJson } from "@/lib/server-fetch"
 import { NextResponse } from "next/server"
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: number }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const accessToken = await getAccessToken()
 
