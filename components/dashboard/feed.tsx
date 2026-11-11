@@ -4,8 +4,9 @@ import { flattenFeedPages, useFollowingFeed, useForYouFeed } from "@/hooks/socia
 import { Post } from "@/types/socials/api"
 import { Loader2 } from "lucide-react"
 import { Tabs } from "radix-ui"
-import { RefObject, useEffect, useRef } from "react"
+import { Fragment, RefObject, useEffect, useRef, useState } from "react"
 import { PostCard } from "./post-card"
+import { FriendSuggestions } from "./friend-suggestions"
 
 function PostSkeleton() {
 	return (
@@ -45,6 +46,8 @@ function FeedContent({
 	feedType,
 	sentinel,
 }: FeedContentProps) {
+	const [suggestionSeed] = useState(() => Math.random())
+	const suggestionIndex = Math.floor(suggestionSeed * Math.min(posts.length, 10))
 	useEffect(() => {
 		const el = sentinel.current
 		if (!el) return
@@ -85,8 +88,11 @@ function FeedContent({
 
 	return (
 		<>
-			{posts.map((post) => (
-				<PostCard key={post.id} post={post} />
+			{posts.map((post, index) => (
+				<Fragment key={post.id}>
+					<PostCard post={post} />
+					{index === suggestionIndex && <FriendSuggestions inline />}
+				</Fragment>
 			))}
 			<div ref={sentinel} className="h-1" />
 			{isFetchingNextPage && (

@@ -596,7 +596,7 @@ export type UserProfileResponse = ApiResponse<UserProfileData>
 
 export type NotInterestedResponse = ApiResponse<Record<string, never>>
 export type UndoNotInterestedResponse = ApiResponse<Record<string, never>>
-export type RequestNoteResponse = ApiResponse<{ post: string; note_request_id: string }>
+export type RequestNoteResponse = ApiResponse<{ post: string; pkid: number; status: string }>
 export type MuteUserResponse = ApiResponse<Record<string, never>>
 export type UnmuteUserResponse = ApiResponse<Record<string, never>>
 export type BlockUserResponse = ApiResponse<{ blocked_user: number }>

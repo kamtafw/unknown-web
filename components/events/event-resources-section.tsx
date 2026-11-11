@@ -4,7 +4,8 @@ import { useEventResources } from "@/hooks/events/use-event-resources"
 import { normalizeHttpUrl } from "@/lib/events/normalize"
 import type { EventResourceDocument } from "@/types/events/api"
 import { FileText, Link2, LinkIcon, Lock, Pencil, ShieldAlert, WifiOff } from "lucide-react"
-import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RetryButton, StateMessage } from "./event-list"
+import { IconBadge, secondaryButton, sectionHeading } from "./event-ui"
 
 /** opens in a new tab; the address is re-checked here so only http(s) can ever become an href */
 function ExternalLink({
@@ -26,7 +27,7 @@ function ExternalLink({
 }
 
 const ROW =
-	"flex items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+	"group flex items-center gap-3 rounded-2xl border border-border bg-card px-3.5 py-3 transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
 
 function documentMeta(doc: EventResourceDocument): string {
 	return [doc.fileType, doc.size, doc.uploadedOn].filter(Boolean).join(" · ")
@@ -47,10 +48,10 @@ function Skeleton() {
 }
 
 /**
- * The "Links and docs" section of a full event: read-only. Names are rendered as text (never
- * HTML) and a link is navigable only when it is http(s). Links and documents are separate lists;
- * a link shows no date because the backend's `date_added` is not a link date (A-18). Mounted only
- * for a full event's active section, so a restricted preview never triggers a request.
+ * The "Links and docs" section of a full event. Names are rendered as text (never HTML) and a
+ * link is navigable only when it is http(s). Links and documents are separate lists; a link
+ * shows no date because the backend's `date_added` is not a link date. Mounted only for a full
+ * event's active section, so a restricted preview never triggers a request.
  *
  * Resources are changed only through the event edit form (no per-resource routes), so hosts get a
  * shortcut to it from the empty state.
@@ -136,15 +137,17 @@ export function EventResourcesSection({
 		<div className="flex flex-col gap-5">
 			{links.length > 0 && (
 				<section aria-labelledby="resources-links-heading" className="flex flex-col gap-2.5">
-					<h2 id="resources-links-heading" className="text-[13px] font-bold text-foreground">
+					<h2 id="resources-links-heading" className={sectionHeading}>
 						Links
 					</h2>
 					<ul className="flex flex-col gap-2">
 						{links.map((link, i) => (
 							<li key={`${i}-${link.url}`}>
 								<ExternalLink url={link.url} className={ROW}>
-									<Link2 size={16} aria-hidden className="shrink-0 text-primary" />
-									<span className="flex min-w-0 flex-col">
+									<IconBadge>
+										<Link2 size={16} />
+									</IconBadge>
+									<span className="flex min-w-0 flex-1 flex-col">
 										<span className="break-words text-[13px] font-semibold text-foreground">
 											{link.name}
 										</span>
@@ -159,7 +162,7 @@ export function EventResourcesSection({
 
 			{documents.length > 0 && (
 				<section aria-labelledby="resources-docs-heading" className="flex flex-col gap-2.5">
-					<h2 id="resources-docs-heading" className="text-[13px] font-bold text-foreground">
+					<h2 id="resources-docs-heading" className={sectionHeading}>
 						Documents
 					</h2>
 					<ul className="flex flex-col gap-2">
@@ -168,7 +171,9 @@ export function EventResourcesSection({
 							return (
 								<li key={`${i}-${doc.url}`}>
 									<ExternalLink url={doc.url} className={ROW}>
-										<FileText size={16} aria-hidden className="shrink-0 text-primary" />
+										<IconBadge>
+											<FileText size={16} />
+										</IconBadge>
 										<span className="flex min-w-0 flex-col">
 											<span className="break-words text-[13px] font-semibold text-foreground">
 												{doc.name}

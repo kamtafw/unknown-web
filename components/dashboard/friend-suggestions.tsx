@@ -1,21 +1,25 @@
 "use client"
 
+import {
+	removeUserFromSuggestionsCache,
+	useFollowUser,
+	useUnfollowUser,
+} from "@/hooks/use-follow-actions"
 import { useFriendSuggestions } from "@/hooks/use-users"
-import { removeUserFromSuggestionsCache, useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { DEFAULT_PROFILE_PHOTO } from "@/lib/server-config"
 import { getInitials } from "@/lib/utils"
 import { SuggestionUser } from "@/types/api"
 import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Avatar, ScrollArea } from "radix-ui"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { FollowButton } from "../shared/follow-button"
 
 function flattenSuggestions(users: SuggestionUser[]) {
-	const seen = new Set<string>()
+	const seen = new Set<number>()
 	return users.filter((u) => {
-		if (seen.has(u.id)) return false
-		seen.add(u.id)
+		if (seen.has(u.pkid)) return false
+		seen.add(u.pkid)
 		return true
 	})
 }
@@ -34,9 +38,10 @@ const AVATAR_COLORS = [
 function Row({ user, index }: { user: SuggestionUser; index: number }) {
 	const router = useRouter()
 	const qc = useQueryClient()
-	const toggleFollow = useToggleFollow()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
 
-	const [isFollowed, setIsFollowed] = useState(user.youFollowThisUser)
+	const isFollowed = user.youFollowThisUser
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	useEffect(
@@ -46,21 +51,26 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 		[],
 	)
 
-	const handleToggleFollow = () => {
-		const wasFollowing = isFollowed
-		setIsFollowed(!wasFollowing)
+	const handleFollow = () => {
+		if (isFollowed) return
+		timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.id), 5_000)
+		followUser.mutate(user.id, {
+			onError: () => {
+				if (timerRef.current) {
+					clearTimeout(timerRef.current)
+					timerRef.current = null
+				}
+			},
+		})
+	}
 
-		if (!wasFollowing) {
-			timerRef.current = setTimeout(() => removeUserFromSuggestionsCache(qc, user.id), 5_000)
-		} else if (timerRef.current) {
+	const handleUnfollow = () => {
+		if (!isFollowed) return
+		if (timerRef.current) {
 			clearTimeout(timerRef.current)
 			timerRef.current = null
 		}
-
-		toggleFollow.mutate(
-			{ id: user.id, wasFollowing },
-			{ onError: () => setIsFollowed(user.youFollowThisUser) },
-		)
+		unfollowUser.mutate(user.id)
 	}
 
 	const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username
@@ -102,8 +112,9 @@ function Row({ user, index }: { user: SuggestionUser; index: number }) {
 			</button>
 
 			<FollowButton
+				disabled={followUser.isPending || unfollowUser.isPending}
 				isFollowed={isFollowed}
-				onClick={handleToggleFollow}
+				onClick={isFollowed ? handleUnfollow : handleFollow}
 				className="min-w-22 py-1.5"
 			/>
 		</div>
@@ -123,14 +134,14 @@ function SkeletonRow() {
 	)
 }
 
-export function FriendSuggestions() {
+export function FriendSuggestions({ inline = false }: { inline?: boolean }) {
 	const { data, isLoading } = useFriendSuggestions()
 	const users = flattenSuggestions(data?.data.results ?? [])
 
 	return (
-		<aside className="w-md shrink-0 flex flex-col bg-card rounded-t-2xl overflow-hidden border border-border">
+		<aside aria-label="Who to follow" className={inline ? "flex flex-col bg-card border-y border-border" : "w-md shrink-0 flex flex-col bg-card rounded-t-2xl overflow-hidden border border-border"}>
 			<div className="px-4 pt-4 pb-3 shrink-0">
-				<h2 className="font-bold text-foreground text-sm">Friend suggestions</h2>
+				<h2 className="font-bold text-foreground text-sm">Who to follow</h2>
 			</div>
 
 			<div className="mx-4 border-t border-border shrink-0" />

@@ -1,5 +1,7 @@
 "use client"
 
+import { useUserProfileHover } from "@/hooks/use-user-profile"
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
 	useBookmarkPost,
@@ -9,11 +11,11 @@ import {
 } from "@/hooks/socials/use-post-actions"
 import { useRepost } from "@/hooks/socials/use-repost"
 import { useUnblockUsers } from "@/hooks/use-block-actions"
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useMuteUser, useUnmuteUser } from "@/hooks/use-mute-actions"
 import { useNotInterested } from "@/hooks/use-post-interactions"
 import { usePostStats } from "@/hooks/use-post-stats"
 import { useTimeAgo } from "@/hooks/use-time-ago"
-import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import {
 	isBareRepost,
 	isSettledRepostId,
@@ -218,7 +220,7 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 			className="mt-3 border border-border rounded-xl p-3 bg-muted/50 cursor-pointer hover:bg-accent/50 transition-colors"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<AuthorHoverCard id={content.user.id} fallback={content.user}>
+				<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 					<UserAvatar
 						src={content.user.profile_photo}
 						first={content.user.first_name}
@@ -227,12 +229,12 @@ export function QuotedContentCard({ content }: { content: SocialContent }) {
 					/>
 				</AuthorHoverCard>
 				<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-					<AuthorHoverCard id={content.user.id} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<span className="text-[13px] font-semibold text-foreground truncate leading-tight">
 							{fullname}
 						</span>
 					</AuthorHoverCard>
-					<AuthorHoverCard id={content.user.id} fallback={content.user}>
+					<AuthorHoverCard id={content.user.id} pkid={content.user.pkid} fallback={content.user}>
 						<span>@{content.user.username}</span>
 					</AuthorHoverCard>
 					<span>•</span>
@@ -542,6 +544,8 @@ export function PostOptionsMenu({
 	const router = useRouter()
 	const pathname = usePathname()
 
+	const [menuOpen, setMenuOpen] = useState(false)
+	const { data: authorProfile, isLoading: relationshipLoading } = useUserProfileHover(post.user.id, menuOpen && !isOwn)
 	const [readAloudOpen, setReadAloudOpen] = useState(false)
 	const [requestNoteOpen, setRequestNoteOpen] = useState(false)
 	const [blockOpen, setBlockOpen] = useState(false)
@@ -549,7 +553,8 @@ export function PostOptionsMenu({
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
 	const bookmarkPost = useBookmarkPost()
-	const toggleFollow = useToggleFollow()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
 	const muteUser = useMuteUser()
 	const unmuteUser = useUnmuteUser()
 	const unblockUsers = useUnblockUsers()
@@ -557,13 +562,15 @@ export function PostOptionsMenu({
 	const togglePinnedPost = useTogglePinnedPost()
 	const deletePost = useDeletePost()
 
-	const isFollowed = post.user.youFollowThisUser ?? false
+	const isFollowed = authorProfile?.data.is_user_you_follow ?? post.user.youFollowThisUser ?? false
 	const isMuted = post.user.youMutedThisUser ?? false
 	const isBlocked = post.user.youBlockedThisUser ?? false
 	const followsYou = post.user.thisUserFollowsYou ?? false
 
-	const handleToggleFollow = () => {
-		toggleFollow.mutate({ id: post.user.id, wasFollowing: isFollowed })
+	const handleFollowToggle = () => {
+		if (followUser.isPending || unfollowUser.isPending) return
+		if (isFollowed) unfollowUser.mutate(post.user.id)
+		else followUser.mutate(post.user.id)
 	}
 
 	const handleMuteToggle = () => {
@@ -593,6 +600,7 @@ export function PostOptionsMenu({
 	}
 
 	const ownItems: ActionDropdownItem[] = [
+		{ label: "Read post out loud", icon: <ScreenReader />, onSelect: () => setReadAloudOpen(true) },
 		{
 			label: "Edit post",
 			icon: <Quote />,
@@ -650,7 +658,8 @@ export function PostOptionsMenu({
 					? `Follow Back @${post.user.username}`
 					: `Follow @${post.user.username}`,
 			icon: <Connect />,
-			onSelect: handleToggleFollow,
+			disabled: relationshipLoading || followUser.isPending || unfollowUser.isPending,
+			onSelect: handleFollowToggle,
 		},
 		{
 			label: isMuted ? `Unmute @${post.user.username}` : `Mute @${post.user.username}`,
@@ -676,6 +685,7 @@ export function PostOptionsMenu({
 			<ActionDropdown
 				trigger={<MoreHorizontal size={18} />}
 				items={isOwn ? ownItems : otherItems}
+				onOpenChange={setMenuOpen}
 				clsName="text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-full hover:bg-accent transition-colors focus:outline-none"
 			/>
 
@@ -748,7 +758,11 @@ export function PostCard({ post }: { post: SocialContent }) {
 
 			<div onClick={() => router.push(contentHref(displayPost))} className="cursor-pointer">
 				<div className="flex items-start gap-3">
-					<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
+					<AuthorHoverCard
+						id={displayPost.user.id}
+						pkid={displayPost.user.pkid}
+						fallback={displayPost.user}
+					>
 						<UserAvatar
 							src={displayPost.user.profile_photo}
 							first={displayPost.user.first_name}
@@ -756,12 +770,20 @@ export function PostCard({ post }: { post: SocialContent }) {
 						/>
 					</AuthorHoverCard>
 					<div className="flex-1 min-w-0">
-						<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="font-semibold text-sm text-foreground cursor-pointer hover:underline underline-offset-1">
 								{fullname}
 							</span>
 						</AuthorHoverCard>{" "}
-						<AuthorHoverCard id={displayPost.user.id} fallback={displayPost.user}>
+						<AuthorHoverCard
+							id={displayPost.user.id}
+							pkid={displayPost.user.pkid}
+							fallback={displayPost.user}
+						>
 							<span className="text-muted-foreground text-[13.5px]">
 								@{displayPost.user.username}
 							</span>

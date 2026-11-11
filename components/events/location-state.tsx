@@ -5,7 +5,8 @@ import { NEARBY_RADIUS_KM } from "@/lib/events/constants"
 import type { LocationStatus } from "@/types/events/api"
 import { LocateOff } from "lucide-react"
 import Link from "next/link"
-import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RetryButton, StateMessage } from "./event-list"
+import { secondaryButton } from "./event-ui"
 
 type FailedStatus = Exclude<LocationStatus, "ready" | "locating">
 

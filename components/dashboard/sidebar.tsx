@@ -26,7 +26,7 @@ export function Sidebar() {
 	const isDark = resolvedTheme === "dark"
 
 	return (
-		<aside className="w-80 shrink-0 flex flex-col bg-card rounded-2xl overflow-hidden mb-5 border border-border">
+		<aside className="hidden lg:flex w-80 shrink-0 flex-col bg-card rounded-2xl overflow-hidden mb-5 border border-border">
 			<nav className="flex flex-col p-3 gap-1 flex-1">
 				{NAV_ITEMS.map(({ label, icon: Icon, href }) => {
 					const active = isNavItemActive(pathname, href)

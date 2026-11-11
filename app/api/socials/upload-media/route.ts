@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
 	return proxyJson(`${DJANGO_API_URL}/socials/post/upload/media`, {
 		method: "POST",
+		timeoutMs: 120_000,
 		headers: { Authorization: `Bearer ${accessToken}` },
 		body: formData,
 	})

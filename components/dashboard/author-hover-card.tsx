@@ -1,7 +1,7 @@
 "use client"
 
+import { useFollowUser, useUnfollowUser } from "@/hooks/use-follow-actions"
 import { useUserProfileHover } from "@/hooks/use-user-profile"
-import { useToggleFollow } from "@/hooks/users/use-follow-actions"
 import { formatCount, getInitials } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 import { PostUser } from "@/types/socials/api"
@@ -12,6 +12,7 @@ import { FollowButton } from "../shared/follow-button"
 
 interface AuthorHoverCardProps {
 	id: string
+	pkid: number
 	fallback: Pick<PostUser, "username" | "first_name" | "last_name" | "profile_photo">
 	children: ReactNode
 }
@@ -25,7 +26,8 @@ export function AuthorHoverCard({ id, fallback, children }: AuthorHoverCardProps
 	const { data, isLoading } = useUserProfileHover(id, open)
 	const profile = data?.data
 
-	const toggleFollow = useToggleFollow()
+	const followUser = useFollowUser()
+	const unfollowUser = useUnfollowUser()
 	const isFollowed = profile?.is_user_you_follow ?? false
 
 	const displayName =
@@ -35,10 +37,11 @@ export function AuthorHoverCard({ id, fallback, children }: AuthorHoverCardProps
 	const username = profile?.username ?? fallback.username
 	const photo = profile?.profile_photo ?? fallback.profile_photo
 
-	const handleToggleFollow = (e: React.MouseEvent<HTMLButtonElement>) => {
+	const handleFollowToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.stopPropagation()
 		e.preventDefault()
-		toggleFollow.mutate({ id, wasFollowing: isFollowed })
+		if (isFollowed) unfollowUser.mutate(id)
+		else followUser.mutate(id)
 	}
 
 	return (
@@ -106,8 +109,8 @@ export function AuthorHoverCard({ id, fallback, children }: AuthorHoverCardProps
 									<FollowButton
 										isFollowed={isFollowed}
 										followsYou={profile.is_following_you}
-										onClick={handleToggleFollow}
-										disabled={toggleFollow.isPending}
+										onClick={handleFollowToggle}
+										disabled={isLoading || followUser.isPending || unfollowUser.isPending}
 									/>
 								)}
 							</div>

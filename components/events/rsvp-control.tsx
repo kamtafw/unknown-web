@@ -4,6 +4,7 @@ import { useEventRsvp } from "@/hooks/events/use-event-rsvp"
 import { cn } from "@/lib/utils"
 import type { EventDetails, EventRsvpStatus } from "@/types/events/api"
 import { Loader2 } from "lucide-react"
+import { panel, sectionHeading } from "./event-ui"
 
 const OPTIONS: { value: EventRsvpStatus; label: string }[] = [
 	{ value: "going", label: "Going" },
@@ -12,8 +13,7 @@ const OPTIONS: { value: EventRsvpStatus; label: string }[] = [
 ]
 
 /**
- * RSVP: going / interested / not going. Not designed (no frame exists), so it is a segmented
- * radio group in the app's pill style (assumption A-13).
+ * RSVP: going / interested / not going, as a segmented radio group in the app's pill style.
  *
  * RSVP is its own thing: it creates no guest row, does not join the event and does not add it to
  * My events. What the viewer's answer is can be unknown (a restricted preview omits it); unknown
@@ -34,11 +34,15 @@ export function RsvpControl({ eventId, details }: { eventId: string; details: Ev
 				: null
 
 	return (
-		<section aria-labelledby="rsvp-heading" className="flex flex-col gap-2">
-			<h2 id="rsvp-heading" className="text-[13px] font-bold text-foreground">
+		<section aria-labelledby="rsvp-heading" className={`${panel} flex flex-col gap-3`}>
+			<h2 id="rsvp-heading" className={sectionHeading}>
 				Your RSVP
 			</h2>
-			<div role="radiogroup" aria-labelledby="rsvp-heading" className="flex gap-2">
+			<div
+				role="radiogroup"
+				aria-labelledby="rsvp-heading"
+				className="flex gap-1 rounded-full bg-muted p-1"
+			>
 				{OPTIONS.map(({ value, label }) => {
 					const checked = selected === value
 					const saving = pendingStatus === value
@@ -55,11 +59,11 @@ export function RsvpControl({ eventId, details }: { eventId: string; details: Ev
 								setRsvp(value)
 							}}
 							className={cn(
-								"inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border px-3 text-[12.5px] font-semibold transition-colors",
-								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60",
+								"inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold transition-colors",
+								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-60",
 								checked
-									? "border-primary bg-primary text-primary-foreground"
-									: "border-border text-foreground hover:bg-muted",
+									? "bg-primary text-primary-foreground shadow-xs"
+									: "text-foreground/80 hover:bg-card hover:text-foreground",
 							)}
 						>
 							{saving && <Loader2 size={13} className="animate-spin" aria-hidden />}

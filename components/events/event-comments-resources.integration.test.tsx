@@ -224,7 +224,7 @@ describe("Posting a comment inside the Comments section (P3-06)", () => {
 		fireEvent.change(box(), { target: { value: "let me in" } })
 		fireEvent.click(screen.getByRole("button", { name: "Post comment" }))
 		expect(
-			await screen.findByText("Only people who have joined this event can post comments"),
+			await screen.findByText("Only people who have joined this event can post comments."),
 		).toBeInTheDocument()
 		expect(box().value).toBe("let me in")
 		expect(screen.getByText("hello there")).toBeInTheDocument()

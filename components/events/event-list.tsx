@@ -1,6 +1,5 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import type { EventCard as EventCardData } from "@/types/events/api"
 import { Loader2, RotateCcw, Search } from "lucide-react"
 import type { ReactNode } from "react"
@@ -8,6 +7,7 @@ import { useEffect } from "react"
 import { useInView } from "react-intersection-observer"
 import { EventCard, EventCardSkeleton } from "./event-card"
 import { EventLink } from "./event-link"
+import { primaryButton } from "./event-ui"
 
 /** Loading placeholder shaped like the list; `label` is announced, not shown (the design has no loading text). */
 export function EventListSkeleton({ label }: { label: string }) {
@@ -28,9 +28,8 @@ export function EventListSkeleton({ label }: { label: string }) {
 }
 
 /**
- * Empty / error / location messages. Not designed (no export exists): these use the
- * app's established state pattern, flattened to sit inside the left pane.
- * "alert" is announced immediately and is used for failures.
+ * Empty / error / location messages, flattened to sit inside a pane. "alert"
+ * is announced immediately and is used for failures (and tinted accordingly).
  */
 export function StateMessage({
 	icon,
@@ -48,7 +47,13 @@ export function StateMessage({
 	return (
 		<div role={tone} className="flex flex-col items-center px-2 py-10 text-center">
 			{icon && (
-				<div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+				<div
+					className={
+						tone === "alert"
+							? "mb-4 flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+							: "mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary"
+					}
+				>
 					{icon}
 				</div>
 			)}
@@ -59,17 +64,11 @@ export function StateMessage({
 				</p>
 			)}
 			{children && (
-				<div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">{children}</div>
+				<div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">{children}</div>
 			)}
 		</div>
 	)
 }
-
-const BUTTON =
-	"inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[12.5px] font-semibold transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-
-export const secondaryButton = cn(BUTTON, "border border-border text-foreground hover:bg-muted")
-export const primaryButton = cn(BUTTON, "bg-primary text-primary-foreground hover:bg-primary/90")
 
 export function RetryButton({
 	onClick,

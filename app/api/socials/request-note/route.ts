@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ success: false, message: "Not authenticated" }, { status: 401 })
 	}
 
-	return proxyJson(`${DJANGO_API_URL}/socials/post/request-note`, {
+	return proxyJson(`${DJANGO_API_URL}/socials/community-notes/create`, {
 		method: "POST",
 		headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
 		body: JSON.stringify(body),

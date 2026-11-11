@@ -24,6 +24,15 @@ beforeEach(() => {
 const open = () => fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }))
 
 describe("DeleteEventDialog", () => {
+	it("explains a live block without referring to unavailable features", () => {
+		render(
+			<DeleteEventDialog eventId="e1" eventName="Jazz night" liveBlocked onDeleted={onDeleted} />,
+		)
+		expect(screen.getByRole("note")).toHaveTextContent("until its live session has ended")
+		expect(screen.getByRole("note")).not.toHaveTextContent(/yet|web app/i)
+		expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
+	})
+	
 	it("asks for confirmation naming the event and deletes nothing until confirmed", () => {
 		render(
 			<DeleteEventDialog

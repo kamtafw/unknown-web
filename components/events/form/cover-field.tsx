@@ -4,8 +4,8 @@ import { validateCoverFile } from "@/lib/events/validation"
 import { ImagePlus, X } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useId, useRef, useState } from "react"
-import { secondaryButton } from "../event-list"
 import { FieldMessages, SECTION_TITLE } from "./fields"
+import { secondaryButton } from "../event-ui"
 
 /**
  * Thumbnail ("Add thumbnail" in the design). JPEG or PNG, 2 MB at most, checked as soon as a file

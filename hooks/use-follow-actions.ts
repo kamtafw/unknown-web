@@ -1,8 +1,13 @@
+import { useAuthStore } from "@/stores/auth-store"
+import { patchRelationship } from "@/lib/social-relationships"
+import { showMutationErrorToast } from "@/lib/api-error"
+import { userApi } from "@/lib/api"
 import { contentKeys, FeedCache, feedKeys } from "@/lib/socials/query-keys"
-import { UserProfileData, UserProfileResponse } from "@/types/api"
+import { FriendSuggestionsResponse, UserProfileData, UserProfileResponse } from "@/types/api"
 import { Post, PostUser, SocialContent } from "@/types/socials/api"
-import { useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { userProfileKeys } from "./use-user-profile"
+import { usersKeys } from "./use-users"
 
 type AuthorFlagPatch = Partial<
 	Pick<PostUser, "youFollowThisUser" | "youMutedThisUser" | "youBlockedThisUser">
@@ -49,36 +54,8 @@ function authorFlagToProfilePatch(patch: AuthorFlagPatch): Partial<UserProfileDa
 	return out
 }
 
-/**
- * patches the viewer's relationship flags (youFollowThisUser, youMutedThisUser,
- * youBlockedThisUser) wherever that author appears — every feed cache (including
- * nested original_post.user on quote-reposts), any open post-detail cache, and
- * the author's own ["users", "profile", id] cache; this is the single source of
- * truth: a follow/mute/block taken from a hover card, the post menu, the
- * featured-accounts panel, or the blocked-accounts panel all stay in sync
- * everywhere the author shows up — including their own profile page — with no
- * manual refresh required
- *
- * IDENTITY NOTE: this function only ever receives `pkid` — follow/mute/block
- * are separate, still-pkid-based endpoints, unaffected by the backend's
- * switch of getUserProfile to UUID. But the profile-detail cache it needs to
- * patch (`userProfileKeys.detail`) is now id-keyed. Rather than changing all
- * 5 mutation call sites (useFollowUser/useUnfollowUser/useMuteUser/
- * useUnmuteUser/useUnblockUsers) and every component that calls them to
- * thread an `id` through just for this one internal cache write, this
- * recovers the matching `id` opportunistically from whichever cache already
- * has it: a feed post by this author, an open content-detail entry by them,
- * or — most commonly, since this is exactly the case when someone clicks
- * follow/mute/block *from* a profile page — the profile-detail cache itself,
- * already populated with both pkid and id from its own fetch.
- *
- * LIMITATION: if none of those three are currently in cache (e.g. following
- * someone from friend-suggestions with zero other visibility into them this
- * session), the profile-detail cache patch is skipped — not wrong, just not
- * optimistic; it'll be correct on the next real fetch. Every other patch
- * (feeds, content-detail) still applies regardless, since those are pkid-
- * keyed and don't need this lookup at all.
- */
+/** Patch cached author flags for the numeric mute/block endpoints.
+ * Follow actions below use public UUIDs and patchRelationship instead. */
 export function patchAuthorFlagInFeeds(
 	qc: ReturnType<typeof useQueryClient>,
 	pkid: number,
@@ -127,3 +104,55 @@ export function patchAuthorFlagInFeeds(
 		)
 	}
 }
+
+export function removeUserFromSuggestionsCache(
+    qc: ReturnType<typeof useQueryClient>,
+    id: string,
+) {
+    qc.setQueryData<FriendSuggestionsResponse>(usersKeys.friendSuggestions, (old) => old ? {
+        ...old,
+        data: { ...old.data, results: old.data.results.filter((user) => user.id !== id) },
+    } : old)
+}
+
+function invalidateAllQueries(qc: ReturnType<typeof useQueryClient>) {
+	qc.invalidateQueries({ queryKey: usersKeys.followers })
+	qc.invalidateQueries({ queryKey: usersKeys.followings })
+	qc.invalidateQueries({ queryKey: feedKeys.following() })
+}
+
+function useFollowMutation(following: boolean) {
+	const qc = useQueryClient()
+	const patch = (userId: string, state: boolean) => {
+		qc.setQueriesData({ predicate: (query) =>
+			["feed", "profile-feed", "content", "users", "mentions", "social-search", "social-alerts"].includes(String(query.queryKey[0])),
+		}, (old) => patchRelationship(old, userId, state))
+	}
+	return useMutation({
+		mutationKey: ["social-follow"],
+		mutationFn: async (id: string) => {
+			const response = await userApi.followUser({ followed_user: id })
+			if (!response.success) throw new Error(response.message || "Could not update follow status")
+			return response
+		},
+		onMutate: async (id) => {
+			const generation = useAuthStore.getState().sessionGeneration
+			await qc.cancelQueries({ predicate: (query) =>
+				["users", "social-search", "social-alerts"].includes(String(query.queryKey[0])),
+			})
+			if (generation !== useAuthStore.getState().sessionGeneration) throw new Error("Account changed. Please try again.")
+			patch(id, following)
+			return { generation }
+		},
+		onSuccess: (response, id, context) => { if (context?.generation === useAuthStore.getState().sessionGeneration) patch(id, response.data.following) },
+		onError: (error, id, context) => {
+			if (context?.generation !== useAuthStore.getState().sessionGeneration) return
+			patch(id, !following)
+			showMutationErrorToast(error, "Could not update follow status. Please try again.")
+		},
+		onSettled: (_data, _error, _id, context) => { if (context?.generation === useAuthStore.getState().sessionGeneration) invalidateAllQueries(qc) },
+	})
+}
+
+export function useFollowUser() { return useFollowMutation(true) }
+export function useUnfollowUser() { return useFollowMutation(false) }

@@ -7,7 +7,8 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { Loader2, Lock, MessageSquare, RefreshCw, ShieldAlert, WifiOff } from "lucide-react"
 import { Avatar } from "radix-ui"
 import { EventCommentComposer } from "./event-comment-composer"
-import { RetryButton, StateMessage, secondaryButton } from "./event-list"
+import { RetryButton, StateMessage } from "./event-list"
+import { StatusPill, avatarShell, secondaryButton, sectionHeading } from "./event-ui"
 
 /** "5 minutes ago"; under a minute (or a clock slightly ahead of ours) is "just now" */
 function relativeTime(createdAt: string | null): { label: string; iso: string } | null {
@@ -29,7 +30,7 @@ function CommentItem({ comment }: { comment: EventComment }) {
 
 	return (
 		<li className="flex gap-3">
-			<Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[13px] font-semibold text-primary">
+			<Avatar.Root className={`${avatarShell} size-10 text-[14px]`}>
 				{author?.photo && (
 					<Avatar.Image src={author.photo} alt="" className="size-full object-cover" />
 				)}
@@ -39,9 +40,7 @@ function CommentItem({ comment }: { comment: EventComment }) {
 				<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
 					<span className="break-words text-[13px] font-semibold text-foreground">{name}</span>
 					{author?.role === "host" && (
-						<span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-							Host
-						</span>
+						<StatusPill className="bg-primary/10 text-primary">Host</StatusPill>
 					)}
 					{time && (
 						<time dateTime={time.iso} className="text-[12px] text-muted-foreground">
@@ -50,7 +49,7 @@ function CommentItem({ comment }: { comment: EventComment }) {
 					)}
 				</div>
 				{/* plain text only; whitespace is kept and unbroken strings wrap instead of overflowing */}
-				<p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+				<p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
 					{comment.message}
 				</p>
 			</div>
@@ -175,7 +174,7 @@ export function EventCommentsSection({ eventId }: { eventId: string }) {
 	return (
 		<section aria-labelledby="comments-heading" className="flex flex-col gap-4">
 			<div className="flex items-center justify-between gap-2">
-				<h2 id="comments-heading" className="text-[13px] font-bold text-foreground">
+				<h2 id="comments-heading" className={sectionHeading}>
 					Comments
 				</h2>
 				<button
@@ -211,7 +210,7 @@ export function EventCommentsSection({ eventId }: { eventId: string }) {
 			) : (
 				<>
 					{comments.length > 0 && (
-						<ul aria-label="Event comments" className="flex flex-col gap-4">
+						<ul aria-label="Event comments" className="flex flex-col gap-5">
 							{comments.map((comment) => (
 								<CommentItem key={comment.id} comment={comment} />
 							))}
