@@ -232,7 +232,7 @@ export function ConversationView({ uuid, onOpenProfile }: ConversationViewProps)
 				/>
 			) : (
 				<ConversationHeader
-					peer={peer}
+					peer={derivedPeer}
 					peerUuid={uuid}
 					peerPkid={derivedPkid != null ? (derivedPkid as Pkid) : null}
 					onOpenProfile={onOpenProfile}
