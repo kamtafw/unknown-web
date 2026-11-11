@@ -12,7 +12,6 @@ import { FollowButton } from "../shared/follow-button"
 
 interface AuthorHoverCardProps {
 	id: string
-	pkid: number
 	fallback: Pick<PostUser, "username" | "first_name" | "last_name" | "profile_photo">
 	children: ReactNode
 }

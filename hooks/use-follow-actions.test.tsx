@@ -1,8 +1,12 @@
-import { beforeEach, expect, it, vi } from "vitest"
-import { act, renderHook, waitFor } from "@testing-library/react"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { userApi } from "@/lib/api"
-import { removeUserFromSuggestionsCache, useFollowUser, useUnfollowUser } from "./use-follow-actions"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { act, renderHook, waitFor } from "@testing-library/react"
+import { beforeEach, expect, it, vi } from "vitest"
+import {
+	removeUserFromSuggestionsCache,
+	useFollowUser,
+	useUnfollowUser,
+} from "./use-follow-actions"
 vi.mock("@/lib/api", () => ({ userApi: { followUser: vi.fn() } }))
 vi.mock("@/lib/api-error", () => ({ showMutationErrorToast: vi.fn() }))
 const id = "582a0f99-037a-4ddf-b17a-282a69ad6778"
@@ -23,20 +27,15 @@ function setup() {
 	client.setQueryData(["social-alerts", "all"], {
 		pages: [
 			{
-				results: [
-					{ user: { id, username: "ada" }, you_are_following_back: false },
-				],
+				results: [{ user: { id, username: "ada" }, you_are_following_back: false }],
 			},
 		],
 	})
-	const result = renderHook(
-		() => ({ follow: useFollowUser(), unfollow: useUnfollowUser() }),
-		{
-			wrapper: ({ children }) => (
-				<QueryClientProvider client={client}>{children}</QueryClientProvider>
-			),
-		},
-	)
+	const result = renderHook(() => ({ follow: useFollowUser(), unfollow: useUnfollowUser() }), {
+		wrapper: ({ children }) => (
+			<QueryClientProvider client={client}>{children}</QueryClientProvider>
+		),
+	})
 	return { client, key, ...result }
 }
 it("uses public UUIDs and keeps search, alerts and authoritative follow state in sync", async () => {
@@ -92,9 +91,19 @@ it("rolls back a failed follow without replacing another user's state", async ()
 })
 
 it("removes a followed suggestion from the actual paginated-response cache by UUID", () => {
- const client = new QueryClient()
- const key = ["users", "friend-suggestions"]
- client.setQueryData(key, {success:true, data:{results:[{id,username:"ada"},{id:"other",username:"grace"}]}})
- removeUserFromSuggestionsCache(client, id)
- expect(client.getQueryData(key)).toMatchObject({data:{results:[{id:"other",username:"grace"}]}})
+	const client = new QueryClient()
+	const key = ["users", "friend-suggestions"]
+	client.setQueryData(key, {
+		success: true,
+		data: {
+			results: [
+				{ id, username: "ada" },
+				{ id: "other", username: "grace" },
+			],
+		},
+	})
+	removeUserFromSuggestionsCache(client, id)
+	expect(client.getQueryData(key)).toMatchObject({
+		data: { results: [{ id: "other", username: "grace" }] },
+	})
 })
